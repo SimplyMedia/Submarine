@@ -1,0 +1,19 @@
+name: Unit Test Action
+on: [push]
+jobs:
+  test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source code
+        uses: actions/checkout@v2
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Run Build
+        run: dotnet build --no-restore /p:ContinuousIntegrationBuild=true
+      - name: Run Test
+        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
