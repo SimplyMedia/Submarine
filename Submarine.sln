@@ -1,8 +1,26 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Submarine.Core", "Submarine.Core\Submarine.Core.csproj", "{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{A1A8359E-C882-4010-BF24-C6A1A640D493}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{48563F82-ADEB-4224-9FBF-F087EFBEADDF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Submarine.Core.Test", "Submarine.Core.Test\Submarine.Core.Test.csproj", "{B36EF99C-6759-489D-A2AA-26471A17B0EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930} = {A1A8359E-C882-4010-BF24-C6A1A640D493}
+		{B36EF99C-6759-489D-A2AA-26471A17B0EC} = {48563F82-ADEB-4224-9FBF-F087EFBEADDF}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B36EF99C-6759-489D-A2AA-26471A17B0EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B36EF99C-6759-489D-A2AA-26471A17B0EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B36EF99C-6759-489D-A2AA-26471A17B0EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B36EF99C-6759-489D-A2AA-26471A17B0EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
