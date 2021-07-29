@@ -1,4 +1,4 @@
-using Submarine.Core.Parser;
+﻿using Submarine.Core.Parser;
 using Submarine.Core.Quality;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,6 +29,8 @@ namespace Submarine.Core.Test.Quality
 		[InlineData("Series S03 1080p WEB-DL DD5 1 H264", QualitySource.WEB_DL)]
 		[InlineData("[SubsPlease] Anime Title - 04 (1080p) [A27AA2EF]", QualitySource.TV)]
 		[InlineData("Do.Not.Get.Pregnant.2.S10E20.REPACK.720p.WEB.h264-BAE", QualitySource.WEB_DL)]
+		[InlineData("Series.Title.S01E01.RawHD-2hd", QualitySource.RAW_HD)]
+		[InlineData("Series Title in Some other Language - 40 BD XviD MP3 4329FA2F", QualitySource.BLURAY)]
 		public void Parse_QualitySource_AsExpected(string input, QualitySource source)
 		{
 			var parsed = _instance.ParseQuality(input);
@@ -43,7 +45,14 @@ namespace Submarine.Core.Test.Quality
 		[InlineData("Some.Nice.Movie.2021.Ger.Spa.WEBRip.x264-YG⭐", QualityResolution.R720_P)]
 		[InlineData("Anime Title - 15 (2021) [Golumpa] [English Dubbed] [WEBRip] [HD 720p]", QualityResolution.R720_P)]
 		[InlineData("Do.Not.Get.Pregnant.2.S10E20.REPACK.720p.WEB.h264-BAE", QualityResolution.R720_P)]
+		[InlineData("A Safe Place 1971 360p WEB-DL AAC x264", QualityResolution.R360_P)]
+		[InlineData("Really.long.movie.title.yea.2021.07.15.540p.WEBDL-Anon", QualityResolution.R540_P)]
+		[InlineData("Movie-Title 1979 576p BDRip DD2.0 x264 NoGroup", QualityResolution.R576_P)]
+		[InlineData("[SubsPlease] Anime Title - 15 (480p) [BDE17E52].mkv", QualityResolution.R480_P)]
+		[InlineData("Some.Movie.Title.2007.MULTi.COMPLETE.UHD.BLURAY-DUPLiKAT", QualityResolution.R2160_P)]
 		[InlineData("Series.Title.S23E17.HDTV.x264-PHOENiX[TGx]", QualityResolution.R720_P)]
+		[InlineData("A very long Movie Title 2012 SDTV MP3 2.0-NoGroup", QualityResolution.R480_P)]
+		[InlineData("Series Title in Some other Language - 40 BD XviD MP3 4329FA2F", QualityResolution.R480_P)]
 		public void Parse_QualityResolution_AsExpected(string input, QualityResolution resolution)
 		{
 			var parsed = _instance.ParseQuality(input);
