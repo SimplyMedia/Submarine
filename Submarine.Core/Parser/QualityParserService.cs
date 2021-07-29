@@ -13,60 +13,68 @@ namespace Submarine.Core.Parser
 			=> _logger = logger;
 
 		private static readonly Regex SourceRegex = new(@"\b(?:
-                                                                (?<bluray>BluRay|Blu-Ray|HD-?DVD|BDMux|BD(?!$))|
-                                                                (?<webdl>WEB[-_. ]DL|WEBDL|AmazonHD|iTunesHD|MaxdomeHD|NetflixU?HD|WebHD|[. ]WEB[. ](?:[xh]26[45]|DDP?5[. ]1)|[. ](?-i:WEB)$|\d+0p(?:[-. ]AMZN)?[-. ]WEB[-. ]|WEB-DLMux|\b\s\/\sWEB\s\/\s\b|AMZN[. ]WEB[. ])|
-                                                                (?<webrip>WebRip|Web-Rip|WEBMux)|
-                                                                (?<hdtv>HDTV)|
-                                                                (?<bdrip>BDRip)|
-                                                                (?<brrip>BRRip)|
+																(?<bluray>BluRay|Blu-Ray|HD-?DVD|BDMux|BD(?!$))|
+																(?<webdl>WEB[-_. ]DL|WEBDL|AmazonHD|iTunesHD|MaxdomeHD|NetflixU?HD|WebHD|[. ]WEB[. ](?:[xh]26[45]|DDP?5[. ]1)|[. ](?-i:WEB)$|\d+0p(?:[-. ]AMZN)?[-. ]WEB[-. ]|WEB-DLMux|\b\s\/\sWEB\s\/\s\b|AMZN[. ]WEB[. ])|
+																(?<webrip>WebRip|Web-Rip|WEBMux)|
+																(?<hdtv>HDTV)|
+																(?<bdrip>BDRip)|
+																(?<brrip>BRRip)|
 																(?<dvdr>DVD-R|DVDR|DVD5|DVD9)|
-                                                                (?<dvd>DVD|DVDRip|NTSC|PAL|xvidvd)|
-                                                                (?<dsr>WS[-_. ]DSR|DSR)|	
-                                                                (?<regional>R[0-9]{1}|REGIONAL)|
-                                                                (?<scr>SCR|SCREENER|DVDSCR|DVDSCREENER)|
-                                                                (?<ts>TS[-_. ]|TELESYNC|HD-TS|HDTS|PDVD|TSRip|HDTSRip)|
-                                                                (?<tc>TC|TELECINE|HD-TC|HDTC)|
-                                                                (?<cam>CAMRIP|CAM|HDCAM|HD-CAM)|
-                                                                (?<wp>WORKPRINT|WP)|
-                                                                (?<pdtv>PDTV)|
-                                                                (?<sdtv>SDTV)|
-                                                                (?<tvrip>TVRip)
-                                                                )(?:\b|$|[ .])",
-                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+																(?<dvd>DVD|DVDRip|NTSC|PAL|xvidvd)|
+																(?<dsr>WS[-_. ]DSR|DSR)|
+																(?<regional>R[0-9]{1}|REGIONAL)|
+																(?<scr>SCR|SCREENER|DVDSCR|DVDSCREENER)|
+																(?<ts>TS[-_. ]|TELESYNC|HD-TS|HDTS|PDVD|TSRip|HDTSRip)|
+																(?<tc>TC|TELECINE|HD-TC|HDTC)|
+																(?<cam>CAMRIP|CAM|HDCAM|HD-CAM)|
+																(?<wp>WORKPRINT|WP)|
+																(?<pdtv>PDTV)|
+																(?<sdtv>SDTV)|
+																(?<tvrip>TVRip)
+																)(?:\b|$|[ .])",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
-        private static readonly Regex RawHDRegex = new(@"\b(?<rawhd>RawHD|Raw[-_. ]HD)\b",
-                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex RawHDRegex = new(@"\b(?<rawhd>RawHD|Raw[-_. ]HD)\b",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex MPEG2Regex = new(@"\b(?<mpeg2>MPEG[-_. ]?2)\b");
+		private static readonly Regex MPEG2Regex = new(@"\b(?<mpeg2>MPEG[-_. ]?2)\b");
 
-        private static readonly Regex ProperRegex = new(@"\b(?<proper>proper)\b",
-                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex ProperRegex = new(@"\b(?<proper>proper)\b",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex RepackRegex = new(@"\b(?<repack>repack|rerip)\b",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex RepackRegex = new(@"\b(?<repack>repack|rerip)\b",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex VersionRegex = new(@"\dv(?<version>\d)\b|\[v(?<version>\d)\]|[-_. ]v(?<version>\d)[-_. ]",
-                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex VersionRegex = new(
+			@"\dv(?<version>\d)\b|\[v(?<version>\d)\]|[-_. ]v(?<version>\d)[-_. ]",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex ResolutionRegex = new(@"\b(?:(?<R360p>360p)|(?<R480p>480p|640x480|848x480)|(?<R540p>540p)|(?<R576p>576p)|(?<R720p>720p|1280x720)|(?<R1080p>1080p|1920x1080|1440p|FHD|1080i|4kto1080p)|(?<R2160p>2160p|4k[-_. ](?:UHD|HEVC|BD)|(?:UHD|HEVC|BD)[-_. ]4k))\b",
+		private static readonly Regex ResolutionRegex = new(
+			@"\b(?:(?<R360p>360p)|(?<R480p>480p|640x480|848x480)|(?<R540p>540p)|(?<R576p>576p)|(?<R720p>720p|1280x720)|(?<R1080p>1080p|1920x1080|1440p|FHD|1080i|4kto1080p)|(?<R2160p>2160p|4k[-_. ](?:UHD|HEVC|BD)|(?:UHD|HEVC|BD)[-_. ]4k))\b",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		//Handle cases where no resolution is in the release name; assume if UHD then 4k
+		private static readonly Regex ImpliedResolutionRegex = new(@"\b(?<R2160p>UHD)\b",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        //Handle cases where no resolution is in the release name; assume if UHD then 4k
-        private static readonly Regex ImpliedResolutionRegex = new(@"\b(?<R2160p>UHD)\b",
-                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex CodecRegex = new(
+			@"\b(?:(?<x264>x264)|(?<h264>h264)|(?<xvidhd>XvidHD)|(?<xvid>Xvid)|(?<divx>divx))\b",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex CodecRegex = new(@"\b(?:(?<x264>x264)|(?<h264>h264)|(?<xvidhd>XvidHD)|(?<xvid>Xvid)|(?<divx>divx))\b",
-                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex OtherSourceRegex = new(@"(?<hdtv>HD[-_. ]?TV)|(?<sdtv>SD[-_. ]?TV)",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex OtherSourceRegex = new(@"(?<hdtv>HD[-_. ]?TV)|(?<sdtv>SD[-_. ]?TV)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex AnimeBlurayRegex = new(@"bd(?:720|1080|2160)|(?<=[-_. (\[])bd(?=[-_. )\]])",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex AnimeBlurayRegex = new(@"bd(?:720|1080|2160)|(?<=[-_. (\[])bd(?=[-_. )\]])", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly Regex AnimeWebDlRegex = new(@"\[WEB\]|\(WEB[ .]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex AnimeWebDlRegex =
+			new(@"\[WEB\]|\(WEB[ .]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex HighDefPdtvRegex = new(@"hr[-_. ]ws", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex HighDefPdtvRegex =
+			new(@"hr[-_. ]ws", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex RemuxRegex = new(@"\b(?<remux>(BD)?[-_. ]?Remux)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static readonly Regex RemuxRegex = new(@"\b(?<remux>(BD)?[-_. ]?Remux)\b",
+			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 
 		public QualityModel ParseQuality(string input)
@@ -82,20 +90,14 @@ namespace Submarine.Core.Parser
 
 		private static QualityModel ParseQualityName(string name)
 		{
-			QualityResolutionModel? qualityResolution;
-
 			var normalizedName = name.Replace('_', ' ').Trim();
 
 			var revision = ParseRevisions(normalizedName);
 
-			if (RawHDRegex.IsMatch(normalizedName))
-			{
-				qualityResolution = new QualityResolutionModel(QualitySource.RAW_HD, QualityResolution.R1080_P);
-
-				return new QualityModel(qualityResolution, revision);
-			}
-
-			return new QualityModel(ParseResolutionModel(normalizedName), revision);
+			return RawHDRegex.IsMatch(normalizedName)
+				? new QualityModel(new QualityResolutionModel(QualitySource.RAW_HD, QualityResolution.R1080_P),
+					revision)
+				: new QualityModel(ParseResolutionModel(normalizedName), revision);
 		}
 
 		private static QualityResolutionModel ParseResolutionModel(string normalizedName)
@@ -111,65 +113,48 @@ namespace Submarine.Core.Parser
 				if (sourceMatch.Groups["bluray"].Success)
 				{
 					if (codecRegex.Groups["xvid"].Success || codecRegex.Groups["divx"].Success)
-					{
 						return new QualityResolutionModel(QualitySource.BLURAY, QualityResolution.R480_P);
-					}
 
 					return remuxMatch
-						? new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P)
+						? new QualityResolutionModel(QualitySource.BLURAY_REMUX,
+							resolution ?? QualityResolution.R1080_P)
 						: new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
 				}
 
 				if (sourceMatch.Groups["webdl"].Success)
-				{
 					return new QualityResolutionModel(QualitySource.WEB_DL, resolution ?? QualityResolution.R720_P);
-				}
 
 				if (sourceMatch.Groups["webrip"].Success)
-				{
 					return new QualityResolutionModel(QualitySource.WEB_RIP, resolution ?? QualityResolution.R720_P);
-				}
 
 				if (sourceMatch.Groups["hdtv"].Success)
 				{
 					if (MPEG2Regex.IsMatch(normalizedName))
-					{
 						return new QualityResolutionModel(QualitySource.RAW_HD);
-					}
 
 					if (resolution.HasValue)
-					{
 						return new QualityResolutionModel(QualitySource.TV, resolution);
-					}
 				}
 
 				if (sourceMatch.Groups["bdrip"].Success || sourceMatch.Groups["brrip"].Success)
 				{
 					if (resolution.HasValue)
-					{
 						return new QualityResolutionModel(QualitySource.BLURAY, resolution);
-					}
 				}
 
 				if (sourceMatch.Groups["dvd"].Success)
-				{
 					return new QualityResolutionModel(QualitySource.DVD);
-				}
 
 				if (sourceMatch.Groups["pdtv"].Success ||
-				    sourceMatch.Groups["sdtv"].Success ||
-				    sourceMatch.Groups["dsr"].Success ||
-				    sourceMatch.Groups["tvrip"].Success)
+					sourceMatch.Groups["sdtv"].Success ||
+					sourceMatch.Groups["dsr"].Success ||
+					sourceMatch.Groups["tvrip"].Success)
 				{
 					if (resolution == QualityResolution.R1080_P)
-					{
 						return new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P);
-					}
 
 					if (resolution == QualityResolution.R720_P || HighDefPdtvRegex.IsMatch(normalizedName))
-					{
 						return new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P);
-					}
 
 					return new QualityResolutionModel(QualitySource.TV, QualityResolution.R480_P);
 				}
@@ -177,35 +162,24 @@ namespace Submarine.Core.Parser
 
 			// Anime Bluray matching
 			if (AnimeBlurayRegex.Match(normalizedName).Success)
-			{
 				return remuxMatch
 					? new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P)
 					: new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
-			}
 
 			if (AnimeWebDlRegex.Match(normalizedName).Success)
-			{
 				return new QualityResolutionModel(QualitySource.WEB_DL, resolution ?? QualityResolution.R720_P);
-			}
 
 			if (resolution.HasValue)
-			{
 				return new QualityResolutionModel(QualitySource.TV, resolution);
-			}
 
 			var match = OtherSourceRegex.Match(normalizedName);
 
 			if (match.Groups["sdtv"].Success)
-			{
 				return new QualityResolutionModel(QualitySource.TV, QualityResolution.R480_P);
-			}
 
-			if (match.Groups["hdtv"].Success)
-			{
-				return new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P);
-			}
-
-			return new QualityResolutionModel(QualitySource.UNKNOWN);
+			return match.Groups["hdtv"].Success 
+				? new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P) 
+				: new QualityResolutionModel(QualitySource.UNKNOWN);
 		}
 
 		private static QualityResolution? ParseResolution(string normalizedName)
