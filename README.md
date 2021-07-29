@@ -8,14 +8,21 @@ Submarine is also heavily inspired by [Sonarr](https://github.com/Sonarr/Sonarr/
 ## Planned Features
 
 ### Sonarr/Radarr like Features
-- [] Support for major Platforms (Windows, Linux, macOS)
-- [] Monitoring multiple feeds for new Releases
-- [] Automatic Quality upgrade
-- [] Failed download handling
-- [] Manual searching
-- [] Full integration for popular Usenet download clients (SABnzbd & NZBGet)
-- [] Full integration for popular Bittorrent download clients (QBittorrent, Deluge, rTorrent, Transmission)
-- [] Full integration with Kodi & Plex (notification, library update)
+- [ ] Support for major Platforms (Windows, Linux, macOS)
+- [ ] Monitoring multiple feeds for new Releases
+- [ ] Automatic Quality upgrade
+- [ ] Failed download handling
+- [ ] Manual searching
+- [ ] Full integration for popular Usenet download clients (SABnzbd & NZBGet)
+- [ ] Full integration for popular Bittorrent download clients (QBittorrent, Deluge, rTorrent, Transmission)
+- [ ] Full integration with Kodi & Plex (notification, library update)
+
+### Standalone Features
+- [ ] Multiple profiles for the Series/Movie to allow grabbing multiple Releases for the same Episode/Movie
+- [ ] Swapping out the metadata provider for different epsiode/season numbering
+- [ ] A nicer UI which is responsive even when Submarine does heavy work in the background
+- [ ] No long running HTTP requests to the frontend which could timeout due to Reverse Proxy settings
+
 
 ## Getting Started
 
