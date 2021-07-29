@@ -5,6 +5,18 @@ It can monitor multiple feeds for new releases of your favorite shows and movies
 
 Submarine is also heavily inspired by [Sonarr](https://github.com/Sonarr/Sonarr/) & [Radarr](https://github.com/Radarr/Radarr/) and tries to polish already good working parts while iterating over the *not so good* working parts.
 
+## Planned Features
+
+### Sonarr/Radarr like Features
+- [] Support for major Platforms (Windows, Linux, macOS)
+- [] Monitoring multiple feeds for new Releases
+- [] Automatic Quality upgrade
+- [] Failed download handling
+- [] Manual searching
+- [] Full integration for popular Usenet download clients (SABnzbd & NZBGet)
+- [] Full integration for popular Bittorrent download clients (QBittorrent, Deluge, rTorrent, Transmission)
+- [] Full integration with Kodi & Plex (notification, library update)
+
 ## Getting Started
 
 TBA
