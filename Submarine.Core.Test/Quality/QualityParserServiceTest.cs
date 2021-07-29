@@ -1,4 +1,4 @@
-﻿using Submarine.Core.Parser;
+using Submarine.Core.Parser;
 using Submarine.Core.Quality;
 using Xunit;
 using Xunit.Abstractions;
@@ -43,6 +43,7 @@ namespace Submarine.Core.Test.Quality
 		[InlineData("Some.Nice.Movie.2021.Ger.Spa.WEBRip.x264-YG⭐", QualityResolution.R720_P)]
 		[InlineData("Anime Title - 15 (2021) [Golumpa] [English Dubbed] [WEBRip] [HD 720p]", QualityResolution.R720_P)]
 		[InlineData("Do.Not.Get.Pregnant.2.S10E20.REPACK.720p.WEB.h264-BAE", QualityResolution.R720_P)]
+		[InlineData("Series.Title.S23E17.HDTV.x264-PHOENiX[TGx]", QualityResolution.R720_P)]
 		public void Parse_QualityResolution_AsExpected(string input, QualityResolution resolution)
 		{
 			var parsed = _instance.ParseQuality(input);
