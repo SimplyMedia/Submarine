@@ -9,7 +9,7 @@ namespace Submarine.Core.Parser
 	{
 		private readonly ILogger<QualityParserService> _logger;
 
-		public QualityParserService(ILogger<QualityParserService> logger) 
+		public QualityParserService(ILogger<QualityParserService> logger)
 			=> _logger = logger;
 
 		private static readonly Regex SourceRegex = new(@"\b(?:
@@ -83,11 +83,11 @@ namespace Submarine.Core.Parser
 		private static QualityModel ParseQualityName(string name)
 		{
 			QualityResolutionModel? qualityResolution;
-			
+
 			var normalizedName = name.Replace('_', ' ').Trim();
-			
+
 			var revision = ParseRevisions(normalizedName);
-			
+
 			if (RawHDRegex.IsMatch(normalizedName))
 			{
 				qualityResolution = new QualityResolutionModel(QualitySource.RAW_HD, QualityResolution.R1080_P);
@@ -95,9 +95,14 @@ namespace Submarine.Core.Parser
 				return new QualityModel(qualityResolution, revision);
 			}
 
+			return new QualityModel(ParseResolutionModel(normalizedName), revision);
+		}
+
+		private static QualityResolutionModel ParseResolutionModel(string normalizedName)
+		{
+			var resolution = ParseResolution(normalizedName);
 			var sourceMatches = SourceRegex.Matches(normalizedName);
 			var sourceMatch = sourceMatches.LastOrDefault();
-			var resolution = ParseResolution(normalizedName);
 			var codecRegex = CodecRegex.Match(normalizedName);
 			var remuxMatch = RemuxRegex.IsMatch(normalizedName);
 
@@ -107,79 +112,48 @@ namespace Submarine.Core.Parser
 				{
 					if (codecRegex.Groups["xvid"].Success || codecRegex.Groups["divx"].Success)
 					{
-						qualityResolution = new QualityResolutionModel(QualitySource.BLURAY, QualityResolution.R480_P);
-						return new QualityModel(qualityResolution, revision);
+						return new QualityResolutionModel(QualitySource.BLURAY, QualityResolution.R480_P);
 					}
 
-					if (resolution != QualityResolution.UNKNOWN)
-					{
-						qualityResolution = new QualityResolutionModel(remuxMatch ? QualitySource.BLURAY_REMUX : QualitySource.BLURAY, resolution);
-						return new QualityModel(qualityResolution, revision);
-					}
-
-					// Assume if only Remux matches that its 1080p 
-					if (remuxMatch) {
-							qualityResolution = new QualityResolutionModel(QualitySource.BLURAY_REMUX, QualityResolution.R1080_P);
-							return new QualityModel(qualityResolution, revision);
-					}
-
-					qualityResolution = new QualityResolutionModel(QualitySource.BLURAY, QualityResolution.R720_P);
-					return new QualityModel(qualityResolution, revision);
+					return remuxMatch
+						? new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P)
+						: new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
 				}
-				
+
 				if (sourceMatch.Groups["webdl"].Success)
 				{
-					if (resolution != QualityResolution.UNKNOWN)
-					{
-						qualityResolution = new QualityResolutionModel(QualitySource.WEB_DL, resolution);
-						return new QualityModel(qualityResolution, revision);
-					}
-					
-					qualityResolution = new QualityResolutionModel(QualitySource.WEB_DL, QualityResolution.R720_P);
-					return new QualityModel(qualityResolution, revision);
+					return new QualityResolutionModel(QualitySource.WEB_DL, resolution ?? QualityResolution.R720_P);
 				}
-				
+
 				if (sourceMatch.Groups["webrip"].Success)
 				{
-					if (resolution != QualityResolution.UNKNOWN)
-					{
-						qualityResolution = new QualityResolutionModel(QualitySource.WEB_RIP, resolution);
-						return new QualityModel(qualityResolution, revision);
-					}
-					
-					qualityResolution = new QualityResolutionModel(QualitySource.WEB_RIP, QualityResolution.R720_P);
-					return new QualityModel(qualityResolution, revision);
+					return new QualityResolutionModel(QualitySource.WEB_RIP, resolution ?? QualityResolution.R720_P);
 				}
-				
+
 				if (sourceMatch.Groups["hdtv"].Success)
 				{
 					if (MPEG2Regex.IsMatch(normalizedName))
 					{
-						qualityResolution = new QualityResolutionModel(QualitySource.RAW_HD);
-						return new QualityModel(qualityResolution, revision);
+						return new QualityResolutionModel(QualitySource.RAW_HD);
 					}
 
-					if (resolution != QualityResolution.UNKNOWN)
+					if (resolution.HasValue)
 					{
-						qualityResolution = new QualityResolutionModel(QualitySource.TV, resolution);
-						return new QualityModel(qualityResolution, revision);
+						return new QualityResolutionModel(QualitySource.TV, resolution);
 					}
 				}
 
-				if (sourceMatch.Groups["bdrip"].Success ||
-				    sourceMatch.Groups["brrip"].Success)
+				if (sourceMatch.Groups["bdrip"].Success || sourceMatch.Groups["brrip"].Success)
 				{
-					if (resolution != QualityResolution.UNKNOWN)
+					if (resolution.HasValue)
 					{
-						qualityResolution = new QualityResolutionModel(QualitySource.BLURAY, resolution);
-						return new QualityModel(qualityResolution, revision);
+						return new QualityResolutionModel(QualitySource.BLURAY, resolution);
 					}
 				}
-				
+
 				if (sourceMatch.Groups["dvd"].Success)
 				{
-					qualityResolution = new QualityResolutionModel(QualitySource.DVD);
-					return new QualityModel(qualityResolution, revision);
+					return new QualityResolutionModel(QualitySource.DVD);
 				}
 
 				if (sourceMatch.Groups["pdtv"].Success ||
@@ -189,67 +163,57 @@ namespace Submarine.Core.Parser
 				{
 					if (resolution == QualityResolution.R1080_P)
 					{
-						qualityResolution = new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P);
-						return new QualityModel(qualityResolution, revision);
+						return new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P);
 					}
 
 					if (resolution == QualityResolution.R720_P || HighDefPdtvRegex.IsMatch(normalizedName))
 					{
-						qualityResolution = new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P);
-						return new QualityModel(qualityResolution, revision);
+						return new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P);
 					}
 
-					qualityResolution = new QualityResolutionModel(QualitySource.TV, QualityResolution.R480_P);
-					return new QualityModel(qualityResolution, revision);
+					return new QualityResolutionModel(QualitySource.TV, QualityResolution.R480_P);
 				}
 			}
-			
+
 			// Anime Bluray matching
 			if (AnimeBlurayRegex.Match(normalizedName).Success)
 			{
-				if (resolution != QualityResolution.UNKNOWN)
-				{
-					qualityResolution = new QualityResolutionModel(remuxMatch ? QualitySource.BLURAY_REMUX : QualitySource.BLURAY, resolution);
-					return new QualityModel(qualityResolution, revision);
-				}
-
-				// Assume if only Remux matches that its 1080p 
-				if (remuxMatch) {
-					qualityResolution = new QualityResolutionModel(QualitySource.BLURAY_REMUX, QualityResolution.R1080_P);
-					return new QualityModel(qualityResolution, revision);
-				}
-
-				qualityResolution = new QualityResolutionModel(QualitySource.BLURAY, QualityResolution.R720_P);
-				return new QualityModel(qualityResolution, revision);
+				return remuxMatch
+					? new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P)
+					: new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
 			}
-			
+
 			if (AnimeWebDlRegex.Match(normalizedName).Success)
 			{
-				if (resolution != QualityResolution.UNKNOWN)
-				{
-					qualityResolution = new QualityResolutionModel(QualitySource.WEB_DL, resolution);
-					return new QualityModel(qualityResolution, revision);
-				}
-
-				qualityResolution = new QualityResolutionModel(QualitySource.WEB_DL, QualityResolution.R720_P);
-				return new QualityModel(qualityResolution, revision);
+				return new QualityResolutionModel(QualitySource.WEB_DL, resolution ?? QualityResolution.R720_P);
 			}
 
-			if (resolution != QualityResolution.UNKNOWN)
-				return new QualityModel(new QualityResolutionModel(QualitySource.TV, resolution), revision);
+			if (resolution.HasValue)
+			{
+				return new QualityResolutionModel(QualitySource.TV, resolution);
+			}
 
-			var otherSourceMatch = OtherSourceMatch(normalizedName);
+			var match = OtherSourceRegex.Match(normalizedName);
 
-			return new QualityModel(otherSourceMatch, revision);
+			if (match.Groups["sdtv"].Success)
+			{
+				return new QualityResolutionModel(QualitySource.TV, QualityResolution.R480_P);
+			}
+
+			if (match.Groups["hdtv"].Success)
+			{
+				return new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P);
+			}
+
+			return new QualityResolutionModel(QualitySource.UNKNOWN);
 		}
 
-		private static QualityResolution ParseResolution(string normalizedName)
+		private static QualityResolution? ParseResolution(string normalizedName)
 		{
 			var match = ResolutionRegex.Match(normalizedName);
-
 			var matchImplied = ImpliedResolutionRegex.Match(normalizedName);
 
-			if (!match.Success & !matchImplied.Success) return QualityResolution.UNKNOWN;
+			if (!match.Success & !matchImplied.Success) return null;
 			if (match.Groups["R360p"].Success) return QualityResolution.R360_P;
 			if (match.Groups["R480p"].Success) return QualityResolution.R480_P;
 			if (match.Groups["R540p"].Success) return QualityResolution.R540_P;
@@ -257,16 +221,16 @@ namespace Submarine.Core.Parser
 			if (match.Groups["R720p"].Success) return QualityResolution.R720_P;
 			if (match.Groups["R1080p"].Success) return QualityResolution.R1080_P;
 			if (match.Groups["R2160p"].Success) return QualityResolution.R2160_P;
-
-			return matchImplied.Groups["R2160p"].Success ? QualityResolution.R2160_P : QualityResolution.UNKNOWN;
+			if (matchImplied.Groups["R2160p"].Success) return QualityResolution.R2160_P;
+			return null;
 		}
 
 		private static Revision ParseRevisions(string name)
 		{
 			var version = 1;
 			var isRepack = false;
-			
-			if (ProperRegex.IsMatch(name)) 
+
+			if (ProperRegex.IsMatch(name))
 				version = 2;
 
 			if (RepackRegex.IsMatch(name))
@@ -277,21 +241,10 @@ namespace Submarine.Core.Parser
 
 			var versionRegexResult = VersionRegex.Match(name);
 
-			if (versionRegexResult.Success) 
+			if (versionRegexResult.Success)
 				version = int.Parse(versionRegexResult.Groups["version"].Value);
 
 			return new Revision(version, isRepack);
-		}
-		
-		private static QualityResolutionModel OtherSourceMatch(string name)
-		{
-			var match = OtherSourceRegex.Match(name);
-
-			if (!match.Success) return new QualityResolutionModel(QualitySource.UNKNOWN);
-			if (match.Groups["sdtv"].Success) return new QualityResolutionModel(QualitySource.TV, QualityResolution.R480_P);
-			return match.Groups["hdtv"].Success 
-				? new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P) 
-				: new QualityResolutionModel(QualitySource.UNKNOWN);
 		}
 	}
 }
