@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Reflection;
 
 namespace Submarine.Core.Util.Extensions
 {
@@ -11,7 +10,7 @@ namespace Submarine.Core.Util.Extensions
 		{
 			var enumType = value.GetType();
 			var name = Enum.GetName(enumType, value);
-			return enumType.GetField(name).GetCustomAttributes(false).OfType<TAttribute>().SingleOrDefault();
+			return enumType.GetField(name).GetCustomAttribute<TAttribute>(false);
 		}
 	}
 }
