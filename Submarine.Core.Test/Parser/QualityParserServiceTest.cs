@@ -3,7 +3,7 @@ using Submarine.Core.Quality;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Submarine.Core.Test.Quality
+namespace Submarine.Core.Test.Parser
 {
 	public class QualityParserServiceTest
 	{
