@@ -5,7 +5,7 @@ using Submarine.Core.Quality;
 
 namespace Submarine.Core.Parser
 {
-	public class QualityParserService
+	public class QualityParserService : IParser<QualityModel>
 	{
 		private readonly ILogger<QualityParserService> _logger;
 
@@ -77,7 +77,7 @@ namespace Submarine.Core.Parser
 			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 
-		public QualityModel ParseQuality(string input)
+		public QualityModel Parse(string input)
 		{
 			_logger.LogDebug($"Trying to parse quality for {input}");
 
