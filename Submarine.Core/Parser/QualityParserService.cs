@@ -177,9 +177,6 @@ namespace Submarine.Core.Parser
 
 			var match = OtherSourceRegex.Match(normalizedName);
 
-			if (match.Groups["sdtv"].Success)
-				return new QualityResolutionModel(QualitySource.TV, QualityResolution.R480_P);
-
 			return match.Groups["hdtv"].Success 
 				? new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P) 
 				: new QualityResolutionModel(QualitySource.UNKNOWN);
