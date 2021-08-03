@@ -64,7 +64,7 @@ namespace Submarine.Core.Test.Parser
 		[InlineData("A.Long.Movie.Title.2019.NORDiC.REPACK.720p.BluRay.x264.DTS5.1-TWA")]
 		[InlineData("Out.Of.There.League.UK.S13E04.REPACK.720p.HDTV.x264-FaiLED")]
 		[InlineData("Do.Not.Get.Pregnant.2.S10E20.REPACK.720p.WEB.h264-BAE")]
-		public void Parse_RevisionRepack_ReturnTrue(string input)
+		public void Parse_ShouldSetIsRepackTrue_WhenReleaseIsRepack(string input)
 		{
 			var parsed = _instance.Parse(input);
 			
@@ -73,11 +73,11 @@ namespace Submarine.Core.Test.Parser
 		
 		[Theory]
 		[InlineData("Repacking for school.720p.WEB")]
-		public void Parse_RevisionRepack_ReturnFalse(string input)
+		public void Parse_ShouldSetIsRepackFalse_WhenRepackIsInTitle(string input)
 		{
 			var parsed = _instance.Parse(input);
 			
-			Assert.False(parsed.Revision.IsRepack);
+			Assert.False(parsed.Revision.IsRepack);	
 		}
 
 		[Theory]
@@ -86,7 +86,7 @@ namespace Submarine.Core.Test.Parser
 		[InlineData("Best.Anime.Movie.For.You.2019.PROPER.1080p.BluRay.x264-HAiKU")]
 		[InlineData("The Golden Episode 2008 PROPER DVDRip XviD-WRD")]
 		[InlineData("Dr.Death.S01E04.PROPER.1080p.WEB.H264-KOGi")]
-		public void Parse_RevisionProper_ReturnIncreasedVersion(string input)
+		public void Parse_ShouldIncreaseRevisionVersion_WhenReleaseIsProper(string input)
 		{
 			var parsed = _instance.Parse(input);
 			
@@ -98,7 +98,7 @@ namespace Submarine.Core.Test.Parser
 		[InlineData("The Series S04E02 1080p WEB-DL AAC 2.0 H264-PLZPROPER")]
 		[InlineData("Series 2017 S04E10 1080p WEB-DL AAC 2.0 H264-PLZPROPER")]
 		[InlineData("Series S01E17 720p WEB-DL AAC 2.0 H264-PLZPROPER")]
-		public void Parse_RevisionProper_ReturnDefaultVersion(string input)
+		public void Parse_ShouldNotIncreaseRevisionVersion_WhenGroupNameIncludesProper(string input)
 		{
 			var parsed = _instance.Parse(input);
 			
@@ -110,11 +110,20 @@ namespace Submarine.Core.Test.Parser
 		[InlineData("[SubsPlease] Anime Title - 01v2 (1080p) [CD04C72E].mkv", 2)]
 		[InlineData("[Erai-raws] Anime 3rd Season - 14 [v0][1080p][Multiple Subtitle].mkv", 0)]
 		[InlineData("Sister What 1963 S10 1080p BluRay DTS 2.0 x264-OUIJA", 1)]
-		public void Parse_RevisionVersion_ReturnVersion(string input, int version)
+		public void Parse_ShouldIncreaseRevisionVersion_WhenVersionExistsInRelease(string input, int expectedVersion)
 		{
 			var parsed = _instance.Parse(input);
 			
-			Assert.Equal(version, parsed.Revision.Version);
+			Assert.Equal(expectedVersion, parsed.Revision.Version);
 		}
+
+		[Theory]	
+		[InlineData("Sister What 1963 S10 1080p BluRay DTS 2.0 x264-OUIJA")]
+		public void Parse_ShouldNotIncreaseRevisionVersion_WhenNoVersionExistsInRelease(string input)
+		{
+			var parsed = _instance.Parse(input);
+			
+			Assert.Equal(1, parsed.Revision.Version);
+		} 
 	}
 }
