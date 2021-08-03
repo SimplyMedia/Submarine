@@ -169,6 +169,9 @@ namespace Submarine.Core.Parser
 			if (AnimeWebDlRegex.Match(normalizedName).Success)
 				return new QualityResolutionModel(QualitySource.WEB_DL, resolution ?? QualityResolution.R720_P);
 
+			if (remuxMatch)
+				return new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P);
+
 			if (resolution.HasValue)
 				return new QualityResolutionModel(QualitySource.TV, resolution);
 
