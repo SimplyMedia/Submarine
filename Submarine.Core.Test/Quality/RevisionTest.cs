@@ -10,7 +10,7 @@ namespace Submarine.Core.Test.Quality
 		[InlineData(2, 1, -1)]
 		[InlineData(1, 1, 0)]
 		[InlineData(null, 1, 1)]
-		public void Check_CompareRevisionToInitial_AsExpected(int? first, int second, int result)
+		public void CompareTo_ShouldCompareRevisionByVersion(int? first, int second, int result)
 		{
 			var firstRevision = first != null ? new Revision((int) first) : null;
 			var secondRevision = new Revision(second);

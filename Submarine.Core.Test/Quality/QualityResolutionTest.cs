@@ -6,9 +6,7 @@ namespace Submarine.Core.Test.Quality
 	public class QualityResolutionTest
 	{
 		[Fact]
-		public void Check_QualityArray_IsNotEmpty()
-		{
-			Assert.True(QualityResolutionModel.All.Length > 0);
-		}
+		public void All_ShouldNotBeEmpty() 
+			=> Assert.True(QualityResolutionModel.All.Length > 0);
 	}
 }
