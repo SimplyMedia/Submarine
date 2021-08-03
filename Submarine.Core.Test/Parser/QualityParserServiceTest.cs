@@ -106,10 +106,9 @@ namespace Submarine.Core.Test.Parser
 		}
 
 		[Theory]
-		[InlineData("[Kulot] Anime Title v3 [Dual-Audio][BDRip 1836x996 x264 FLACx2] | Complete | Kidou Senshi Gundam F91", 3)]
+		[InlineData("[Kulot] Anime Title v3 [Dual-Audio][BDRip 1836x996 x264 FLACx2] | Complete | The Anime Title F91", 3)]
 		[InlineData("[SubsPlease] Anime Title - 01v2 (1080p) [CD04C72E].mkv", 2)]
 		[InlineData("[Erai-raws] Anime 3rd Season - 14 [v0][1080p][Multiple Subtitle].mkv", 0)]
-		[InlineData("Sister What 1963 S10 1080p BluRay DTS 2.0 x264-OUIJA", 1)]
 		public void Parse_ShouldIncreaseRevisionVersion_WhenVersionExistsInRelease(string input, int expectedVersion)
 		{
 			var parsed = _instance.Parse(input);
