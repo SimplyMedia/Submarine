@@ -128,7 +128,7 @@ namespace Submarine.Core.Test.Parser
 		
 		[Theory]
 		[InlineData("Title.the.Series.2009.S01E14.Norwegian.HDTV.XviD-LOL")]
-		[InlineData("Bakugan Battle Planet S01E02 NORWEGiAN 1080p WEB H264-NORKiDS")]
+		[InlineData("The Series Title S01E02 NORWEGiAN 1080p WEB H264-NORKiDS")]
 		public void Parse_ShouldReturnNorwegian_WhenGivenNorwegianRelease(string input)
 			=> AssertLanguage(input, Language.NORWEGIAN);
 
@@ -155,7 +155,7 @@ namespace Submarine.Core.Test.Parser
 		
 		[Theory]
 		[InlineData("Title.the.Series.S03E13.Greek.PDTV.XviD-Ouzo")]
-		[InlineData("Formula 1 Drive To Survive S03 Greek 1080p NF WEB-DL x265 DDP Atmos 5.1-deef")]
+		[InlineData("Title the Series S03 Greek 1080p NF WEB-DL x265 DDP Atmos 5.1-deef")]
 		public void Parse_ShouldReturnGreek_WhenGivenGreekRelease(string input)
 			=> AssertLanguage(input, Language.GREEK);
 		
@@ -177,7 +177,7 @@ namespace Submarine.Core.Test.Parser
 		
 		[Theory]
 		[InlineData("Title.the.Series.S05E01.WEBRip.x264.AC3.LT.EN-CNN")]
-		[InlineData("Gang.Wars.Pythons.S01E05.LiTHUANiAN.1080p.WEB.h264-XME")]
+		[InlineData("Tithle.the.Series.S01E05.LiTHUANiAN.1080p.WEB.h264-XME")]
 		public void Parse_ShouldReturnLithuanian_WhenGivenLithuanianRelease(string input) 
 			=> AssertLanguage(input, Language.LITHUANIAN);
 		
@@ -198,7 +198,7 @@ namespace Submarine.Core.Test.Parser
 			=> AssertLanguage(input, Language.HINDI);
 		
 		[Theory]
-		[InlineData("Hausen.S01E01-02.ITA.GER.1080p.WEB.DD5.1.H264-MeM", new [] { Language.ITALIAN, Language.GERMAN })]
+		[InlineData("Show.S01E01-02.ITA.GER.1080p.WEB.DD5.1.H264-MeM", new [] { Language.ITALIAN, Language.GERMAN })]
 		public void Parse_ShouldReturnExpectedLanguages_WhenGivenExplicitMultiRelease(string input, IReadOnlyCollection<Language> expected)
 		{
 			var parsed = _instance.Parse(input);
