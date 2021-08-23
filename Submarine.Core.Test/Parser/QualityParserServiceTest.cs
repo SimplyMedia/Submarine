@@ -165,7 +165,7 @@ namespace Submarine.Core.Test.Parser
 		[InlineData("Series S01 PROPER COMPLETE 1080p DSNP WEB-DL DD+ 5.1 H264-TOMMY")]
 		[InlineData("Best.Anime.Movie.For.You.2019.PROPER.1080p.BluRay.x264-HAiKU")]
 		[InlineData("The Golden Episode 2008 PROPER DVDRip XviD-WRD")]
-		[InlineData("Dr.Death.S01E04.PROPER.1080p.WEB.H264-KOGi")]
+		[InlineData("The.Show.S01E04.PROPER.1080p.WEB.H264-KOGi")]
 		public void Parse_ShouldIncreaseRevisionVersion_WhenReleaseIsProper(string input)
 			=> AssertRevisionVersion(input, 2);
 
