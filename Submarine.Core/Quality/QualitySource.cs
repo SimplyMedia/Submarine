@@ -22,7 +22,7 @@ namespace Submarine.Core.Quality
 		WEB_DL,
 
 		[Name("BluRay")]
-		[Resolution(QualityResolution.R480_P, Quality.QualityResolution.R576_P, QualityResolution.R720_P, QualityResolution.R1080_P, QualityResolution.R2160_P)]
+		[Resolution(QualityResolution.R480_P, QualityResolution.R576_P, QualityResolution.R720_P, QualityResolution.R1080_P, QualityResolution.R2160_P)]
 		BLURAY,
 		
 		[Name("BluRay Remux")]
