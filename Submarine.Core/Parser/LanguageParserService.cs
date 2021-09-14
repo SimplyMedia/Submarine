@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -65,7 +66,7 @@ namespace Submarine.Core.Parser
 			var parsed = GetLanguageFromRegEx(input);
 
 			return parsed.Any() 
-				? parsed.ToList()
+				? parsed.ToImmutableList()
 				: new [] { Language.ENGLISH };
 		}
 
