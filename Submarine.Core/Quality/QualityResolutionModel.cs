@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Submarine.Core.Quality.Attributes;
-using Submarine.Core.Util;
 using Submarine.Core.Util.Extensions;
 
 namespace Submarine.Core.Quality
@@ -11,12 +9,13 @@ namespace Submarine.Core.Quality
 	{
 		public static QualityResolutionModel[] All { get; } = Enum.GetValues<QualitySource>()
 			.Select(s =>
-				s.GetAttribute<ResolutionAttribute>()?.Resolutions.Select(r => new QualityResolutionModel(s, r))
+				s.GetAttribute<ResolutionAttribute>()?.Resolutions
+					.Select(r => new QualityResolutionModel(s, r))
 				?? new[] {new QualityResolutionModel(s)})
 			.SelectMany(i => i)
 			.ToArray();
 
-		public QualitySource QualitySource { get; }
+		public QualitySource? QualitySource { get; }
 
 		public QualityResolution? Resolution { get; }
 
@@ -25,12 +24,9 @@ namespace Submarine.Core.Quality
 
 		private string? QualitySourceName { get; }
 
-		public QualityResolutionModel(QualitySource qualitySource, QualityResolution? resolution = null)
+		public QualityResolutionModel(QualitySource? qualitySource = null, QualityResolution? resolution = null)
 		{
-			var displayNameAttribute = qualitySource.GetAttribute<NameAttribute>();
-
-			if (displayNameAttribute != null)
-				QualitySourceName = displayNameAttribute.Name;
+			QualitySourceName = qualitySource?.GetAttribute<NameAttribute>()?.Name;
 
 			QualitySource = qualitySource;
 			Resolution = resolution;

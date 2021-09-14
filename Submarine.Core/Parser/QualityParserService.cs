@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Quality;
@@ -42,7 +43,7 @@ namespace Submarine.Core.Parser
 		private static readonly Regex ProperRegex = new(@"\b(?<proper>proper)\b",
 			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-		private static readonly Regex RepackRegex = new(@"\b(?<repack>repack|rerip)\b",
+		private static readonly Regex RepackRegex = new(@"\b(?<repack>repack|rerip)(?<version>[1-9])?\b",
 			RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 		private static readonly Regex VersionRegex = new(
@@ -179,7 +180,7 @@ namespace Submarine.Core.Parser
 
 			return match.Groups["hdtv"].Success 
 				? new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P) 
-				: new QualityResolutionModel(QualitySource.UNKNOWN);
+				: new QualityResolutionModel();
 		}
 
 		private static QualityResolution? ParseResolution(string normalizedName)
@@ -203,14 +204,24 @@ namespace Submarine.Core.Parser
 		{
 			var version = 1;
 			var isRepack = false;
+			var isProper = false;
 
 			if (ProperRegex.IsMatch(name))
-				version = 2;
-
-			if (RepackRegex.IsMatch(name))
 			{
 				version = 2;
+				isProper = true;
+			}
+
+			var repackMatches = RepackRegex.Matches(name);
+			var repackMatch = repackMatches.LastOrDefault();
+
+			if (repackMatch is { Success: true })
+			{
 				isRepack = true;
+
+				version = repackMatch.Groups["version"].Success 
+					? Convert.ToInt32(repackMatch.Groups["version"].Value) 
+					: 2;
 			}
 
 			var versionRegexResult = VersionRegex.Match(name);
@@ -218,7 +229,7 @@ namespace Submarine.Core.Parser
 			if (versionRegexResult.Success)
 				version = int.Parse(versionRegexResult.Groups["version"].Value);
 
-			return new Revision(version, isRepack);
+			return new Revision(version, isRepack, isProper);
 		}
 	}
 }

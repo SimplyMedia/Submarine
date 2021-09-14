@@ -1,12 +1,9 @@
-﻿using System.Collections.Generic;
-using Submarine.Core.Quality.Attributes;
+﻿using Submarine.Core.Quality.Attributes;
 
 namespace Submarine.Core.Quality
 {
 	public enum QualitySource
 	{
-		UNKNOWN,
-		
 		CAM,
 		
 		[Resolution(QualityResolution.R480_P, QualityResolution.R720_P, QualityResolution.R1080_P, QualityResolution.R2160_P)]
