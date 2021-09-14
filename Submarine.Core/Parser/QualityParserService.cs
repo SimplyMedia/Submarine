@@ -220,7 +220,7 @@ namespace Submarine.Core.Parser
 				isRepack = true;
 
 				version = repackMatch.Groups["version"].Success 
-					? Convert.ToInt32(repackMatch.Groups["version"].Value) 
+					? int.Parse(repackMatch.Groups["version"].Value) 
 					: 2;
 			}
 
