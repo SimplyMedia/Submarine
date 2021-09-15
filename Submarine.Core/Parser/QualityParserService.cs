@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Quality;
@@ -84,9 +83,7 @@ namespace Submarine.Core.Parser
 
 			input = input.Trim();
 
-			var result = ParseQualityName(input);
-
-			return result;
+			return ParseQualityName(input);
 		}
 
 		private static QualityModel ParseQualityName(string name)
