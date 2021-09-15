@@ -1,4 +1,4 @@
 ﻿namespace Submarine.Core.Quality
 {
-	public record QualityModel(QualityResolutionModel QualityResolutionModel, Revision Revision);
+	public record QualityModel(QualityResolutionModel Resolution, Revision Revision);
 }

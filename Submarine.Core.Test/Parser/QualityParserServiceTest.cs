@@ -207,14 +207,14 @@ namespace Submarine.Core.Test.Parser
 		{
 			var parsed = _instance.Parse(input);
 			
-			Assert.Equal(expected, parsed.QualityResolutionModel.QualitySource);
+			Assert.Equal(expected, parsed.Resolution.QualitySource);
 		}
 
 		private void AssertQualityResolution(string input, QualityResolution expected)
 		{
 			var parsed = _instance.Parse(input);
 			
-			Assert.Equal(expected, parsed.QualityResolutionModel.Resolution);
+			Assert.Equal(expected, parsed.Resolution.Resolution);
 		}
 	}
 }
