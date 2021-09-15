@@ -84,6 +84,7 @@ namespace Submarine.Core.Test.Parser
 		public void Parse_ShouldReturnStreamingProviderFunimation_WhenReleaseIsFunimation(string input)
 			=> AssertStreamingProvider(input, StreamingProvider.FUNIMATION);
 
+		[Theory]
 		[InlineData("Title.S01E02.2160p.RED.WEB-DL.AAC5.1.VP9-NTb")]
 		[InlineData("Title.S01E07.1080p.RED.WEB-DL.AAC5.1.VP9-NTb")]
 		[InlineData("Title.S02E02.Fight.or.Flight.1080p.RED.WEB-DL.AAC5.1.VP9-AJP69")]
