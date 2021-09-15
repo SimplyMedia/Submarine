@@ -5,12 +5,12 @@ using Xunit.Abstractions;
 
 namespace Submarine.Core.Test.Parser
 {
-	public class StreamingProviderServiceTest
+	public class StreamingProviderParserServiceTest
 	{
 		private readonly IParser<StreamingProvider?> _instance;
 
-		public StreamingProviderServiceTest(ITestOutputHelper output)
-			=> _instance = new StreamingProviderService(new XunitLogger<StreamingProviderService>(output));
+		public StreamingProviderParserServiceTest(ITestOutputHelper output)
+			=> _instance = new StreamingProviderParserService(new XunitLogger<StreamingProviderParserService>(output));
 
 		[Theory]
 		[InlineData("Movie 2021 1080p AMZN WEB-DL H 264 DDP5.1-DRG")]

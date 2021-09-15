@@ -6,11 +6,11 @@ using Submarine.Core.Util.Extensions;
 
 namespace Submarine.Core.Parser
 {
-	public class StreamingProviderService : IParser<StreamingProvider?>
+	public class StreamingProviderParserService : IParser<StreamingProvider?>
 	{
-		private readonly ILogger<StreamingProviderService> _logger;
+		private readonly ILogger<StreamingProviderParserService> _logger;
 
-		public StreamingProviderService(ILogger<StreamingProviderService> logger)
+		public StreamingProviderParserService(ILogger<StreamingProviderParserService> logger)
 			=> _logger = logger;
 		
 		public StreamingProvider? Parse(string input)
