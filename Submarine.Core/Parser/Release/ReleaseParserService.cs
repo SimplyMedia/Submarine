@@ -67,10 +67,10 @@ namespace Submarine.Core.Parser.Release
 
 			foreach (var replace in PreSubstitutionRegex)
 			{
-				if (replace.TryReplace(ref releaseTitle)) 
+				if (replace.TryReplace(ref releaseTitle))
 					_logger.LogDebug("Substituted with {ReleaseTitle}", releaseTitle);
 			}
-			
+
 			var release = new BaseRelease
 			{
 				FullTitle = input,
