@@ -10,9 +10,8 @@ namespace Submarine.Core.Parser
 {
 	public class LanguageParserService : IParser<IReadOnlyList<Language>>
 	{
-		private static readonly RegexReplace[] CleanSeriesTitleRegex = new[]
-		{
-			new RegexReplace(@".*?[_. ](S\d{2}(?:E\d{2,4})*[_. ].*)", "$1",
+		private static readonly RegexReplace[] CleanSeriesTitleRegex = {
+			new(@".*?[_. ](S\d{2}(?:E\d{2,4})*[_. ].*)", "$1",
 				RegexOptions.Compiled | RegexOptions.IgnoreCase)
 		};
 		

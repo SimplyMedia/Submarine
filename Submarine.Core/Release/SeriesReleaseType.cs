@@ -1,12 +1,5 @@
-﻿namespace Submarine.Core.Parser.Model
+namespace Submarine.Core.Release
 {
-	public enum ReleaseType
-	{
-		SERIES,
-		MOVIE,
-		UNKNOWN
-	}
-
 	public enum SeriesReleaseType
 	{
 		EPISODE,

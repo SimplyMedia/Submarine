@@ -24,5 +24,7 @@ Global
 		{B36EF99C-6759-489D-A2AA-26471A17B0EC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
