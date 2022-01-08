@@ -10,7 +10,7 @@ namespace Submarine.Core.Parser.Release;
 
 public class UsenetReleaseParserService : IParser<UsenetRelease>
 {
-	private readonly RegexReplace CleanReleaseGroupRegex = new(@"^(.*?[-._ ](S\d+E\d+)[-._ ])|(-(RP|1|NZBGeek|Obfuscated|Scrambled|sample|Pre|postbot|xpost|Rakuv[a-z0-9]*|WhiteRev|BUYMORE|AsRequested|AlternativeToRequested|GEROV|Z0iDS3N|Chamele0n|4P|4Planet|AlteZachen|RePACKPOST))+$",
+	private static readonly RegexReplace CleanReleaseGroupRegex = new(@"^(.*?[-._ ](S\d+E\d+)[-._ ])|(-(RP|1|NZBGeek|Obfuscated|Scrambled|sample|Pre|postbot|xpost|Rakuv[a-z0-9]*|WhiteRev|BUYMORE|AsRequested|AlternativeToRequested|GEROV|Z0iDS3N|Chamele0n|4P|4Planet|AlteZachen|RePACKPOST))+$",
 		string.Empty,
 		RegexOptions.IgnoreCase | RegexOptions.Compiled);
 		
