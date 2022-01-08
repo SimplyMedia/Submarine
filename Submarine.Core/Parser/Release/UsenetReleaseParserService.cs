@@ -54,6 +54,9 @@ public class UsenetReleaseParserService : IParser<UsenetRelease>
 
 			_logger.LogDebug("Reversed name detected. Converted to '{Input}'", input);
 		}
+		
+		input = WebsitePrefixRegex.Replace(input);
+		input = WebsitePostfixRegex.Replace(input);
 
 		var baseRelease = _releaseParserService.Parse(input);
 
