@@ -26,11 +26,11 @@ namespace Submarine.Core.Quality
 		BLURAY,
 		
 		[Name("BluRay Remux")]
-		[Resolution(QualityResolution.R1080_P, QualityResolution.R2160_P)]
+		[Resolution(QualityResolution.R720_P, QualityResolution.R1080_P, QualityResolution.R2160_P)]
 		BLURAY_REMUX,
 		
 		[Name("BluRay Disc")]
-		[Resolution(QualityResolution.R1080_P, QualityResolution.R2160_P)]
+		[Resolution(QualityResolution.R720_P, QualityResolution.R1080_P, QualityResolution.R2160_P)]
 		BLURAY_DISK
 	}
 }
