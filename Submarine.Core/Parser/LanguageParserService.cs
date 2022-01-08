@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -19,7 +19,7 @@ namespace Submarine.Core.Parser
 		private static readonly Regex LanguageRegex = new(
 			@"(?<french>(?:FR[A]?|french))|
 (?<spanish>spanish)|
-(?<german>(?:ger|german|videomann)\b)|
+(?<german>(?:ger|german|videomann|deu)\b)|
 (?<italian>\b(?:ita|italian)\b)|
 (?<danish>danish)|
 (?<dutch>\b(?:dutch)\b)|
