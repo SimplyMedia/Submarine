@@ -8,7 +8,7 @@ using Submarine.Core.Validator;
 
 namespace Submarine.Core.Parser.Release;
 
-public class UsenetReleaseParser : IParser<UsenetRelease>
+public class UsenetReleaseParserService : IParser<UsenetRelease>
 {
 	private readonly RegexReplace CleanReleaseGroupRegex = new(@"^(.*?[-._ ](S\d+E\d+)[-._ ])|(-(RP|1|NZBGeek|Obfuscated|Scrambled|sample|Pre|postbot|xpost|Rakuv[a-z0-9]*|WhiteRev|BUYMORE|AsRequested|AlternativeToRequested|GEROV|Z0iDS3N|Chamele0n|4P|4Planet|AlteZachen|RePACKPOST))+$",
 		string.Empty,
@@ -25,14 +25,14 @@ public class UsenetReleaseParser : IParser<UsenetRelease>
 	//Regex to detect whether the title was reversed.
 	private static readonly Regex ReversedTitleRegex = new(@"(?:^|[-._ ])(p027|p0801|\d{2,3}E\d{2}S)[-._ ]", RegexOptions.Compiled);
 	
-	private readonly ILogger<UsenetReleaseParser> _logger;
+	private readonly ILogger<UsenetReleaseParserService> _logger;
 
 	private readonly UsenetReleaseValidatorService _usenetReleaseValidatorService;
 
 	private readonly ReleaseParserService _releaseParserService;
 
-	public UsenetReleaseParser(
-		ILogger<UsenetReleaseParser> logger,
+	public UsenetReleaseParserService(
+		ILogger<UsenetReleaseParserService> logger,
 		UsenetReleaseValidatorService usenetReleaseValidatorService,
 		ReleaseParserService releaseParserService)
 	{
