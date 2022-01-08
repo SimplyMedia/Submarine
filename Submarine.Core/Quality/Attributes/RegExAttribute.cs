@@ -8,7 +8,9 @@ namespace Submarine.Core.Quality.Attributes
 	{
 		public Regex Regex { get; }
 
-		public RegExAttribute(string regex)
-			=> Regex = new Regex(regex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		public RegExAttribute(string regex, bool ignoreCase = true)
+			=> Regex = new Regex(regex, ignoreCase 
+				? RegexOptions.Compiled | RegexOptions.IgnoreCase 
+				: RegexOptions.Compiled);
 	}
 }
