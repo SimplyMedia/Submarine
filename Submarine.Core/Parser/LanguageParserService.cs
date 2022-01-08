@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -55,7 +55,7 @@ namespace Submarine.Core.Parser
 
 		public IReadOnlyList<Language> Parse(string input)
 		{
-			_logger.LogDebug($"Trying to parse language for {input}");
+			_logger.LogDebug("Trying to parse language for {Input}", input);
 
 			foreach (var regex in CleanSeriesTitleRegex)
 			{

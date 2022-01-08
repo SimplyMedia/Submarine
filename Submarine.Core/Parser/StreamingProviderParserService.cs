@@ -15,7 +15,7 @@ namespace Submarine.Core.Parser
 		
 		public StreamingProvider? Parse(string input)
 		{
-			_logger.LogDebug($"Trying to parse Streaming Provider for {input}");
+			_logger.LogDebug("Trying to parse Streaming Provider for {Input}", input);
 
 			return ParseStreamingProvider(input.Trim());
 		}
