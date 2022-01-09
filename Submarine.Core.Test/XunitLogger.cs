@@ -15,6 +15,7 @@ public class XunitLogger<T> : ILogger<T>, IDisposable
 
 	public void Dispose()
 	{
+		// Can be ignored
 	}
 
 	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
