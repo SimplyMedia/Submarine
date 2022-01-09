@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Submarine.Core.Languages;
 using Submarine.Core.Quality;
@@ -29,8 +29,6 @@ namespace Submarine.Core.Release
 
 		public Protocols Protocol { get; init; }
 		
-		public string? Hash { get; init; }
-		
 		public string? ReleaseGroup { get; init; }
 		
 		public DateTimeOffset? CreatedAt { get; init; }
@@ -52,7 +50,6 @@ namespace Submarine.Core.Release
 			MovieReleaseData = source.MovieReleaseData;
 			Quality = source.Quality;
 			Protocol = source.Protocol;
-			Hash = source.Hash;
 			ReleaseGroup = source.ReleaseGroup;
 			CreatedAt = source.CreatedAt;
 		}

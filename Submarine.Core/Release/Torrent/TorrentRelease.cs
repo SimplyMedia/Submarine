@@ -1,12 +1,11 @@
-namespace Submarine.Core.Release.Torrent
+namespace Submarine.Core.Release.Torrent;
+
+public record TorrentRelease : BaseRelease
 {
-	public record TorrentRelease : BaseRelease
-	{
-		public TorrentReleaseFlags Flags { get; init; }
-		
-		public TorrentRelease(BaseRelease baseRelease) : base(baseRelease)
-		{
-			Protocol = Protocols.BITTORRENT;
-		}
-	}
+	public TorrentReleaseFlags Flags { get; init; }
+
+	public string? Hash { get; init; }
+
+	public TorrentRelease(BaseRelease baseRelease) : base(baseRelease)
+		=> Protocol = Protocols.BITTORRENT;
 }

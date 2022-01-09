@@ -450,7 +450,6 @@ namespace Submarine.Core.Parser.Release
 				SeriesReleaseData = null,
 				MovieReleaseData = null,
 				Quality = _qualityModelParser.Parse(input),
-				Hash = null,
 				ReleaseGroup = null,
 				CreatedAt = null,
 			};
