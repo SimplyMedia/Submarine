@@ -2,7 +2,7 @@ namespace Submarine.Core.Release.Torrent;
 
 public record TorrentRelease : BaseRelease
 {
-	public TorrentReleaseFlags Flags { get; init; }
+	public TorrentReleaseFlags Flags { get; init; } = TorrentReleaseFlags.NONE;
 
 	public string? Hash { get; init; }
 
