@@ -65,10 +65,10 @@ public class UsenetReleaseValidatorServiceTest
 	public void Validate_ShouldNotThrow_WhenReleaseIsValid(string input)
 	{
 		var exception = Record.Exception(() => _instance.Validate(input));
-		
+
 		Assert.Null(exception);
 	}
-	
+
 	public static IEnumerable<object[]> GenerateRandom(int length)
 	{
 		const string charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";

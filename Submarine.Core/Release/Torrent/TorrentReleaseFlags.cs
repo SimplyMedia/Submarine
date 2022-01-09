@@ -1,6 +1,6 @@
 using System;
 
-namespace Submarine.Core.Release.Torrent; 
+namespace Submarine.Core.Release.Torrent;
 
 [Flags]
 public enum TorrentReleaseFlags

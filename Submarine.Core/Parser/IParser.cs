@@ -1,7 +1,6 @@
-﻿namespace Submarine.Core.Parser
+﻿namespace Submarine.Core.Parser;
+
+public interface IParser<out T>
 {
-	public interface IParser<out T>
-	{
-		T Parse(string input);
-	}
+	T Parse(string input);
 }

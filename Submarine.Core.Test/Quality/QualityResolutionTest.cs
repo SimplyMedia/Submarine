@@ -1,12 +1,11 @@
 ﻿using Submarine.Core.Quality;
 using Xunit;
 
-namespace Submarine.Core.Test.Quality
+namespace Submarine.Core.Test.Quality;
+
+public class QualityResolutionTest
 {
-	public class QualityResolutionTest
-	{
-		[Fact]
-		public void All_ShouldReturnMoreThanOneEntry_WhenAccessed() 
-			=> Assert.True(QualityResolutionModel.All.Length > 0);
-	}
+	[Fact]
+	public void All_ShouldReturnMoreThanOneEntry_WhenAccessed()
+		=> Assert.True(QualityResolutionModel.All.Length > 0);
 }
