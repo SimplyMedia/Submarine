@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -26,7 +26,7 @@ namespace Submarine.Core.Parser
 (?<icelandic>icelandic)|
 (?<chinese>\[(?:CH[ST]|BIG5|GB)\]|简|繁|字幕|chinese|cantonese|mandarin)|
 (?<russian>\b(?:russian|rus)\b)|
-(?<polish>\b(?:PL\W?DUB|DUB\W?PL|LEK\W?PL|PL\W?LEK|polish|PL)\b)|
+(?<polish>\b(?:PL\W?DUB|DUB\W?PL|LEK\W?PL|PL\W?LEK|polish|PL|POL)\b)|
 (?<vietnamese>vietnamese)|
 (?<swedish>swedish)|
 (?<norwegian>Norwegian)|
