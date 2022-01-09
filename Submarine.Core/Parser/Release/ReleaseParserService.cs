@@ -405,11 +405,28 @@ public class ReleaseParserService : IParser<BaseRelease>
 			RegexOptions.IgnoreCase | RegexOptions.Compiled)
 	};
 
+	//Regex to split titles that contain `AKA`.
+	private static readonly Regex AlternativeTitleRegex =
+		new(@"[ ]+AKA[ ]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+	// Regex to unbracket alternative titles.
+	private static readonly Regex BracketedAlternativeTitleRegex =
+		new(@"(.*) \([ ]*AKA[ ]+(.*)\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+	private static readonly Regex RequestInfoRegex = new(@"^(?:\[.+?\])+", RegexOptions.Compiled);
+
+	private static readonly RegexReplace SimpleTitleRegex = new(
+		@"(?:(480|720|1080|2160)[ip]|[xh][\W_]?26[45]|DD\W?5\W1|[<>?*]|848x480|1280x720|1920x1080|3840x2160|4096x2160|(8|10)b(it)?|10-bit)\s*?",
+		string.Empty,
+		RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
 	private readonly IParser<IReadOnlyList<Language>> _languageParser;
 
 	private readonly ILogger<ReleaseParserService> _logger;
 
-	private readonly IParser<QualityModel> _qualityModelParser;
+	private readonly IParser<QualityModel> _qualityParser;
+
+	private readonly IParser<string?> _releaseGroupParser;
 
 	private readonly IParser<StreamingProvider?> _streamingProviderParser;
 
@@ -417,12 +434,14 @@ public class ReleaseParserService : IParser<BaseRelease>
 		ILogger<ReleaseParserService> logger,
 		IParser<IReadOnlyList<Language>> languageParser,
 		IParser<StreamingProvider?> streamingProviderParser,
-		IParser<QualityModel> qualityModelParser)
+		IParser<QualityModel> qualityParser,
+		IParser<string?> releaseGroupParser)
 	{
 		_logger = logger;
 		_languageParser = languageParser;
 		_streamingProviderParser = streamingProviderParser;
-		_qualityModelParser = qualityModelParser;
+		_qualityParser = qualityParser;
+		_releaseGroupParser = releaseGroupParser;
 	}
 
 	public BaseRelease Parse(string input)
@@ -442,22 +461,55 @@ public class ReleaseParserService : IParser<BaseRelease>
 			if (replace.TryReplace(ref releaseTitle))
 				_logger.LogDebug("Substituted with {ReleaseTitle}", releaseTitle);
 
+		var simpleTitle = SimpleTitleRegex.Replace(releaseTitle);
+
+		var (fullTitle, mainTitle, readOnlyList) = ParseTitle(simpleTitle);
+
 		var release = new BaseRelease
 		{
-			FullTitle = input,
-			Title = null,
-			Aliases = null,
-
+			FullTitle = fullTitle,
+			Title = mainTitle,
+			Aliases = readOnlyList,
 			Languages = _languageParser.Parse(input),
 			StreamingProvider = _streamingProviderParser.Parse(input),
 			Type = ReleaseType.UNKNOWN,
-			SeriesReleaseData = null,
-			MovieReleaseData = null,
-			Quality = _qualityModelParser.Parse(input),
-			ReleaseGroup = null,
-			CreatedAt = null
+			Quality = _qualityParser.Parse(input),
+			ReleaseGroup = _releaseGroupParser.Parse(input)
 		};
 
 		return release;
+	}
+
+	private Title ParseTitle(string input)
+	{
+		var titles = new List<string>();
+
+		//Delete parentheses of the form (aka ...).
+		var unbracketedName = BracketedAlternativeTitleRegex.Replace(input, "$1 AKA $2");
+
+		//Split by AKA.
+		titles.AddRange(AlternativeTitleRegex
+			.Split(unbracketedName)
+			.Where(alternativeName => alternativeName.IsNotNullOrWhitespace()));
+
+		// Use last part of the splitted Title to go on and take others as aliases.
+		var parsableTitle = titles.Last();
+		titles.RemoveAt(titles.Count - 1);
+
+		foreach (var regex in ReportTitleRegex)
+		{
+			var match = regex.Matches(parsableTitle);
+
+			if (match.Count == 0) continue;
+
+			var title = match[0].Groups["title"].Value.Replace('.', ' ').Replace('_', ' ');
+
+			title = RequestInfoRegex.Replace(title, "").Trim(' ');
+
+			if (title.IsNotNullOrWhitespace())
+				return new Title(input, title, titles);
+		}
+
+		throw new UnparsableReleaseException("does not match any regex");
 	}
 }
