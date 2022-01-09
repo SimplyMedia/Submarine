@@ -13,5 +13,7 @@ public static class StringExtensions
 
 		return new string(chars);
 	}
-	}
+
+	public static bool IsNotNullOrWhitespace(this string str)
+		=> !string.IsNullOrWhiteSpace(str);
 }
