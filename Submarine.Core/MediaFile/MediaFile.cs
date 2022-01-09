@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Submarine.Core.MediaFile;
 
-public class MediaFile
+public static class MediaFile
 {
 	public static readonly HashSet<string> MediaFileExtensions = new()
 	{
