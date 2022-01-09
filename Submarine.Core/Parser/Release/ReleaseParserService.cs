@@ -1,16 +1,28 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Languages;
 using Submarine.Core.Quality;
 using Submarine.Core.Release;
+using Submarine.Core.Release.Exceptions;
 using Submarine.Core.Release.Util;
+using Submarine.Core.Util.Extensions;
 using Submarine.Core.Util.RegEx;
 
 namespace Submarine.Core.Parser.Release;
 
 public class ReleaseParserService : IParser<BaseRelease>
 {
+	private static readonly RegexReplace WebsitePrefixRegex = new(
+		@"^\[\s*[-a-z]+(\.[a-z]+)+\s*\][- ]*|^www\.[a-z]+\.(?:com|net|org)[ -]*",
+		string.Empty,
+		RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+	private static readonly RegexReplace WebsitePostfixRegex = new(@"\[\s*[-a-z]+(\.[a-z0-9]+)+\s*\]$",
+		string.Empty,
+		RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
 	private static readonly RegexReplace[] PreSubstitutionRegex =
 	{
 		// Korean series without season number, replace with S01Exxx and remove airdate
@@ -423,11 +435,11 @@ public class ReleaseParserService : IParser<BaseRelease>
 	{
 		_logger.LogDebug("Starting Parse of {Input}", input);
 
-		return ParseRelease(input.Trim());
-	}
+		input = input.Trim();
 
-	private BaseRelease ParseRelease(string input)
-	{
+		input = WebsitePrefixRegex.Replace(input);
+		input = WebsitePostfixRegex.Replace(input);
+
 		var releaseTitle = ReleaseUtil.RemoveFileExtension(input);
 
 		releaseTitle = releaseTitle.Replace("【", "[").Replace("】", "]");

@@ -15,19 +15,10 @@ public class UsenetReleaseParserService : IParser<UsenetRelease>
 		string.Empty,
 		RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-	private static readonly RegexReplace WebsitePrefixRegex = new(
-		@"^\[\s*[-a-z]+(\.[a-z]+)+\s*\][- ]*|^www\.[a-z]+\.(?:com|net|org)[ -]*",
-		string.Empty,
-		RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-	private static readonly RegexReplace WebsitePostfixRegex = new(@"\[\s*[-a-z]+(\.[a-z0-9]+)+\s*\]$",
-		string.Empty,
-		RegexOptions.IgnoreCase | RegexOptions.Compiled);
-	
 	//Regex to detect whether the title was reversed.
 	private static readonly Regex ReversedTitleRegex =
 		new(@"(?:^|[-._ ])(p027|p0801|\d{2,3}E\d{2}S)[-._ ]", RegexOptions.Compiled);
-	
+
 	private readonly ILogger<UsenetReleaseParserService> _logger;
 
 	private readonly ReleaseParserService _releaseParserService;
@@ -43,11 +34,11 @@ public class UsenetReleaseParserService : IParser<UsenetRelease>
 		_usenetReleaseValidatorService = usenetReleaseValidatorService;
 		_releaseParserService = releaseParserService;
 	}
-	
+
 	public UsenetRelease Parse(string input)
 	{
 		_usenetReleaseValidatorService.Validate(input);
-			
+
 		if (ReversedTitleRegex.IsMatch(input))
 		{
 			var titleWithoutExtension = ReleaseUtil.RemoveFileExtension(input).Reverse();
@@ -57,9 +48,8 @@ public class UsenetReleaseParserService : IParser<UsenetRelease>
 
 			_logger.LogDebug("Reversed name detected. Converted to '{Input}'", input);
 		}
-		
-		input = WebsitePrefixRegex.Replace(input);
-		input = WebsitePostfixRegex.Replace(input);
+
+		input = CleanReleaseGroupRegex.Replace(input);
 
 		var baseRelease = _releaseParserService.Parse(input);
 
