@@ -463,13 +463,13 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 		var simpleTitle = SimpleTitleRegex.Replace(releaseTitle);
 
-		var (fullTitle, mainTitle, readOnlyList) = ParseTitle(simpleTitle);
+		var (main, aliases) = ParseTitle(simpleTitle);
 
 		var release = new BaseRelease
 		{
-			FullTitle = fullTitle,
-			Title = mainTitle,
-			Aliases = readOnlyList,
+			FullTitle = input,
+			Title = main,
+			Aliases = aliases,
 			Languages = _languageParser.Parse(input),
 			StreamingProvider = _streamingProviderParser.Parse(input),
 			Type = ReleaseType.UNKNOWN,
@@ -507,7 +507,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			title = RequestInfoRegex.Replace(title, "").Trim(' ');
 
 			if (title.IsNotNullOrWhitespace())
-				return new Title(input, title, titles);
+				return new Title(title, titles);
 		}
 
 		throw new UnparsableReleaseException("does not match any regex");
