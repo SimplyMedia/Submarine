@@ -47,6 +47,7 @@ namespace Submarine.Core.Test.Parser
 		[InlineData("Title.the.Series.S04E15.Brotherly.Love.GERMAN.DUBBED.WS.WEBRiP.XviD.REPACK-TVP")]
 		[InlineData("The Series Title - S02E16 - Kampfhaehne - mkv - by Videomann")]
 		[InlineData("The Title S03 1080i GER Blu-ray AVC DTS-HD MA 2.0-NOGROUP")]
+		[InlineData("Series.Title.S01E03.Ger.Dub.AAC.1080p.WebDL.x264-TKP21")]
 		[InlineData("A.Very.Small.Detective.2021.1080p.DEU.Blu-ray.AVC.DTS-HD.MA.5.1-Mono")]
 		public void Parse_ShouldReturnGerman_WhenGivenGermanRelease(string input) 
 			=> AssertLanguage(input, Language.GERMAN);
