@@ -79,7 +79,7 @@ namespace Submarine.Core.Parser
 
 		public QualityModel Parse(string input)
 		{
-			_logger.LogDebug($"Trying to parse quality for {input}");
+			_logger.LogDebug("Trying to parse quality for {Input}", input);
 
 			input = input.Trim();
 
