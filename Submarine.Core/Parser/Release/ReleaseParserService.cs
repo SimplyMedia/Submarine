@@ -52,8 +52,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Daily episodes without title (2018-10-12, 20181012) (Strict pattern to avoid false matches)
-		new(
-			@"^(?<airyear>19[6-9]\d|20\d\d)(?<sep>[-_]?)(?<airmonth>0\d|1[0-2])\k<sep>(?<airday>[0-2]\d|3[01])(?!\d)",
+		new(@"^(?<airyear>19[6-9]\d|20\d\d)(?<sep>[-_]?)(?<airmonth>0\d|1[0-2])\k<sep>(?<airday>[0-2]\d|3[01])(?!\d)",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Multi-Part episodes without a title (S01E05.S01E06)
@@ -65,8 +64,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Episodes without a title, Multi (S01E04E05, 1x04x05, etc)
-		new(
-			@"^(?:S?(?<season>(?<!\d+)(?:\d{1,2}|\d{4})(?!\d+))(?:(?:[-_]|[ex]){1,2}(?<episode>\d{2,3}(?!\d+))){2,})",
+		new(@"^(?:S?(?<season>(?<!\d+)(?:\d{1,2}|\d{4})(?!\d+))(?:(?:[-_]|[ex]){1,2}(?<episode>\d{2,3}(?!\d+))){2,})",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Episodes without a title, Single (S01E05, 1x05)
@@ -164,8 +162,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Anime - Title Absolute Episode Number (Year) [SubGroup]
-		new(
-			@"^(?<title>.+?)[-_. ]+(?<absoluteepisode>(?<!\d+)\d{2}(?!\d+))[-_. ](\(\d{4}\))[-_. ]\[(?<subgroup>.+?)\]",
+		new(@"^(?<title>.+?)[-_. ]+(?<absoluteepisode>(?<!\d+)\d{2}(?!\d+))[-_. ](\(\d{4}\))[-_. ]\[(?<subgroup>.+?)\]",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Anime - Title Absolute Episode Number [Hash]
@@ -231,8 +228,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Mini-Series, treated as season 1, episodes are labelled as Part One/Two/Three/...Nine, Part.One, Part_One
-		new(
-			@"^(?<title>.+?)(?:\W+(?:Part[-._ ](?<episode>One|Two|Three|Four|Five|Six|Seven|Eight|Nine)(?>[-._ ])))",
+		new(@"^(?<title>.+?)(?:\W+(?:Part[-._ ](?<episode>One|Two|Three|Four|Five|Six|Seven|Eight|Nine)(?>[-._ ])))",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Mini-Series, treated as season 1, episodes are labelled as XofY
@@ -303,8 +299,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		// Anime - Absolute episode number in square brackets
-		new(
-			@"^(?:\[(?<subgroup>.+?)\][-_. ]?)(?<title>.+?)[-_. ]+?\[(?<absoluteepisode>\d{2,3}(\.\d{1,2})?(?!\d+))\]",
+		new(@"^(?:\[(?<subgroup>.+?)\][-_. ]?)(?<title>.+?)[-_. ]+?\[(?<absoluteepisode>\d{2,3}(\.\d{1,2})?(?!\d+))\]",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Season only releases
@@ -363,8 +358,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//iTunes Season 1\05 Title (Quality).ext
-		new(
-			@"^(?:Season(?:_|-|\s|\.)(?<season>(?<!\d+)\d{1,2}(?!\d+)))(?:_|-|\s|\.)(?<episode>(?<!\d+)\d{1,2}(?!\d+))",
+		new(@"^(?:Season(?:_|-|\s|\.)(?<season>(?<!\d+)\d{1,2}(?!\d+)))(?:_|-|\s|\.)(?<episode>(?<!\d+)\d{1,2}(?!\d+))",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//iTunes 1-05 Title (Quality).ext
