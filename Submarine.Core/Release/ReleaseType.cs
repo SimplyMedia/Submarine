@@ -1,9 +1,8 @@
-﻿namespace Submarine.Core.Release
+﻿namespace Submarine.Core.Release;
+
+public enum ReleaseType
 {
-	public enum ReleaseType
-	{
-		SERIES,
-		MOVIE,
-		UNKNOWN
-	}
+	SERIES,
+	MOVIE,
+	UNKNOWN
 }

@@ -1,11 +1,10 @@
-namespace Submarine.Core.Release
+namespace Submarine.Core.Release;
+
+public enum SeriesReleaseType
 {
-	public enum SeriesReleaseType
-	{
-		EPISODE,
-		SPECIAL,
-		FULL_SEASON,
-		PARTIAL_SEASON,
-		MULTI_SEASON,
-	}
+	EPISODE,
+	SPECIAL,
+	FULL_SEASON,
+	PARTIAL_SEASON,
+	MULTI_SEASON
 }

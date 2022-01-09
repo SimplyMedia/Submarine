@@ -1,7 +1,5 @@
-namespace Submarine.Core.Release
+namespace Submarine.Core.Release;
+
+public class MovieReleaseData
 {
-	public class MovieReleaseData
-	{
-		
-	}
 }
