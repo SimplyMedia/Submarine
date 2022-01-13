@@ -509,6 +509,6 @@ public class ReleaseParserService : IParser<BaseRelease>
 				return new Title(title, titles.Select(alias => alias.Replace(".", " ").Trim()).ToList());
 		}
 
-		throw new UnparsableReleaseException("does not match any regex");
+		throw new NotParsableReleaseException("does not match any regex");
 	}
 }
