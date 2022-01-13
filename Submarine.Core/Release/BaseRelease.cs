@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Submarine.Core.Languages;
 using Submarine.Core.Quality;
@@ -27,7 +27,7 @@ public record BaseRelease
 
 	public QualityModel Quality { get; init; }
 
-	public Protocols Protocol { get; init; }
+	public Protocol Protocol { get; init; }
 
 	public string? ReleaseGroup { get; init; }
 

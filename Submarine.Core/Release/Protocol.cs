@@ -1,6 +1,6 @@
 namespace Submarine.Core.Release;
 
-public enum Protocols
+public enum Protocol
 {
 	BITTORRENT,
 	USENET,

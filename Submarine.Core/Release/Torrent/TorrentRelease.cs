@@ -7,5 +7,5 @@ public record TorrentRelease : BaseRelease
 	public string? Hash { get; init; }
 
 	public TorrentRelease(BaseRelease baseRelease) : base(baseRelease)
-		=> Protocol = Protocols.BITTORRENT;
+		=> Protocol = Protocol.BITTORRENT;
 }
