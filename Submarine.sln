@@ -8,6 +8,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{48563F82-A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Submarine.Core.Test", "Submarine.Core.Test\Submarine.Core.Test.csproj", "{B36EF99C-6759-489D-A2AA-26471A17B0EC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Application", "Application", "{45CE5F43-3304-4DA9-931F-9EC8C45F025B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Submarine.Api", "Submarine.Api\Submarine.Api.csproj", "{68D14E3D-D164-4911-9190-8B6EC9963ADD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,6 +20,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930} = {A1A8359E-C882-4010-BF24-C6A1A640D493}
 		{B36EF99C-6759-489D-A2AA-26471A17B0EC} = {48563F82-ADEB-4224-9FBF-F087EFBEADDF}
+		{68D14E3D-D164-4911-9190-8B6EC9963ADD} = {45CE5F43-3304-4DA9-931F-9EC8C45F025B}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B36EF99C-6759-489D-A2AA-26471A17B0EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -26,5 +31,9 @@ Global
 		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EFAF2F1A-131B-4818-8C0F-E2FB451BD930}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68D14E3D-D164-4911-9190-8B6EC9963ADD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68D14E3D-D164-4911-9190-8B6EC9963ADD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68D14E3D-D164-4911-9190-8B6EC9963ADD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68D14E3D-D164-4911-9190-8B6EC9963ADD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
