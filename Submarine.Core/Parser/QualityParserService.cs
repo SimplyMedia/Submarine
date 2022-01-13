@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Quality;
@@ -38,6 +38,9 @@ public class QualityParserService : IParser<QualityModel>
 		RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 	private static readonly Regex RepackRegex = new(@"\b(?<repack>repack|rerip)(?<version>[1-9])?\b",
+		RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+	private static readonly Regex RealRegex = new(@"\b(?<real>real)\b",
 		RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 	private static readonly Regex VersionRegex = new(
@@ -200,7 +203,7 @@ public class QualityParserService : IParser<QualityModel>
 		var version = 1;
 		var isRepack = false;
 		var isProper = false;
-
+		var isReal = false;
 
 		var repackMatches = RepackRegex.Matches(name);
 		var repackMatch = repackMatches.LastOrDefault();
@@ -230,11 +233,17 @@ public class QualityParserService : IParser<QualityModel>
 				: version + 1;
 		}
 
+		if (RealRegex.IsMatch(name))
+		{
+			isReal = true;
+			version += 1;
+		}
+
 		var versionRegexResult = VersionRegex.Match(name);
 
 		if (versionRegexResult.Success)
 			version = int.Parse(versionRegexResult.Groups["version"].Value);
 
-		return new Revision(version, isRepack, isProper);
+		return new Revision(version, isRepack, isProper, isReal);
 	}
 }

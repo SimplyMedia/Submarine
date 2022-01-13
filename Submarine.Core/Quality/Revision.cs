@@ -2,7 +2,12 @@ using System;
 
 namespace Submarine.Core.Quality;
 
-public record Revision(int Version = 1, bool IsRepack = false, bool IsProper = false) : IComparable<Revision>
+public record Revision(
+		int Version = 1,
+		bool IsRepack = false,
+		bool IsProper = false,
+		bool IsReal = false)
+	: IComparable<Revision>
 {
 	public int CompareTo(Revision? other)
 	{
