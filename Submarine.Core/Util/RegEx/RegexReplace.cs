@@ -25,10 +25,10 @@ public class RegexReplace
 			? _regex.Replace(input, _replacementFunc)
 			: _regex.Replace(input, _replacementFormat!);
 
-	public bool TryReplace(ref string input)
+	public bool TryReplace(string input, out string replaced)
 	{
 		var result = _regex.IsMatch(input);
-		input = _replacementFunc != null
+		replaced = _replacementFunc != null
 			? _regex.Replace(input, _replacementFunc)
 			: _regex.Replace(input, _replacementFormat!);
 		return result;

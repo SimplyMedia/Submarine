@@ -58,7 +58,7 @@ public class LanguageParserService : IParser<IReadOnlyList<Language>>
 		_logger.LogDebug("Trying to parse language for {Input}", input);
 
 		foreach (var regex in CleanSeriesTitleRegex)
-			if (regex.TryReplace(ref input))
+			if (regex.TryReplace(input, out input))
 				break;
 
 		var parsed = GetLanguageFromRegEx(input);

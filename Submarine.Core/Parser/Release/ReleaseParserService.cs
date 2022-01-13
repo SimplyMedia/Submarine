@@ -458,7 +458,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 		releaseTitle = releaseTitle.Replace("【", "[").Replace("】", "]");
 
 		foreach (var replace in PreSubstitutionRegex)
-			if (replace.TryReplace(ref releaseTitle))
+			if (replace.TryReplace(releaseTitle, out releaseTitle))
 				_logger.LogDebug("Substituted with {ReleaseTitle}", releaseTitle);
 
 		var simpleTitle = SimpleTitleRegex.Replace(releaseTitle);
