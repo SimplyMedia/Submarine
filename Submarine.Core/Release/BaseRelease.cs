@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Submarine.Core.Languages;
 using Submarine.Core.Quality;
 using Submarine.Core.Release.Torrent;
@@ -31,8 +30,6 @@ public record BaseRelease
 
 	public string? ReleaseGroup { get; init; }
 
-	public DateTimeOffset? CreatedAt { get; init; }
-
 	public BaseRelease()
 	{
 	}
@@ -50,7 +47,6 @@ public record BaseRelease
 		Quality = source.Quality;
 		Protocol = source.Protocol;
 		ReleaseGroup = source.ReleaseGroup;
-		CreatedAt = source.CreatedAt;
 	}
 
 	public TorrentRelease ToTorrent()
