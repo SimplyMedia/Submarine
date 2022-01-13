@@ -168,13 +168,6 @@ public class QualityParserServiceTest
 	[InlineData("The.Show.S01E04.PROPER.1080p.WEB.H264-KOGi")]
 	public void Parse_ShouldIncreaseRevisionVersion_WhenReleaseIsProper(string input)
 		=> AssertRevisionVersion(input, 2);
-	
-	[Theory]
-	[InlineData("Movie 1988 2005 REPACK2 1080p BluRay Opus 2.0 x264-D-Z0N3", 3)]
-	[InlineData("Movie Title: Long Movie Title 2020 REPACK2 2160p UHD BluRay REMUX DV HDR10+ HEVC TrueHD 7.1 Atmos-FraMeSToR", 3)]
-	[InlineData("Series S19E07 PROPER2 1080p AMZN WEB-DL DD+ 2.0 H.264-NTb", 3)]
-	public void Parse_ShouldIdentifyRevisionVersion_WhenProperOrRepackContainsNumber(string input, int expectedVersion)
-		=> AssertRevisionVersion(input, expectedVersion);
 
 	[Theory]
 	[InlineData("Series 2018 S03E15 1080p WEB-DL AAC 2.0 H264-PLZPROPER")]
@@ -183,6 +176,15 @@ public class QualityParserServiceTest
 	[InlineData("Series S01E17 720p WEB-DL AAC 2.0 H264-PLZPROPER")]
 	public void Parse_ShouldNotIncreaseRevisionVersion_WhenGroupNameIncludesProper(string input)
 		=> AssertRevisionVersion(input, 1);
+
+	[Theory]
+	[InlineData("Movie 1988 2005 REPACK2 1080p BluRay Opus 2.0 x264-D-Z0N3", 3)]
+	[InlineData(
+		"Movie Title: Long Movie Title 2020 REPACK2 2160p UHD BluRay REMUX DV HDR10+ HEVC TrueHD 7.1 Atmos-FraMeSToR",
+		3)]
+	[InlineData("Series S19E07 PROPER2 1080p AMZN WEB-DL DD+ 2.0 H.264-NTb", 3)]
+	public void Parse_ShouldIdentifyRevisionVersion_WhenProperOrRepackContainsNumber(string input, int expectedVersion)
+		=> AssertRevisionVersion(input, expectedVersion);
 
 	[Theory]
 	[InlineData("[Kulot] Anime Title v3 [Dual-Audio][BDRip 1836x996 x264 FLACx2] | Complete | The Anime Title F91", 3)]
