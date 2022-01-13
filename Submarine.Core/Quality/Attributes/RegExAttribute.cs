@@ -8,8 +8,6 @@ public class RegExAttribute : Attribute
 {
 	public Regex Regex { get; }
 
-	public RegExAttribute(string regex, bool ignoreCase = true)
-		=> Regex = new Regex(regex, ignoreCase
-			? RegexOptions.Compiled | RegexOptions.IgnoreCase
-			: RegexOptions.Compiled);
+	public RegExAttribute(string regex, RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase)
+		=> Regex = new Regex(regex, options);
 }
