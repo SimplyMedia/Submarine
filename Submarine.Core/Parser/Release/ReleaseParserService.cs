@@ -446,7 +446,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 	public BaseRelease Parse(string input)
 	{
-		_logger.LogDebug("Starting Parse of {Input}", input);
+		_logger.LogDebug("Starting Basic Parse of {Input}", input);
 
 		input = input.Trim();
 

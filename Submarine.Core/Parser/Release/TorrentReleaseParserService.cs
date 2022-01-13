@@ -27,7 +27,7 @@ public class TorrentReleaseParserService : IParser<TorrentRelease>
 
 	public TorrentRelease Parse(string input)
 	{
-		_logger.LogDebug("Starting Parse of {Input}", input);
+		_logger.LogDebug("Starting Parse of {Input} with Bittorrent standards", input);
 
 		input = CleanTorrentSuffixRegex.Replace(input);
 

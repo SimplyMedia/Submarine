@@ -38,6 +38,8 @@ public class UsenetReleaseParserService : IParser<UsenetRelease>
 
 	public UsenetRelease Parse(string input)
 	{
+		_logger.LogDebug("Starting Parse of {Input} with Usenet standards", input);
+
 		_usenetReleaseValidatorService.Validate(input);
 
 		if (ReversedTitleRegex.IsMatch(input))
