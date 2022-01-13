@@ -407,7 +407,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 	//Regex to split titles that contain `AKA`.
 	private static readonly Regex AlternativeTitleRegex =
-		new(@"[ ]+AKA[ ]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		new(@"[ .]+AKA[ .]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 	// Regex to unbracket alternative titles.
 	private static readonly Regex BracketedAlternativeTitleRegex =
@@ -482,15 +482,14 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 	private Title ParseTitle(string input)
 	{
-		var titles = new List<string>();
-
 		//Delete parentheses of the form (aka ...).
 		var unbracketedName = BracketedAlternativeTitleRegex.Replace(input, "$1 AKA $2");
 
 		//Split by AKA.
-		titles.AddRange(AlternativeTitleRegex
+		var titles = AlternativeTitleRegex
 			.Split(unbracketedName)
-			.Where(alternativeName => alternativeName.IsNotNullOrWhitespace()));
+			.Where(alternativeName => alternativeName.IsNotNullOrWhitespace())
+			.ToList();
 
 		// Use last part of the splitted Title to go on and take others as aliases.
 		var parsableTitle = titles.Last();
@@ -507,7 +506,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			title = RequestInfoRegex.Replace(title, "").Trim(' ');
 
 			if (title.IsNotNullOrWhitespace())
-				return new Title(title, titles);
+				return new Title(title, titles.Select(alias => alias.Replace(".", " ").Trim()).ToList());
 		}
 
 		throw new UnparsableReleaseException("does not match any regex");
