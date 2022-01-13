@@ -242,7 +242,7 @@ public class QualityParserServiceTest
 	{
 		var parsed = _instance.Parse(input);
 
-		Assert.Equal(expected, parsed.Resolution.QualitySource);
+		Assert.Equal(expected, parsed.Resolution.Source);
 	}
 
 	private void AssertQualityResolution(string input, QualityResolution expected)

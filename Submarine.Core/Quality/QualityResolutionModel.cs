@@ -15,12 +15,12 @@ public class QualityResolutionModel
 		.SelectMany(i => i)
 		.ToArray();
 
-	public QualitySource? QualitySource { get; }
+	public QualitySource? Source { get; }
 
 	public QualityResolution? Resolution { get; }
 
 	public string Name
-		=> $"{QualitySourceName ?? QualitySource.ToString()}{(Resolution != null ? $"-{ResolutionHumanReadable}" : "")}";
+		=> $"{QualitySourceName ?? Source.ToString()}{(Resolution != null ? $"-{ResolutionHumanReadable}" : "")}";
 
 	private string? QualitySourceName { get; }
 
@@ -30,11 +30,11 @@ public class QualityResolutionModel
 			.Replace("_", "")
 			.ToLower();
 
-	public QualityResolutionModel(QualitySource? qualitySource = null, QualityResolution? resolution = null)
+	public QualityResolutionModel(QualitySource? source = null, QualityResolution? resolution = null)
 	{
-		QualitySourceName = qualitySource?.GetAttribute<NameAttribute>()?.Name;
+		QualitySourceName = source?.GetAttribute<NameAttribute>()?.Name;
 
-		QualitySource = qualitySource;
+		Source = source;
 		Resolution = resolution;
 	}
 }
