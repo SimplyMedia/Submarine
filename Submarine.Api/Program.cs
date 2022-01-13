@@ -16,6 +16,9 @@ using Submarine.Core.Validator;
 
 var builder = WebApplication.CreateBuilder(args);
 
+const string logTemplate =
+	"[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}\n{Exception}";
+
 builder.Host.UseSerilog((context, _, loggerConfiguration) =>
 {
 	loggerConfiguration
@@ -29,9 +32,9 @@ builder.Host.UseSerilog((context, _, loggerConfiguration) =>
 		.Enrich.WithProperty(ThreadNameEnricher.ThreadNamePropertyName, "Main")
 		.Enrich.FromLogContext()
 		.WriteTo.Console(
-			outputTemplate:
-			"[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] [{ThreadName}] {Message:lj}\n{Exception}",
-			theme: SystemConsoleTheme.Colored);
+			outputTemplate: logTemplate,
+			theme: SystemConsoleTheme.Colored)
+		.WriteTo.Async(a => a.File("log.txt", rollingInterval: RollingInterval.Day, outputTemplate: logTemplate));
 });
 
 // Add services to the container.
