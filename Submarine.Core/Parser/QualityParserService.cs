@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Quality;
@@ -34,7 +34,7 @@ public class QualityParserService : IParser<QualityModel>
 
 	private static readonly Regex MPEG2Regex = new(@"\b(?<mpeg2>MPEG[-_. ]?2)\b");
 
-	private static readonly Regex ProperRegex = new(@"\b(?<proper>proper)\b",
+	private static readonly Regex ProperRegex = new(@"\b(?<proper>proper)(?<version>[1-9])?\b",
 		RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 	private static readonly Regex RepackRegex = new(@"\b(?<repack>repack|rerip)(?<version>[1-9])?\b",
@@ -201,11 +201,6 @@ public class QualityParserService : IParser<QualityModel>
 		var isRepack = false;
 		var isProper = false;
 
-		if (ProperRegex.IsMatch(name))
-		{
-			version = 2;
-			isProper = true;
-		}
 
 		var repackMatches = RepackRegex.Matches(name);
 		var repackMatch = repackMatches.LastOrDefault();
@@ -214,9 +209,25 @@ public class QualityParserService : IParser<QualityModel>
 		{
 			isRepack = true;
 
-			version = repackMatch.Groups["version"].Success
-				? int.Parse(repackMatch.Groups["version"].Value)
-				: 2;
+			var versionGroup = repackMatch.Groups["version"];
+
+			version = versionGroup.Success && int.TryParse(versionGroup.Value, out var repackVersion)
+				? repackVersion + 1
+				: version + 1;
+		}
+
+		var properMatches = ProperRegex.Matches(name);
+		var properMatch = properMatches.LastOrDefault();
+
+		if (properMatch is { Success: true })
+		{
+			isProper = true;
+
+			var versionGroup = properMatch.Groups["version"];
+
+			version = versionGroup.Success && int.TryParse(versionGroup.Value, out var properVersion)
+				? properVersion + 1
+				: version + 1;
 		}
 
 		var versionRegexResult = VersionRegex.Match(name);
