@@ -145,20 +145,42 @@ public class QualityParserServiceTest
 	public void Parse_ShouldReturnQualityResolution360p_WhenReleaseIs360p(string input)
 		=> AssertQualityResolution(input, QualityResolution.R360_P);
 
-
 	[Theory]
 	[InlineData("Movie 1963 REPACK 1080p BluRay REMUX AVC FLAC 1 0-BLURANiUM")]
 	[InlineData("11 Never Dying Elders 2019 REPACK 1080p BluRay REMUX AVC DTS-HD MA 5.1-NOAH")]
 	[InlineData("A.Long.Movie.Title.2019.NORDiC.REPACK.720p.BluRay.x264.DTS5.1-TWA")]
 	[InlineData("Out.Of.There.League.UK.S13E04.REPACK.720p.HDTV.x264-FaiLED")]
 	[InlineData("Do.Not.Get.Pregnant.2.S10E20.REPACK.720p.WEB.h264-BAE")]
-	public void Parse_ShouldSetIsRepackTrue_WhenReleaseIsRepack(string input)
-		=> AssertRevisionIsRepack(input, true);
+	public void Parse_ShouldIdentifyRepack_WhenReleaseIsRepack(string input)
+	{
+		var (_, revision) = _instance.Parse(input);
+
+		Assert.True(revision.IsRepack);
+		Assert.Equal(2, revision.Version);
+	}
+
+	[Theory]
+	[InlineData("Movie 1988 2005 REPACK2 1080p BluRay Opus 2.0 x264-D-Z0N3", 2)]
+	[InlineData(
+		"Movie Title: Long Movie Title 2020 REPACK2 2160p UHD BluRay REMUX DV HDR10+ HEVC TrueHD 7.1 Atmos-FraMeSToR",
+		2)]
+	public void Parse_ShouldIdentifyRepackVersion_WhenRepackReleaseContainsNumber(string input, int expectedVersion)
+	{
+		var (_, revision) = _instance.Parse(input);
+
+		Assert.True(revision.IsRepack);
+		Assert.Equal(expectedVersion, revision.Version - 1);
+	}
 
 	[Theory]
 	[InlineData("Repacking for school.720p.WEB")]
-	public void Parse_ShouldSetIsRepackFalse_WhenRepackIsInTitle(string input)
-		=> AssertRevisionIsRepack(input, false);
+	public void Parse_ShouldNotIdentifyRepack_WhenRepackIsInTitle(string input)
+	{
+		var (_, revision) = _instance.Parse(input);
+
+		Assert.False(revision.IsRepack);
+		Assert.Equal(1, revision.Version);
+	}
 
 	[Theory]
 	[InlineData("Everybody 2021 PROPER 1080p UHD BluRay DD+ 7.1 x264-LoRD")]
@@ -166,8 +188,23 @@ public class QualityParserServiceTest
 	[InlineData("Best.Anime.Movie.For.You.2019.PROPER.1080p.BluRay.x264-HAiKU")]
 	[InlineData("The Golden Episode 2008 PROPER DVDRip XviD-WRD")]
 	[InlineData("The.Show.S01E04.PROPER.1080p.WEB.H264-KOGi")]
-	public void Parse_ShouldIncreaseRevisionVersion_WhenReleaseIsProper(string input)
-		=> AssertRevisionVersion(input, 2);
+	public void Parse_ShouldIdentifyProper_WhenReleaseIsProper(string input)
+	{
+		var (_, revision) = _instance.Parse(input);
+
+		Assert.True(revision.IsProper);
+		Assert.Equal(2, revision.Version);
+	}
+
+	[Theory]
+	[InlineData("Series S19E07 PROPER2 1080p AMZN WEB-DL DD+ 2.0 H.264-NTb", 2)]
+	public void Parse_ShouldIdentifyProperVersion_WhenProperReleaseContainsNumber(string input, int expectedVersion)
+	{
+		var (_, revision) = _instance.Parse(input);
+
+		Assert.True(revision.IsProper);
+		Assert.Equal(expectedVersion, revision.Version - 1);
+	}
 
 	[Theory]
 	[InlineData("Series 2018 S03E15 1080p WEB-DL AAC 2.0 H264-PLZPROPER")]
@@ -175,16 +212,12 @@ public class QualityParserServiceTest
 	[InlineData("Series 2017 S04E10 1080p WEB-DL AAC 2.0 H264-PLZPROPER")]
 	[InlineData("Series S01E17 720p WEB-DL AAC 2.0 H264-PLZPROPER")]
 	public void Parse_ShouldNotIncreaseRevisionVersion_WhenGroupNameIncludesProper(string input)
-		=> AssertRevisionVersion(input, 1);
+	{
+		var (_, revision) = _instance.Parse(input);
 
-	[Theory]
-	[InlineData("Movie 1988 2005 REPACK2 1080p BluRay Opus 2.0 x264-D-Z0N3", 3)]
-	[InlineData(
-		"Movie Title: Long Movie Title 2020 REPACK2 2160p UHD BluRay REMUX DV HDR10+ HEVC TrueHD 7.1 Atmos-FraMeSToR",
-		3)]
-	[InlineData("Series S19E07 PROPER2 1080p AMZN WEB-DL DD+ 2.0 H.264-NTb", 3)]
-	public void Parse_ShouldIdentifyRevisionVersion_WhenProperOrRepackContainsNumber(string input, int expectedVersion)
-		=> AssertRevisionVersion(input, expectedVersion);
+		Assert.False(revision.IsProper);
+		Assert.Equal(1, revision.Version);
+	}
 
 	[Theory]
 	[InlineData("[Kulot] Anime Title v3 [Dual-Audio][BDRip 1836x996 x264 FLACx2] | Complete | The Anime Title F91", 3)]
@@ -197,13 +230,6 @@ public class QualityParserServiceTest
 	[InlineData("Sister What 1963 S10 1080p BluRay DTS 2.0 x264-OUIJA")]
 	public void Parse_ShouldNotIncreaseRevisionVersion_WhenNoVersionExistsInRelease(string input)
 		=> AssertRevisionVersion(input, 1);
-
-	private void AssertRevisionIsRepack(string input, bool expected)
-	{
-		var parsed = _instance.Parse(input);
-
-		Assert.Equal(expected, parsed.Revision.IsRepack);
-	}
 
 	private void AssertRevisionVersion(string input, int expected)
 	{
