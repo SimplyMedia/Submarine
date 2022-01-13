@@ -96,7 +96,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Submarine.Api v1"));
 }
 
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(opt => opt.GetLevel = (_, _, _) => LogEventLevel.Debug);
 
 app.UseCors();
 
