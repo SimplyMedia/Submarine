@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Submarine.Core.Release;
 using Submarine.Core.Release.Torrent;
 using Submarine.Core.Util.RegEx;
 
@@ -14,11 +15,11 @@ public class TorrentReleaseParserService : IParser<TorrentRelease>
 
 	private readonly ILogger<TorrentReleaseParserService> _logger;
 
-	private readonly ReleaseParserService _releaseParserService;
+	private readonly IParser<BaseRelease> _releaseParserService;
 
 	public TorrentReleaseParserService(
 		ILogger<TorrentReleaseParserService> logger,
-		ReleaseParserService releaseParserService)
+		IParser<BaseRelease> releaseParserService)
 	{
 		_logger = logger;
 		_releaseParserService = releaseParserService;

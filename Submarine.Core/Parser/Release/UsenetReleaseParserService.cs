@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Submarine.Core.Release;
 using Submarine.Core.Release.Usenet;
 using Submarine.Core.Release.Util;
 using Submarine.Core.Util.Extensions;
@@ -21,14 +22,14 @@ public class UsenetReleaseParserService : IParser<UsenetRelease>
 
 	private readonly ILogger<UsenetReleaseParserService> _logger;
 
-	private readonly ReleaseParserService _releaseParserService;
+	private readonly IParser<BaseRelease> _releaseParserService;
 
 	private readonly UsenetReleaseValidatorService _usenetReleaseValidatorService;
 
 	public UsenetReleaseParserService(
 		ILogger<UsenetReleaseParserService> logger,
 		UsenetReleaseValidatorService usenetReleaseValidatorService,
-		ReleaseParserService releaseParserService)
+		IParser<BaseRelease> releaseParserService)
 	{
 		_logger = logger;
 		_usenetReleaseValidatorService = usenetReleaseValidatorService;
