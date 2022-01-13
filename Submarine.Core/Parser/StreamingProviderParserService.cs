@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Quality;
 using Submarine.Core.Quality.Attributes;
@@ -10,8 +12,22 @@ public class StreamingProviderParserService : IParser<StreamingProvider?>
 {
 	private readonly ILogger<StreamingProviderParserService> _logger;
 
+	private readonly Dictionary<StreamingProvider, Regex> _streamingProviderRegexes;
+
 	public StreamingProviderParserService(ILogger<StreamingProviderParserService> logger)
-		=> _logger = logger;
+	{
+		_logger = logger;
+		_streamingProviderRegexes = new Dictionary<StreamingProvider, Regex>();
+		foreach (var provider in Enum.GetValues<StreamingProvider>())
+		{
+			var regex = provider.GetAttribute<RegExAttribute>()?.Regex;
+
+			if (regex == null)
+				throw new InvalidOperationException($"Missing Regex for StreamingProvider {provider}");
+
+			_streamingProviderRegexes.Add(provider, regex);
+		}
+	}
 
 	public StreamingProvider? Parse(string input)
 	{
@@ -20,18 +36,11 @@ public class StreamingProviderParserService : IParser<StreamingProvider?>
 		return ParseStreamingProvider(input.Trim());
 	}
 
-	private static StreamingProvider? ParseStreamingProvider(string input)
+	private StreamingProvider? ParseStreamingProvider(string input)
 	{
-		foreach (var provider in Enum.GetValues<StreamingProvider>())
-		{
-			var regex = provider.GetAttribute<RegExAttribute>()?.Regex;
-
-			if (regex == null)
-				throw new InvalidOperationException($"Missing Regex for StreamingProvider {provider}");
-
+		foreach (var (provider, regex) in _streamingProviderRegexes)
 			if (regex.IsMatch(input))
 				return provider;
-		}
 
 		return null;
 	}
