@@ -23,19 +23,45 @@ public class ReleaseGroupParserService : IParser<string?>
 
 	public string? Parse(string input)
 	{
-		_logger.LogDebug("Trying to parse language for {Input}", input);
+		_logger.LogDebug("Trying to parse Release Group for {Input}", input);
 
 		var animeMatch = AnimeReleaseGroupRegex.Match(input);
 
-		if (animeMatch.Success) return animeMatch.Groups["subgroup"].Value;
+		if (animeMatch.Success)
+		{
+			var subgroup = animeMatch.Groups["subgroup"].Value;
+			_logger.LogDebug("{Input} matched subgroup {SubGroup} with AnimeReleaseGroupRegex", input, subgroup);
+			return subgroup;
+		}
 
 		var matches = ReleaseGroupRegex.Matches(input);
 
-		if (matches.Count == 0) return null;
+		if (matches.Count == 0)
+		{
+			_logger.LogDebug("{Input} didn't match ReleaseGroupRegex", input);
+			return null;
+		}
+
 		var group = matches.Last().Groups["releasegroup"].Value;
 
-		if (int.TryParse(group, out _)) return null;
+		if (int.TryParse(group, out var i))
+		{
+			_logger.LogDebug(
+				"{Input} matched release group \"{Group}\" with ReleaseGroupRegex but group parses to an integer, so we assume its invalid",
+				input, group);
+			return null;
+		}
 
-		return InvalidReleaseGroupRegex.IsMatch(group) ? null : group;
+		if (InvalidReleaseGroupRegex.IsMatch(group))
+		{
+			_logger.LogDebug(
+				"{Input} matched release group \"{Group}\" with ReleaseGroupRegex but also matched InvalidReleaseGroupRegex, so its invalid",
+				input, group);
+			return null;
+		}
+
+		_logger.LogDebug("{Input} matched release group \"{Group}\" with ReleaseGroupRegex", input, group);
+
+		return group;
 	}
 }

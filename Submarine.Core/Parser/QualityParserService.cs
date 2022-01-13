@@ -89,7 +89,7 @@ public class QualityParserService : IParser<QualityModel>
 		return ParseQualityName(input);
 	}
 
-	private static QualityModel ParseQualityName(string name)
+	private QualityModel ParseQualityName(string name)
 	{
 		var normalizedName = name.Replace('_', ' ').Trim();
 
@@ -101,7 +101,7 @@ public class QualityParserService : IParser<QualityModel>
 			: new QualityModel(ParseResolutionModel(normalizedName), revision);
 	}
 
-	private static QualityResolutionModel ParseResolutionModel(string normalizedName)
+	private QualityResolutionModel ParseResolutionModel(string normalizedName)
 	{
 		var resolution = ParseResolution(normalizedName);
 		var sourceMatches = SourceRegex.Matches(normalizedName);
@@ -111,46 +111,92 @@ public class QualityParserService : IParser<QualityModel>
 
 		if (sourceMatch is { Success: true })
 		{
+			_logger.LogDebug("{Input} matched SourceRegex", normalizedName);
+
 			if (sourceMatch.Groups["bluray"].Success)
 			{
-				if (codecRegex.Groups["xvid"].Success || codecRegex.Groups["divx"].Success)
-					return new QualityResolutionModel(QualitySource.BLURAY, QualityResolution.R480_P);
+				_logger.LogDebug("{Input} matched SourceRegex with Bluray", normalizedName);
 
-				return remuxMatch
-					? new QualityResolutionModel(QualitySource.BLURAY_REMUX,
-						resolution ?? QualityResolution.R1080_P)
-					: new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
+				if (codecRegex.Groups["xvid"].Success || codecRegex.Groups["divx"].Success)
+				{
+					_logger.LogDebug("{Input} matched Xvid/Divx in CodecRegex, setting resolution to 480p",
+						normalizedName);
+					return new QualityResolutionModel(QualitySource.BLURAY, QualityResolution.R480_P);
+				}
+
+				if (remuxMatch)
+				{
+					_logger.LogDebug("{Input} matched Remux", normalizedName);
+
+					if (resolution == null)
+						_logger.LogDebug("{Input} found no resolution, default to 1080p for Bluray Remux",
+							normalizedName);
+
+					return new QualityResolutionModel(QualitySource.BLURAY_REMUX,
+						resolution ?? QualityResolution.R1080_P);
+				}
+
+				if (resolution == null)
+					_logger.LogDebug("{Input} found no resolution, default to 720p for Bluray", normalizedName);
+
+				return new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
 			}
 
 			if (sourceMatch.Groups["webdl"].Success)
+			{
+				_logger.LogDebug("{Input} matched SourceRegex with WebDL", normalizedName);
+
+				if (resolution == null)
+					_logger.LogDebug("{Input} found no resolution, default to 720p for WebDL", normalizedName);
+
 				return new QualityResolutionModel(QualitySource.WEB_DL, resolution ?? QualityResolution.R720_P);
+			}
 
 			if (sourceMatch.Groups["webrip"].Success)
+			{
+				_logger.LogDebug("{Input} matched SourceRegex with WebRip", normalizedName);
+
+				if (resolution == null)
+					_logger.LogDebug("{Input} found no resolution, default to 720p for WebRip", normalizedName);
+
 				return new QualityResolutionModel(QualitySource.WEB_RIP, resolution ?? QualityResolution.R720_P);
+			}
 
 			if (sourceMatch.Groups["hdtv"].Success)
 			{
+				_logger.LogDebug("{Input} matched SourceRegex with HDTV", normalizedName);
+
 				if (MPEG2Regex.IsMatch(normalizedName))
+				{
+					_logger.LogDebug("{Input} matched MPEG2Regex, setting QualitySource to RAWHD", normalizedName);
 					return new QualityResolutionModel(QualitySource.RAW_HD);
+				}
 
 				if (resolution.HasValue)
 					return new QualityResolutionModel(QualitySource.TV, resolution);
 			}
 
 			if (sourceMatch.Groups["bdrip"].Success || sourceMatch.Groups["brrip"].Success)
+			{
+				_logger.LogDebug("{Input} matched SourceRegex with Bluray", normalizedName);
 				if (resolution.HasValue)
 					return new QualityResolutionModel(QualitySource.BLURAY, resolution);
+			}
 
 			if (sourceMatch.Groups["dvd"].Success)
+			{
+				_logger.LogDebug("{Input} matched SourceRegex with DVD", normalizedName);
 				return new QualityResolutionModel(QualitySource.DVD);
+			}
 
 			if (sourceMatch.Groups["pdtv"].Success ||
 			    sourceMatch.Groups["sdtv"].Success ||
 			    sourceMatch.Groups["dsr"].Success ||
 			    sourceMatch.Groups["tvrip"].Success)
 			{
+				_logger.LogDebug("{Input} matched SourceRegex with PDTV/SDTV/DSR/TVRIP", normalizedName);
 				if (resolution == QualityResolution.R1080_P)
-					return new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P);
+					return new QualityResolutionModel(QualitySource.TV, resolution);
 
 				if (resolution == QualityResolution.R720_P || HighDefPdtvRegex.IsMatch(normalizedName))
 					return new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P);
@@ -161,51 +207,142 @@ public class QualityParserService : IParser<QualityModel>
 
 		// Anime Bluray matching
 		if (AnimeBlurayRegex.Match(normalizedName).Success)
-			return remuxMatch
-				? new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P)
-				: new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
+		{
+			_logger.LogDebug("{Input} matched Bluray with AnimeBlurayRegex", normalizedName);
+			if (remuxMatch)
+			{
+				_logger.LogDebug("{Input} matched Remux", normalizedName);
+
+				if (resolution == null)
+					_logger.LogDebug("{Input} found no resolution, default to 1080p for Bluray Remux",
+						normalizedName);
+
+				return new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P);
+			}
+
+			if (resolution == null)
+				_logger.LogDebug("{Input} found no resolution, default to 720p for Bluray",
+					normalizedName);
+
+			return new QualityResolutionModel(QualitySource.BLURAY, resolution ?? QualityResolution.R720_P);
+		}
 
 		if (AnimeWebDlRegex.Match(normalizedName).Success)
+		{
+			_logger.LogDebug("{Input} matched Bluray with AnimeWebDlRegex", normalizedName);
+
+			if (resolution == null)
+				_logger.LogDebug("{Input} found no resolution, default to 720p for WebDL",
+					normalizedName);
+
 			return new QualityResolutionModel(QualitySource.WEB_DL, resolution ?? QualityResolution.R720_P);
+		}
 
 		if (remuxMatch)
+		{
+			_logger.LogDebug("{Input} matched Remux but no Source or Anime match", normalizedName);
+
+			if (resolution == null)
+				_logger.LogDebug("{Input} found no resolution, default to 1080p for Remux", normalizedName);
+
 			return new QualityResolutionModel(QualitySource.BLURAY_REMUX, resolution ?? QualityResolution.R1080_P);
+		}
 
 		if (resolution.HasValue)
+		{
+			_logger.LogDebug("{Input} matched Resolution but no Source, default to TV", normalizedName);
+
 			return new QualityResolutionModel(QualitySource.TV, resolution);
+		}
 
 		var match = OtherSourceRegex.Match(normalizedName);
 
-		return match.Groups["hdtv"].Success
-			? new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P)
-			: new QualityResolutionModel();
+		if (match.Groups["hdtv"].Success)
+		{
+			_logger.LogDebug("{Input} matched OtherSourceRegex with HDTV, default to 720p since no Resolution matched",
+				normalizedName);
+
+			return new QualityResolutionModel(QualitySource.TV, QualityResolution.R720_P);
+		}
+
+		_logger.LogDebug("{Input} matched nothing, unknown QualityResolution", normalizedName);
+
+		return new QualityResolutionModel();
 	}
 
-	private static QualityResolution? ParseResolution(string normalizedName)
+	private QualityResolution? ParseResolution(string normalizedName)
 	{
 		var match = ResolutionRegex.Match(normalizedName);
 		var matchImplied = ImpliedResolutionRegex.Match(normalizedName);
 
-		if (!match.Success & !matchImplied.Success) return null;
-		if (match.Groups["R360p"].Success) return QualityResolution.R360_P;
-		if (match.Groups["R480p"].Success) return QualityResolution.R480_P;
-		if (match.Groups["R540p"].Success) return QualityResolution.R540_P;
-		if (match.Groups["R576p"].Success) return QualityResolution.R576_P;
-		if (match.Groups["R720p"].Success) return QualityResolution.R720_P;
-		if (match.Groups["R1080p"].Success) return QualityResolution.R1080_P;
-		if (match.Groups["R2160p"].Success) return QualityResolution.R2160_P;
-		if (matchImplied.Groups["R2160p"].Success) return QualityResolution.R2160_P;
+		if (!match.Success & !matchImplied.Success)
+		{
+			_logger.LogDebug("{Input} didn't match either Resolution regex or Implied Resolution Regex",
+				normalizedName);
+			return null;
+		}
+
+		if (match.Groups["R360p"].Success)
+		{
+			_logger.LogDebug("{Input} matched 360p Resolution regex", normalizedName);
+			return QualityResolution.R360_P;
+		}
+
+		if (match.Groups["R480p"].Success)
+		{
+			_logger.LogDebug("{Input} matched 480p Resolution regex", normalizedName);
+			return QualityResolution.R480_P;
+		}
+
+		if (match.Groups["R540p"].Success)
+		{
+			_logger.LogDebug("{Input} matched 540p Resolution regex", normalizedName);
+			return QualityResolution.R540_P;
+		}
+
+		if (match.Groups["R576p"].Success)
+		{
+			_logger.LogDebug("{Input} matched 576p Resolution regex", normalizedName);
+			return QualityResolution.R576_P;
+		}
+
+		if (match.Groups["R720p"].Success)
+		{
+			_logger.LogDebug("{Input} matched 720p Resolution regex", normalizedName);
+			return QualityResolution.R720_P;
+		}
+
+		if (match.Groups["R1080p"].Success)
+		{
+			_logger.LogDebug("{Input} matched 1080p Resolution regex", normalizedName);
+			return QualityResolution.R1080_P;
+		}
+
+		if (match.Groups["R2160p"].Success)
+		{
+			_logger.LogDebug("{Input} matched 2160p Resolution regex", normalizedName);
+			return QualityResolution.R2160_P;
+		}
+
+		if (matchImplied.Groups["R2160p"].Success)
+		{
+			_logger.LogDebug("{Input} matched implicit 2160p (4K) regex", normalizedName);
+			return QualityResolution.R2160_P;
+		}
+
+		_logger.LogDebug("{Input} didn't match any explicit or implicit resolution regex", normalizedName);
+
 		return null;
 	}
 
-	private static Revision ParseRevisions(string name)
+	private Revision ParseRevisions(string input)
 	{
 		var version = 1;
 		var isRepack = false;
 		var isProper = false;
 		var isReal = false;
 
-		var repackMatches = RepackRegex.Matches(name);
+		var repackMatches = RepackRegex.Matches(input);
 		var repackMatch = repackMatches.LastOrDefault();
 
 		if (repackMatch is { Success: true })
@@ -217,9 +354,11 @@ public class QualityParserService : IParser<QualityModel>
 			version = versionGroup.Success && int.TryParse(versionGroup.Value, out var repackVersion)
 				? repackVersion + 1
 				: version + 1;
+
+			_logger.LogDebug("{Input} matched Repack regex, version {Version}", input, version);
 		}
 
-		var properMatches = ProperRegex.Matches(name);
+		var properMatches = ProperRegex.Matches(input);
 		var properMatch = properMatches.LastOrDefault();
 
 		if (properMatch is { Success: true })
@@ -231,18 +370,26 @@ public class QualityParserService : IParser<QualityModel>
 			version = versionGroup.Success && int.TryParse(versionGroup.Value, out var properVersion)
 				? properVersion + 1
 				: version + 1;
+
+			_logger.LogDebug("{Input} matched Proper regex, version {Version}", input, version);
 		}
 
-		if (RealRegex.IsMatch(name))
+		if (RealRegex.IsMatch(input))
 		{
 			isReal = true;
 			version += 1;
+
+			_logger.LogDebug("{Input} matched REAL regex, version {Version}", input, version);
 		}
 
-		var versionRegexResult = VersionRegex.Match(name);
+		var versionRegexResult = VersionRegex.Match(input);
 
 		if (versionRegexResult.Success)
+		{
 			version = int.Parse(versionRegexResult.Groups["version"].Value);
+
+			_logger.LogDebug("{Input} matched version regex, version {Version}", input, version);
+		}
 
 		return new Revision(version, isRepack, isProper, isReal);
 	}

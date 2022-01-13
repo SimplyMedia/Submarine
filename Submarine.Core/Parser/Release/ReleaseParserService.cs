@@ -465,16 +465,27 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 		var (main, aliases) = ParseTitle(simpleTitle);
 
+		var languages = _languageParser.Parse(input);
+		var quality = _qualityParser.Parse(input);
+		var releaseGroup = _releaseGroupParser.Parse(input);
+		StreamingProvider? streamingProvider = null;
+
+		if (quality.Resolution.Source is QualitySource.WEB_DL or QualitySource.WEB_RIP)
+			streamingProvider = _streamingProviderParser.Parse(input);
+		else
+			_logger.LogDebug("Skipping Parsing of Streaming Provider for {Input} since Quality is not WebDL or WebRip",
+				input);
+
 		var release = new BaseRelease
 		{
 			FullTitle = input,
 			Title = main,
 			Aliases = aliases,
-			Languages = _languageParser.Parse(input),
-			StreamingProvider = _streamingProviderParser.Parse(input),
+			Languages = languages,
+			StreamingProvider = streamingProvider,
 			Type = ReleaseType.UNKNOWN,
-			Quality = _qualityParser.Parse(input),
-			ReleaseGroup = _releaseGroupParser.Parse(input)
+			Quality = quality,
+			ReleaseGroup = releaseGroup
 		};
 
 		return release;

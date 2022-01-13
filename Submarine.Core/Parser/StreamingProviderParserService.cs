@@ -39,8 +39,13 @@ public class StreamingProviderParserService : IParser<StreamingProvider?>
 	private StreamingProvider? ParseStreamingProvider(string input)
 	{
 		foreach (var (provider, regex) in _streamingProviderRegexes)
-			if (regex.IsMatch(input))
-				return provider;
+		{
+			if (!regex.IsMatch(input)) continue;
+			_logger.LogDebug("{Input} matched Regex for {StreamingProvider}", input, provider);
+			return provider;
+		}
+
+		_logger.LogDebug("{Input} didn't match any Regex for StreamingProviders", input);
 
 		return null;
 	}
