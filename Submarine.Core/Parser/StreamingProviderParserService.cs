@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Submarine.Core.Attributes;
 using Submarine.Core.Quality;
 using Submarine.Core.Quality.Attributes;
 using Submarine.Core.Util.Extensions;

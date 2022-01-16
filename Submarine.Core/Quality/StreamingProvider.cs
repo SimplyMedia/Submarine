@@ -1,3 +1,4 @@
+using Submarine.Core.Attributes;
 using Submarine.Core.Quality.Attributes;
 
 namespace Submarine.Core.Quality;

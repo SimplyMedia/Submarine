@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Submarine.Core.Attributes;
 using Submarine.Core.Languages;
 using Submarine.Core.Quality.Attributes;
 using Submarine.Core.Util.Extensions;

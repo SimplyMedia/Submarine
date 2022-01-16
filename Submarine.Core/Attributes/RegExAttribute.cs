@@ -1,7 +1,7 @@
 using System;
 using System.Text.RegularExpressions;
 
-namespace Submarine.Core.Quality.Attributes;
+namespace Submarine.Core.Attributes;
 
 [AttributeUsage(AttributeTargets.Field)]
 public class RegExAttribute : Attribute

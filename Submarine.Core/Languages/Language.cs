@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Submarine.Core.Attributes;
 using Submarine.Core.Quality.Attributes;
 
 namespace Submarine.Core.Languages;
