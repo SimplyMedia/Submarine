@@ -14,26 +14,26 @@ public enum QualitySource
 
 	RAW_HD,
 
-	[Name("WEBRip")]
+	[DisplayName("WEBRip")]
 	[Resolution(QualityResolution.R480_P, QualityResolution.R720_P, QualityResolution.R1080_P,
 		QualityResolution.R2160_P)]
 	WEB_RIP,
 
-	[Name("WebDL")]
+	[DisplayName("WebDL")]
 	[Resolution(QualityResolution.R480_P, QualityResolution.R720_P, QualityResolution.R1080_P,
 		QualityResolution.R2160_P)]
 	WEB_DL,
 
-	[Name("BluRay")]
+	[DisplayName("BluRay")]
 	[Resolution(QualityResolution.R480_P, QualityResolution.R576_P, QualityResolution.R720_P, QualityResolution.R1080_P,
 		QualityResolution.R2160_P)]
 	BLURAY,
 
-	[Name("BluRay Remux")]
+	[DisplayName("BluRay Remux")]
 	[Resolution(QualityResolution.R720_P, QualityResolution.R1080_P, QualityResolution.R2160_P)]
 	BLURAY_REMUX,
 
-	[Name("BluRay Disc")]
+	[DisplayName("BluRay Disc")]
 	[Resolution(QualityResolution.R720_P, QualityResolution.R1080_P, QualityResolution.R2160_P)]
 	BLURAY_DISK
 }

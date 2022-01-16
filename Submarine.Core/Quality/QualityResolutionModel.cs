@@ -32,7 +32,7 @@ public class QualityResolutionModel
 
 	public QualityResolutionModel(QualitySource? source = null, QualityResolution? resolution = null)
 	{
-		QualitySourceName = source?.GetAttribute<NameAttribute>()?.Name;
+		QualitySourceName = source?.GetAttribute<DisplayNameAttribute>()?.Name;
 
 		Source = source;
 		Resolution = resolution;
