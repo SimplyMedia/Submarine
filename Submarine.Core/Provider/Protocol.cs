@@ -1,4 +1,4 @@
-namespace Submarine.Core.Release;
+namespace Submarine.Core.Provider;
 
 public enum Protocol
 {

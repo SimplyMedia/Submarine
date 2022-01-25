@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Submarine.Core.Languages;
+using Submarine.Core.Provider;
 using Submarine.Core.Quality;
 using Submarine.Core.Release.Torrent;
 using Submarine.Core.Release.Usenet;

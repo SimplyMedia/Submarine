@@ -1,3 +1,5 @@
+using Submarine.Core.Provider;
+
 namespace Submarine.Core.Release.Usenet;
 
 public record UsenetRelease : BaseRelease

@@ -1,3 +1,5 @@
+using Submarine.Core.Provider;
+
 namespace Submarine.Core.Release.Torrent;
 
 public record TorrentRelease : BaseRelease
