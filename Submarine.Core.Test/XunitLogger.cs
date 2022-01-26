@@ -18,7 +18,7 @@ public class XunitLogger<T> : ILogger<T>, IDisposable
 		// Can be ignored
 	}
 
-	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
+	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
 		Func<TState, Exception, string> formatter)
 		=> _output.WriteLine(state.ToString());
 
