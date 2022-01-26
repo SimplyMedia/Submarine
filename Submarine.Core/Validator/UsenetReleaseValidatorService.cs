@@ -6,6 +6,9 @@ using Submarine.Core.Release.Util;
 
 namespace Submarine.Core.Validator;
 
+/// <summary>
+///     Validates Usenet Releases to not be Hashed, Encrypted or else invalid
+/// </summary>
 public class UsenetReleaseValidatorService : IValidator<string>
 {
 	private static readonly Regex[] RejectHashedReleasesRegexes =
@@ -54,9 +57,14 @@ public class UsenetReleaseValidatorService : IValidator<string>
 
 	private readonly ILogger<UsenetReleaseValidatorService> _logger;
 
+	/// <summary>
+	///     Creates a new <see cref="UsenetReleaseValidatorService" /> instance
+	/// </summary>
+	/// <param name="logger">logger of this instance</param>
 	public UsenetReleaseValidatorService(ILogger<UsenetReleaseValidatorService> logger)
 		=> _logger = logger;
 
+	/// <inheritdoc />
 	public void Validate(string input)
 	{
 		var lowerInput = input.ToLower();
