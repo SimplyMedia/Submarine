@@ -30,6 +30,8 @@ public record BaseRelease
 	public Protocol Protocol { get; init; }
 
 	public string? ReleaseGroup { get; init; }
+	
+	public string? ReleaseHash { get; init; }
 
 	public BaseRelease()
 	{
