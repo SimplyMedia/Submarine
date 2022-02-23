@@ -29,4 +29,14 @@ public static class StringExtensions
 	/// <returns>If this string is not null or a whitespace</returns>
 	public static bool IsNotNullOrWhitespace(this string str)
 		=> !string.IsNullOrWhiteSpace(str);
+
+	/// <summary>
+	///		Normalises the given Release string
+	/// </summary>
+	/// <param name="str">Input string</param>
+	/// <returns></returns>
+	public static string NormalizeReleaseTitle(this string str)
+		=> str.Replace('.', ' ')
+			.Replace('_', ' ')
+			.Trim();
 }
