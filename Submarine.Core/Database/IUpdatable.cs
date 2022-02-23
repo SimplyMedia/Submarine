@@ -10,5 +10,5 @@ public interface IUpdatable
 	/// <summary>
 	/// When this entity was last updated in the Database
 	/// </summary>
-	public DateTime UpdatedAt { get; set; }
+	public DateTimeOffset UpdatedAt { get; set; }
 }

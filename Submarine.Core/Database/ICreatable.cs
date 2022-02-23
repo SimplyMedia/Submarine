@@ -10,5 +10,5 @@ public interface ICreatable
 	/// <summary>
 	/// When this entity was created in the database
 	/// </summary>
-	public DateTime CreatedAt { get; set; }
+	public DateTimeOffset CreatedAt { get; set; }
 }

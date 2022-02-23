@@ -54,8 +54,8 @@ public abstract class Provider : ICreatable, IUpdatable
 	public List<string> Tags { get; set; }
 
 	/// <inheritdoc />
-	public DateTime CreatedAt { get; set; }
+	public DateTimeOffset CreatedAt { get; set; }
 
 	/// <inheritdoc />
-	public DateTime UpdatedAt { get; set; }
+	public DateTimeOffset UpdatedAt { get; set; }
 }
