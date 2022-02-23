@@ -17,7 +17,7 @@ public enum StreamingProvider
 	[RegEx("(hmax)(?=[ ._-]web[ ._-]?(dl|rip)?)")]
 	HBO_MAX,
 
-	[RegEx("(dsnp|dsny|disney|disney\\+)(?=[ ._-]web[ ._-]?(dl|rip)?)")]
+	[RegEx("(dp|dsnp|dsny|disney|disney\\+)(?=[ ._-]web[ ._-]?(dl|rip)?)")]
 	DISNEY,
 
 	[RegEx("(hulu)(?=[ ._-]web[ ._-]?(dl|rip)?)")]

@@ -9,7 +9,7 @@ public class QualityParserService : IParser<QualityModel>
 {
 	private static readonly Regex SourceRegex = new(@"\b(?:
 																(?<bluray>BluRay|Blu-Ray|HD-?DVD|BDMux|BD(?!$))|
-																(?<webdl>WEB[-_. ]DL|WEBDL|AmazonHD|iTunesHD|MaxdomeHD|NetflixU?HD|WebHD|[. ]WEB[. ](?:[xh]26[45]|DDP?5[. ]1)|[. ](?-i:WEB)$|\d+0p(?:[-. ]AMZN)?[-. ]WEB[-. ]|WEB-DLMux|\b\s\/\sWEB\s\/\s\b|AMZN[. ]WEB[. ])|
+																(?<webdl>WEB[-_. ]DL|WEBDL|AmazonHD|iTunesHD|MaxdomeHD|NetflixU?HD|WebHD|[. ]WEB[. ](?:[xh]26[45]|DDP?5[. ]1)|[. ](?-i:WEB)$|\d+0p(?:[-. ]AMZN)?[-. ]WEB[-. ]|WEB-DLMux|\b\s\/\sWEB\s\/\s\b|(?:AMZN|NF|DP)[. ]WEB[. ])|
 																(?<webrip>WebRip|Web-Rip|WEBMux)|
 																(?<hdtv>HDTV)|
 																(?<bdrip>BDRip)|

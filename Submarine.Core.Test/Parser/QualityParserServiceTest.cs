@@ -44,6 +44,7 @@ public class QualityParserServiceTest
 	[InlineData("The.Series.S01E08.Das.geloeschte.Ich.German.Dubbed.DL.AmazonHD.x264-TVS")]
 	[InlineData("The.Series.S01E04.Rod.Trip.mit.meinem.Onkel.German.DL.NetflixUHD.x264")]
 	[InlineData("[HorribleSubs] Series Title! S01 [Web][MKV][h264][480p][AAC 2.0][Softsubs (HorribleSubs)]")]
+	[InlineData("Series.Title.S16.DP.WEB.720p.DDP.5.1.H.264.PLEX")]
 	public void Parse_ShouldReturnQualitySourceWebDL_WhenReleaseIsWebDL(string input)
 		=> AssertQualitySource(input, QualitySource.WEB_DL);
 

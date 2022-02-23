@@ -55,6 +55,7 @@ public class StreamingProviderParserServiceTest
 	[InlineData("Series Title S02E03 (The Vibe) 720p DSNY WEB X264 Solar")]
 	[InlineData("Movie title Extras 720p Disney+ WEB-DL AAC2 0 x 264 Kylo")]
 	[InlineData("Movie.Title.2021.1080p.Disney.WebDL.H264.AC3.Will1869")]
+	[InlineData("Series.Title.S16.DP.WEB.720p.DDP.5.1.H.264.PLEX")]
 	public void Parse_ShouldReturnStreamingProviderDisney_WhenReleaseIsDisney(string input)
 		=> AssertStreamingProvider(input, StreamingProvider.DISNEY);
 
