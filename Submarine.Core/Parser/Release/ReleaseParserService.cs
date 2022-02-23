@@ -209,7 +209,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 		new(
 			@"^(?<title>.+?)(?:\W+S(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))\W+(?:(?:Part\W?|(?<!\d+\W+)e)(?<seasonpart>\d{1,2}(?!\d+)))+)",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
-
+		
 		//Mini-Series with year in title, treated as season 1, episodes are labelled as Part01, Part 01, Part.1
 		new(@"^(?<title>.+?\d{4})(?:\W+(?:(?:Part\W?|e)(?<episode>\d{1,2}(?!\d+)))+)",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
@@ -463,11 +463,11 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 		var simpleTitle = SimpleTitleRegex.Replace(releaseTitle);
 
-		var (main, aliases) = ParseTitle(simpleTitle);
+		var (main, aliases, season, episode, absoluteEpisode, group, hash) = ParseTitle(simpleTitle);
 
 		var languages = _languageParser.Parse(input);
 		var quality = _qualityParser.Parse(input);
-		var releaseGroup = _releaseGroupParser.Parse(input);
+		var releaseGroup = group ?? _releaseGroupParser.Parse(input);
 		StreamingProvider? streamingProvider = null;
 
 		if (quality.Resolution.Source is QualitySource.WEB_DL or QualitySource.WEB_RIP)
@@ -476,6 +476,14 @@ public class ReleaseParserService : IParser<BaseRelease>
 			_logger.LogDebug("Skipping Parsing of Streaming Provider for {Input} since Quality is not WebDL or WebRip",
 				input);
 
+		var type = ReleaseType.UNKNOWN;
+		SeriesReleaseData seriesReleaseData = null;
+		if (season != null || episode != null || absoluteEpisode != null)
+		{
+			type = ReleaseType.SERIES;
+		}
+
+		
 		var release = new BaseRelease
 		{
 			FullTitle = input,
@@ -483,15 +491,17 @@ public class ReleaseParserService : IParser<BaseRelease>
 			Aliases = aliases,
 			Languages = languages,
 			StreamingProvider = streamingProvider,
-			Type = ReleaseType.UNKNOWN,
+			Type = type,
 			Quality = quality,
-			ReleaseGroup = releaseGroup
+			ReleaseGroup = releaseGroup,
+			ReleaseHash = hash,
+			SeriesReleaseData = seriesReleaseData
 		};
-
+		
 		return release;
 	}
 
-	private Title ParseTitle(string input)
+	private TitleMetadata ParseTitle(string input)
 	{
 		//Delete parentheses of the form (aka ...).
 		var unbracketedName = BracketedAlternativeTitleRegex.Replace(input, "$1 AKA $2");
@@ -512,12 +522,37 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 			if (match.Count == 0) continue;
 
-			var title = match[0].Groups["title"].Value.Replace('.', ' ').Replace('_', ' ');
+			var matched = match[0];
 
-			title = RequestInfoRegex.Replace(title, "").Trim(' ');
+			var titleGroup = matched.Groups["title"];
+			var aliasGroup = matched.Groups["alias"];
+			var seasonGroup = matched.Groups["season"];
+			var episodeGroup = matched.Groups["episode"];
+			var absoluteEpisodeGroup = matched.Groups["absoluteepisode"];
+			var subgroupMatchGroup = matched.Groups["subgroup"];
+			var hashGroup = matched.Groups["hash"];
+
+			var title = titleGroup.Value.NormalizeReleaseTitle();
+
+			title = RequestInfoRegex.Replace(title, "");
+
+			if (aliasGroup.Success)
+			{
+				titles.Add(aliasGroup.Value.NormalizeReleaseTitle()); 	
+			}
+
+			var season = seasonGroup.Success ? int.Parse(seasonGroup.Value) : (int?) null;
+			
+			var episode = episodeGroup.Success ? int.Parse(episodeGroup.Value) : (int?)null;
+			
+			var absoluteEpisode = absoluteEpisodeGroup.Success ? int.Parse(absoluteEpisodeGroup.Value) : (int?)null;
+			
+			var hash = hashGroup.Success ? hashGroup.Value : null;
+
+			var group = subgroupMatchGroup.Success ? subgroupMatchGroup.Value : null;
 
 			if (title.IsNotNullOrWhitespace())
-				return new Title(title, titles.Select(alias => alias.Replace(".", " ").Trim()).ToList());
+				return new TitleMetadata(title, titles.Select(t => t.NormalizeReleaseTitle()).ToList(), season, episode, absoluteEpisode, group, hash);
 		}
 
 		throw new NotParsableReleaseException("does not match any regex");
