@@ -85,6 +85,105 @@ namespace Submarine.Api.Migrations.Postgres
                     b.ToTable("NamingConfigs");
                 });
 
+            modelBuilder.Entity("Submarine.Core.DecisionEngine.CustomFormats.CustomFormatConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Conditions")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CustomFormats");
+                });
+
+            modelBuilder.Entity("Submarine.Core.DecisionEngine.Filter.ReleaseFilterConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Field")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.PrimitiveCollection<List<string>>("Values")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ReleaseFilters");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Download.DownloadClientConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enable")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SettingsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<List<string>>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DownloadClients");
+                });
+
             modelBuilder.Entity("Submarine.Core.Library.Episode", b =>
                 {
                     b.Property<int>("Id")
@@ -466,6 +565,10 @@ namespace Submarine.Api.Migrations.Postgres
                     b.Property<int>("Cutoff")
                         .HasColumnType("integer");
 
+                    b.Property<string>("FormatScores")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -574,6 +677,69 @@ namespace Submarine.Api.Migrations.Postgres
                         .HasColumnType("bigint");
 
                     b.HasDiscriminator().HasValue("BittorrentTracker");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Provider.NewznabIndexer", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Provider.Provider");
+
+                    b.PrimitiveCollection<List<int>>("AnimeCategories")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.PrimitiveCollection<List<int>>("Categories")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.HasDiscriminator().HasValue("NewznabIndexer");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Provider.TorznabIndexer", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Provider.Provider");
+
+                    b.PrimitiveCollection<List<int>>("AnimeCategories")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.PrimitiveCollection<List<int>>("Categories")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.Property<int>("MinimumSeeders")
+                        .HasColumnType("integer");
+
+                    b.Property<long?>("SeasonPackSeedTime")
+                        .HasColumnType("bigint");
+
+                    b.Property<float?>("SeedRatio")
+                        .HasColumnType("real");
+
+                    b.Property<long?>("SeedTime")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("Providers", t =>
+                        {
+                            t.Property("AnimeCategories")
+                                .HasColumnName("TorznabIndexer_AnimeCategories");
+
+                            t.Property("Categories")
+                                .HasColumnName("TorznabIndexer_Categories");
+
+                            t.Property("MinimumSeeders")
+                                .HasColumnName("TorznabIndexer_MinimumSeeders");
+
+                            t.Property("SeasonPackSeedTime")
+                                .HasColumnName("TorznabIndexer_SeasonPackSeedTime");
+
+                            t.Property("SeedRatio")
+                                .HasColumnName("TorznabIndexer_SeedRatio");
+
+                            t.Property("SeedTime")
+                                .HasColumnName("TorznabIndexer_SeedTime");
+                        });
+
+                    b.HasDiscriminator().HasValue("TorznabIndexer");
                 });
 
             modelBuilder.Entity("Submarine.Core.Provider.UsenetIndexer", b =>

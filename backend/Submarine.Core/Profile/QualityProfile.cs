@@ -42,6 +42,11 @@ public class QualityProfile : ICreatable, IUpdatable
 	/// </summary>
 	public List<QualityProfileItem> Items { get; set; } = new();
 
+	/// <summary>
+	///     Score of each Custom Format by its Id, added to the score of a Release matching the Custom Format
+	/// </summary>
+	public Dictionary<int, int> FormatScores { get; set; } = new();
+
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }
 

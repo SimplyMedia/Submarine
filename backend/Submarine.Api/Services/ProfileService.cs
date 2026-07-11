@@ -75,7 +75,8 @@ public class ProfileService
 			Name = request.Name,
 			UpgradeAllowed = request.UpgradeAllowed,
 			Cutoff = request.Cutoff,
-			Items = request.Items
+			Items = request.Items,
+			FormatScores = request.FormatScores
 		};
 
 		await _qualityProfileRepository.CreateAsync(profile);
@@ -91,6 +92,7 @@ public class ProfileService
 		profile.UpgradeAllowed = request.UpgradeAllowed;
 		profile.Cutoff = request.Cutoff;
 		profile.Items = request.Items;
+		profile.FormatScores = request.FormatScores;
 
 		await _qualityProfileRepository.UpdateAsync(profile);
 

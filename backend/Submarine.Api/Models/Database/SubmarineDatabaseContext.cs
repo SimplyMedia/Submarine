@@ -1,7 +1,11 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Submarine.Core.Config;
 using Submarine.Core.Database;
+using Submarine.Core.DecisionEngine.CustomFormats;
+using Submarine.Core.DecisionEngine.Filter;
+using Submarine.Core.Download;
 using Submarine.Core.Library;
 using Submarine.Core.MediaFile;
 using Submarine.Core.Profile;
@@ -47,6 +51,12 @@ public class SubmarineDatabaseContext : DbContext
 
 	public DbSet<MovieFile> MovieFiles { get; set; }
 
+	public DbSet<DownloadClientConfig> DownloadClients { get; set; }
+
+	public DbSet<ReleaseFilterConfig> ReleaseFilters { get; set; }
+
+	public DbSet<CustomFormatConfig> CustomFormats { get; set; }
+
 	/// <inheritdoc />
 	public SubmarineDatabaseContext(DbContextOptions options, IConfiguration configuration) : base(options)
 		=> Configuration = configuration;
@@ -55,6 +65,8 @@ public class SubmarineDatabaseContext : DbContext
 	{
 		builder.Entity<BittorrentTracker>();
 		builder.Entity<UsenetIndexer>();
+		builder.Entity<TorznabIndexer>();
+		builder.Entity<NewznabIndexer>();
 
 		builder.Entity<Tag>()
 			.HasIndex(t => t.Label)
@@ -70,6 +82,32 @@ public class SubmarineDatabaseContext : DbContext
 				items.ToJson();
 				items.OwnsOne(i => i.Quality, q => q.Ignore(m => m.Name));
 			});
+
+		builder.Entity<QualityProfile>()
+			.Property(p => p.FormatScores)
+			.HasConversion(
+				s => JsonSerializer.Serialize(s, (JsonSerializerOptions?)null),
+				s => string.IsNullOrEmpty(s)
+					? new Dictionary<int, int>()
+					: JsonSerializer.Deserialize<Dictionary<int, int>>(s, (JsonSerializerOptions?)null)
+					  ?? new Dictionary<int, int>(),
+				new ValueComparer<Dictionary<int, int>>(
+					(a, b) => a!.SequenceEqual(b!),
+					d => d.Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
+					d => d.ToDictionary(pair => pair.Key, pair => pair.Value)));
+
+		builder.Entity<CustomFormatConfig>()
+			.Property(c => c.Conditions)
+			.HasConversion(
+				c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null),
+				c => string.IsNullOrEmpty(c)
+					? new List<CustomFormatCondition>()
+					: JsonSerializer.Deserialize<List<CustomFormatCondition>>(c, (JsonSerializerOptions?)null)
+					  ?? new List<CustomFormatCondition>(),
+				new ValueComparer<List<CustomFormatCondition>>(
+					(a, b) => a!.SequenceEqual(b!),
+					c => c.Aggregate(0, (hash, condition) => HashCode.Combine(hash, condition.GetHashCode())),
+					c => c.ToList()));
 
 		builder.Entity<Series>()
 			.HasIndex(s => s.TvdbId)

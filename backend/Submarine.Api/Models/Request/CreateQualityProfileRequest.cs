@@ -11,4 +11,6 @@ public record CreateQualityProfileRequest
 	public int Cutoff { get; set; }
 
 	public List<QualityProfileItem> Items { get; set; } = new();
+
+	public Dictionary<int, int> FormatScores { get; set; } = new();
 }
