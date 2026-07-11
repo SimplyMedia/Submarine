@@ -5,6 +5,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
+using Submarine.Api.Clients;
 using Submarine.Api.Events;
 using Submarine.Api.Jobs;
 using Submarine.Api.Models.Database;
@@ -69,6 +70,8 @@ builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<IRootFolderRepository, RootFolderRepository>();
 builder.Services.AddScoped<IQualityProfileRepository, QualityProfileRepository>();
 builder.Services.AddScoped<ILanguageProfileRepository, LanguageProfileRepository>();
+builder.Services.AddScoped<ISeriesRepository, SeriesRepository>();
+builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 
 // Service
 builder.Services.AddScoped<ProviderService>();
@@ -76,6 +79,19 @@ builder.Services.AddScoped<TagService>();
 builder.Services.AddScoped<RootFolderService>();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<ProfileService>();
+builder.Services.AddScoped<SeriesService>();
+builder.Services.AddScoped<MovieService>();
+builder.Services.AddScoped<CalendarService>();
+
+// Clients
+builder.Services.AddHttpClient<IMetadataClient, MetadataClient>((sp, client) =>
+	{
+		var baseUrl = sp.GetRequiredService<IConfiguration>().GetValue<string>("Metadata:BaseUrl")
+		              ?? "http://localhost:5100";
+
+		client.BaseAddress = new Uri(baseUrl);
+	})
+	.AddStandardResilienceHandler();
 
 // Background jobs
 builder.Services.AddSingleton<IBackgroundTaskQueue, ChannelBackgroundTaskQueue>();
