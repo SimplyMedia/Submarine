@@ -386,3 +386,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 .DS_Store
+
+# honey-dev loop state
+.honey-dev/

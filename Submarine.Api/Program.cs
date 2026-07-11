@@ -1,9 +1,8 @@
 using System.Text.Json.Serialization;
 using AspNetCore.ExceptionHandler;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Serilog;
-using Serilog.Enrichers;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using Submarine.Api.Models.Database;
@@ -36,7 +35,7 @@ builder.Host.UseSerilog((_, _, loggerConfiguration) =>
 		.ReadFrom.Configuration(loggerConfig)
 		.Enrich.WithThreadId()
 		.Enrich.WithThreadName()
-		.Enrich.WithProperty(ThreadNameEnricher.ThreadNamePropertyName, "Main")
+		.Enrich.WithProperty("ThreadName", "Main")
 		.Enrich.FromLogContext()
 		.WriteTo.Console(
 			outputTemplate: logTemplate,

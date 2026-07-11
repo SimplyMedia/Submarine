@@ -1,0 +1,26 @@
+<Project>
+
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageVersion Include="AspNetCore.ExceptionHandler" Version="1.1.0" />
+		<PackageVersion Include="coverlet.collector" Version="10.0.1" />
+		<PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+		<PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+		<PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+		<PackageVersion Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+		<PackageVersion Include="Serilog.Settings.Configuration" Version="10.0.1" />
+		<PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />
+		<PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+		<PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+		<PackageVersion Include="xunit.v3" Version="3.2.2" />
+	</ItemGroup>
+
+</Project>
