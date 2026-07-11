@@ -5,6 +5,8 @@ using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
+using Submarine.Api.Events;
+using Submarine.Api.Jobs;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Repository;
 using Submarine.Api.Services;
@@ -67,6 +69,18 @@ builder.Services.AddScoped<IProviderRepository, ProviderRepository>();
 // Service
 builder.Services.AddScoped<ProviderService>();
 
+// Background jobs
+builder.Services.AddSingleton<IBackgroundTaskQueue, ChannelBackgroundTaskQueue>();
+builder.Services.AddHostedService<QueuedHostedService>();
+
+builder.Services.AddSingleton<ScheduledJobRegistry>();
+builder.Services.AddSingleton<IScheduledJobRegistry>(sp => sp.GetRequiredService<ScheduledJobRegistry>());
+builder.Services.AddSingleton<ScheduledJobRunner>();
+builder.Services.AddHostedService<SchedulerHostedService>();
+
+// Events
+builder.Services.AddScoped<IEventPublisher, EventPublisher>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -81,6 +95,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.UseExceptionBasedErrorHandling();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -104,17 +119,22 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddDbContext<SubmarineDatabaseContext, PostgresDatabaseContext>();
+var databaseProvider = builder.Configuration.GetValue<string>("Database:Provider") ?? "Sqlite";
+
+if (databaseProvider == "Postgres")
+	builder.Services.AddDbContext<SubmarineDatabaseContext, PostgresDatabaseContext>();
+else
+	builder.Services.AddDbContext<SubmarineDatabaseContext, SqliteDatabaseContext>();
 
 var app = builder.Build();
 
 using (var scope = app.Services.GetService<IServiceScopeFactory>()?.CreateScope())
 {
-	var logger = app.Services.GetRequiredService<ILogger<PostgresDatabaseContext>>();
+	var logger = app.Services.GetRequiredService<ILogger<SubmarineDatabaseContext>>();
 
 	try
 	{
-		scope?.ServiceProvider.GetRequiredService<PostgresDatabaseContext>().Database.Migrate();
+		scope?.ServiceProvider.GetRequiredService<SubmarineDatabaseContext>().Database.Migrate();
 	}
 	catch (Exception ex)
 	{
@@ -131,6 +151,12 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Submarine.Api v1"));
 }
+else
+{
+	app.UseExceptionHandler();
+}
+
+app.UseStatusCodePages();
 
 app.UseSerilogRequestLogging(opt => opt.GetLevel = (_, _, _) => LogEventLevel.Debug);
 
