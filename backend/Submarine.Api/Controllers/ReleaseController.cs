@@ -10,7 +10,7 @@ using Submarine.Core.Release.Usenet;
 namespace Submarine.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/v1/[controller]")]
 public class ReleaseController : ControllerBase
 {
 	private readonly ILogger<ReleaseController> _logger;

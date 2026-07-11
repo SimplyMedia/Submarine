@@ -5,7 +5,7 @@ using Submarine.Api.Services;
 namespace Submarine.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/v1/[controller]")]
 public class ProviderController : ControllerBase
 {
 	private readonly ProviderService _service;
@@ -26,7 +26,7 @@ public class ProviderController : ControllerBase
 	{
 		var provider = await _service.CreateAsync(request);
 
-		return Created($"provider/{provider.Id}", provider);
+		return Created($"api/v1/provider/{provider.Id}", provider);
 	}
 
 	[HttpPatch("{id:int}")]
