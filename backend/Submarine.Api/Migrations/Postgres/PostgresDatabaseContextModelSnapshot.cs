@@ -9,7 +9,7 @@ using Submarine.Api.Models.Database;
 
 #nullable disable
 
-namespace Submarine.Api.Migrations
+namespace Submarine.Api.Migrations.Postgres
 {
     [DbContext(typeof(PostgresDatabaseContext))]
     partial class PostgresDatabaseContextModelSnapshot : ModelSnapshot
@@ -18,7 +18,7 @@ namespace Submarine.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.9")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -40,7 +40,8 @@ namespace Submarine.Api.Migrations
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(21)
+                        .HasColumnType("character varying(21)");
 
                     b.Property<int>("Mode")
                         .HasColumnType("integer");
@@ -55,7 +56,7 @@ namespace Submarine.Api.Migrations
                     b.Property<int>("Protocol")
                         .HasColumnType("integer");
 
-                    b.Property<List<string>>("Tags")
+                    b.PrimitiveCollection<List<string>>("Tags")
                         .IsRequired()
                         .HasColumnType("text[]");
 
@@ -71,6 +72,8 @@ namespace Submarine.Api.Migrations
                     b.ToTable("Providers");
 
                     b.HasDiscriminator<string>("Discriminator").HasValue("Provider");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Submarine.Core.Provider.BittorrentTracker", b =>
