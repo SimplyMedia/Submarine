@@ -1,0 +1,14 @@
+using Submarine.Core.Profile;
+
+namespace Submarine.Api.Models.Request;
+
+public record UpdateQualityProfileRequest
+{
+	public string Name { get; set; }
+
+	public bool UpgradeAllowed { get; set; }
+
+	public int Cutoff { get; set; }
+
+	public List<QualityProfileItem> Items { get; set; } = new();
+}
