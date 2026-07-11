@@ -40,6 +40,7 @@ builder.Services.AddControllers().AddJsonOptions(opts =>
 });
 
 builder.Services.AddScoped<MappingResolver>();
+builder.Services.AddScoped<AniListMappingService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

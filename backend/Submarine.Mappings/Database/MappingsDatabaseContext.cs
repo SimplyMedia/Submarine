@@ -15,6 +15,8 @@ public class MappingsDatabaseContext : DbContext
 
 	public DbSet<SceneEpisodeMapping> SceneEpisodeMappings { get; set; }
 
+	public DbSet<AniListMapping> AniListMappings { get; set; }
+
 	/// <summary>
 	///     Creates a new instance of <see cref="MappingsDatabaseContext" />
 	/// </summary>
@@ -36,5 +38,15 @@ public class MappingsDatabaseContext : DbContext
 			Directory.CreateDirectory(directory);
 
 		options.UseSqlite(connectionString);
+	}
+
+	/// <inheritdoc />
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
+	{
+		modelBuilder.Entity<AniListMapping>(entity =>
+		{
+			entity.HasIndex(m => m.AniListId).IsUnique();
+			entity.HasIndex(m => m.TvdbId);
+		});
 	}
 }
