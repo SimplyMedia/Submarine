@@ -1,4 +1,4 @@
-name: Build Api Docker Image
+name: Build Docker Images
 
 on:
   push:
@@ -7,12 +7,28 @@ on:
     paths:
       - backend/Submarine.Api/**
       - backend/Submarine.Core/**
+      - backend/Submarine.Metadata/**
+      - backend/Submarine.Metadata.Contracts/**
+      - backend/Submarine.Mappings/**
+      - backend/Submarine.Mappings.Contracts/**
       - .github/workflows/build-other-branches.yml
 
 jobs:
   docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - project: api
+            dockerfile: ./backend/Submarine.Api/Dockerfile
+            image: submarine-api
+          - project: metadata
+            dockerfile: ./backend/Submarine.Metadata/Dockerfile
+            image: submarine-metadata
+          - project: mappings
+            dockerfile: ./backend/Submarine.Mappings/Dockerfile
+            image: submarine-mappings
     steps:
       - name: Checkout Source code
         uses: actions/checkout@v5
@@ -43,11 +59,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          file: ./backend/Submarine.Api/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ghcr.io/simplymedia/submarine-api:${{ steps.sha_short.outputs.sha_short }}
-            ghcr.io/simplymedia/submarine-api:${{ env.BRANCH }}
+            ghcr.io/simplymedia/${{ matrix.image }}:${{ steps.sha_short.outputs.sha_short }}
+            ghcr.io/simplymedia/${{ matrix.image }}:${{ env.BRANCH }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

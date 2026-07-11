@@ -1,0 +1,56 @@
+services:
+  submarine-api:
+    build:
+      context: backend
+      dockerfile: Submarine.Api/Dockerfile
+    ports:
+      - "8989:8080"
+    volumes:
+      - ./data/api:/app/data
+    environment:
+      Metadata__BaseUrl: http://submarine-metadata:8080
+      Mappings__BaseUrl: http://submarine-mappings:8080
+    depends_on:
+      - submarine-metadata
+      - submarine-mappings
+
+  submarine-metadata:
+    build:
+      context: backend
+      dockerfile: Submarine.Metadata/Dockerfile
+    ports:
+      - "8990:8080"
+    environment:
+      Tmdb__ApiKey: ${TMDB_API_KEY:-}
+      Tvdb__ApiKey: ${TVDB_API_KEY:-}
+
+  submarine-mappings:
+    build:
+      context: backend
+      dockerfile: Submarine.Mappings/Dockerfile
+    ports:
+      - "8991:8080"
+    volumes:
+      - ./data/mappings:/app/data
+
+# Postgres variant (disabled by default; SQLite is the default provider).
+# To enable, uncomment the block below and set submarine-api's Database__Provider
+# and ConnectionStrings__PostgreSQLConnection accordingly.
+#
+#  postgres:
+#    image: postgres:16-alpine
+#    environment:
+#      POSTGRES_DB: Submarine
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#    volumes:
+#      - ./data/postgres:/var/lib/postgresql/data
+#
+#  submarine-api:
+#    environment:
+#      Database__Provider: Postgres
+#      ConnectionStrings__PostgreSQLConnection: Host=postgres;Port=5432;Database=Submarine;Username=postgres;Password=postgres;
+#    depends_on:
+#      - postgres
+#      - submarine-metadata
+#      - submarine-mappings
