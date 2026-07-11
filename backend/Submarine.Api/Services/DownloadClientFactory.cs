@@ -29,7 +29,7 @@ public class DownloadClientFactory
 	/// <summary>
 	///     Creates the download client described by the config
 	/// </summary>
-	public IDownloadClient Create(DownloadClientConfig config)
+	public virtual IDownloadClient Create(DownloadClientConfig config)
 	{
 		var http = _httpClientFactory.CreateClient("downloadclient");
 
