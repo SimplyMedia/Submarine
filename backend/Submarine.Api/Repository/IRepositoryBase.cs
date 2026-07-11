@@ -9,6 +9,12 @@ namespace Submarine.Api.Repository;
 public interface IRepositoryBase<T>
 {
 	/// <summary>
+	///     Queries this Repository, e.g. for paging
+	/// </summary>
+	/// <returns>Queryable of entities</returns>
+	IQueryable<T> Query();
+
+	/// <summary>
 	///     Finds all entities in this Repository
 	/// </summary>
 	/// <returns>List of entities</returns>

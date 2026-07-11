@@ -26,6 +26,10 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
 		=> DatabaseContext = databaseContext;
 
 	/// <inheritdoc />
+	public IQueryable<T> Query()
+		=> Set.AsNoTracking();
+
+	/// <inheritdoc />
 	public Task<List<T>> FindAllAsync()
 		=> Set.AsNoTracking().ToListAsync();
 
