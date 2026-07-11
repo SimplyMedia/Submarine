@@ -172,6 +172,124 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.ToTable("DownloadClients");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Download.TrackedDownload", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DownloadClientConfigId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DownloadId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.PrimitiveCollection<string>("EpisodeIds")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Imported")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Indexer")
+                        .HasColumnType("TEXT");
+
+                    b.PrimitiveCollection<string>("Languages")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MovieId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OutputPath")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Protocol")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Quality")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReleaseGroup")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReleaseTitle")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MovieId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("TrackedDownloads");
+                });
+
+            modelBuilder.Entity("Submarine.Core.History.HistoryEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("EpisodeId")
+                        .HasColumnType("INTEGER");
+
+                    b.PrimitiveCollection<string>("Languages")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MovieId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Quality")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceTitle")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EpisodeId");
+
+                    b.HasIndex("MovieId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("History");
+                });
+
             modelBuilder.Entity("Submarine.Core.Library.Episode", b =>
                 {
                     b.Property<int>("Id")
@@ -713,6 +831,37 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.HasBaseType("Submarine.Core.Provider.Provider");
 
                     b.HasDiscriminator().HasValue("UsenetIndexer");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Download.TrackedDownload", b =>
+                {
+                    b.HasOne("Submarine.Core.Library.Movie", null)
+                        .WithMany()
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Submarine.Core.Library.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Submarine.Core.History.HistoryEvent", b =>
+                {
+                    b.HasOne("Submarine.Core.Library.Episode", null)
+                        .WithMany()
+                        .HasForeignKey("EpisodeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Submarine.Core.Library.Movie", null)
+                        .WithMany()
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Submarine.Core.Library.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Submarine.Core.Library.Episode", b =>

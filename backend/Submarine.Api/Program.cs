@@ -17,6 +17,7 @@ using Submarine.Core.DecisionEngine.Filter;
 using Submarine.Core.Indexer;
 using Submarine.Core.Indexer.Torznab;
 using Submarine.Core.Languages;
+using Submarine.Core.MediaFile.Naming;
 using Submarine.Core.Parser;
 using Submarine.Core.Parser.Release;
 using Submarine.Core.Quality;
@@ -102,6 +103,15 @@ builder.Services.AddScoped<DownloadClientService>();
 builder.Services.AddSingleton<DownloadClientFactory>();
 builder.Services.AddScoped<DecisionConfigService>();
 builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<HistoryService>();
+builder.Services.AddScoped<GrabService>();
+builder.Services.AddScoped<QueueService>();
+builder.Services.AddScoped<SeriesRefreshService>();
+builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<RenameService>();
+
+builder.Services.AddSingleton<NamingTemplateRenderer>();
+builder.Services.AddSingleton<MediaNamingService>();
 
 // Clients
 builder.Services.AddHttpClient<IMetadataClient, MetadataClient>((sp, client) =>
@@ -127,8 +137,14 @@ builder.Services.AddSingleton<IScheduledJobRegistry>(sp => sp.GetRequiredService
 builder.Services.AddSingleton<ScheduledJobRunner>();
 builder.Services.AddHostedService<SchedulerHostedService>();
 
+builder.Services.AddSingleton<IScheduledJob, DownloadMonitorJob>();
+builder.Services.AddSingleton<IScheduledJob, MetadataRefreshJob>();
+
 // Events
 builder.Services.AddScoped<IEventPublisher, EventPublisher>();
+builder.Services.AddScoped<EpisodeTitleChangedHandler>();
+builder.Services.AddScoped<IEventHandler<EpisodeTitleChangedEvent>>(sp =>
+	sp.GetRequiredService<EpisodeTitleChangedHandler>());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

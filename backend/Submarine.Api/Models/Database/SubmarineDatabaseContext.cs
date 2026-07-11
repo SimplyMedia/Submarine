@@ -6,6 +6,7 @@ using Submarine.Core.Database;
 using Submarine.Core.DecisionEngine.CustomFormats;
 using Submarine.Core.DecisionEngine.Filter;
 using Submarine.Core.Download;
+using Submarine.Core.History;
 using Submarine.Core.Library;
 using Submarine.Core.MediaFile;
 using Submarine.Core.Profile;
@@ -56,6 +57,10 @@ public class SubmarineDatabaseContext : DbContext
 	public DbSet<ReleaseFilterConfig> ReleaseFilters { get; set; }
 
 	public DbSet<CustomFormatConfig> CustomFormats { get; set; }
+
+	public DbSet<TrackedDownload> TrackedDownloads { get; set; }
+
+	public DbSet<HistoryEvent> History { get; set; }
 
 	/// <inheritdoc />
 	public SubmarineDatabaseContext(DbContextOptions options, IConfiguration configuration) : base(options)
@@ -152,6 +157,63 @@ public class SubmarineDatabaseContext : DbContext
 			.HasConversion(
 				q => JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
 				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!);
+
+		builder.Entity<TrackedDownload>()
+			.Property(d => d.Quality)
+			.HasConversion(
+				q => JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
+				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!);
+
+		builder.Entity<TrackedDownload>()
+			.HasOne<Series>()
+			.WithMany()
+			.HasForeignKey(d => d.SeriesId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<TrackedDownload>()
+			.HasOne<Movie>()
+			.WithMany()
+			.HasForeignKey(d => d.MovieId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<HistoryEvent>()
+			.Property(h => h.Quality)
+			.HasConversion(
+				q => q == null ? null : JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
+				q => string.IsNullOrEmpty(q)
+					? null
+					: JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null));
+
+		builder.Entity<HistoryEvent>()
+			.Property(h => h.Data)
+			.HasConversion(
+				d => JsonSerializer.Serialize(d, (JsonSerializerOptions?)null),
+				d => string.IsNullOrEmpty(d)
+					? new Dictionary<string, string>()
+					: JsonSerializer.Deserialize<Dictionary<string, string>>(d, (JsonSerializerOptions?)null)
+					  ?? new Dictionary<string, string>(),
+				new ValueComparer<Dictionary<string, string>>(
+					(a, b) => a!.SequenceEqual(b!),
+					d => d.Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
+					d => d.ToDictionary(pair => pair.Key, pair => pair.Value)));
+
+		builder.Entity<HistoryEvent>()
+			.HasOne<Series>()
+			.WithMany()
+			.HasForeignKey(h => h.SeriesId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<HistoryEvent>()
+			.HasOne<Episode>()
+			.WithMany()
+			.HasForeignKey(h => h.EpisodeId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<HistoryEvent>()
+			.HasOne<Movie>()
+			.WithMany()
+			.HasForeignKey(h => h.MovieId)
+			.OnDelete(DeleteBehavior.SetNull);
 
 		base.OnModelCreating(builder);
 	}
