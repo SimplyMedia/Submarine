@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Models.Database;
 using Submarine.Core.Library;
+using Submarine.Core.MediaFile;
 
 namespace Submarine.Api.Repository;
 
@@ -24,6 +25,27 @@ public class SeriesRepository : RepositoryBase<Series>, ISeriesRepository
 	/// <inheritdoc />
 	public IQueryable<Episode> QueryEpisodes(int seriesId)
 		=> DatabaseContext.Set<Episode>().AsNoTracking().Where(e => e.SeriesId == seriesId);
+
+	/// <inheritdoc />
+	public Task<Episode?> FindEpisodeAsync(int id)
+		=> DatabaseContext.Set<Episode>().AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
+
+	/// <inheritdoc />
+	public Task<EpisodeFile?> FindEpisodeFileAsync(int id)
+		=> DatabaseContext.Set<EpisodeFile>().AsNoTracking().FirstOrDefaultAsync(f => f.Id == id);
+
+	/// <inheritdoc />
+	public async Task<List<EpisodeFile>> FindEpisodeFilesBySeasonAsync(int seriesId, int seasonNumber)
+	{
+		var fileIds = await DatabaseContext.Set<Episode>().AsNoTracking()
+			.Where(e => e.SeriesId == seriesId && e.SeasonNumber == seasonNumber && e.EpisodeFileId != null)
+			.Select(e => e.EpisodeFileId!.Value)
+			.ToListAsync();
+
+		return await DatabaseContext.Set<EpisodeFile>().AsNoTracking()
+			.Where(f => fileIds.Contains(f.Id))
+			.ToListAsync();
+	}
 
 	/// <inheritdoc />
 	public async Task<List<Episode>> FindEpisodesByAirDateAsync(DateTimeOffset start, DateTimeOffset end)

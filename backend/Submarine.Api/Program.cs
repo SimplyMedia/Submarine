@@ -11,6 +11,11 @@ using Submarine.Api.Jobs;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Repository;
 using Submarine.Api.Services;
+using Submarine.Core.DecisionEngine;
+using Submarine.Core.DecisionEngine.CustomFormats;
+using Submarine.Core.DecisionEngine.Filter;
+using Submarine.Core.Indexer;
+using Submarine.Core.Indexer.Torznab;
 using Submarine.Core.Languages;
 using Submarine.Core.Parser;
 using Submarine.Core.Parser.Release;
@@ -60,9 +65,16 @@ builder.Services.AddSingleton<IParser<string?>, ReleaseGroupParserService>();
 builder.Services.AddSingleton<IParser<IReadOnlyList<Language>>, LanguageParserService>();
 builder.Services.AddSingleton<IParser<QualityModel>, QualityParserService>();
 builder.Services.AddSingleton<IParser<StreamingProvider?>, StreamingProviderParserService>();
+builder.Services.AddSingleton<IParser<TorznabCapabilities>, TorznabCapabilitiesParser>();
+builder.Services.AddSingleton<IParser<IReadOnlyList<ReleaseInfo>>, TorznabFeedParser>();
 
 // Validator
 builder.Services.AddSingleton<UsenetReleaseValidatorService>();
+
+// Decision Engine
+builder.Services.AddSingleton<FilterEvaluator>();
+builder.Services.AddSingleton<CustomFormatEvaluator>();
+builder.Services.AddSingleton<DownloadDecisionService>();
 
 // Repository
 builder.Services.AddScoped<IProviderRepository, ProviderRepository>();
@@ -72,6 +84,9 @@ builder.Services.AddScoped<IQualityProfileRepository, QualityProfileRepository>(
 builder.Services.AddScoped<ILanguageProfileRepository, LanguageProfileRepository>();
 builder.Services.AddScoped<ISeriesRepository, SeriesRepository>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
+builder.Services.AddScoped<IDownloadClientRepository, DownloadClientRepository>();
+builder.Services.AddScoped<IReleaseFilterRepository, ReleaseFilterRepository>();
+builder.Services.AddScoped<ICustomFormatRepository, CustomFormatRepository>();
 
 // Service
 builder.Services.AddScoped<ProviderService>();
@@ -82,6 +97,11 @@ builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<SeriesService>();
 builder.Services.AddScoped<MovieService>();
 builder.Services.AddScoped<CalendarService>();
+builder.Services.AddScoped<IndexerService>();
+builder.Services.AddScoped<DownloadClientService>();
+builder.Services.AddSingleton<DownloadClientFactory>();
+builder.Services.AddScoped<DecisionConfigService>();
+builder.Services.AddScoped<SearchService>();
 
 // Clients
 builder.Services.AddHttpClient<IMetadataClient, MetadataClient>((sp, client) =>
@@ -92,6 +112,11 @@ builder.Services.AddHttpClient<IMetadataClient, MetadataClient>((sp, client) =>
 		client.BaseAddress = new Uri(baseUrl);
 	})
 	.AddStandardResilienceHandler();
+
+builder.Services.AddHttpClient("indexer", client => client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddHttpClient("downloadclient", client => client.Timeout = TimeSpan.FromSeconds(100));
+
+builder.Services.AddSingleton<TorznabHttpClient>();
 
 // Background jobs
 builder.Services.AddSingleton<IBackgroundTaskQueue, ChannelBackgroundTaskQueue>();
