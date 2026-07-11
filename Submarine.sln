@@ -6,7 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{A1A8
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{48563F82-ADEB-4224-9FBF-F087EFBEADDF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Submarine.Core.Test", "Submarine.Core.Test\Submarine.Core.Test.csproj", "{B36EF99C-6759-489D-A2AA-26471A17B0EC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Submarine.Core.Tests", "Submarine.Core.Tests\Submarine.Core.Tests.csproj", "{B36EF99C-6759-489D-A2AA-26471A17B0EC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Application", "Application", "{45CE5F43-3304-4DA9-931F-9EC8C45F025B}"
 EndProject
