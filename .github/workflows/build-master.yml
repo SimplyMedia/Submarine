@@ -4,8 +4,8 @@ on:
   push:
     branches: [master]
     paths:
-      - Submarine.Api/**
-      - Submarine.Core/**
+      - backend/Submarine.Api/**
+      - backend/Submarine.Core/**
       - .github/workflows/build-master.yml
 
 jobs:
@@ -38,8 +38,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Submarine.Api/Dockerfile
+          context: ./backend
+          file: ./backend/Submarine.Api/Dockerfile
           push: true
           tags: |
             ghcr.io/simplymedia/submarine-api:${{ steps.sha_short.outputs.sha_short }}

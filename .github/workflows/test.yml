@@ -13,12 +13,15 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Restore dependencies
         run: dotnet restore
+        working-directory: backend
       - name: Run Build
         run: dotnet build --no-restore /p:ContinuousIntegrationBuild=true
+        working-directory: backend
       - name: Run Test
         run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+        working-directory: backend
       - name: Upload Coverage
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
           api-token: ${{ secrets.CODACY_API_TOKEN }}
-          coverage-reports: Submarine.Core.Tests/coverage.opencover.xml
+          coverage-reports: backend/Submarine.Core.Tests/coverage.opencover.xml
