@@ -55,6 +55,8 @@ public class ProviderService
 		if (update.ApiKey != null)
 			provider.ApiKey = update.ApiKey;
 
+		ApplyIndexerUpdate(provider, update);
+
 		await _repository.UpdateAsync(provider);
 
 		return provider;
@@ -70,5 +72,24 @@ public class ProviderService
 		await _repository.DeleteAsync(provider);
 
 		return provider;
+	}
+
+	private static void ApplyIndexerUpdate(Provider provider, UpdateProviderRequest update)
+	{
+		switch (provider)
+		{
+			case TorznabIndexer torznab:
+				if (update.Categories != null) torznab.Categories = update.Categories;
+				if (update.AnimeCategories != null) torznab.AnimeCategories = update.AnimeCategories;
+				if (update.MinimumSeeders != null) torznab.MinimumSeeders = update.MinimumSeeders.Value;
+				if (update.SeedRatio != null) torznab.SeedRatio = update.SeedRatio;
+				if (update.SeedTime != null) torznab.SeedTime = update.SeedTime;
+				if (update.SeasonPackSeedTime != null) torznab.SeasonPackSeedTime = update.SeasonPackSeedTime;
+				break;
+			case NewznabIndexer newznab:
+				if (update.Categories != null) newznab.Categories = update.Categories;
+				if (update.AnimeCategories != null) newznab.AnimeCategories = update.AnimeCategories;
+				break;
+		}
 	}
 }
