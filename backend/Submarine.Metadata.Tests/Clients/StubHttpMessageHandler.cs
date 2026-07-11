@@ -5,15 +5,28 @@ namespace Submarine.Metadata.Tests.Clients;
 
 internal class StubHttpMessageHandler : HttpMessageHandler
 {
-	private readonly string _responseJson;
+	private readonly Queue<(HttpStatusCode Status, string Json)> _responses;
+
+	public List<HttpRequestMessage> Requests { get; } = [];
 
 	public StubHttpMessageHandler(string responseJson)
-		=> _responseJson = responseJson;
+		: this((HttpStatusCode.OK, responseJson))
+	{
+	}
+
+	public StubHttpMessageHandler(params (HttpStatusCode Status, string Json)[] responses)
+		=> _responses = new Queue<(HttpStatusCode, string)>(responses);
 
 	protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
 		CancellationToken cancellationToken)
-		=> Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+	{
+		Requests.Add(request);
+
+		var (status, json) = _responses.Count > 1 ? _responses.Dequeue() : _responses.Peek();
+
+		return Task.FromResult(new HttpResponseMessage(status)
 		{
-			Content = new StringContent(_responseJson, Encoding.UTF8, "application/json")
+			Content = new StringContent(json, Encoding.UTF8, "application/json")
 		});
+	}
 }

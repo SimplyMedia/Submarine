@@ -44,6 +44,11 @@ builder.Services.AddHttpClient<TmdbClient>(client =>
 	client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
 });
 
+builder.Services.AddHttpClient<TvdbClient>(client =>
+{
+	client.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

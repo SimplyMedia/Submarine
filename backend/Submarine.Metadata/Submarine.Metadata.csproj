@@ -19,4 +19,8 @@
 		<ProjectReference Include="..\Submarine.Metadata.Contracts\Submarine.Metadata.Contracts.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="Submarine.Metadata.Tests" />
+	</ItemGroup>
+
 </Project>
