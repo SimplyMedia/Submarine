@@ -19,7 +19,7 @@ namespace Submarine.Core.Parser.Release;
 public class ReleaseParserService : IParser<BaseRelease>
 {
 	private static readonly Regex EditionRegex = new(
-		@"\(?\b(?<edition>(((Recut.|Extended.|Ultimate.)?(Director.?s|Collector.?s|Theatrical|Ultimate|Extended|Despecialized|(Special|Rouge|Final|Assembly|Imperial|Diamond|Signature|Hunter|Rekall)(?=(.(Cut|Edition|Version)))|\d{2,3}(th)?.Anniversary)(?:.(Cut|Edition|Version))?(.(Extended|Uncensored|Remastered|Unrated|Uncut|IMAX|Fan.?Edit))?|((Uncensored|Remastered|Unrated|Uncut|IMAX|Fan.?Edit|Restored|((2|3|4)in1))))))\b\)?",
+		@"\(?\b(?<edition>(((Recut.|Extended.|Ultimate.)?(Director.?s|Collector.?s|Theatrical|Ultimate|Extended|Despecialized|Limited|Criterion|(Special|Rouge|Final|Assembly|Imperial|Diamond|Signature|Hunter|Rekall)(?=(.(Cut|Edition|Version)))|\d{2,3}(th)?.Anniversary)(?:.(Cut|Edition|Version))?(.(Extended|Uncensored|Remastered|Unrated|Uncut|IMAX|Fan.?Edit))?|((Uncensored|Remastered|Unrated|Uncut|IMAX|Fan.?Edit|Restored|3D|((2|3|4)in1))))))\b\)?",
 		RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 	private static readonly RegexReplace WebsitePrefixRegex = new(
@@ -612,6 +612,11 @@ public class ReleaseParserService : IParser<BaseRelease>
 			{
 				type = ReleaseType.MOVIE;
 
+				movieReleaseData = new MovieReleaseData
+				{
+					Edition = movieTitleMetadata.Edition
+				};
+
 				break;
 			}
 		}
@@ -652,6 +657,10 @@ public class ReleaseParserService : IParser<BaseRelease>
 		titles.RemoveAt(titles.Count - 1);
 
 		if (!ContainsSeriesInformationRegex.IsMatch(parsableTitle))
+		{
+			var editionMatch = EditionRegex.Match(parsableTitle);
+			var edition = editionMatch.Success ? editionMatch.Groups["edition"].Value.Replace(".", " ").Trim() : null;
+
 			foreach (var regex in ReportMovieTitleRegex.Concat(ReportMovieTitleFolderRegex))
 			{
 				var match = regex.Matches(parsableTitle);
@@ -681,9 +690,10 @@ public class ReleaseParserService : IParser<BaseRelease>
 					if (title.IsNotNullOrWhitespace())
 						return new MovieTitleMetadata(title, titles.Select(t => t.NormalizeReleaseTitle()).ToList(),
 							year,
-							group, hash, null);
+							group, hash, edition);
 				}
 			}
+		}
 
 		foreach (var regex in ReportSeriesTitleRegex)
 		{

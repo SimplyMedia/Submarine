@@ -107,4 +107,46 @@ public class ReleaseParserServiceTest
 
 		Assert.Equal(expected, parsed.Quality.Resolution.Source);
 	}
+
+	[Theory]
+	[InlineData("Movie.Title.Directors.Cut.2011.1080p.BluRay.x264-GROUP", "Directors Cut")]
+	[InlineData("Movie.Title.Director's.Cut.2011.1080p.BluRay.x264-GROUP", "Director's Cut")]
+	public void Parse_ShouldParseEdition_WhenMovieHasDirectorsCut(string input, string edition)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(ReleaseType.MOVIE, parsed.Type);
+		Assert.Equal(edition, parsed.MovieReleaseData?.Edition);
+	}
+
+	[Theory]
+	[InlineData("Movie.Title.Extended.2011.1080p.BluRay.x264-GROUP", "Extended")]
+	[InlineData("Movie.Title.Theatrical.2011.1080p.BluRay.x264-GROUP", "Theatrical")]
+	[InlineData("Movie.Title.IMAX.2011.1080p.BluRay.x264-GROUP", "IMAX")]
+	[InlineData("Movie.Title.Remastered.2011.1080p.BluRay.x264-GROUP", "Remastered")]
+	[InlineData("Movie.Title.Uncut.2011.1080p.BluRay.x264-GROUP", "Uncut")]
+	[InlineData("Movie.Title.Unrated.2011.1080p.BluRay.x264-GROUP", "Unrated")]
+	[InlineData("Movie.Title.Special.Edition.2011.1080p.BluRay.x264-GROUP", "Special Edition")]
+	[InlineData("Movie.Title.Limited.2011.1080p.BluRay.x264-GROUP", "Limited")]
+	[InlineData("Movie.Title.Criterion.2011.1080p.BluRay.x264-GROUP", "Criterion")]
+	[InlineData("Movie.Title.25th.Anniversary.Edition.2011.1080p.BluRay.x264-GROUP", "25th Anniversary Edition")]
+	[InlineData("Movie.Title.3D.2011.1080p.BluRay.x264-GROUP", "3D")]
+	public void Parse_ShouldParseEdition_WhenMovieHasEdition(string input, string edition)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(ReleaseType.MOVIE, parsed.Type);
+		Assert.Equal(edition, parsed.MovieReleaseData?.Edition);
+	}
+
+	[Theory]
+	[InlineData("Movie.Title.1987.1080p.BluRay.REMUX.DD+2.0.AVC")]
+	public void Parse_ShouldSetMovieReleaseDataWithoutEdition_WhenMovieHasNoEdition(string input)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(ReleaseType.MOVIE, parsed.Type);
+		Assert.NotNull(parsed.MovieReleaseData);
+		Assert.Null(parsed.MovieReleaseData?.Edition);
+	}
 }
