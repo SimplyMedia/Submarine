@@ -6,11 +6,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "7.0.x"
+          dotnet-version: "10.0.x"
       - name: Restore dependencies
         run: dotnet restore
       - name: Run Build
@@ -21,4 +21,4 @@ jobs:
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
           api-token: ${{ secrets.CODACY_API_TOKEN }}
-          coverage-reports: Submarine.Core.Test/coverage.opencover.xml
+          coverage-reports: Submarine.Core.Tests/coverage.opencover.xml
