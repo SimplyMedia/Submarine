@@ -65,9 +65,17 @@ builder.Services.AddSingleton<UsenetReleaseValidatorService>();
 
 // Repository
 builder.Services.AddScoped<IProviderRepository, ProviderRepository>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
+builder.Services.AddScoped<IRootFolderRepository, RootFolderRepository>();
+builder.Services.AddScoped<IQualityProfileRepository, QualityProfileRepository>();
+builder.Services.AddScoped<ILanguageProfileRepository, LanguageProfileRepository>();
 
 // Service
 builder.Services.AddScoped<ProviderService>();
+builder.Services.AddScoped<TagService>();
+builder.Services.AddScoped<RootFolderService>();
+builder.Services.AddScoped<SettingsService>();
+builder.Services.AddScoped<ProfileService>();
 
 // Background jobs
 builder.Services.AddSingleton<IBackgroundTaskQueue, ChannelBackgroundTaskQueue>();
@@ -89,7 +97,6 @@ builder.Services.AddCors(options =>
 	options.AddDefaultPolicy(x => x
 		.AllowAnyOrigin()
 		.AllowAnyMethod()
-		.AllowAnyOrigin()
 		.AllowAnyHeader()
 	);
 });
@@ -135,6 +142,8 @@ using (var scope = app.Services.GetService<IServiceScopeFactory>()?.CreateScope(
 	try
 	{
 		scope?.ServiceProvider.GetRequiredService<SubmarineDatabaseContext>().Database.Migrate();
+
+		await (scope?.ServiceProvider.GetRequiredService<ProfileService>().SeedDefaultsAsync() ?? Task.CompletedTask);
 	}
 	catch (Exception ex)
 	{
@@ -170,6 +179,5 @@ app.MapControllers();
 app.MapHealthChecks("/_status/healthz");
 app.MapHealthChecks("/_status/ready");
 
-app.MapControllers();
 
 app.Run();

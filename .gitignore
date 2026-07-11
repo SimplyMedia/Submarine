@@ -389,3 +389,7 @@ FodyWeavers.xsd
 
 # honey-dev loop state
 .honey-dev/
+
+# runtime data
+data/
+logs/

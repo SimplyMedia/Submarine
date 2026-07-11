@@ -26,7 +26,7 @@ public class ReleaseController : ControllerBase
 	}
 
 	[HttpGet]
-	public Task<IActionResult> GetAsync([FromQuery] [Required] string title, [FromQuery] [Required] Protocol protocol)
+	public IActionResult Get([FromQuery] [Required] string title, [FromQuery] [Required] Protocol protocol)
 	{
 		try
 		{
@@ -38,11 +38,11 @@ public class ReleaseController : ControllerBase
 				_ => throw new ArgumentOutOfRangeException(nameof(protocol), protocol, null)
 			};
 
-			return Task.FromResult(Ok(parsed) as IActionResult);
+			return Ok(parsed);
 		}
 		catch (NotParsableReleaseException)
 		{
-			return Task.FromResult(UnprocessableEntity() as IActionResult);
+			return UnprocessableEntity();
 		}
 	}
 }
