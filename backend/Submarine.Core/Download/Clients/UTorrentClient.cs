@@ -125,13 +125,19 @@ public class UTorrentClient : IDownloadClient
 			$"{_settings.BaseUrl}/?token={await GetTokenAsync(false, cancellationToken)}&{query}", cancellationToken);
 
 		if (response.StatusCode == HttpStatusCode.BadRequest)
+		{
+			response.Dispose();
 			response = await _httpClient.GetAsync(
 				$"{_settings.BaseUrl}/?token={await GetTokenAsync(true, cancellationToken)}&{query}",
 				cancellationToken);
+		}
 
-		response.EnsureSuccessStatusCode();
+		using (response)
+		{
+			response.EnsureSuccessStatusCode();
 
-		return await response.Content.ReadAsStringAsync(cancellationToken);
+			return await response.Content.ReadAsStringAsync(cancellationToken);
+		}
 	}
 
 	private async Task<string> GetTokenAsync(bool forceRefresh, CancellationToken cancellationToken)
@@ -139,7 +145,7 @@ public class UTorrentClient : IDownloadClient
 		if (!forceRefresh && _token is not null)
 			return _token;
 
-		var response = await _httpClient.GetAsync($"{_settings.BaseUrl}/token.html", cancellationToken);
+		using var response = await _httpClient.GetAsync($"{_settings.BaseUrl}/token.html", cancellationToken);
 		response.EnsureSuccessStatusCode();
 
 		var html = await response.Content.ReadAsStringAsync(cancellationToken);

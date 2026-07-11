@@ -51,7 +51,7 @@ public class QBittorrentClient : IDownloadClient
 		var form = new Dictionary<string, string> { ["urls"] = release.DownloadUrl };
 		if (_settings.Category != null) form["category"] = _settings.Category;
 
-		await SendAuthenticatedAsync(() => new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/add"))
+		using var addResponse = await SendAuthenticatedAsync(() => new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/add"))
 		{
 			Content = new FormUrlEncodedContent(form)
 		}, cancellationToken);
@@ -70,7 +70,7 @@ public class QBittorrentClient : IDownloadClient
 	{
 		var query = _settings.Category != null ? $"?category={Uri.EscapeDataString(_settings.Category)}" : string.Empty;
 
-		var response = await SendAuthenticatedAsync(
+		using var response = await SendAuthenticatedAsync(
 			() => new HttpRequestMessage(HttpMethod.Get, BuildUrl($"torrents/info{query}")), cancellationToken);
 
 		var torrents = await response.Content.ReadFromJsonAsync<IReadOnlyList<QBittorrentTorrent>>(JsonOptions,
@@ -88,7 +88,7 @@ public class QBittorrentClient : IDownloadClient
 			["deleteFiles"] = deleteData ? "true" : "false"
 		};
 
-		await SendAuthenticatedAsync(() => new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/delete"))
+		using var response = await SendAuthenticatedAsync(() => new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/delete"))
 		{
 			Content = new FormUrlEncodedContent(form)
 		}, cancellationToken);
@@ -96,8 +96,10 @@ public class QBittorrentClient : IDownloadClient
 
 	/// <inheritdoc />
 	public async Task TestAsync(CancellationToken cancellationToken = default)
-		=> await SendAuthenticatedAsync(() => new HttpRequestMessage(HttpMethod.Get, BuildUrl("app/webapiVersion")),
-			cancellationToken);
+	{
+		using var response = await SendAuthenticatedAsync(
+			() => new HttpRequestMessage(HttpMethod.Get, BuildUrl("app/webapiVersion")), cancellationToken);
+	}
 
 	private async Task<HttpResponseMessage> SendAuthenticatedAsync(Func<HttpRequestMessage> requestFactory,
 		CancellationToken cancellationToken)
@@ -108,12 +110,17 @@ public class QBittorrentClient : IDownloadClient
 
 		if (response.StatusCode == HttpStatusCode.Forbidden)
 		{
+			response.Dispose();
 			await LoginAsync(cancellationToken);
 			response = await SendWithCookieAsync(requestFactory(), cancellationToken);
 		}
 
 		if (!response.IsSuccessStatusCode)
-			throw new DownloadClientException($"qBittorrent request failed with status {(int)response.StatusCode}");
+		{
+			var statusCode = (int)response.StatusCode;
+			response.Dispose();
+			throw new DownloadClientException($"qBittorrent request failed with status {statusCode}");
+		}
 
 		return response;
 	}
@@ -136,7 +143,7 @@ public class QBittorrentClient : IDownloadClient
 			})
 		};
 
-		var response = await _httpClient.SendAsync(request, cancellationToken);
+		using var response = await _httpClient.SendAsync(request, cancellationToken);
 		var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
 		if (!response.IsSuccessStatusCode || body.Trim() != "Ok.")

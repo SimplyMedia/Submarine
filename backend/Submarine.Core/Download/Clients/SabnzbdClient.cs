@@ -122,7 +122,7 @@ public class SabnzbdClient : IDownloadClient
 			request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
 				Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_settings.Username}:{_settings.Password}")));
 
-		var response = await _httpClient.SendAsync(request, cancellationToken);
+		using var response = await _httpClient.SendAsync(request, cancellationToken);
 		if (!response.IsSuccessStatusCode)
 			throw new DownloadClientException($"SABnzbd request failed with status {(int)response.StatusCode}");
 

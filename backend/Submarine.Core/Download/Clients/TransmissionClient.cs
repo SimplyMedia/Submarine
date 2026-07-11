@@ -106,20 +106,24 @@ public class TransmissionClient : IDownloadClient
 				_sessionId = values.FirstOrDefault();
 
 			_logger.LogDebug("Refreshed Transmission session id after a 409 response");
+			response.Dispose();
 			response = await SendRequestAsync(payload, cancellationToken);
 		}
 
-		if (!response.IsSuccessStatusCode)
-			throw new DownloadClientException($"Transmission request failed with status {(int)response.StatusCode}");
+		using (response)
+		{
+			if (!response.IsSuccessStatusCode)
+				throw new DownloadClientException($"Transmission request failed with status {(int)response.StatusCode}");
 
-		var body = await response.Content.ReadFromJsonAsync<JsonNode>(JsonOptions, cancellationToken)
-			?? throw new DownloadClientException("Transmission returned an empty response");
+			var body = await response.Content.ReadFromJsonAsync<JsonNode>(JsonOptions, cancellationToken)
+				?? throw new DownloadClientException("Transmission returned an empty response");
 
-		var result = body["result"]?.GetValue<string>();
-		if (result != "success")
-			throw new DownloadClientException($"Transmission request failed: {result}");
+			var result = body["result"]?.GetValue<string>();
+			if (result != "success")
+				throw new DownloadClientException($"Transmission request failed: {result}");
 
-		return body["arguments"] ?? new JsonObject();
+			return body["arguments"] ?? new JsonObject();
+		}
 	}
 
 	private async Task<HttpResponseMessage> SendRequestAsync(JsonObject payload, CancellationToken cancellationToken)

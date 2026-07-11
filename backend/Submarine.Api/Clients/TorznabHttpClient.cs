@@ -68,7 +68,7 @@ public class TorznabHttpClient
 
 		try
 		{
-			var response = await client.GetAsync(new Uri(new Uri(indexer.Url), query), cancellationToken);
+			using var response = await client.GetAsync(new Uri(new Uri(indexer.Url), query), cancellationToken);
 			response.EnsureSuccessStatusCode();
 			return await response.Content.ReadAsStringAsync(cancellationToken);
 		}
