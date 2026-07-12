@@ -50,16 +50,18 @@ public class TorznabRequestBuilder
 	/// <param name="tvdbId">The TVDB id, if any</param>
 	/// <param name="imdbId">The IMDb id, if any</param>
 	/// <param name="rid">The TVRage id, if any</param>
+	/// <param name="categories">The category ids to search in, if any</param>
 	/// <returns>The relative query string</returns>
 	public string BuildTvSearchQuery(string? query = null, int? season = null, int? episode = null,
-		int? tvdbId = null, string? imdbId = null, int? rid = null)
+		int? tvdbId = null, string? imdbId = null, int? rid = null, IReadOnlyList<int>? categories = null)
 		=> BuildQuery("tvsearch",
 			("q", Escape(query)),
 			("season", season?.ToString()),
 			("ep", episode?.ToString()),
 			("tvdbid", tvdbId?.ToString()),
 			("imdbid", Escape(imdbId)),
-			("rid", rid?.ToString()));
+			("rid", rid?.ToString()),
+			("cat", categories is { Count: > 0 } ? string.Join(",", categories) : null));
 
 	/// <summary>
 	///     Builds a movie search (t=movie) query
@@ -67,12 +69,15 @@ public class TorznabRequestBuilder
 	/// <param name="query">The search term, if any</param>
 	/// <param name="imdbId">The IMDb id, if any</param>
 	/// <param name="tmdbId">The TMDB id, if any</param>
+	/// <param name="categories">The category ids to search in, if any</param>
 	/// <returns>The relative query string</returns>
-	public string BuildMovieSearchQuery(string? query = null, string? imdbId = null, int? tmdbId = null)
+	public string BuildMovieSearchQuery(string? query = null, string? imdbId = null, int? tmdbId = null,
+		IReadOnlyList<int>? categories = null)
 		=> BuildQuery("movie",
 			("q", Escape(query)),
 			("imdbid", Escape(imdbId)),
-			("tmdbid", tmdbId?.ToString()));
+			("tmdbid", tmdbId?.ToString()),
+			("cat", categories is { Count: > 0 } ? string.Join(",", categories) : null));
 
 	/// <summary>
 	///     Combines a base url with a relative query string

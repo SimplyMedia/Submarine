@@ -77,10 +77,12 @@ public class SearchService
 	{
 		var series = await GetSeriesAsync(seriesId);
 
-		var context = await BuildSeriesContextAsync(series, season, existingFileQuality: null, cancellationToken);
+		var context = await BuildSeriesContextAsync(series, season, existingFileQuality: null,
+			existingFileLanguages: null, cancellationToken);
 
 		return await SearchAsync(protocol: null, cancellationToken, indexer =>
-			_torznabHttpClient.TvSearchAsync(indexer, series.TvdbId, season, cancellationToken: cancellationToken),
+			_torznabHttpClient.TvSearchAsync(indexer, series.TvdbId, season,
+				categories: SeriesCategories(indexer, series.Type), cancellationToken: cancellationToken),
 			context);
 	}
 
@@ -92,8 +94,8 @@ public class SearchService
 		if (movie == null)
 			throw new NotFoundException();
 
-		var existingQuality = movie.MovieFileId != null
-			? (await _movieRepository.FindMovieFileAsync(movie.MovieFileId.Value))?.Quality
+		var existingFile = movie.MovieFileId != null
+			? await _movieRepository.FindMovieFileAsync(movie.MovieFileId.Value)
 			: null;
 
 		var qualityProfile = await GetQualityProfileAsync(movie.QualityProfileId);
@@ -105,12 +107,13 @@ public class SearchService
 			Filters = await LoadFiltersAsync(),
 			CustomFormats = await LoadFormatsAsync(),
 			CustomFormatScores = qualityProfile.FormatScores,
-			ExistingFileQuality = existingQuality
+			ExistingFileQuality = existingFile?.Quality,
+			ExistingFileLanguages = existingFile?.Languages
 		};
 
 		return await SearchAsync(protocol: null, cancellationToken, indexer =>
 			_torznabHttpClient.MovieSearchAsync(indexer, movie.TmdbId, movie.ImdbId,
-				cancellationToken: cancellationToken), context);
+				categories: Categories(indexer), cancellationToken: cancellationToken), context);
 	}
 
 	public async Task<IReadOnlyList<DownloadDecision>> SearchTermAsync(string term, Protocol? protocol,
@@ -140,34 +143,45 @@ public class SearchService
 	private async Task<IReadOnlyList<DownloadDecision>> SearchForEpisodeAsync(Series series, Episode episode,
 		CancellationToken cancellationToken)
 	{
-		var existingQuality = episode.EpisodeFileId != null
-			? (await _seriesRepository.FindEpisodeFileAsync(episode.EpisodeFileId.Value))?.Quality
+		var existingFile = episode.EpisodeFileId != null
+			? await _seriesRepository.FindEpisodeFileAsync(episode.EpisodeFileId.Value)
 			: null;
 
-		var context = await BuildSeriesContextAsync(series, episode.SeasonNumber, existingQuality, cancellationToken);
+		var context = await BuildSeriesContextAsync(series, episode.SeasonNumber, existingFile?.Quality,
+			existingFile?.Languages, cancellationToken);
 
 		return await SearchAsync(protocol: null, cancellationToken, async indexer =>
 		{
 			var releases = new List<ReleaseInfo>(await _torznabHttpClient.TvSearchAsync(indexer, series.TvdbId,
-				episode.SeasonNumber, episode.EpisodeNumber, cancellationToken: cancellationToken));
+				episode.SeasonNumber, episode.EpisodeNumber, categories: SeriesCategories(indexer, series.Type),
+				cancellationToken: cancellationToken));
 
 			if (series.Type == SeriesType.ANIME && episode.AbsoluteEpisodeNumber is { } absolute)
+			{
 				releases.AddRange(await _torznabHttpClient.SearchAsync(indexer,
 					$"{series.Title} {absolute:00}", AnimeCategories(indexer), cancellationToken));
+
+				return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
+			}
 
 			return releases;
 		}, context);
 	}
 
 	private async Task<MediaContext> BuildSeriesContextAsync(Series series, int season,
-		Submarine.Core.Quality.QualityModel? existingFileQuality, CancellationToken cancellationToken)
+		Submarine.Core.Quality.QualityModel? existingFileQuality,
+		IReadOnlyList<Submarine.Core.Languages.Language>? existingFileLanguages, CancellationToken cancellationToken)
 	{
 		var qualityProfile = await GetQualityProfileAsync(series.QualityProfileId);
 
 		var seasonFiles = await _seriesRepository.FindEpisodeFilesBySeasonAsync(series.Id, season);
 		var seasonReleaseGroup = seasonFiles
 			.Select(f => f.ReleaseGroup)
-			.FirstOrDefault(group => group != null);
+			.Where(group => group != null)
+			.GroupBy(group => group)
+			.OrderByDescending(group => group.Count())
+			.Select(group => group.Key)
+			.FirstOrDefault();
 
 		return new MediaContext
 		{
@@ -177,6 +191,7 @@ public class SearchService
 			CustomFormats = await LoadFormatsAsync(),
 			CustomFormatScores = qualityProfile.FormatScores,
 			ExistingFileQuality = existingFileQuality,
+			ExistingFileLanguages = existingFileLanguages,
 			SeasonReleaseGroup = seasonReleaseGroup
 		};
 	}
@@ -186,7 +201,8 @@ public class SearchService
 	{
 		var indexers = await LoadIndexersAsync(protocol, cancellationToken);
 
-		var candidates = (await Task.WhenAll(indexers.Select(indexer => FetchCandidatesAsync(indexer, fetch))))
+		var candidates =
+			(await Task.WhenAll(indexers.Select(indexer => FetchCandidatesAsync(indexer, fetch, cancellationToken))))
 			.SelectMany(candidate => candidate)
 			.ToList();
 
@@ -194,7 +210,7 @@ public class SearchService
 	}
 
 	private async Task<IReadOnlyList<ReleaseCandidate>> FetchCandidatesAsync(Provider indexer,
-		Func<Provider, Task<IReadOnlyList<ReleaseInfo>>> fetch)
+		Func<Provider, Task<IReadOnlyList<ReleaseInfo>>> fetch, CancellationToken cancellationToken)
 	{
 		try
 		{
@@ -217,6 +233,9 @@ public class SearchService
 		}
 		catch (Exception ex)
 		{
+			if (cancellationToken.IsCancellationRequested)
+				throw;
+
 			_logger.LogWarning(ex, "Search on indexer {Indexer} failed", indexer.Name);
 			return Array.Empty<ReleaseCandidate>();
 		}
@@ -285,4 +304,7 @@ public class SearchService
 			NewznabIndexer newznab => newznab.AnimeCategories,
 			_ => Array.Empty<int>()
 		};
+
+	private static IReadOnlyList<int> SeriesCategories(Provider indexer, SeriesType type)
+		=> type == SeriesType.ANIME ? AnimeCategories(indexer) : Categories(indexer);
 }

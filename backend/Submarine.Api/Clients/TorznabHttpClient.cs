@@ -35,18 +35,21 @@ public class TorznabHttpClient
 	///     Runs a tv search against an indexer
 	/// </summary>
 	public Task<IReadOnlyList<ReleaseInfo>> TvSearchAsync(Provider indexer, int? tvdbId = null, int? season = null,
-		int? episode = null, string? query = null, CancellationToken cancellationToken = default)
+		int? episode = null, string? query = null, IReadOnlyList<int>? categories = null,
+		CancellationToken cancellationToken = default)
 		=> ParseFeedAsync(indexer,
-			new TorznabRequestBuilder(indexer.ApiKey).BuildTvSearchQuery(query, season, episode, tvdbId),
+			new TorznabRequestBuilder(indexer.ApiKey).BuildTvSearchQuery(query, season, episode, tvdbId,
+				categories: categories),
 			cancellationToken);
 
 	/// <summary>
 	///     Runs a movie search against an indexer
 	/// </summary>
 	public Task<IReadOnlyList<ReleaseInfo>> MovieSearchAsync(Provider indexer, int? tmdbId = null, string? imdbId = null,
-		string? query = null, CancellationToken cancellationToken = default)
+		string? query = null, IReadOnlyList<int>? categories = null, CancellationToken cancellationToken = default)
 		=> ParseFeedAsync(indexer,
-			new TorznabRequestBuilder(indexer.ApiKey).BuildMovieSearchQuery(query, imdbId, tmdbId), cancellationToken);
+			new TorznabRequestBuilder(indexer.ApiKey).BuildMovieSearchQuery(query, imdbId, tmdbId, categories),
+			cancellationToken);
 
 	/// <summary>
 	///     Runs a free text search against an indexer

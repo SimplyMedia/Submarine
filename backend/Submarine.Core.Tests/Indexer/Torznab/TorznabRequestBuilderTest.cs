@@ -46,6 +46,11 @@ public class TorznabRequestBuilderTest
 		=> Assert.Equal("?t=tvsearch&apikey=secret&tvdbid=280619", _instance.BuildTvSearchQuery(tvdbId: 280619));
 
 	[Fact]
+	public void BuildTvSearchQuery_ShouldIncludeCat_WhenCategoriesProvided()
+		=> Assert.Equal("?t=tvsearch&apikey=secret&tvdbid=280619&cat=5030,5040",
+			_instance.BuildTvSearchQuery(tvdbId: 280619, categories: new[] { 5030, 5040 }));
+
+	[Fact]
 	public void BuildMovieSearchQuery_ShouldIncludeAllParams_WhenAllProvided()
 		=> Assert.Equal("?t=movie&apikey=secret&q=The%20Matrix&imdbid=tt0133093&tmdbid=603",
 			_instance.BuildMovieSearchQuery("The Matrix", "tt0133093", 603));
@@ -53,6 +58,11 @@ public class TorznabRequestBuilderTest
 	[Fact]
 	public void BuildMovieSearchQuery_ShouldOmitNullParams_WhenOnlyImdbIdProvided()
 		=> Assert.Equal("?t=movie&apikey=secret&imdbid=tt0133093", _instance.BuildMovieSearchQuery(imdbId: "tt0133093"));
+
+	[Fact]
+	public void BuildMovieSearchQuery_ShouldIncludeCat_WhenCategoriesProvided()
+		=> Assert.Equal("?t=movie&apikey=secret&tmdbid=603&cat=2030,2040",
+			_instance.BuildMovieSearchQuery(tmdbId: 603, categories: new[] { 2030, 2040 }));
 
 	[Fact]
 	public void ToUri_ShouldCombineBaseUriAndQuery_WhenGivenBaseUri()
