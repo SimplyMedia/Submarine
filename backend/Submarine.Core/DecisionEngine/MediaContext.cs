@@ -50,4 +50,19 @@ public record MediaContext
 	///     The Release Group already imported for the season, used for a consistency bonus, if any
 	/// </summary>
 	public string? SeasonReleaseGroup { get; init; }
+
+	/// <summary>
+	///     The Delay Profile applicable to the media, deciding delay windows and the preferred Protocol, if any
+	/// </summary>
+	public DelayProfile? DelayProfile { get; init; }
+
+	/// <summary>
+	///     The Release Profiles applicable to the media, already filtered to the media's Tags
+	/// </summary>
+	public IReadOnlyCollection<ReleaseProfile> ReleaseProfiles { get; init; } = [];
+
+	/// <summary>
+	///     Whether the media's minimum availability is met, null when the media is not a Movie
+	/// </summary>
+	public bool? MinimumAvailabilityMet { get; init; }
 }

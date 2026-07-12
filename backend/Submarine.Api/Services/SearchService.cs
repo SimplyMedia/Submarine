@@ -36,6 +36,7 @@ public class SearchService
 		ISeriesRepository seriesRepository, IMovieRepository movieRepository,
 		IQualityProfileRepository qualityProfileRepository, ILanguageProfileRepository languageProfileRepository,
 		IReleaseFilterRepository filterRepository, ICustomFormatRepository formatRepository,
+		IDelayProfileRepository delayProfileRepository, IReleaseProfileRepository releaseProfileRepository,
 		ITorznabSearchClient torznabHttpClient, IMappingsClient mappingsClient, IParser<BaseRelease> releaseParser,
 		DownloadDecisionService decisionService)
 	{
@@ -50,7 +51,7 @@ public class SearchService
 		_releaseParser = releaseParser;
 		_decisionService = decisionService;
 		_contextFactory = new MediaContextFactory(seriesRepository, qualityProfileRepository, languageProfileRepository,
-			filterRepository, formatRepository);
+			filterRepository, formatRepository, delayProfileRepository, releaseProfileRepository);
 	}
 
 	public async Task<IReadOnlyList<VersionedDownloadDecision>> SearchEpisodeAsync(int seriesId, int season,
@@ -106,7 +107,7 @@ public class SearchService
 		foreach (var version in await LoadMonitoredSeriesVersionsAsync(series.Id))
 		{
 			var context = await _contextFactory.BuildSeriesContextAsync(version, series.Id, season,
-				existingFileQuality: null, existingFileLanguages: null, filters, formats);
+				existingFileQuality: null, existingFileLanguages: null, filters, formats, series.Tags);
 
 			AddDecisions(results, candidates, context, version);
 		}
@@ -134,7 +135,7 @@ public class SearchService
 		{
 			var existingFile = await _movieRepository.FindMovieFileForVersionAsync(movie.Id, version.Id);
 
-			var context = await _contextFactory.BuildMovieContextAsync(version, existingFile?.Quality,
+			var context = await _contextFactory.BuildMovieContextAsync(movie, version, existingFile?.Quality,
 				existingFile?.Languages, filters, formats);
 
 			AddDecisions(results, candidates, context, version);
@@ -213,7 +214,7 @@ public class SearchService
 			var existingFile = await _seriesRepository.FindEpisodeFileForVersionAsync(episode.Id, version.Id);
 
 			var context = await _contextFactory.BuildSeriesContextAsync(version, series.Id, episode.SeasonNumber,
-				existingFile?.Quality, existingFile?.Languages, filters, formats);
+				existingFile?.Quality, existingFile?.Languages, filters, formats, series.Tags);
 
 			AddDecisions(results, candidates, context, version);
 		}

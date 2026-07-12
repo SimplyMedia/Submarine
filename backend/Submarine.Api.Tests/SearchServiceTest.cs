@@ -180,6 +180,7 @@ public class SearchServiceTest : DatabaseTestBase
 		return new SearchService(NullLogger<SearchService>.Instance, new ProviderRepository(Context),
 			new SeriesRepository(Context), new MovieRepository(Context), new QualityProfileRepository(Context),
 			new LanguageProfileRepository(Context), new ReleaseFilterRepository(Context),
-			new CustomFormatRepository(Context), torznab, mappings, ReleaseParser(), decision);
+			new CustomFormatRepository(Context), new DelayProfileRepository(Context),
+			new ReleaseProfileRepository(Context), torznab, mappings, ReleaseParser(), decision);
 	}
 }

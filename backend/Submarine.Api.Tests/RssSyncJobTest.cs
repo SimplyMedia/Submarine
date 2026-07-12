@@ -318,7 +318,8 @@ public class RssSyncJobTest : DatabaseTestBase
 		services.AddSingleton(ReleaseParser());
 		services.AddSingleton(new MediaContextFactory(new SeriesRepository(Context),
 			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
-			new ReleaseFilterRepository(Context), new CustomFormatRepository(Context)));
+			new ReleaseFilterRepository(Context), new CustomFormatRepository(Context),
+				new DelayProfileRepository(Context), new ReleaseProfileRepository(Context)));
 		services.AddSingleton(new DownloadDecisionService(NullLogger<DownloadDecisionService>.Instance,
 			new FilterEvaluator(), new CustomFormatEvaluator(NullLogger<CustomFormatEvaluator>.Instance)));
 		services.AddSingleton(new GrabService(Context, new FakeDownloadClientFactory(client), ReleaseParser(),

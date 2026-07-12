@@ -220,6 +220,115 @@ public class DownloadDecisionServiceTest
 	}
 
 	[Fact]
+	public void Decide_ShouldRejectTemporary_WhenWithinDelayWindow()
+	{
+		var now = DateTimeOffset.UtcNow;
+
+		var decision = _instance.Decide(Candidate(Release(), publishDate: now),
+			Context(delayProfile: Delay(torrentDelayMinutes: 60)), now);
+
+		Assert.False(decision.Approved);
+		var rejection = Assert.Single(decision.Rejections);
+		Assert.Equal("waiting for delay window", rejection.Reason);
+		Assert.Equal(RejectionType.TEMPORARY, rejection.Type);
+	}
+
+	[Fact]
+	public void Decide_ShouldApprove_WhenDelayWindowElapsed()
+	{
+		var now = DateTimeOffset.UtcNow;
+
+		var decision = _instance.Decide(Candidate(Release(), publishDate: now.AddMinutes(-120)),
+			Context(delayProfile: Delay(torrentDelayMinutes: 60)), now);
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
+	public void Decide_ShouldBypassDelay_WhenBypassEnabledAndCandidateAtHighestAllowedQuality()
+	{
+		var now = DateTimeOffset.UtcNow;
+
+		var decision = _instance.Decide(Candidate(Release(QualityResolution.R2160_P), publishDate: now),
+			Context(delayProfile: Delay(torrentDelayMinutes: 60, bypassIfHighestQuality: true)), now);
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
+	public void DecideAll_ShouldPreferPreferredProtocol_WhenScoresOtherwiseEqual()
+	{
+		var torrent = Candidate(Release(protocol: Protocol.BITTORRENT));
+		var usenet = Candidate(Release(protocol: Protocol.USENET));
+
+		var result = _instance.DecideAll(new[] { torrent, usenet },
+			Context(delayProfile: Delay(preferredProtocol: Protocol.USENET)));
+
+		Assert.Equal(Protocol.USENET, result[0].Candidate.Release.Protocol);
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectPermanent_WhenIgnoredTermMatchesSubstring()
+	{
+		var decision = _instance.Decide(Candidate(Release()),
+			Context(releaseProfiles: new[] { ReleaseProfile(ignored: new[] { "flux" }) }));
+
+		Assert.False(decision.Approved);
+		Assert.Contains(decision.Rejections,
+			r => r.Reason == "matches ignored term 'flux'" && r.Type == RejectionType.PERMANENT);
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectPermanent_WhenIgnoredTermMatchesRegex()
+	{
+		var decision = _instance.Decide(Candidate(Release()),
+			Context(releaseProfiles: new[] { ReleaseProfile(ignored: new[] { "/DDP5.1/" }) }));
+
+		Assert.False(decision.Approved);
+		Assert.Contains(decision.Rejections, r => r.Reason == "matches ignored term '/DDP5.1/'");
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectPermanent_WhenRequiredTermMissing()
+	{
+		var decision = _instance.Decide(Candidate(Release()),
+			Context(releaseProfiles: new[] { ReleaseProfile(required: new[] { "WEB-DL", "REMUX" }) }));
+
+		Assert.False(decision.Approved);
+		Assert.Contains(decision.Rejections,
+			r => r.Reason == "missing required term 'REMUX'" && r.Type == RejectionType.PERMANENT);
+	}
+
+	[Fact]
+	public void Decide_ShouldApprove_WhenAllRequiredTermsPresent()
+	{
+		var decision = _instance.Decide(Candidate(Release()),
+			Context(releaseProfiles: new[] { ReleaseProfile(required: new[] { "WEB-DL", "AMZN" }) }));
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
+	public void Decide_ShouldSkipReleaseProfile_WhenScopedToAnotherIndexer()
+	{
+		var decision = _instance.Decide(Candidate(Release(), indexerName: "MyIndexer"),
+			Context(releaseProfiles: new[] { ReleaseProfile(ignored: new[] { "flux" }, indexer: "OtherIndexer") }));
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectTemporary_WhenMinimumAvailabilityNotMet()
+	{
+		var decision = _instance.Decide(Candidate(Release()), Context(minimumAvailabilityMet: false));
+
+		Assert.False(decision.Approved);
+		var rejection = Assert.Single(decision.Rejections);
+		Assert.Equal("minimum availability not met", rejection.Reason);
+		Assert.Equal(RejectionType.TEMPORARY, rejection.Type);
+	}
+
+	[Fact]
 	public void DecideAll_ShouldOrderApprovedFirst_WhenSomeRejected()
 	{
 		var result = _instance.DecideAll(
@@ -258,9 +367,18 @@ public class DownloadDecisionServiceTest
 		};
 
 	private static ReleaseCandidate Candidate(BaseRelease release, string? indexerName = "MyIndexer",
-		int indexerPriority = 25, int? seeders = null, int? minimumSeeders = null)
-		=> new(release, seeders is null ? Info : Info with { Seeders = seeders }, indexerName, indexerPriority,
-			minimumSeeders);
+		int indexerPriority = 25, int? seeders = null, int? minimumSeeders = null, DateTimeOffset? publishDate = null)
+	{
+		var info = Info;
+
+		if (seeders is not null)
+			info = info with { Seeders = seeders };
+
+		if (publishDate is not null)
+			info = info with { PublishDate = publishDate };
+
+		return new ReleaseCandidate(release, info, indexerName, indexerPriority, minimumSeeders);
+	}
 
 	private static MediaContext Context(
 		QualityProfile? profile = null,
@@ -270,7 +388,10 @@ public class DownloadDecisionServiceTest
 		IReadOnlyDictionary<int, int>? customFormatScores = null,
 		QualityModel? existing = null,
 		IReadOnlyList<Language>? existingLanguages = null,
-		string? seasonReleaseGroup = null)
+		string? seasonReleaseGroup = null,
+		DelayProfile? delayProfile = null,
+		IReadOnlyCollection<ReleaseProfile>? releaseProfiles = null,
+		bool? minimumAvailabilityMet = null)
 		=> new()
 		{
 			QualityProfile = profile ?? Profile(),
@@ -280,7 +401,31 @@ public class DownloadDecisionServiceTest
 			CustomFormatScores = customFormatScores ?? new Dictionary<int, int>(),
 			ExistingFileQuality = existing,
 			ExistingFileLanguages = existingLanguages,
-			SeasonReleaseGroup = seasonReleaseGroup
+			SeasonReleaseGroup = seasonReleaseGroup,
+			DelayProfile = delayProfile,
+			ReleaseProfiles = releaseProfiles ?? Array.Empty<ReleaseProfile>(),
+			MinimumAvailabilityMet = minimumAvailabilityMet
+		};
+
+	private static DelayProfile Delay(int torrentDelayMinutes = 0, int usenetDelayMinutes = 0,
+		bool bypassIfHighestQuality = false, Protocol preferredProtocol = Protocol.BITTORRENT)
+		=> new()
+		{
+			Name = "Test",
+			TorrentDelayMinutes = torrentDelayMinutes,
+			UsenetDelayMinutes = usenetDelayMinutes,
+			BypassIfHighestQuality = bypassIfHighestQuality,
+			PreferredProtocol = preferredProtocol
+		};
+
+	private static ReleaseProfile ReleaseProfile(IReadOnlyList<string>? required = null,
+		IReadOnlyList<string>? ignored = null, string? indexer = null)
+		=> new()
+		{
+			Name = "Test",
+			Required = required?.ToList() ?? new List<string>(),
+			Ignored = ignored?.ToList() ?? new List<string>(),
+			Indexer = indexer
 		};
 
 	private static QualityProfile Profile(int cutoff = 2, bool upgradeAllowed = true)

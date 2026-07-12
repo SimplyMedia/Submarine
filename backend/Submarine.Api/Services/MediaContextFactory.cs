@@ -15,21 +15,28 @@ namespace Submarine.Api.Services;
 /// </summary>
 public class MediaContextFactory
 {
+	private const int ReleasedPhysicalAvailabilityDelayDays = 45;
+
 	private readonly ISeriesRepository _seriesRepository;
 	private readonly IQualityProfileRepository _qualityProfileRepository;
 	private readonly ILanguageProfileRepository _languageProfileRepository;
 	private readonly IReleaseFilterRepository _filterRepository;
 	private readonly ICustomFormatRepository _formatRepository;
+	private readonly IDelayProfileRepository _delayProfileRepository;
+	private readonly IReleaseProfileRepository _releaseProfileRepository;
 
 	public MediaContextFactory(ISeriesRepository seriesRepository,
 		IQualityProfileRepository qualityProfileRepository, ILanguageProfileRepository languageProfileRepository,
-		IReleaseFilterRepository filterRepository, ICustomFormatRepository formatRepository)
+		IReleaseFilterRepository filterRepository, ICustomFormatRepository formatRepository,
+		IDelayProfileRepository delayProfileRepository, IReleaseProfileRepository releaseProfileRepository)
 	{
 		_seriesRepository = seriesRepository;
 		_qualityProfileRepository = qualityProfileRepository;
 		_languageProfileRepository = languageProfileRepository;
 		_filterRepository = filterRepository;
 		_formatRepository = formatRepository;
+		_delayProfileRepository = delayProfileRepository;
+		_releaseProfileRepository = releaseProfileRepository;
 	}
 
 	public async Task<IReadOnlyCollection<ReleaseFilter>> LoadFiltersAsync()
@@ -40,7 +47,8 @@ public class MediaContextFactory
 
 	public async Task<MediaContext> BuildSeriesContextAsync(MediaVersion version, int seriesId, int season,
 		QualityModel? existingFileQuality, IReadOnlyList<Language>? existingFileLanguages,
-		IReadOnlyCollection<ReleaseFilter> filters, IReadOnlyCollection<CustomFormat> formats)
+		IReadOnlyCollection<ReleaseFilter> filters, IReadOnlyCollection<CustomFormat> formats,
+		IReadOnlyCollection<string> tags)
 	{
 		var qualityProfile = await GetQualityProfileAsync(version.QualityProfileId);
 
@@ -53,6 +61,8 @@ public class MediaContextFactory
 			.Select(group => group.Key)
 			.FirstOrDefault();
 
+		var (delayProfile, releaseProfiles) = await LoadProfilesAsync(tags);
+
 		return new MediaContext
 		{
 			QualityProfile = qualityProfile,
@@ -62,15 +72,19 @@ public class MediaContextFactory
 			CustomFormatScores = qualityProfile.FormatScores,
 			ExistingFileQuality = existingFileQuality,
 			ExistingFileLanguages = existingFileLanguages,
-			SeasonReleaseGroup = seasonReleaseGroup
+			SeasonReleaseGroup = seasonReleaseGroup,
+			DelayProfile = delayProfile,
+			ReleaseProfiles = releaseProfiles
 		};
 	}
 
-	public async Task<MediaContext> BuildMovieContextAsync(MediaVersion version, QualityModel? existingFileQuality,
-		IReadOnlyList<Language>? existingFileLanguages, IReadOnlyCollection<ReleaseFilter> filters,
-		IReadOnlyCollection<CustomFormat> formats)
+	public async Task<MediaContext> BuildMovieContextAsync(Movie movie, MediaVersion version,
+		QualityModel? existingFileQuality, IReadOnlyList<Language>? existingFileLanguages,
+		IReadOnlyCollection<ReleaseFilter> filters, IReadOnlyCollection<CustomFormat> formats)
 	{
 		var qualityProfile = await GetQualityProfileAsync(version.QualityProfileId);
+
+		var (delayProfile, releaseProfiles) = await LoadProfilesAsync(movie.Tags);
 
 		return new MediaContext
 		{
@@ -80,9 +94,43 @@ public class MediaContextFactory
 			CustomFormats = formats,
 			CustomFormatScores = qualityProfile.FormatScores,
 			ExistingFileQuality = existingFileQuality,
-			ExistingFileLanguages = existingFileLanguages
+			ExistingFileLanguages = existingFileLanguages,
+			DelayProfile = delayProfile,
+			ReleaseProfiles = releaseProfiles,
+			MinimumAvailabilityMet = MinimumAvailabilityMet(movie, DateTimeOffset.UtcNow)
 		};
 	}
+
+	// picks the lowest-Order Delay Profile whose Tags intersect the media's Tags, falling back to the default profile
+	// with no Tags, and the enabled Release Profiles whose Tags are empty or intersect the media's Tags
+	private async Task<(DelayProfile?, IReadOnlyCollection<ReleaseProfile>)> LoadProfilesAsync(
+		IReadOnlyCollection<string> tags)
+	{
+		var delayProfiles = await _delayProfileRepository.FindAllAsync();
+		var delayProfile = delayProfiles
+			                   .Where(p => p.Tags.Count > 0 && p.Tags.Any(tags.Contains))
+			                   .OrderBy(p => p.Order)
+			                   .FirstOrDefault()
+		                   ?? delayProfiles.FirstOrDefault(p => p.Tags.Count == 0);
+
+		var releaseProfiles = (await _releaseProfileRepository.FindAllAsync())
+			.Where(p => p.Enabled && (p.Tags.Count == 0 || p.Tags.Any(tags.Contains)))
+			.ToList();
+
+		return (delayProfile, releaseProfiles);
+	}
+
+	// Radarr-style availability heuristic: without physical/digital release dates a RELEASED movie is treated as
+	// available a fixed number of days after its release date, approximating the typical gap to a home-media release
+	private static bool MinimumAvailabilityMet(Movie movie, DateTimeOffset now)
+		=> movie.MinimumAvailability switch
+		{
+			MinimumAvailability.ANNOUNCED => true,
+			MinimumAvailability.IN_CINEMAS => movie.ReleaseDate is { } released && released <= now,
+			MinimumAvailability.RELEASED => movie.ReleaseDate is { } released
+			                                && released.AddDays(ReleasedPhysicalAvailabilityDelayDays) <= now,
+			_ => true
+		};
 
 	private async Task<QualityProfile> GetQualityProfileAsync(int id)
 	{

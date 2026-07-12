@@ -232,7 +232,7 @@ public sealed class RssSyncJob : IScheduledJob
 				var (existingQuality, existingLanguages) = await ResolveExistingAsync(version, targets, cancellationToken);
 
 				var mediaContext = await _contextFactory.BuildSeriesContextAsync(version, series.Id, contextSeason,
-					existingQuality, existingLanguages, filters, formats);
+					existingQuality, existingLanguages, filters, formats, series.Tags);
 
 				if (await TryGrabAsync(candidate, mediaContext, info, indexer, series.Id, episodeIds, movieId: null,
 					    version.Id, cancellationToken))
@@ -300,7 +300,7 @@ public sealed class RssSyncJob : IScheduledJob
 					.FirstOrDefaultAsync(f => f.MovieId == movie.Id && f.MediaVersionId == version.Id,
 						cancellationToken);
 
-				var mediaContext = await _contextFactory.BuildMovieContextAsync(version, existing?.Quality,
+				var mediaContext = await _contextFactory.BuildMovieContextAsync(movie, version, existing?.Quality,
 					existing?.Languages, filters, formats);
 
 				if (await TryGrabAsync(candidate, mediaContext, info, indexer, seriesId: null, episodeIds: null,

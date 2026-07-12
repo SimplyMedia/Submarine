@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.DecisionEngine.CustomFormats;
 using Submarine.Core.DecisionEngine.Filter;
@@ -18,6 +19,7 @@ public class DownloadDecisionService
 	private const int RevisionWeight = 10;
 	private const int ConsistentReleaseGroupBonus = 150;
 	private const int FullSeasonBonus = 50;
+	private const int PreferredProtocolBonus = 25;
 
 	private readonly CustomFormatEvaluator _customFormatEvaluator;
 	private readonly FilterEvaluator _filterEvaluator;
@@ -44,11 +46,13 @@ public class DownloadDecisionService
 	/// </summary>
 	/// <param name="candidate">The candidate Release</param>
 	/// <param name="ctx">The context the decision is made in</param>
+	/// <param name="now">The point in time delay windows are evaluated against, defaults to the current UTC time</param>
 	/// <returns>The <see cref="DownloadDecision" /> for the candidate</returns>
-	public DownloadDecision Decide(ReleaseCandidate candidate, MediaContext ctx)
+	public DownloadDecision Decide(ReleaseCandidate candidate, MediaContext ctx, DateTimeOffset? now = null)
 	{
 		var release = candidate.Release;
 		var rejections = new List<RejectionReason>();
+		var evaluatedAt = now ?? DateTimeOffset.UtcNow;
 
 		var items = ctx.QualityProfile.Items;
 		var qualityIndex = items.FindIndex(i =>
@@ -110,6 +114,29 @@ public class DownloadDecisionService
 			rejections.Add(new RejectionReason($"{seeders} seeders, minimum is {minimumSeeders}",
 				RejectionType.TEMPORARY));
 
+		if (IsWithinDelayWindow(candidate, ctx, qualityIndex, items, evaluatedAt))
+			rejections.Add(new RejectionReason("waiting for delay window", RejectionType.TEMPORARY));
+
+		foreach (var profile in ctx.ReleaseProfiles)
+		{
+			if (profile.Indexer is { } indexer && indexer != candidate.IndexerName)
+				continue;
+
+			foreach (var term in profile.Ignored)
+				if (MatchesTerm(release.FullTitle, term))
+					rejections.Add(new RejectionReason($"matches ignored term '{term}'", RejectionType.PERMANENT));
+
+			foreach (var term in profile.Required)
+				if (!MatchesTerm(release.FullTitle, term))
+				{
+					rejections.Add(new RejectionReason($"missing required term '{term}'", RejectionType.PERMANENT));
+					break;
+				}
+		}
+
+		if (ctx.MinimumAvailabilityMet == false)
+			rejections.Add(new RejectionReason("minimum availability not met", RejectionType.TEMPORARY));
+
 		var filterResult = _filterEvaluator.Evaluate(FilterContext.From(release, candidate.IndexerName), ctx.Filters);
 
 		foreach (var rejection in filterResult.Rejections)
@@ -135,13 +162,42 @@ public class DownloadDecisionService
 	/// </summary>
 	/// <param name="candidates">The candidate Releases</param>
 	/// <param name="ctx">The context the decision is made in</param>
+	/// <param name="now">The point in time delay windows are evaluated against, defaults to the current UTC time</param>
 	/// <returns>The ordered <see cref="DownloadDecision" />s</returns>
-	public IReadOnlyList<DownloadDecision> DecideAll(IReadOnlyCollection<ReleaseCandidate> candidates, MediaContext ctx)
+	public IReadOnlyList<DownloadDecision> DecideAll(IReadOnlyCollection<ReleaseCandidate> candidates, MediaContext ctx,
+		DateTimeOffset? now = null)
 		=> candidates
-			.Select(candidate => Decide(candidate, ctx))
+			.Select(candidate => Decide(candidate, ctx, now))
 			.OrderByDescending(decision => decision.Approved)
 			.ThenByDescending(decision => decision.Score)
 			.ToList();
+
+	// a candidate on a Protocol the Delay Profile delays is held until its publish date clears the window, unless the
+	// Profile bypasses the delay once the candidate already sits at the highest allowed Quality
+	private static bool IsWithinDelayWindow(ReleaseCandidate candidate, MediaContext ctx, int qualityIndex,
+		List<QualityProfileItem> items, DateTimeOffset now)
+	{
+		if (ctx.DelayProfile is not { } delay || candidate.Info.PublishDate is not { } published)
+			return false;
+
+		var delayMinutes = candidate.Release.Protocol switch
+		{
+			Protocol.BITTORRENT => delay.TorrentDelayMinutes,
+			Protocol.USENET => delay.UsenetDelayMinutes,
+			_ => 0
+		};
+
+		if (delayMinutes <= 0 || published.AddMinutes(delayMinutes) <= now)
+			return false;
+
+		return !(delay.BypassIfHighestQuality && qualityIndex == items.FindLastIndex(i => i.Allowed));
+	}
+
+	// a term matches as a case-insensitive substring, or as a regular expression when wrapped in /.../
+	private static bool MatchesTerm(string title, string term)
+		=> term is ['/', _, .., '/']
+			? Regex.IsMatch(title, term[1..^1], RegexOptions.IgnoreCase)
+			: title.Contains(term, StringComparison.OrdinalIgnoreCase);
 
 	// candidate improves language when it holds a profile-allowed language ranked better than the best existing one
 	private static bool AddsLanguageImprovement(LanguageProfile profile, IReadOnlyList<Language> existing,
@@ -189,6 +245,9 @@ public class DownloadDecisionService
 
 		if (release.SeriesReleaseData?.ReleaseType == SeriesReleaseType.FULL_SEASON)
 			score += FullSeasonBonus;
+
+		if (ctx.DelayProfile is { } delay && release.Protocol == delay.PreferredProtocol)
+			score += PreferredProtocolBonus;
 
 		return score;
 	}
