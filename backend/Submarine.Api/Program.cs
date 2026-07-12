@@ -74,6 +74,7 @@ builder.Services.AddSingleton<IParser<IReadOnlyList<ReleaseInfo>>, TorznabFeedPa
 
 // Validator
 builder.Services.AddSingleton<UsenetReleaseValidatorService>();
+builder.Services.AddSingleton<TorrentReleaseValidatorService>();
 
 // Decision Engine
 builder.Services.AddSingleton<FilterEvaluator>();

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Submarine.Core.Release;
 using Submarine.Core.Release.Torrent;
 using Submarine.Core.Util.RegEx;
+using Submarine.Core.Validator;
 
 namespace Submarine.Core.Parser.Release;
 
@@ -41,16 +42,21 @@ public class TorrentReleaseParserService : IParser<TorrentRelease>
 
 	private readonly IParser<BaseRelease> _releaseParserService;
 
+	private readonly TorrentReleaseValidatorService _torrentReleaseValidatorService;
+
 	/// <summary>
 	///     Creates a new <see cref="TorrentReleaseParserService" />
 	/// </summary>
 	/// <param name="logger">The <see cref="ILogger{TCategoryName}" /></param>
+	/// <param name="torrentReleaseValidatorService">The <see cref="TorrentReleaseValidatorService" /></param>
 	/// <param name="releaseParserService">The <see cref="ReleaseParserService" /></param>
 	public TorrentReleaseParserService(
 		ILogger<TorrentReleaseParserService> logger,
+		TorrentReleaseValidatorService torrentReleaseValidatorService,
 		IParser<BaseRelease> releaseParserService)
 	{
 		_logger = logger;
+		_torrentReleaseValidatorService = torrentReleaseValidatorService;
 		_releaseParserService = releaseParserService;
 	}
 
@@ -62,6 +68,8 @@ public class TorrentReleaseParserService : IParser<TorrentRelease>
 	public TorrentRelease Parse(string input)
 	{
 		_logger.LogDebug("Starting parse of {Input} with Bittorrent standards", input);
+
+		_torrentReleaseValidatorService.Validate(input);
 
 		var flags = ParseFlags(input);
 

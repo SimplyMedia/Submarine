@@ -173,4 +173,58 @@ public class ReleaseParserServiceTest
 		Assert.NotNull(parsed.MovieReleaseData);
 		Assert.Null(parsed.MovieReleaseData?.Edition);
 	}
+
+	[Theory]
+	// Skymoon-Raws / orion origin normalization (PreSubstitutionRegex)
+	[InlineData("[Skymoon-Raws]Muv-Luv Alternative - 05[WebRip 1080p HEVC].mkv", "Muv-Luv Alternative")]
+	[InlineData("[orion origin]Some Anime Title - 07[1080p].mkv", "Some Anime Title")]
+	// GM-Team normalization (PreSubstitutionRegex)
+	[InlineData("[GM-Team][国漫][Sword Title][2021][05][1080p].mkv", "Sword Title")]
+	public void Parse_ShouldNormalizeChineseSubGroups_WhenReleaseUsesPreSubstitution(string input, string title)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(ReleaseType.SERIES, parsed.Type);
+		Assert.Equal(title, parsed.Title);
+	}
+
+	[Theory]
+	// Japanese variety shows with leading date
+	[InlineData("230101 Variety Show ep05 1080p WEB-DL", "Variety Show")]
+	// Turkish tracker releases (BLM/Bölüm)
+	[InlineData("Dizi Adi 05 Bolum 1080p WEB-DL x264", "Dizi Adi")]
+	// Dutch/Flemish release titles
+	[InlineData("Programma Se.02 afl.05 1080p WEB-DL", "Programma")]
+	public void Parse_ShouldParseLocalizedSeries_WhenReleaseUsesNewTitleBankPattern(string input, string title)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(ReleaseType.SERIES, parsed.Type);
+		Assert.Equal(title, parsed.Title);
+	}
+
+	[Theory]
+	// Spanish tracker releases (Temporada/Cap)
+	[InlineData("La Casa Temporada 1 [Cap.105] 1080p WEB-DL")]
+	public void Parse_ShouldIdentifySeries_WhenReleaseUsesSpanishTrackerPattern(string input)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(ReleaseType.SERIES, parsed.Type);
+	}
+
+	[Theory]
+	// Anime - Title Episode/Episodio Absolute Episode Number
+	[InlineData("[SubGroup] Anime Name Episodio 12 [1080p]", 12)]
+	// Anime - Title [Absolute Episode Number] from AniLibriaTV
+	[InlineData("Anime Title [12] 1080p BDRip", 12)]
+	public void Parse_ShouldParseAbsoluteEpisode_WhenReleaseUsesNewAnimeTitleBankPattern(string input,
+		int absoluteEpisode)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(ReleaseType.SERIES, parsed.Type);
+		Assert.Contains(absoluteEpisode,
+			parsed.SeriesReleaseData?.AbsoluteEpisodes ?? throw new InvalidOperationException());
+	}
 }

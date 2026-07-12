@@ -23,11 +23,12 @@ public class ReleaseParserService : IParser<BaseRelease>
 		RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 	private static readonly RegexReplace WebsitePrefixRegex = new(
-		@"^\[\s*[-a-z]+(\.[a-z]+)+\s*\][- ]*|^www\.[a-z]+\.(?:com|net|org)[ -]*",
+		@"^(?:(?:\[|\()\s*)?(?:www\.)?[-a-z0-9-]{1,256}\.(?<!Naruto-Kun\.)(?:[a-z]{2,6}\.[a-z]{2,6}|xn--[a-z0-9-]{4,}|[a-z]{2,})\b(?:\s*(?:\]|\))|[ -]{2,})[ -]*",
 		string.Empty,
 		RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-	private static readonly RegexReplace WebsitePostfixRegex = new(@"\[\s*[-a-z]+(\.[a-z0-9]+)+\s*\]$",
+	private static readonly RegexReplace WebsitePostfixRegex = new(
+		@"(?:\[\s*)?(?:www\.)?[-a-z0-9-]{1,256}\.(?:xn--[a-z0-9-]{4,}|[a-z]{2,6})\b(?:\s*\])$",
 		string.Empty,
 		RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -36,9 +37,9 @@ public class ReleaseParserService : IParser<BaseRelease>
 		// Korean series without season number, replace with S01Exxx and remove airdate
 		new(@"\.E(\d{2,4})\.\d{6}\.(.*-NEXT)$", ".S01E$1.$2", RegexOptions.Compiled),
 
-		// Chinese LoliHouse/ZERO/Lilith-Raws releases don't use the expected brackets, normalize using brackets
+		// Chinese LoliHouse/ZERO/Lilith-Raws/Skymoon-Raws/orion origin releases don't use the expected brackets, normalize using brackets
 		new(
-			@"^\[(?<subgroup>[^\]]*?(?:LoliHouse|ZERO|Lilith-Raws)[^\]]*?)\](?<title>[^\[\]]+?)(?: - (?<episode>[0-9-]+)\s*|\[第?(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?\])\[",
+			@"^\[(?<subgroup>[^\]]*?(?:LoliHouse|ZERO|Lilith-Raws|Skymoon-Raws|orion origin)[^\]]*?)\](?<title>[^\[\]]+?)(?: - (?<episode>[0-9-]+)\s*|\[第?(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?\])\[",
 			"[${subgroup}][${title}][${episode}][", RegexOptions.Compiled),
 
 		// Most Chinese anime releases contain additional brackets/separators for chinese and non-chinese titles, remove junk and replace with normal anime pattern
@@ -49,6 +50,11 @@ public class ReleaseParserService : IParser<BaseRelease>
 		// Some Chinese anime releases contain both Chinese and English titles, remove the Chinese title and replace with normal anime pattern
 		new(
 			@"^\[(?<subgroup>[^\]]+)\](?:\s)(?:(?<chinesetitle>[^\]]*?[\u4E00-\u9FCC][^\]]*?)(?:\s/\s))(?<title>[^\]]+?)(?:[- ]+)(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?",
+			"[${subgroup}] ${title} - ${episode} ", RegexOptions.Compiled),
+
+		// GM-Team releases with lots of square brackets
+		new(
+			@"^\[(?<subgroup>[^\]]+)\](?:(?<chinesubgroup>\[(?=[^\]]*?[一-鿌])[^\]]*\])+)\[(?<title>[^\]]+?)\](?<junk>\[[^\]]+\])*\[(?<episode>[0-9]+(?:-[0-9]+)?)( END| Fin)?\]",
 			"[${subgroup}] ${title} - ${episode} ", RegexOptions.Compiled)
 	};
 
@@ -319,6 +325,11 @@ public class ReleaseParserService : IParser<BaseRelease>
 		new(@"^(?:\[(?<subgroup>.+?)\][-_. ]?)(?<title>.+?)[-_. ]+?\[(?<absoluteepisode>\d{2,3}(\.\d{1,2})?(?!\d+))\]",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
+		// Japanese variety shows with leading date
+		new(
+			@"^(?<airyear>\d{2})(?<airmonth>[0-1][0-9])(?<airday>[0-3][0-9])(?![-_. ]+[0-3][0-9])[-_. ](?<title>.+?)[-_. ](?:Season[-_. ]?(?<season>\d{1,2})[-_. ])?(?:ep|#)(?<episode>\d{2,3})",
+			RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
 		//Season only releases
 		new(
 			@"^(?<title>.+?)[-_. ]+?(?:S|Season|Saison|Series)[-_. ]?(?<season>\d{1,2}(?![-_. ]?\d+))(?:[-_. ]|$)+(?<extras>EXTRAS|SUBPACK)?(?!\\)",
@@ -332,6 +343,11 @@ public class ReleaseParserService : IParser<BaseRelease>
 		//Episodes with a title and season/episode in square brackets
 		new(
 			@"^(?<title>.+?)(?:(?:[-_\W](?<![()\[!]))+\[S?(?<season>(?<!\d+)\d{1,2}(?!\d+))(?:(?:\-|[ex]|\W[ex]|_){1,2}(?<episode>(?<!\d+)\d{2}(?!\d+|i|p)))+\])\W?(?!\\)",
+			RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+		// Spanish tracker releases
+		new(
+			@"^(?<title>.+?)(?:(?:[-_. ]+?Temporada.+?|\[.+?\])\[Cap)(?:[-_. ]+(?<season>(?<!\d+)\d{1,2})(?<episode>(?<!e|x)(?:[1-9][0-9]|[0][1-9])))+(?:\])",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Supports 103/113 naming
@@ -356,6 +372,10 @@ public class ReleaseParserService : IParser<BaseRelease>
 			@"^(?<title>.+?)?\W*(?<airyear>\d{4})[-_. ]+(?<airmonth>[0-1][0-9])[-_. ]+(?<airday>[0-3][0-9])(?![-_. ]+[0-3][0-9])",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
+		// Turkish tracker releases (01 BLM, 3. Blm, 04.Bolum, etc)
+		new(@"^(?<title>.+?)[_. ](?<absoluteepisode>\d{1,4})(?:[_. ]+)(?:BLM|B[oö]l[uü]m)",
+			RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
 		//Episodes with airdate (04.28.2018)
 		new(@"^(?<title>.+?)?\W*(?<airmonth>[0-1][0-9])[-_. ]+(?<airday>[0-3][0-9])[-_. ]+(?<airyear>\d{4})(?!\d+)",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
@@ -367,6 +387,12 @@ public class ReleaseParserService : IParser<BaseRelease>
 		//Supports 1103/1113 naming
 		new(
 			@"^(?<title>.+?)?(?:(?:[-_.](?<![()\[!]))*(?<season>(?<!\d+|\(|\[|e|x)\d{2})(?<episode>(?<!e|x)(?:[1-9][0-9]|[0][1-9])(?!p|i|\d+|\)|\]|\W\d+|\W(?:e|ep|x)\d+)))+([-_.]+|$)(?!\\)",
+			RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+		// Dutch/Flemish release titles (upstream uses literal `Se.`/`afl.`; adapted to [-_. ] because
+		// Submarine normalizes '.' to ' ' in the parsable title before matching)
+		new(
+			@"^(?<title>.+?)[-_. ](?:Se[-_. ](?<season>(?<!\d+)(?:\d{1,2}|\d{4})(?!\d+))(?:(?:[-_ ]?afl[-_. ])(?<episode>\d{1,3}(?!\d+))(?:(?:[-]|[-_ ]en[-_ ])(?<episode>\d{1,3}(?!\d+)))*))",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Episodes with single digit episode number (S01E1, S01E5E6, etc)
@@ -400,6 +426,16 @@ public class ReleaseParserService : IParser<BaseRelease>
 		//Anime Range - Title Absolute Episode Number (1 or 2 digit absolute episode numbers in a range, 1-10)
 		new(
 			@"^(?:\[(?<subgroup>.+?)\][-_. ]?)?(?<title>.+?)[_. ]+(?<absoluteepisode>(?<!\d+)\d{1,2}(\.\d{1,2})?(?!\d+))-(?<absoluteepisode>(?<!\d+)\d{1,2}(\.\d{1,2})?(?!\d+|-))(?:_|\s|\.)*?(?<hash>\[.{8}\])?(?:$|\.)?",
+			RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+		// Anime - Title Episode/Episodio Absolute Episode Number
+		new(
+			@"^(?:\[(?<subgroup>.+?)\][-_. ]?)?(?<title>.+?)[-_. ]+(?:Episode|Episodio)(?:[-_. ]+(?<absoluteepisode>(?<!\d+)\d{2,4}(\.\d{1,2})?(?!\d+|[ip])))+.*?(?<hash>[(\[]\w{8}[)\]])?$",
+			RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+		// Anime - Title [Absolute Episode Number] from AniLibriaTV
+		new(
+			@"^(?:\[(?<subgroup>.+?)\][-_. ]?)?(?<title>.+?)(?:[-_. ]\[)(?:(?:-?)(?<absoluteepisode>(?<!\d+)\d{2,3}(\.\d{1,2})?(?!\d+|[ip])))+(?:\][-_. ]).*?(?<hash>[(\[]\w{8}[)\]])?$",
 			RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
 		//Anime - Title Absolute Episode Number
@@ -487,13 +523,11 @@ public class ReleaseParserService : IParser<BaseRelease>
 	private static readonly Regex BracketedAlternativeTitleRegex =
 		new(@"(.*) \([ ]*AKA[ ]+(.*)\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-	private static readonly Regex RequestInfoRegex = new(@"^(?:\[.+?\])+", RegexOptions.Compiled);
-
 	private static readonly Regex ContainsSeriesInformationRegex =
 		new(@"[-. _](S\d+(E\d+)?)[-. _]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 	private static readonly RegexReplace SimpleTitleRegex = new(
-		@"(?:(480|720|1080|2160)[ip]|[xh][\W_]?26[45]|DD\W?5\W1|[<>?*]|848x480|1280x720|1920x1080|3840x2160|4096x2160|(8|10)b(it)?|10-bit)\s*?",
+		@"(?:(480|540|576|720|1080|2160)[ip]|[xh][\W_]?26[45]|DD\W?5\W1|[<>?*]|848x480|1280x720|1920x1080|3840x2160|4096x2160|(?<![a-f0-9])(8|10)(b(?![a-z0-9])|bit)|10-bit)\s*?",
 		string.Empty,
 		RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -637,6 +671,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 			Quality = quality,
 			ReleaseGroup = releaseGroup,
 			ReleaseHash = hash,
+			HardcodedSubs = QualityParserService.ParseHardcodedSubs(input),
 			SeriesReleaseData = seriesReleaseData,
 			MovieReleaseData = movieReleaseData
 		};
