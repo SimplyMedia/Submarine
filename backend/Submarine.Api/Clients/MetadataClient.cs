@@ -83,4 +83,22 @@ public class MetadataClient : IMetadataClient
 
 		return await response.Content.ReadFromJsonAsync<MovieResource>(JsonOptions, cancellationToken);
 	}
+
+	/// <inheritdoc />
+	public async Task<bool> PingAsync(CancellationToken cancellationToken = default)
+	{
+		try
+		{
+			using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+			using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+
+			using var response = await _httpClient.GetAsync("_status/healthz", linked.Token);
+
+			return response.IsSuccessStatusCode;
+		}
+		catch
+		{
+			return false;
+		}
+	}
 }

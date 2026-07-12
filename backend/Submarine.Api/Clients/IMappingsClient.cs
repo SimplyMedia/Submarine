@@ -34,6 +34,13 @@ public interface IMappingsClient
 	/// <returns>AniList numbering, or null when no entry covers the episode</returns>
 	Task<AniListResolution?> ResolveAniListAsync(int tvdbId, int season, int episode,
 		CancellationToken cancellationToken = default);
+
+	/// <summary>
+	///     Checks whether the Mappings service is reachable
+	/// </summary>
+	/// <param name="cancellationToken">cancellation token</param>
+	/// <returns>true if the service responded successfully</returns>
+	Task<bool> PingAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

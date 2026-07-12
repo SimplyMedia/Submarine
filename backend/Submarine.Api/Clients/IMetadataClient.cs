@@ -49,4 +49,11 @@ public interface IMetadataClient
 	/// <param name="cancellationToken">cancellation token</param>
 	/// <returns>movie if found, otherwise null</returns>
 	Task<MovieResource?> GetMovieAsync(int tmdbId, CancellationToken cancellationToken = default);
+
+	/// <summary>
+	///     Checks whether the Metadata service is reachable
+	/// </summary>
+	/// <param name="cancellationToken">cancellation token</param>
+	/// <returns>true if the service responded successfully</returns>
+	Task<bool> PingAsync(CancellationToken cancellationToken = default);
 }

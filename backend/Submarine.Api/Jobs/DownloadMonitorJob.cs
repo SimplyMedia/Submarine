@@ -31,9 +31,11 @@ public sealed class DownloadMonitorJob : IScheduledJob
 		var settings = scopedProvider.GetRequiredService<SettingsService>();
 		var history = scopedProvider.GetRequiredService<HistoryService>();
 		var blocklist = scopedProvider.GetRequiredService<BlocklistService>();
+		var pathResolver = scopedProvider.GetRequiredService<RemotePathResolver>();
 		var logger = scopedProvider.GetRequiredService<ILogger<DownloadMonitorJob>>();
 
 		var downloadConfig = await settings.GetDownloadConfigAsync();
+		var pathMappings = await pathResolver.GetMappingsAsync(cancellationToken);
 
 		var configs = await context.DownloadClients.AsNoTracking()
 			.Where(c => c.Enable)
@@ -44,6 +46,7 @@ public sealed class DownloadMonitorJob : IScheduledJob
 			try
 			{
 				var client = factory.Create(config);
+				var clientHost = RemotePathResolver.ExtractHost(config.SettingsJson);
 
 				var items = (await client.GetItemsAsync(cancellationToken))
 					.ToDictionary(i => i.DownloadId);
@@ -78,7 +81,7 @@ public sealed class DownloadMonitorJob : IScheduledJob
 					download.Status = item.Status;
 
 					if (item.OutputPath != null)
-						download.OutputPath = item.OutputPath;
+						download.OutputPath = RemotePathResolver.Resolve(clientHost, item.OutputPath, pathMappings);
 
 					// The first enqueue is edge-triggered; a still-completed row whose import never landed is retried
 					// after ReimportInterval. ImportService is idempotent, so a redundant enqueue is harmless.

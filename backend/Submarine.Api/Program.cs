@@ -123,6 +123,7 @@ builder.Services.AddScoped<GrabService>();
 builder.Services.AddScoped<QueueService>();
 builder.Services.AddScoped<SeriesRefreshService>();
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddSingleton<MediaInfoService>();
 builder.Services.AddScoped<LibraryImportService>();
 builder.Services.AddScoped<ManualImportService>();
 builder.Services.AddScoped<RenameService>();
@@ -133,6 +134,9 @@ builder.Services.AddScoped<QualityOverrideService>();
 builder.Services.AddScoped<DelayProfileService>();
 builder.Services.AddScoped<ReleaseProfileService>();
 builder.Services.AddScoped<RemotePathMappingService>();
+builder.Services.AddScoped<RemotePathResolver>();
+builder.Services.AddScoped<HealthService>();
+builder.Services.AddScoped<StatsService>();
 builder.Services.AddSingleton<SecurityConfigStore>();
 
 builder.Services.AddSingleton<NamingTemplateRenderer>();
@@ -167,6 +171,8 @@ builder.Services.AddHttpClient<IImportListFetcher, ImportListFetcher>(client =>
 	client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddHttpClient("mediaserver", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSingleton<IMediaServerClientFactory, MediaServerClientFactory>();
+builder.Services.AddHttpClient("notification", client => client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddSingleton<INotificationSenderFactory, NotificationSenderFactory>();
 
 // Background jobs
 builder.Services.AddSingleton<IBackgroundTaskQueue, ChannelBackgroundTaskQueue>();

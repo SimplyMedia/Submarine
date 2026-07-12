@@ -111,6 +111,15 @@ public class SubmarineDatabaseContext : DbContext
 		builder.Entity<TorznabIndexer>();
 		builder.Entity<NewznabIndexer>();
 
+		builder.Entity<DiscordConnection>();
+		builder.Entity<TelegramConnection>();
+		builder.Entity<WebhookConnection>();
+
+		// Host and ApiKey only apply to media server connections; the TPH table is shared with
+		// notification connections, which don't populate them.
+		builder.Entity<Connection>().Property(c => c.Host).IsRequired(false);
+		builder.Entity<Connection>().Property(c => c.ApiKey).IsRequired(false);
+
 		builder.Entity<Tag>()
 			.HasIndex(t => t.Label)
 			.IsUnique();

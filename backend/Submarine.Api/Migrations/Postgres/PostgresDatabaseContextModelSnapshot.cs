@@ -921,17 +921,20 @@ namespace Submarine.Api.Migrations.Postgres
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ApiKey")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("character varying(21)");
+
                     b.Property<bool>("Enable")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Host")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
@@ -966,6 +969,10 @@ namespace Submarine.Api.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("Connections");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Connection");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Submarine.Core.Profile.DelayProfile", b =>
@@ -1220,6 +1227,53 @@ namespace Submarine.Api.Migrations.Postgres
                         .IsUnique();
 
                     b.ToTable("Tags");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.DiscordConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("DiscordConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.TelegramConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("BotToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ChatId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("TelegramConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.WebhookConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Password")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Username")
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("WebhookConnection");
                 });
 
             modelBuilder.Entity("Submarine.Core.Provider.BittorrentTracker", b =>

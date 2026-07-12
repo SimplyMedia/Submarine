@@ -881,17 +881,20 @@ namespace Submarine.Api.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("ApiKey")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Enable")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Host")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -926,6 +929,10 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.ToTable("Connections");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Connection");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Submarine.Core.Profile.DelayProfile", b =>
@@ -1166,6 +1173,53 @@ namespace Submarine.Api.Migrations.Sqlite
                         .IsUnique();
 
                     b.ToTable("Tags");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.DiscordConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasDiscriminator().HasValue("DiscordConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.TelegramConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("BotToken")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChatId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasDiscriminator().HasValue("TelegramConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.WebhookConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Password")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .HasColumnType("TEXT");
+
+                    b.HasDiscriminator().HasValue("WebhookConnection");
                 });
 
             modelBuilder.Entity("Submarine.Core.Provider.BittorrentTracker", b =>

@@ -108,6 +108,8 @@ public sealed class FakeMetadataClient : IMetadataClient
 
 	public List<MovieResource> MovieSearchResults { get; } = new();
 
+	public bool Reachable { get; set; } = true;
+
 	public Task<SeriesResource?> GetSeriesByTvdbAsync(int tvdbId, CancellationToken cancellationToken = default)
 	{
 		TvdbSeriesCalls++;
@@ -136,6 +138,9 @@ public sealed class FakeMetadataClient : IMetadataClient
 	public Task<IReadOnlyList<MovieResource>> SearchMoviesAsync(string term,
 		CancellationToken cancellationToken = default)
 		=> Task.FromResult<IReadOnlyList<MovieResource>>(MovieSearchResults);
+
+	public Task<bool> PingAsync(CancellationToken cancellationToken = default)
+		=> Task.FromResult(Reachable);
 }
 
 /// <summary>
@@ -186,6 +191,9 @@ public sealed class FakeMappingsClient : IMappingsClient
 		=> Unreachable
 			? throw new HttpRequestException("mappings unreachable")
 			: Task.FromResult(AniListResolution);
+
+	public Task<bool> PingAsync(CancellationToken cancellationToken = default)
+		=> Task.FromResult(!Unreachable);
 }
 
 /// <summary>
@@ -222,6 +230,27 @@ public sealed class FakeTorznabSearchClient : ITorznabSearchClient
 		TermSearches.Add(query);
 
 		return Task.FromResult(Result);
+	}
+}
+
+/// <summary>
+///     Returns canned ffprobe JSON instead of running ffprobe
+/// </summary>
+public sealed class FakeMediaInfoService : MediaInfoService
+{
+	private readonly string? _json;
+
+	public FakeMediaInfoService(string? json = null)
+		: base(new ConfigurationBuilder().Build(), NullLogger<MediaInfoService>.Instance)
+		=> _json = json;
+
+	public List<string> ProbedPaths { get; } = new();
+
+	protected override Task<string?> ExecuteFfprobeAsync(string path, CancellationToken cancellationToken)
+	{
+		ProbedPaths.Add(path);
+
+		return Task.FromResult(_json);
 	}
 }
 

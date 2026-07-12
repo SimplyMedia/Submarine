@@ -266,6 +266,7 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		services.AddSingleton(Settings());
 		services.AddSingleton(history ?? new HistoryService(Context));
 		services.AddSingleton(new BlocklistService(new BlocklistRepository(Context)));
+		services.AddSingleton(new RemotePathResolver(Context));
 		services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
 		return services.BuildServiceProvider();
