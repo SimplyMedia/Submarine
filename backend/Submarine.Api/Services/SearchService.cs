@@ -23,7 +23,8 @@ public class SearchService
 	private readonly ILanguageProfileRepository _languageProfileRepository;
 	private readonly IReleaseFilterRepository _filterRepository;
 	private readonly ICustomFormatRepository _formatRepository;
-	private readonly TorznabHttpClient _torznabHttpClient;
+	private readonly ITorznabSearchClient _torznabHttpClient;
+	private readonly IMappingsClient _mappingsClient;
 	private readonly IParser<BaseRelease> _releaseParser;
 	private readonly DownloadDecisionService _decisionService;
 
@@ -31,7 +32,7 @@ public class SearchService
 		ISeriesRepository seriesRepository, IMovieRepository movieRepository,
 		IQualityProfileRepository qualityProfileRepository, ILanguageProfileRepository languageProfileRepository,
 		IReleaseFilterRepository filterRepository, ICustomFormatRepository formatRepository,
-		TorznabHttpClient torznabHttpClient, IParser<BaseRelease> releaseParser,
+		ITorznabSearchClient torznabHttpClient, IMappingsClient mappingsClient, IParser<BaseRelease> releaseParser,
 		DownloadDecisionService decisionService)
 	{
 		_logger = logger;
@@ -43,6 +44,7 @@ public class SearchService
 		_filterRepository = filterRepository;
 		_formatRepository = formatRepository;
 		_torznabHttpClient = torznabHttpClient;
+		_mappingsClient = mappingsClient;
 		_releaseParser = releaseParser;
 		_decisionService = decisionService;
 	}
@@ -80,10 +82,21 @@ public class SearchService
 		var context = await BuildSeriesContextAsync(series, season, existingFileQuality: null,
 			existingFileLanguages: null, cancellationToken);
 
-		return await SearchAsync(protocol: null, cancellationToken, indexer =>
-			_torznabHttpClient.TvSearchAsync(indexer, series.TvdbId, season,
-				categories: SeriesCategories(indexer, series.Type), cancellationToken: cancellationToken),
-			context);
+		var scene = ResolveSceneVariant(await TryGetSceneMappingsAsync(series.TvdbId, cancellationToken), series,
+			season, episode: null);
+
+		return await SearchAsync(protocol: null, cancellationToken, async indexer =>
+		{
+			var releases = new List<ReleaseInfo>(await _torznabHttpClient.TvSearchAsync(indexer, series.TvdbId, season,
+				categories: SeriesCategories(indexer, series.Type), cancellationToken: cancellationToken));
+
+			if (scene != null)
+				releases.AddRange(await _torznabHttpClient.TvSearchAsync(indexer, series.TvdbId, scene.Season,
+					query: scene.Title != series.Title ? scene.Title : null,
+					categories: SeriesCategories(indexer, series.Type), cancellationToken: cancellationToken));
+
+			return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
+		}, context);
 	}
 
 	public async Task<IReadOnlyList<DownloadDecision>> SearchMovieAsync(int movieId,
@@ -150,23 +163,99 @@ public class SearchService
 		var context = await BuildSeriesContextAsync(series, episode.SeasonNumber, existingFile?.Quality,
 			existingFile?.Languages, cancellationToken);
 
+		var scene = ResolveSceneVariant(await TryGetSceneMappingsAsync(series.TvdbId, cancellationToken), series,
+			episode.SeasonNumber, episode.EpisodeNumber);
+
+		var aniList = series.Type == SeriesType.ANIME
+			? await TryResolveAniListAsync(series.TvdbId, episode.SeasonNumber, episode.EpisodeNumber, cancellationToken)
+			: null;
+
 		return await SearchAsync(protocol: null, cancellationToken, async indexer =>
 		{
 			var releases = new List<ReleaseInfo>(await _torznabHttpClient.TvSearchAsync(indexer, series.TvdbId,
 				episode.SeasonNumber, episode.EpisodeNumber, categories: SeriesCategories(indexer, series.Type),
 				cancellationToken: cancellationToken));
 
+			if (scene != null)
+				releases.AddRange(await _torznabHttpClient.TvSearchAsync(indexer, series.TvdbId, scene.Season,
+					scene.Episode, query: scene.Title != series.Title ? scene.Title : null,
+					categories: SeriesCategories(indexer, series.Type), cancellationToken: cancellationToken));
+
 			if (series.Type == SeriesType.ANIME && episode.AbsoluteEpisodeNumber is { } absolute)
-			{
 				releases.AddRange(await _torznabHttpClient.SearchAsync(indexer,
 					$"{series.Title} {absolute:00}", AnimeCategories(indexer), cancellationToken));
 
-				return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
-			}
+			if (aniList != null)
+				releases.AddRange(await _torznabHttpClient.SearchAsync(indexer,
+					$"{scene?.Title ?? series.Title} {aniList.AniListEpisode:00}", AnimeCategories(indexer),
+					cancellationToken));
 
-			return releases;
+			return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
 		}, context);
 	}
+
+	private async Task<SceneMappingSet?> TryGetSceneMappingsAsync(int tvdbId, CancellationToken cancellationToken)
+	{
+		try
+		{
+			return await _mappingsClient.GetSceneMappingsAsync(tvdbId, cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			if (cancellationToken.IsCancellationRequested)
+				throw;
+
+			_logger.LogDebug(ex, "Fetching scene mappings for series {TvdbId} failed", tvdbId);
+			return null;
+		}
+	}
+
+	private async Task<AniListResolution?> TryResolveAniListAsync(int tvdbId, int season, int episode,
+		CancellationToken cancellationToken)
+	{
+		try
+		{
+			return await _mappingsClient.ResolveAniListAsync(tvdbId, season, episode, cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			if (cancellationToken.IsCancellationRequested)
+				throw;
+
+			_logger.LogDebug(ex, "Resolving AniList numbering for series {TvdbId} S{Season}E{Episode} failed", tvdbId,
+				season, episode);
+			return null;
+		}
+	}
+
+	private static SceneVariant? ResolveSceneVariant(SceneMappingSet? set, Series series, int season, int? episode)
+	{
+		if (set == null)
+			return null;
+
+		var seasonMapping = set.Mappings
+			.Where(m => m.SeasonNumber == season || m.SeasonNumber == null)
+			.OrderByDescending(m => m.SeasonNumber != null)
+			.FirstOrDefault();
+
+		if (episode is { } ep)
+		{
+			var episodeOverride = set.EpisodeMappings
+				.FirstOrDefault(m => m.SeasonNumber == season && m.EpisodeNumber == ep);
+
+			if (episodeOverride != null)
+				return new SceneVariant(episodeOverride.SceneSeasonNumber, episodeOverride.SceneEpisodeNumber,
+					seasonMapping?.Title ?? series.Title);
+		}
+
+		if (seasonMapping == null)
+			return null;
+
+		return new SceneVariant(seasonMapping.SceneSeasonNumber ?? season,
+			episode is { } e ? e + seasonMapping.EpisodeOffset : null, seasonMapping.Title);
+	}
+
+	private sealed record SceneVariant(int Season, int? Episode, string Title);
 
 	private async Task<MediaContext> BuildSeriesContextAsync(Series series, int season,
 		Submarine.Core.Quality.QualityModel? existingFileQuality,

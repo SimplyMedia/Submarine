@@ -9,7 +9,7 @@ namespace Submarine.Api.Clients;
 /// <summary>
 ///     Talks to Torznab/Newznab indexers over http, building queries and parsing responses
 /// </summary>
-public class TorznabHttpClient
+public class TorznabHttpClient : ITorznabSearchClient
 {
 	private readonly IHttpClientFactory _httpClientFactory;
 	private readonly IParser<TorznabCapabilities> _capabilitiesParser;

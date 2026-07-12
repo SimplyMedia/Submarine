@@ -13,6 +13,7 @@ using Submarine.Core.Parser;
 using Submarine.Core.Parser.Release;
 using Submarine.Core.Provider;
 using Submarine.Core.Release;
+using Submarine.Mappings.Contracts;
 using Submarine.Metadata.Contracts;
 
 namespace Submarine.Api.Tests;
@@ -102,6 +103,71 @@ public sealed class FakeMetadataClient : IMetadataClient
 	public Task<IReadOnlyList<MovieResource>> SearchMoviesAsync(string term,
 		CancellationToken cancellationToken = default)
 		=> Task.FromResult<IReadOnlyList<MovieResource>>(Array.Empty<MovieResource>());
+}
+
+/// <summary>
+///     Returns configured mappings without touching the network
+/// </summary>
+public sealed class FakeMappingsClient : IMappingsClient
+{
+	public SceneMappingSet? SceneMappings { get; set; }
+
+	public IReadOnlyList<AniListMappingResource> AniListMappings { get; set; } =
+		Array.Empty<AniListMappingResource>();
+
+	public AniListResolution? AniListResolution { get; set; }
+
+	public bool Unreachable { get; set; }
+
+	public Task<SceneMappingSet?> GetSceneMappingsAsync(int tvdbId, CancellationToken cancellationToken = default)
+		=> Unreachable
+			? throw new HttpRequestException("mappings unreachable")
+			: Task.FromResult(SceneMappings);
+
+	public Task<IReadOnlyList<AniListMappingResource>> GetAniListMappingsAsync(int tvdbId,
+		CancellationToken cancellationToken = default)
+		=> Unreachable
+			? throw new HttpRequestException("mappings unreachable")
+			: Task.FromResult(AniListMappings);
+
+	public Task<AniListResolution?> ResolveAniListAsync(int tvdbId, int season, int episode,
+		CancellationToken cancellationToken = default)
+		=> Unreachable
+			? throw new HttpRequestException("mappings unreachable")
+			: Task.FromResult(AniListResolution);
+}
+
+/// <summary>
+///     Records issued queries and returns a fixed set of releases without touching an indexer
+/// </summary>
+public sealed class FakeTorznabSearchClient : ITorznabSearchClient
+{
+	public List<(int? TvdbId, int? Season, int? Episode, string? Query)> TvSearches { get; } = new();
+
+	public List<string?> TermSearches { get; } = new();
+
+	public IReadOnlyList<ReleaseInfo> Result { get; set; } = Array.Empty<ReleaseInfo>();
+
+	public Task<IReadOnlyList<ReleaseInfo>> TvSearchAsync(Provider indexer, int? tvdbId = null, int? season = null,
+		int? episode = null, string? query = null, IReadOnlyList<int>? categories = null,
+		CancellationToken cancellationToken = default)
+	{
+		TvSearches.Add((tvdbId, season, episode, query));
+
+		return Task.FromResult(Result);
+	}
+
+	public Task<IReadOnlyList<ReleaseInfo>> MovieSearchAsync(Provider indexer, int? tmdbId = null, string? imdbId = null,
+		string? query = null, IReadOnlyList<int>? categories = null, CancellationToken cancellationToken = default)
+		=> Task.FromResult(Result);
+
+	public Task<IReadOnlyList<ReleaseInfo>> SearchAsync(Provider indexer, string? query = null,
+		IReadOnlyList<int>? categories = null, CancellationToken cancellationToken = default)
+	{
+		TermSearches.Add(query);
+
+		return Task.FromResult(Result);
+	}
 }
 
 /// <summary>

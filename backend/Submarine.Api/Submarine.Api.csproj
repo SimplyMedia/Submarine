@@ -25,6 +25,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Submarine.Core\Submarine.Core.csproj" />
+		<ProjectReference Include="..\Submarine.Mappings.Contracts\Submarine.Mappings.Contracts.csproj" />
 		<ProjectReference Include="..\Submarine.Metadata.Contracts\Submarine.Metadata.Contracts.csproj" />
 	</ItemGroup>
 

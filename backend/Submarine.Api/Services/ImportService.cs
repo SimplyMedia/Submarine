@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Submarine.Api.Clients;
 using Submarine.Api.Events;
 using Submarine.Api.Models.Database;
 using Submarine.Core.History;
@@ -24,11 +25,12 @@ public class ImportService
 	private readonly MediaNamingService _naming;
 	private readonly HistoryService _historyService;
 	private readonly IEventPublisher _eventPublisher;
+	private readonly IMappingsClient _mappingsClient;
 	private readonly ILogger<ImportService> _logger;
 
 	public ImportService(SubmarineDatabaseContext context, SettingsService settingsService,
 		IParser<BaseRelease> releaseParser, MediaNamingService naming, HistoryService historyService,
-		IEventPublisher eventPublisher, ILogger<ImportService> logger)
+		IEventPublisher eventPublisher, IMappingsClient mappingsClient, ILogger<ImportService> logger)
 	{
 		_context = context;
 		_settingsService = settingsService;
@@ -36,6 +38,7 @@ public class ImportService
 		_naming = naming;
 		_historyService = historyService;
 		_eventPublisher = eventPublisher;
+		_mappingsClient = mappingsClient;
 		_logger = logger;
 	}
 
@@ -103,7 +106,8 @@ public class ImportService
 		Core.Config.MediaManagementConfig managementConfig, bool singleFile, CancellationToken cancellationToken)
 	{
 		var parsed = TryParse(sourceFile);
-		var episodes = ResolveEpisodes(seriesEpisodes, parsed, tracked, singleFile);
+		var episodes = await ResolveEpisodesAsync(series, seriesEpisodes, parsed, tracked, singleFile,
+			cancellationToken);
 
 		if (episodes.Count == 0)
 		{
@@ -278,8 +282,8 @@ public class ImportService
 			File.Delete(path);
 	}
 
-	private static List<Episode> ResolveEpisodes(List<Episode> seriesEpisodes, BaseRelease? parsed,
-		Core.Download.TrackedDownload tracked, bool singleFile)
+	private async Task<List<Episode>> ResolveEpisodesAsync(Series series, List<Episode> seriesEpisodes,
+		BaseRelease? parsed, Core.Download.TrackedDownload tracked, bool singleFile, CancellationToken cancellationToken)
 	{
 		if (singleFile && tracked.EpisodeIds.Count > 0)
 			return seriesEpisodes.Where(e => tracked.EpisodeIds.Contains(e.Id)).ToList();
@@ -289,20 +293,148 @@ public class ImportService
 		if (parsed?.SeriesReleaseData is { } data)
 		{
 			if (data.Seasons.Count > 0 && data.Episodes.Count > 0)
+			{
 				matched = seriesEpisodes
 					.Where(e => data.Seasons.Contains(e.SeasonNumber) && data.Episodes.Contains(e.EpisodeNumber))
 					.ToList();
-			else if (data.AbsoluteEpisodes.Count > 0)
-				matched = seriesEpisodes
-					.Where(e => e.AbsoluteEpisodeNumber != null &&
-					            data.AbsoluteEpisodes.Contains(e.AbsoluteEpisodeNumber.Value))
-					.ToList();
+
+				if (matched.Count == 0 && series.Type != SeriesType.ANIME)
+					matched = await ResolveSceneEpisodesAsync(series, seriesEpisodes, data, cancellationToken);
+			}
+
+			if (matched.Count == 0 && series.Type == SeriesType.ANIME && data.AbsoluteEpisodes.Count > 0)
+			{
+				matched = await ResolveAniListEpisodesAsync(series, seriesEpisodes, data, cancellationToken);
+
+				if (matched.Count == 0)
+					matched = MatchAbsolute(seriesEpisodes, data);
+			}
+			else if (matched.Count == 0 && data.AbsoluteEpisodes.Count > 0)
+			{
+				matched = MatchAbsolute(seriesEpisodes, data);
+			}
 		}
 
 		if (matched.Count == 0 && tracked.EpisodeIds.Count > 0)
 			matched = seriesEpisodes.Where(e => tracked.EpisodeIds.Contains(e.Id)).ToList();
 
 		return matched;
+	}
+
+	private static List<Episode> MatchAbsolute(List<Episode> seriesEpisodes, Core.Release.SeriesReleaseData data)
+		=> seriesEpisodes
+			.Where(e => e.AbsoluteEpisodeNumber != null &&
+			            data.AbsoluteEpisodes.Contains(e.AbsoluteEpisodeNumber.Value))
+			.ToList();
+
+	private async Task<List<Episode>> ResolveAniListEpisodesAsync(Series series, List<Episode> seriesEpisodes,
+		Core.Release.SeriesReleaseData data, CancellationToken cancellationToken)
+	{
+		var mappings = await TryGetAniListMappingsAsync(series.TvdbId, cancellationToken);
+
+		if (mappings.Count == 0)
+			return new List<Episode>();
+
+		var matched = new List<Episode>();
+
+		foreach (var absolute in data.AbsoluteEpisodes)
+		foreach (var mapping in mappings)
+		{
+			// The parsed number may be the TVDB absolute number or the AniList entry episode number
+			foreach (var aniListEpisode in new[] { absolute - mapping.AbsoluteOffset, absolute })
+			{
+				if (aniListEpisode < 1 || (mapping.EpisodeCount != null && aniListEpisode > mapping.EpisodeCount))
+					continue;
+
+				var episode = seriesEpisodes.FirstOrDefault(e => e.SeasonNumber == mapping.TvdbSeason &&
+				                                                  e.EpisodeNumber == mapping.EpisodeStart +
+				                                                  aniListEpisode - 1);
+
+				if (episode == null || matched.Contains(episode))
+					continue;
+
+				matched.Add(episode);
+				break;
+			}
+		}
+
+		return matched;
+	}
+
+	private async Task<List<Episode>> ResolveSceneEpisodesAsync(Series series, List<Episode> seriesEpisodes,
+		Core.Release.SeriesReleaseData data, CancellationToken cancellationToken)
+	{
+		var set = await TryGetSceneMappingsAsync(series.TvdbId, cancellationToken);
+
+		if (set == null)
+			return new List<Episode>();
+
+		var matched = new List<Episode>();
+
+		foreach (var sceneSeason in data.Seasons)
+		foreach (var sceneEpisode in data.Episodes)
+		{
+			var (season, episode) = ResolveTvdbFromScene(set, sceneSeason, sceneEpisode);
+
+			var target = seriesEpisodes.FirstOrDefault(e => e.SeasonNumber == season && e.EpisodeNumber == episode);
+
+			if (target != null && !matched.Contains(target))
+				matched.Add(target);
+		}
+
+		return matched;
+	}
+
+	private static (int Season, int Episode) ResolveTvdbFromScene(SceneMappingSet set, int sceneSeason, int sceneEpisode)
+	{
+		var episodeOverride = set.EpisodeMappings
+			.FirstOrDefault(m => m.SceneSeasonNumber == sceneSeason && m.SceneEpisodeNumber == sceneEpisode);
+
+		if (episodeOverride != null)
+			return (episodeOverride.SeasonNumber, episodeOverride.EpisodeNumber);
+
+		var mapping = set.Mappings
+			.Where(m => m.SceneSeasonNumber == sceneSeason || m.SceneSeasonNumber == null)
+			.OrderByDescending(m => m.SceneSeasonNumber != null)
+			.FirstOrDefault();
+
+		if (mapping == null)
+			return (sceneSeason, sceneEpisode);
+
+		return (mapping.SeasonNumber ?? sceneSeason, sceneEpisode - mapping.EpisodeOffset);
+	}
+
+	private async Task<SceneMappingSet?> TryGetSceneMappingsAsync(int tvdbId, CancellationToken cancellationToken)
+	{
+		try
+		{
+			return await _mappingsClient.GetSceneMappingsAsync(tvdbId, cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			if (cancellationToken.IsCancellationRequested)
+				throw;
+
+			_logger.LogDebug(ex, "Fetching scene mappings for series {TvdbId} failed", tvdbId);
+			return null;
+		}
+	}
+
+	private async Task<IReadOnlyList<Submarine.Mappings.Contracts.AniListMappingResource>> TryGetAniListMappingsAsync(
+		int tvdbId, CancellationToken cancellationToken)
+	{
+		try
+		{
+			return await _mappingsClient.GetAniListMappingsAsync(tvdbId, cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			if (cancellationToken.IsCancellationRequested)
+				throw;
+
+			_logger.LogDebug(ex, "Fetching AniList mappings for series {TvdbId} failed", tvdbId);
+			return Array.Empty<Submarine.Mappings.Contracts.AniListMappingResource>();
+		}
 	}
 
 	private BaseRelease? TryParse(string sourceFile)

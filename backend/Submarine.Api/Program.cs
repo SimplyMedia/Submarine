@@ -127,10 +127,20 @@ builder.Services.AddHttpClient<IMetadataClient, MetadataClient>((sp, client) =>
 	})
 	.AddStandardResilienceHandler();
 
+builder.Services.AddHttpClient<IMappingsClient, MappingsClient>((sp, client) =>
+	{
+		var baseUrl = sp.GetRequiredService<IConfiguration>().GetValue<string>("Mappings:BaseUrl")
+		              ?? "http://localhost:5200";
+
+		client.BaseAddress = new Uri(baseUrl);
+	})
+	.AddStandardResilienceHandler();
+
 builder.Services.AddHttpClient("indexer", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddHttpClient("downloadclient", client => client.Timeout = TimeSpan.FromSeconds(100));
 
 builder.Services.AddSingleton<TorznabHttpClient>();
+builder.Services.AddSingleton<ITorznabSearchClient>(sp => sp.GetRequiredService<TorznabHttpClient>());
 
 builder.Services.AddHttpClient<IImportListFetcher, ImportListFetcher>(client =>
 	client.Timeout = TimeSpan.FromSeconds(30));
@@ -196,6 +206,22 @@ builder.Services.AddSwaggerGen(c =>
 	var coreFilePath = Path.Combine(AppContext.BaseDirectory, "Submarine.Core.xml");
 	c.IncludeXmlComments(apiFilePath, true);
 	c.IncludeXmlComments(coreFilePath);
+
+	c.CustomOperationIds(apiDesc => $"{apiDesc.ActionDescriptor.RouteValues["controller"]}_{apiDesc.ActionDescriptor.RouteValues["action"]}");
+
+	// Default schemaId selector plus a "Metadata" prefix for Submarine.Metadata.Contracts types,
+	// which otherwise collide with same-named Submarine.Core types (e.g. SeriesStatus).
+	c.CustomSchemaIds(SchemaId);
+
+	static string SchemaId(Type type)
+	{
+		if (type.IsConstructedGenericType)
+			return string.Concat(type.GetGenericArguments().Select(SchemaId)) + type.Name.Split('`')[0];
+
+		var name = type.Name.Replace("[]", "Array");
+
+		return type.Namespace == "Submarine.Metadata.Contracts" ? $"Metadata{name}" : name;
+	}
 });
 
 builder.Services.AddHealthChecks();
@@ -226,17 +252,23 @@ using (var scope = app.Services.GetService<IServiceScopeFactory>()?.CreateScope(
 	}
 }
 
+var swaggerEnabled = builder.Configuration.GetValue<bool?>("Swagger:Enabled") ?? app.Environment.IsDevelopment();
+
 if (app.Environment.IsDevelopment())
 {
 	app.UseHttpsRedirection();
 
 	app.UseDeveloperExceptionPage();
-	app.UseSwagger();
-	app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Submarine.Api v1"));
 }
 else
 {
 	app.UseExceptionHandler();
+}
+
+if (swaggerEnabled)
+{
+	app.UseSwagger();
+	app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Submarine.Api v1"));
 }
 
 app.UseStatusCodePages();
