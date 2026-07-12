@@ -43,6 +43,8 @@ public sealed class DownloadMonitorJob : IScheduledJob
 					if (!items.TryGetValue(download.DownloadId, out var item))
 						continue;
 
+					// Enqueue only on the transition into COMPLETED. Once the COMPLETED status is
+					// persisted below, a still-running slow import cannot be re-enqueued on later ticks.
 					var justCompleted = item.Status == DownloadItemStatus.COMPLETED
 					                    && download.Status != DownloadItemStatus.COMPLETED;
 

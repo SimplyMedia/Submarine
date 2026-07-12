@@ -53,6 +53,8 @@ public class SeriesRefreshService
 			.Include(e => e.Files)
 			.ToListAsync(cancellationToken);
 
+		var titleChanges = new List<EpisodeTitleChangedEvent>();
+
 		foreach (var episodeResource in resource.Episodes)
 		{
 			var absolute = episodeResource.Numbers.FirstOrDefault(n => n.Ordering == EpisodeOrdering.Absolute);
@@ -88,8 +90,7 @@ public class SeriesRefreshService
 			var newTitle = episodeResource.Title;
 
 			if (ShouldPublishTitleChange(existing, oldTitle, newTitle))
-				await _eventPublisher.PublishAsync(
-					new EpisodeTitleChangedEvent(existing.Id, series.Id, oldTitle, newTitle!), cancellationToken);
+				titleChanges.Add(new EpisodeTitleChangedEvent(existing.Id, series.Id, oldTitle, newTitle!));
 
 			existing.SeasonNumber = seasonNumber;
 			existing.EpisodeNumber = episodeNumber;
@@ -103,6 +104,10 @@ public class SeriesRefreshService
 		}
 
 		await _context.SaveChangesAsync(cancellationToken);
+
+		// Publish only after the new titles are persisted so the queued handler cannot read a stale title
+		foreach (var change in titleChanges)
+			await _eventPublisher.PublishAsync(change, cancellationToken);
 	}
 
 	private async Task<SeriesResource?> FetchAsync(Series series, CancellationToken cancellationToken)

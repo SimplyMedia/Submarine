@@ -13,12 +13,19 @@ public static class FileLinker
 	/// <param name="source">The existing file</param>
 	/// <param name="destination">The destination path</param>
 	/// <param name="useHardlink">Whether to attempt a hardlink before moving</param>
+	/// <remarks>
+	///     An existing destination is overwritten. The content stays safe because <paramref name="source" /> holds
+	///     it until the hardlink or move completes.
+	/// </remarks>
 	public static void Place(string source, string destination, bool useHardlink)
 	{
 		var directory = Path.GetDirectoryName(destination);
 
 		if (!string.IsNullOrEmpty(directory))
 			Directory.CreateDirectory(directory);
+
+		if (File.Exists(destination))
+			File.Delete(destination);
 
 		if (useHardlink && TryHardLink(source, destination))
 			return;

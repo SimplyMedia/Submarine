@@ -95,6 +95,122 @@ public class ImportServiceTest : DatabaseTestBase
 	}
 
 	[Fact]
+	public async Task ImportTrackedDownloadAsync_ShouldReplaceOldFileInSameVersion_WhenUpgrading()
+	{
+		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var libraryPath = Path.Combine(root, "library", "Show");
+		var downloadPath = Path.Combine(root, "download");
+		Directory.CreateDirectory(Path.Combine(libraryPath, "Season 01"));
+		Directory.CreateDirectory(downloadPath);
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.2160p.WEB-DL.x264-GROUP.mkv"), "video");
+		var oldRelative = Path.Combine("Season 01", "Show - S01E05 - OldName.mkv");
+		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "old");
+
+		try
+		{
+			Context.MediaManagementConfigs.Add(new MediaManagementConfig { Id = 1, UseHardlinks = false });
+
+			var series = new Series
+			{
+				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
+			};
+			Context.Series.Add(series);
+			await Context.SaveChangesAsync();
+
+			var version = new MediaVersion
+			{
+				SeriesId = series.Id, Name = "Default", Path = libraryPath, QualityProfileId = 1,
+				LanguageProfileId = 1, Monitored = true
+			};
+			Context.Versions.Add(version);
+			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
+			Context.Episodes.Add(episode);
+			await Context.SaveChangesAsync();
+
+			Context.EpisodeFiles.Add(new EpisodeFile
+			{
+				SeriesId = series.Id, MediaVersionId = version.Id, RelativePath = oldRelative,
+				Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
+					new Revision()),
+				Languages = new List<Language> { Language.ENGLISH }, Episodes = new List<Episode> { episode }
+			});
+			await Context.SaveChangesAsync();
+
+			var tracked = new TrackedDownload
+			{
+				DownloadClientConfigId = 1,
+				DownloadId = "abc",
+				Title = "Show S01E05",
+				Protocol = Protocol.BITTORRENT,
+				Status = DownloadItemStatus.COMPLETED,
+				ReleaseTitle = "Show S01E05 2160p WEB-DL x264-GROUP",
+				Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R2160_P),
+					new Revision()),
+				Languages = new List<Language> { Language.ENGLISH },
+				SeriesId = series.Id,
+				MediaVersionId = version.Id,
+				EpisodeIds = new List<int> { episode.Id },
+				OutputPath = downloadPath
+			};
+			Context.TrackedDownloads.Add(tracked);
+			await Context.SaveChangesAsync();
+
+			var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
+				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
+				NullLogger<ImportService>.Instance);
+
+			await service.ImportTrackedDownloadAsync(tracked.Id);
+
+			var file = await Context.EpisodeFiles.SingleAsync();
+			Assert.Equal(QualityResolution.R2160_P, file.Quality.Resolution.Resolution);
+			Assert.Equal("video", await File.ReadAllTextAsync(Path.Combine(libraryPath, file.RelativePath)));
+			Assert.False(File.Exists(Path.Combine(libraryPath, oldRelative)));
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportTrackedDownloadAsync_ShouldDoNothing_WhenAlreadyImported()
+	{
+		Context.MediaManagementConfigs.Add(new MediaManagementConfig { Id = 1, UseHardlinks = false });
+
+		var series = new Series { TvdbId = 1, Title = "Show", Monitored = true, Type = SeriesType.STANDARD };
+		Context.Series.Add(series);
+		await Context.SaveChangesAsync();
+
+		var tracked = new TrackedDownload
+		{
+			DownloadClientConfigId = 1,
+			DownloadId = "abc",
+			Title = "Show S01E05",
+			Protocol = Protocol.BITTORRENT,
+			Status = DownloadItemStatus.COMPLETED,
+			ReleaseTitle = "Show S01E05",
+			Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
+				new Revision()),
+			Languages = new List<Language> { Language.ENGLISH },
+			SeriesId = series.Id,
+			EpisodeIds = new List<int>(),
+			OutputPath = "does-not-matter",
+			Imported = true
+		};
+		Context.TrackedDownloads.Add(tracked);
+		await Context.SaveChangesAsync();
+
+		var publisher = new FakeEventPublisher();
+		var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
+			new HistoryService(Context), publisher, new FakeMappingsClient(), NullLogger<ImportService>.Instance);
+
+		await service.ImportTrackedDownloadAsync(tracked.Id);
+
+		Assert.Empty(await Context.EpisodeFiles.ToListAsync());
+		Assert.Empty(publisher.Published);
+	}
+
+	[Fact]
 	public async Task ImportTrackedDownloadAsync_ShouldMatchSeasonEpisodeViaAniListMapping_WhenSeriesIsAnime()
 	{
 		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

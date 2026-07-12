@@ -47,8 +47,16 @@ public class ImportService
 		var tracked = await _context.TrackedDownloads
 			.FirstOrDefaultAsync(t => t.Id == trackedDownloadId, cancellationToken);
 
-		if (tracked == null || tracked.Imported)
+		if (tracked == null)
 			return;
+
+		// Invariant: a tracked download is imported at most once. Re-check inside the queued work
+		// item in case a prior run already completed the import before this one started.
+		if (tracked.Imported)
+		{
+			_logger.LogDebug("Tracked download {Id} already imported, skipping", trackedDownloadId);
+			return;
+		}
 
 		if (string.IsNullOrEmpty(tracked.OutputPath))
 		{
@@ -166,8 +174,8 @@ public class ImportService
 
 		var destination = Path.Combine(version.Path, seasonFolder, fileName + extension);
 
-		await ReplaceExistingEpisodeFilesAsync(version, ordered, cancellationToken);
-
+		// Place the new file before removing the old one so a failed placement can never leave the
+		// version without a file. If the save below throws, the placed file is left as an orphan.
 		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks);
 
 		var episodeFile = new EpisodeFile
@@ -185,7 +193,10 @@ public class ImportService
 		};
 
 		_context.EpisodeFiles.Add(episodeFile);
-		await _context.SaveChangesAsync(cancellationToken);
+
+		await ReplaceExistingEpisodeFilesAsync(version, ordered, destination, cancellationToken);
+
+		await SaveImportAsync(destination, cancellationToken);
 
 		await _historyService.RecordAsync(new HistoryEvent
 		{
@@ -220,8 +231,8 @@ public class ImportService
 
 		var destination = Path.Combine(version.Path, fileName + extension);
 
-		await ReplaceExistingMovieFileAsync(movie, version, cancellationToken);
-
+		// Place the new file before removing the old one so a failed placement can never leave the
+		// version without a file. If the save below throws, the placed file is left as an orphan.
 		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks);
 
 		var movieFile = new MovieFile
@@ -238,7 +249,10 @@ public class ImportService
 		};
 
 		_context.MovieFiles.Add(movieFile);
-		await _context.SaveChangesAsync(cancellationToken);
+
+		await ReplaceExistingMovieFileAsync(movie, version, destination, cancellationToken);
+
+		await SaveImportAsync(destination, cancellationToken);
 
 		await _historyService.RecordAsync(new HistoryEvent
 		{
@@ -254,8 +268,23 @@ public class ImportService
 		}, cancellationToken);
 	}
 
+	private async Task SaveImportAsync(string destination, CancellationToken cancellationToken)
+	{
+		try
+		{
+			await _context.SaveChangesAsync(cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogWarning(ex,
+				"Saving import failed after placing {Destination}; the placed file is left as an orphan on disk",
+				destination);
+			throw;
+		}
+	}
+
 	private async Task ReplaceExistingEpisodeFilesAsync(MediaVersion version, IReadOnlyList<Episode> episodes,
-		CancellationToken cancellationToken)
+		string newDestination, CancellationToken cancellationToken)
 	{
 		var episodeIds = episodes.Select(e => e.Id).ToList();
 
@@ -263,19 +292,14 @@ public class ImportService
 			.Where(f => f.MediaVersionId == version.Id && f.Episodes.Any(e => episodeIds.Contains(e.Id)))
 			.ToListAsync(cancellationToken);
 
-		if (oldFiles.Count == 0)
-			return;
-
 		foreach (var oldFile in oldFiles)
 		{
-			DeleteFromDisk(Path.Combine(version.Path, oldFile.RelativePath));
+			DeleteReplacedFile(Path.Combine(version.Path, oldFile.RelativePath), newDestination);
 			_context.EpisodeFiles.Remove(oldFile);
 		}
-
-		await _context.SaveChangesAsync(cancellationToken);
 	}
 
-	private async Task ReplaceExistingMovieFileAsync(Movie movie, MediaVersion version,
+	private async Task ReplaceExistingMovieFileAsync(Movie movie, MediaVersion version, string newDestination,
 		CancellationToken cancellationToken)
 	{
 		var oldFile = await _context.MovieFiles
@@ -284,10 +308,17 @@ public class ImportService
 		if (oldFile == null)
 			return;
 
-		DeleteFromDisk(Path.Combine(version.Path, oldFile.RelativePath));
+		DeleteReplacedFile(Path.Combine(version.Path, oldFile.RelativePath), newDestination);
 		_context.MovieFiles.Remove(oldFile);
+	}
 
-		await _context.SaveChangesAsync(cancellationToken);
+	private static void DeleteReplacedFile(string oldPath, string newDestination)
+	{
+		// Never delete the file we just placed when an upgrade reuses the same name
+		if (string.Equals(Path.GetFullPath(oldPath), Path.GetFullPath(newDestination), StringComparison.Ordinal))
+			return;
+
+		DeleteFromDisk(oldPath);
 	}
 
 	private static void DeleteFromDisk(string path)
