@@ -73,6 +73,21 @@ public class Connection : ICreatable, IUpdatable
 	public bool OnRename { get; set; }
 
 	/// <summary>
+	///     Whether this connection is notified when a downloaded release is upgraded to a better quality
+	/// </summary>
+	public bool OnUpgrade { get; set; }
+
+	/// <summary>
+	///     Whether this connection is notified when media is deleted
+	/// </summary>
+	public bool OnDelete { get; set; }
+
+	/// <summary>
+	///     Whether this connection is notified when a health issue is detected
+	/// </summary>
+	public bool OnHealthIssue { get; set; }
+
+	/// <summary>
 	///     Tags of this connection, empty means it applies to all media
 	/// </summary>
 	public List<string> Tags { get; set; } = new();

@@ -58,6 +58,12 @@ public class ConnectionService
 			connection.OnImport = request.OnImport.Value;
 		if (request.OnRename != null)
 			connection.OnRename = request.OnRename.Value;
+		if (request.OnUpgrade != null)
+			connection.OnUpgrade = request.OnUpgrade.Value;
+		if (request.OnDelete != null)
+			connection.OnDelete = request.OnDelete.Value;
+		if (request.OnHealthIssue != null)
+			connection.OnHealthIssue = request.OnHealthIssue.Value;
 		if (request.Tags != null)
 			connection.Tags = request.Tags;
 
@@ -91,6 +97,50 @@ public class ConnectionService
 					webhook.Username = request.Username;
 				if (request.Password != null)
 					webhook.Password = request.Password;
+				break;
+			case SlackConnection slack:
+				if (request.WebhookUrl != null)
+					slack.WebhookUrl = request.WebhookUrl;
+				break;
+			case PushoverConnection pushover:
+				if (request.AppToken != null)
+					pushover.AppToken = request.AppToken;
+				if (request.UserKey != null)
+					pushover.UserKey = request.UserKey;
+				break;
+			case PushbulletConnection pushbullet:
+				if (request.AccessToken != null)
+					pushbullet.AccessToken = request.AccessToken;
+				break;
+			case GotifyConnection gotify:
+				if (request.ServerUrl != null)
+					gotify.ServerUrl = request.ServerUrl;
+				if (request.AppToken != null)
+					gotify.AppToken = request.AppToken;
+				break;
+			case KodiConnection kodi:
+				if (request.Host != null)
+				{
+					if (string.IsNullOrWhiteSpace(request.Host))
+						throw new BadRequestException("Host cannot be empty for Kodi connections");
+					kodi.Host = request.Host;
+				}
+				if (request.Port != null)
+					kodi.Port = request.Port.Value;
+				if (request.UseSsl != null)
+					kodi.UseSsl = request.UseSsl.Value;
+				if (request.Username != null)
+					kodi.Username = request.Username;
+				if (request.Password != null)
+					kodi.Password = request.Password;
+				break;
+			case CustomScriptConnection customScript:
+				if (request.ScriptPath != null)
+				{
+					if (!File.Exists(request.ScriptPath))
+						throw new BadRequestException("ScriptPath must point to an existing file for Custom Script connections");
+					customScript.ScriptPath = request.ScriptPath;
+				}
 				break;
 			default:
 				if (request.Host != null)

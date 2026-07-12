@@ -1,3 +1,5 @@
+using Submarine.Core.MediaFile.Naming;
+
 namespace Submarine.Api.Models.Request;
 
 public record UpdateNamingConfigRequest
@@ -15,4 +17,6 @@ public record UpdateNamingConfigRequest
 	public string SeasonFolderFormat { get; set; }
 
 	public string MovieFolderFormat { get; set; }
+
+	public MultiEpisodeStyle MultiEpisodeStyle { get; set; }
 }

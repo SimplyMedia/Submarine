@@ -49,6 +49,7 @@ public class SettingsService
 		config.SeriesFolderFormat = request.SeriesFolderFormat;
 		config.SeasonFolderFormat = request.SeasonFolderFormat;
 		config.MovieFolderFormat = request.MovieFolderFormat;
+		config.MultiEpisodeStyle = request.MultiEpisodeStyle;
 
 		await _databaseContext.SaveChangesAsync();
 
@@ -77,6 +78,10 @@ public class SettingsService
 		config.ImportExtraFiles = request.ImportExtraFiles;
 		config.MinimumFreeSpaceMb = request.MinimumFreeSpaceMb;
 		config.WriteNfo = request.WriteNfo;
+		config.ChmodFolder = request.ChmodFolder;
+		config.ChmodFile = request.ChmodFile;
+		config.ChownUser = request.ChownUser;
+		config.ChownGroup = request.ChownGroup;
 
 		await _databaseContext.SaveChangesAsync();
 

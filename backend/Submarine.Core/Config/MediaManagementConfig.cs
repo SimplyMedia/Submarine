@@ -37,6 +37,26 @@ public class MediaManagementConfig : IUpdatable
 	/// </summary>
 	public bool WriteNfo { get; set; }
 
+	/// <summary>
+	///     Octal file mode (e.g. "755") applied to imported folders. Null disables chmod. Applied on Unix only
+	/// </summary>
+	public string? ChmodFolder { get; set; }
+
+	/// <summary>
+	///     Octal file mode (e.g. "644") applied to imported Media Files. Null disables chmod. Applied on Unix only
+	/// </summary>
+	public string? ChmodFile { get; set; }
+
+	/// <summary>
+	///     User imported folders and Media Files are chowned to. Null disables chown. Applied on Unix only
+	/// </summary>
+	public string? ChownUser { get; set; }
+
+	/// <summary>
+	///     Group imported folders and Media Files are chowned to. Null disables chown. Applied on Unix only
+	/// </summary>
+	public string? ChownGroup { get; set; }
+
 	/// <inheritdoc />
 	public DateTimeOffset UpdatedAt { get; set; }
 }

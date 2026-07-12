@@ -114,6 +114,12 @@ public class SubmarineDatabaseContext : DbContext
 		builder.Entity<DiscordConnection>();
 		builder.Entity<TelegramConnection>();
 		builder.Entity<WebhookConnection>();
+		builder.Entity<SlackConnection>();
+		builder.Entity<PushoverConnection>();
+		builder.Entity<PushbulletConnection>();
+		builder.Entity<GotifyConnection>();
+		builder.Entity<KodiConnection>();
+		builder.Entity<CustomScriptConnection>();
 
 		// Host and ApiKey only apply to media server connections; the TPH table is shared with
 		// notification connections, which don't populate them.

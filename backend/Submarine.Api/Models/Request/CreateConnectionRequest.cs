@@ -25,6 +25,12 @@ public record CreateConnectionRequest
 
 	public bool OnRename { get; set; }
 
+	public bool OnUpgrade { get; set; }
+
+	public bool OnDelete { get; set; }
+
+	public bool OnHealthIssue { get; set; }
+
 	public List<string> Tags { get; set; } = new();
 
 	public string? WebhookUrl { get; set; }
@@ -41,6 +47,16 @@ public record CreateConnectionRequest
 
 	public string? Password { get; set; }
 
+	public string? AppToken { get; set; }
+
+	public string? UserKey { get; set; }
+
+	public string? AccessToken { get; set; }
+
+	public string? ServerUrl { get; set; }
+
+	public string? ScriptPath { get; set; }
+
 	public Connection ToConnection()
 	{
 		switch (Type)
@@ -52,7 +68,8 @@ public record CreateConnectionRequest
 				return new DiscordConnection
 				{
 					Name = Name, Enable = Enable, WebhookUrl = WebhookUrl,
-					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename, Tags = Tags
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
 				};
 			case ConnectionType.TELEGRAM:
 				if (string.IsNullOrWhiteSpace(BotToken) || string.IsNullOrWhiteSpace(ChatId))
@@ -61,7 +78,8 @@ public record CreateConnectionRequest
 				return new TelegramConnection
 				{
 					Name = Name, Enable = Enable, BotToken = BotToken, ChatId = ChatId,
-					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename, Tags = Tags
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
 				};
 			case ConnectionType.WEBHOOK:
 				if (string.IsNullOrWhiteSpace(Url))
@@ -74,7 +92,69 @@ public record CreateConnectionRequest
 				{
 					Name = Name, Enable = Enable, Url = Url, Method = string.IsNullOrWhiteSpace(Method) ? "POST" : Method,
 					Username = Username, Password = Password,
-					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename, Tags = Tags
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
+				};
+			case ConnectionType.SLACK:
+				if (string.IsNullOrWhiteSpace(WebhookUrl))
+					throw new BadRequestException("WebhookUrl is required for Slack connections");
+
+				return new SlackConnection
+				{
+					Name = Name, Enable = Enable, WebhookUrl = WebhookUrl,
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
+				};
+			case ConnectionType.PUSHOVER:
+				if (string.IsNullOrWhiteSpace(AppToken) || string.IsNullOrWhiteSpace(UserKey))
+					throw new BadRequestException("AppToken and UserKey are required for Pushover connections");
+
+				return new PushoverConnection
+				{
+					Name = Name, Enable = Enable, AppToken = AppToken, UserKey = UserKey,
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
+				};
+			case ConnectionType.PUSHBULLET:
+				if (string.IsNullOrWhiteSpace(AccessToken))
+					throw new BadRequestException("AccessToken is required for Pushbullet connections");
+
+				return new PushbulletConnection
+				{
+					Name = Name, Enable = Enable, AccessToken = AccessToken,
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
+				};
+			case ConnectionType.GOTIFY:
+				if (string.IsNullOrWhiteSpace(ServerUrl) || string.IsNullOrWhiteSpace(AppToken))
+					throw new BadRequestException("ServerUrl and AppToken are required for Gotify connections");
+
+				return new GotifyConnection
+				{
+					Name = Name, Enable = Enable, ServerUrl = ServerUrl, AppToken = AppToken,
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
+				};
+			case ConnectionType.KODI:
+				if (string.IsNullOrWhiteSpace(Host))
+					throw new BadRequestException("Host is required for Kodi connections");
+
+				return new KodiConnection
+				{
+					Name = Name, Enable = Enable, Host = Host, Port = Port, UseSsl = UseSsl,
+					Username = Username, Password = Password,
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
+				};
+			case ConnectionType.CUSTOM_SCRIPT:
+				if (string.IsNullOrWhiteSpace(ScriptPath) || !File.Exists(ScriptPath))
+					throw new BadRequestException("ScriptPath must point to an existing file for Custom Script connections");
+
+				return new CustomScriptConnection
+				{
+					Name = Name, Enable = Enable, ScriptPath = ScriptPath,
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
 				};
 			case ConnectionType.PLEX:
 			case ConnectionType.EMBY:
@@ -85,7 +165,8 @@ public record CreateConnectionRequest
 				return new Connection
 				{
 					Name = Name, Type = Type, Enable = Enable, Host = Host, Port = Port, UseSsl = UseSsl, ApiKey = ApiKey,
-					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename, Tags = Tags
+					OnGrab = OnGrab, OnImport = OnImport, OnRename = OnRename,
+					OnUpgrade = OnUpgrade, OnDelete = OnDelete, OnHealthIssue = OnHealthIssue, Tags = Tags
 				};
 			default:
 				throw new ArgumentOutOfRangeException();

@@ -90,6 +90,18 @@ namespace Submarine.Api.Migrations.Postgres
                     b.Property<int>("Id")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ChmodFile")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ChmodFolder")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ChownGroup")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ChownUser")
+                        .HasColumnType("text");
+
                     b.Property<bool>("ImportExtraFiles")
                         .HasColumnType("boolean");
 
@@ -126,6 +138,9 @@ namespace Submarine.Api.Migrations.Postgres
                     b.Property<string>("MovieFormat")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("MultiEpisodeStyle")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("RenameEpisodes")
                         .HasColumnType("boolean");
@@ -928,8 +943,8 @@ namespace Submarine.Api.Migrations.Postgres
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("character varying(21)");
+                        .HasMaxLength(34)
+                        .HasColumnType("character varying(34)");
 
                     b.Property<bool>("Enable")
                         .HasColumnType("boolean");
@@ -941,13 +956,22 @@ namespace Submarine.Api.Migrations.Postgres
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("OnDelete")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("OnGrab")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("OnHealthIssue")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("OnImport")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("OnRename")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("OnUpgrade")
                         .HasColumnType("boolean");
 
                     b.Property<int>("Port")
@@ -1229,6 +1253,17 @@ namespace Submarine.Api.Migrations.Postgres
                     b.ToTable("Tags");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Notification.CustomScriptConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("ScriptPath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("CustomScriptConnection");
+                });
+
             modelBuilder.Entity("Submarine.Core.Notification.DiscordConnection", b =>
                 {
                     b.HasBaseType("Submarine.Core.Notification.Connection");
@@ -1238,6 +1273,83 @@ namespace Submarine.Api.Migrations.Postgres
                         .HasColumnType("text");
 
                     b.HasDiscriminator().HasValue("DiscordConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.GotifyConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("AppToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ServerUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("GotifyConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.KodiConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("Password")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Username")
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("KodiConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.PushbulletConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("PushbulletConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.PushoverConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("AppToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.ToTable("Connections", t =>
+                        {
+                            t.Property("AppToken")
+                                .HasColumnName("PushoverConnection_AppToken");
+                        });
+
+                    b.HasDiscriminator().HasValue("PushoverConnection");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.SlackConnection", b =>
+                {
+                    b.HasBaseType("Submarine.Core.Notification.Connection");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.ToTable("Connections", t =>
+                        {
+                            t.Property("WebhookUrl")
+                                .HasColumnName("SlackConnection_WebhookUrl");
+                        });
+
+                    b.HasDiscriminator().HasValue("SlackConnection");
                 });
 
             modelBuilder.Entity("Submarine.Core.Notification.TelegramConnection", b =>
@@ -1272,6 +1384,15 @@ namespace Submarine.Api.Migrations.Postgres
 
                     b.Property<string>("Username")
                         .HasColumnType("text");
+
+                    b.ToTable("Connections", t =>
+                        {
+                            t.Property("Password")
+                                .HasColumnName("WebhookConnection_Password");
+
+                            t.Property("Username")
+                                .HasColumnName("WebhookConnection_Username");
+                        });
 
                     b.HasDiscriminator().HasValue("WebhookConnection");
                 });

@@ -53,6 +53,11 @@ public class NamingConfig : IUpdatable
 	/// </summary>
 	public string MovieFolderFormat { get; set; } = "{Movie Title} ({Year})";
 
+	/// <summary>
+	///     Style used to render multiple episodes sharing a single release in a file name
+	/// </summary>
+	public MultiEpisodeStyle MultiEpisodeStyle { get; set; } = MultiEpisodeStyle.PREFIXED_RANGE;
+
 	/// <inheritdoc />
 	public DateTimeOffset UpdatedAt { get; set; }
 }

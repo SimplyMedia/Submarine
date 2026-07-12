@@ -20,6 +20,12 @@ public record UpdateConnectionRequest
 
 	public bool? OnRename { get; set; }
 
+	public bool? OnUpgrade { get; set; }
+
+	public bool? OnDelete { get; set; }
+
+	public bool? OnHealthIssue { get; set; }
+
 	public List<string>? Tags { get; set; }
 
 	public string? WebhookUrl { get; set; }
@@ -35,4 +41,14 @@ public record UpdateConnectionRequest
 	public string? Username { get; set; }
 
 	public string? Password { get; set; }
+
+	public string? AppToken { get; set; }
+
+	public string? UserKey { get; set; }
+
+	public string? AccessToken { get; set; }
+
+	public string? ServerUrl { get; set; }
+
+	public string? ScriptPath { get; set; }
 }
