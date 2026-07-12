@@ -21,4 +21,18 @@ public record UpdateConnectionRequest
 	public bool? OnRename { get; set; }
 
 	public List<string>? Tags { get; set; }
+
+	public string? WebhookUrl { get; set; }
+
+	public string? BotToken { get; set; }
+
+	public string? ChatId { get; set; }
+
+	public string? Url { get; set; }
+
+	public string? Method { get; set; }
+
+	public string? Username { get; set; }
+
+	public string? Password { get; set; }
 }

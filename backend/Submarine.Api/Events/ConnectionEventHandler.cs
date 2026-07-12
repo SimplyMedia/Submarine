@@ -13,27 +13,32 @@ public sealed class ConnectionEventHandler : IEventHandler<MediaGrabbedEvent>, I
 {
 	private readonly SubmarineDatabaseContext _context;
 	private readonly IMediaServerClientFactory _clientFactory;
+	private readonly INotificationSenderFactory _notificationSenderFactory;
 	private readonly ILogger<ConnectionEventHandler> _logger;
 
 	public ConnectionEventHandler(SubmarineDatabaseContext context, IMediaServerClientFactory clientFactory,
-		ILogger<ConnectionEventHandler> logger)
+		INotificationSenderFactory notificationSenderFactory, ILogger<ConnectionEventHandler> logger)
 	{
 		_context = context;
 		_clientFactory = clientFactory;
+		_notificationSenderFactory = notificationSenderFactory;
 		_logger = logger;
 	}
 
 	public Task HandleAsync(MediaGrabbedEvent @event, CancellationToken cancellationToken)
-		=> NotifyAsync(c => c.OnGrab, @event.SeriesId, @event.MovieId, @event.Path, cancellationToken);
+		=> NotifyAsync(c => c.OnGrab, "grab", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
+			cancellationToken);
 
 	public Task HandleAsync(MediaImportedEvent @event, CancellationToken cancellationToken)
-		=> NotifyAsync(c => c.OnImport, @event.SeriesId, @event.MovieId, @event.Path, cancellationToken);
+		=> NotifyAsync(c => c.OnImport, "import", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
+			cancellationToken);
 
 	public Task HandleAsync(MediaRenamedEvent @event, CancellationToken cancellationToken)
-		=> NotifyAsync(c => c.OnRename, @event.SeriesId, @event.MovieId, @event.Path, cancellationToken);
+		=> NotifyAsync(c => c.OnRename, "rename", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
+			cancellationToken);
 
-	private async Task NotifyAsync(Func<Connection, bool> toggle, int? seriesId, int? movieId, string path,
-		CancellationToken cancellationToken)
+	private async Task NotifyAsync(Func<Connection, bool> toggle, string eventType, int? seriesId, int? movieId,
+		string path, string title, CancellationToken cancellationToken)
 	{
 		var connections = await _context.Connections.AsNoTracking()
 			.Where(c => c.Enable)
@@ -53,7 +58,15 @@ public sealed class ConnectionEventHandler : IEventHandler<MediaGrabbedEvent>, I
 
 			try
 			{
-				await _clientFactory.Create(connection).NotifyMediaUpdatedAsync(path, cancellationToken);
+				if (connection is DiscordConnection or TelegramConnection or WebhookConnection)
+				{
+					var message = new NotificationMessage(eventType, title, path, null, DateTimeOffset.UtcNow);
+					await _notificationSenderFactory.Create(connection).SendAsync(message, cancellationToken);
+				}
+				else
+				{
+					await _clientFactory.Create(connection).NotifyMediaUpdatedAsync(path, cancellationToken);
+				}
 			}
 			catch (Exception ex)
 			{

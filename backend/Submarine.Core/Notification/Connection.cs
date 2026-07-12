@@ -7,7 +7,10 @@ using Submarine.Core.Database;
 namespace Submarine.Core.Notification;
 
 /// <summary>
-///     A Connection to a media server which is notified about library changes
+///     A Connection to a media server or notification target which is notified about library changes.
+///     Base type for the media server connections (Plex, Emby, Jellyfin); notification connections
+///     (<see cref="DiscordConnection" />, <see cref="TelegramConnection" />, <see cref="WebhookConnection" />) are
+///     mapped as table-per-hierarchy subtypes.
 /// </summary>
 public class Connection : ICreatable, IUpdatable
 {
