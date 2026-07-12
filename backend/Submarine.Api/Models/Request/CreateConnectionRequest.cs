@@ -79,6 +79,9 @@ public record CreateConnectionRequest
 			case ConnectionType.PLEX:
 			case ConnectionType.EMBY:
 			case ConnectionType.JELLYFIN:
+				if (string.IsNullOrWhiteSpace(Host) || string.IsNullOrWhiteSpace(ApiKey))
+					throw new BadRequestException("Host and ApiKey are required for Plex, Emby and Jellyfin connections");
+
 				return new Connection
 				{
 					Name = Name, Type = Type, Enable = Enable, Host = Host, Port = Port, UseSsl = UseSsl, ApiKey = ApiKey,

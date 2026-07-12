@@ -21,6 +21,10 @@ public class MediaServerClientFactory : IMediaServerClientFactory
 	/// <inheritdoc />
 	public IMediaServerClient Create(Connection connection)
 	{
+		if (string.IsNullOrWhiteSpace(connection.Host) || string.IsNullOrWhiteSpace(connection.ApiKey))
+			throw new InvalidOperationException(
+				$"Connection {connection.Id} ({connection.Type}) is missing Host or ApiKey required for a media server connection");
+
 		var httpClient = _httpClientFactory.CreateClient("mediaserver");
 
 		return connection.Type switch
@@ -33,7 +37,7 @@ public class MediaServerClientFactory : IMediaServerClientFactory
 	}
 
 	internal static Uri BaseUri(Connection connection)
-		=> new($"{(connection.UseSsl ? "https" : "http")}://{connection.Host}:{connection.Port}");
+		=> new($"{(connection.UseSsl ? "https" : "http")}://{connection.Host!}:{connection.Port}");
 }
 
 /// <summary>
@@ -102,7 +106,7 @@ public class PlexClient : IMediaServerClient
 	{
 		using var request = new HttpRequestMessage(method,
 			new Uri(MediaServerClientFactory.BaseUri(_connection), path));
-		request.Headers.Add("X-Plex-Token", _connection.ApiKey);
+		request.Headers.Add("X-Plex-Token", _connection.ApiKey!);
 		request.Headers.Add("Accept", "application/json");
 
 		return await _httpClient.SendAsync(request, cancellationToken);
@@ -154,8 +158,8 @@ public class EmbyJellyfinClient : IMediaServerClient
 	private HttpRequestMessage CreateRequest(HttpMethod method, string path)
 	{
 		var request = new HttpRequestMessage(method, new Uri(MediaServerClientFactory.BaseUri(_connection), path));
-		request.Headers.Add("X-Emby-Token", _connection.ApiKey);
-		request.Headers.Add("X-MediaBrowser-Token", _connection.ApiKey);
+		request.Headers.Add("X-Emby-Token", _connection.ApiKey!);
+		request.Headers.Add("X-MediaBrowser-Token", _connection.ApiKey!);
 
 		return request;
 	}

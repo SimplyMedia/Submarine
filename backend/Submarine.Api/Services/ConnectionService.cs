@@ -94,13 +94,21 @@ public class ConnectionService
 				break;
 			default:
 				if (request.Host != null)
+				{
+					if (string.IsNullOrWhiteSpace(request.Host))
+						throw new BadRequestException("Host cannot be empty for Plex, Emby and Jellyfin connections");
 					connection.Host = request.Host;
+				}
 				if (request.Port != null)
 					connection.Port = request.Port.Value;
 				if (request.UseSsl != null)
 					connection.UseSsl = request.UseSsl.Value;
 				if (request.ApiKey != null)
+				{
+					if (string.IsNullOrWhiteSpace(request.ApiKey))
+						throw new BadRequestException("ApiKey cannot be empty for Plex, Emby and Jellyfin connections");
 					connection.ApiKey = request.ApiKey;
+				}
 				break;
 		}
 	}

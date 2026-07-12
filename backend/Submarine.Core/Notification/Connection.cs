@@ -37,9 +37,9 @@ public class Connection : ICreatable, IUpdatable
 	public bool Enable { get; set; }
 
 	/// <summary>
-	///     Host of the media server
+	///     Host of the media server. Only set for media server connections (Plex, Emby, Jellyfin)
 	/// </summary>
-	public string Host { get; set; }
+	public string? Host { get; set; }
 
 	/// <summary>
 	///     Port of the media server
@@ -52,9 +52,10 @@ public class Connection : ICreatable, IUpdatable
 	public bool UseSsl { get; set; }
 
 	/// <summary>
-	///     Api key or token used to authenticate against the media server
+	///     Api key or token used to authenticate against the media server. Only set for media server connections
+	///     (Plex, Emby, Jellyfin)
 	/// </summary>
-	public string ApiKey { get; set; }
+	public string? ApiKey { get; set; }
 
 	/// <summary>
 	///     Whether this connection is notified when a release is grabbed

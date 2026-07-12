@@ -60,6 +60,32 @@ public class RemotePathResolverTest
 	}
 
 	[Fact]
+	public void Resolve_ShouldMatchAndConvertToWindowsSeparators_WhenRemotePathUsesBackslashes()
+	{
+		var mappings = new List<RemotePathMapping>
+		{
+			new() { Host = "qbit", RemotePath = "/data/downloads", LocalPath = @"D:\downloads" }
+		};
+
+		var result = RemotePathResolver.Resolve("qbit", @"\data\downloads\show\episode.mkv", mappings);
+
+		Assert.Equal(@"D:\downloads\show\episode.mkv", result);
+	}
+
+	[Fact]
+	public void Resolve_ShouldMatchAndConvertToUnixSeparators_WhenConfiguredRemotePathUsesBackslashes()
+	{
+		var mappings = new List<RemotePathMapping>
+		{
+			new() { Host = "qbit", RemotePath = @"\data\downloads\", LocalPath = "/mnt/downloads" }
+		};
+
+		var result = RemotePathResolver.Resolve("qbit", "/data/downloads/show/episode.mkv", mappings);
+
+		Assert.Equal("/mnt/downloads/show/episode.mkv", result);
+	}
+
+	[Fact]
 	public void Resolve_ShouldReturnUnchanged_WhenNoMappingMatches()
 	{
 		var mappings = new List<RemotePathMapping>

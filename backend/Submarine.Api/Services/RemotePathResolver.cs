@@ -51,24 +51,34 @@ public class RemotePathResolver
 		if (string.IsNullOrEmpty(clientHost) || string.IsNullOrEmpty(remotePath))
 			return remotePath;
 
+		var normalizedRemotePath = Normalize(remotePath);
+
 		var match = mappings
 			.Where(m => string.Equals(m.Host, clientHost, StringComparison.OrdinalIgnoreCase))
-			.Where(m => remotePath.StartsWith(m.RemotePath, StringComparison.OrdinalIgnoreCase))
-			.OrderByDescending(m => m.RemotePath.Length)
+			.Select(m => (Mapping: m, NormalizedPrefix: Normalize(m.RemotePath)))
+			.Where(m => normalizedRemotePath.StartsWith(m.NormalizedPrefix, StringComparison.OrdinalIgnoreCase))
+			.OrderByDescending(m => m.NormalizedPrefix.Length)
 			.FirstOrDefault();
 
-		if (match == null)
+		if (match.Mapping == null)
 			return remotePath;
 
-		var localSeparator = match.LocalPath.Contains('\\') ? '\\' : '/';
-		var suffix = remotePath[match.RemotePath.Length..]
-			.Replace('/', localSeparator).Replace('\\', localSeparator)
+		var localSeparator = match.Mapping.LocalPath.Contains('\\') ? '\\' : '/';
+		var suffix = normalizedRemotePath[match.NormalizedPrefix.Length..]
+			.Replace('/', localSeparator)
 			.TrimStart(localSeparator);
 
-		var localPath = match.LocalPath.TrimEnd('\\', '/');
+		var localPath = match.Mapping.LocalPath.TrimEnd('\\', '/');
 
 		return suffix.Length == 0 ? localPath : $"{localPath}{localSeparator}{suffix}";
 	}
+
+	/// <summary>
+	///     Converts backslashes to forward slashes and trims a trailing separator, so prefix matching is not sensitive
+	///     to the separator style of the configured mapping vs. the incoming path
+	/// </summary>
+	private static string Normalize(string path)
+		=> path.Replace('\\', '/').TrimEnd('/');
 
 	private sealed record HostSettings(string? Host);
 }
