@@ -66,4 +66,31 @@ public class SeriesRepository : RepositoryBase<Series>, ISeriesRepository
 
 		return episodes.Where(e => e.AirDate >= start && e.AirDate <= end).ToList();
 	}
+
+	/// <inheritdoc />
+	public Task<List<Episode>> FindEpisodesByIdsAsync(IReadOnlyList<int> ids)
+		=> DatabaseContext.Set<Episode>().Where(e => ids.Contains(e.Id)).ToListAsync();
+
+	/// <inheritdoc />
+	public Task<Season?> FindSeasonAsync(int seriesId, int seasonNumber)
+		=> DatabaseContext.Set<Season>()
+			.FirstOrDefaultAsync(s => s.SeriesId == seriesId && s.SeasonNumber == seasonNumber);
+
+	/// <inheritdoc />
+	public Task<List<Episode>> FindEpisodesForSeasonAsync(int seriesId, int seasonNumber)
+		=> DatabaseContext.Set<Episode>()
+			.Where(e => e.SeriesId == seriesId && e.SeasonNumber == seasonNumber)
+			.ToListAsync();
+
+	/// <inheritdoc />
+	public Task SaveSeasonWithEpisodesAsync(Season season, IEnumerable<Episode> episodes)
+		=> DatabaseContext.SaveChangesAsync();
+
+	/// <inheritdoc />
+	public Task SaveEpisodesAsync(IEnumerable<Episode> episodes)
+		=> DatabaseContext.SaveChangesAsync();
+
+	/// <inheritdoc />
+	public Task<List<Series>> FindByIdsWithVersionsAsync(IReadOnlyList<int> ids)
+		=> DatabaseContext.Series.Include(s => s.Versions).Where(s => ids.Contains(s.Id)).ToListAsync();
 }

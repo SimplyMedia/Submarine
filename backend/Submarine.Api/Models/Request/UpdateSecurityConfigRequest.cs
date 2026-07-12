@@ -9,4 +9,6 @@ public record UpdateSecurityConfigRequest
 	public string? NewApiKey { get; set; }
 
 	public bool Regenerate { get; set; }
+
+	public bool RegenerateFeedToken { get; set; }
 }

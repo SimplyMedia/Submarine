@@ -39,4 +39,8 @@ public class MovieRepository : RepositoryBase<Movie>, IMovieRepository
 		=> DatabaseContext.Set<MovieFile>().AsNoTracking()
 			.Where(f => f.MovieId == movieId)
 			.ToListAsync();
+
+	/// <inheritdoc />
+	public Task<List<Movie>> FindByIdsWithVersionsAsync(IReadOnlyList<int> ids)
+		=> DatabaseContext.Movies.Include(m => m.Versions).Where(m => ids.Contains(m.Id)).ToListAsync();
 }

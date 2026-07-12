@@ -26,9 +26,11 @@ public class LibraryImportServiceTest : DatabaseTestBase
 	private LibraryImportService BuildService(FakeMetadataClient metadata)
 	{
 		var seriesService = new SeriesService(new SeriesRepository(Context), new RootFolderRepository(Context),
+			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
 			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context));
-		var movieService = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context), metadata,
-			new FakeBackgroundTaskQueue(), new VersionService(Context));
+		var movieService = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
+			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
+			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context));
 
 		return new LibraryImportService(Context, seriesService, movieService, metadata, ReleaseParser(),
 			new HistoryService(Context), NullLogger<LibraryImportService>.Instance);

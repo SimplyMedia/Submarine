@@ -78,4 +78,14 @@ public class MovieController : ControllerBase
 
 		return Ok(deleted);
 	}
+
+	[HttpPost("editor")]
+	[ProducesResponseType(typeof(EditorResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	public async Task<IActionResult> EditorAsync([FromBody] MovieEditorRequest request)
+	{
+		var updated = await _service.EditorAsync(request);
+
+		return Ok(new EditorResult(updated));
+	}
 }

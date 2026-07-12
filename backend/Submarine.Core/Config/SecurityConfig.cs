@@ -27,6 +27,11 @@ public class SecurityConfig : IUpdatable
 	/// </summary>
 	public string ApiKey { get; set; }
 
+	/// <summary>
+	///     Token used to authenticate calendar/RSS feed URLs without requiring the API key
+	/// </summary>
+	public string FeedToken { get; set; }
+
 	/// <inheritdoc />
 	public DateTimeOffset UpdatedAt { get; set; }
 }

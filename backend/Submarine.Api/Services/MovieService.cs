@@ -14,15 +14,20 @@ public class MovieService
 {
 	private readonly IMovieRepository _repository;
 	private readonly IRootFolderRepository _rootFolderRepository;
+	private readonly IQualityProfileRepository _qualityProfileRepository;
+	private readonly ILanguageProfileRepository _languageProfileRepository;
 	private readonly IMetadataClient _metadataClient;
 	private readonly IBackgroundTaskQueue _taskQueue;
 	private readonly VersionService _versionService;
 
 	public MovieService(IMovieRepository repository, IRootFolderRepository rootFolderRepository,
+		IQualityProfileRepository qualityProfileRepository, ILanguageProfileRepository languageProfileRepository,
 		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
+		_qualityProfileRepository = qualityProfileRepository;
+		_languageProfileRepository = languageProfileRepository;
 		_metadataClient = metadataClient;
 		_taskQueue = taskQueue;
 		_versionService = versionService;
@@ -88,6 +93,7 @@ public class MovieService
 				? null
 				: new DateTimeOffset(resource.ReleaseDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
 			IsAnime = request.IsAnime ?? false,
+			MinimumAvailability = request.MinimumAvailability ?? MinimumAvailability.ANNOUNCED,
 			Monitored = request.Monitored,
 			Tags = request.Tags,
 			Versions = versions
@@ -143,12 +149,54 @@ public class MovieService
 			movie.Monitored = request.Monitored.Value;
 		if (request.IsAnime != null)
 			movie.IsAnime = request.IsAnime.Value;
+		if (request.MinimumAvailability != null)
+			movie.MinimumAvailability = request.MinimumAvailability.Value;
 		if (request.Tags != null)
 			movie.Tags = request.Tags;
 
 		await _repository.UpdateAsync(movie);
 
 		return movie;
+	}
+
+	public async Task<int> EditorAsync(MovieEditorRequest request)
+	{
+		if (request.QualityProfileId != null
+		    && await _qualityProfileRepository.FirstByConditionAsync(p => p.Id == request.QualityProfileId) == null)
+			throw new BadRequestException($"Quality profile with id '{request.QualityProfileId}' does not exist");
+
+		if (request.LanguageProfileId != null
+		    && await _languageProfileRepository.FirstByConditionAsync(p => p.Id == request.LanguageProfileId) == null)
+			throw new BadRequestException($"Language profile with id '{request.LanguageProfileId}' does not exist");
+
+		var movies = await _repository.FindByIdsWithVersionsAsync(request.MovieIds);
+
+		foreach (var movie in movies)
+		{
+			if (request.Monitored != null)
+				movie.Monitored = request.Monitored.Value;
+			if (request.MinimumAvailability != null)
+				movie.MinimumAvailability = request.MinimumAvailability.Value;
+
+			if (request.QualityProfileId != null || request.LanguageProfileId != null)
+			{
+				var defaultVersion = movie.Versions.OrderBy(v => v.Id).First();
+
+				if (request.QualityProfileId != null)
+					defaultVersion.QualityProfileId = request.QualityProfileId.Value;
+				if (request.LanguageProfileId != null)
+					defaultVersion.LanguageProfileId = request.LanguageProfileId.Value;
+			}
+
+			if (request.AddTags != null)
+				movie.Tags = movie.Tags.Union(request.AddTags).ToList();
+			if (request.RemoveTags != null)
+				movie.Tags = movie.Tags.Except(request.RemoveTags).ToList();
+		}
+
+		await _repository.UpdateAsync(movies);
+
+		return movies.Count;
 	}
 
 	public async Task<Movie> DeleteAsync(int id, bool deleteFiles)

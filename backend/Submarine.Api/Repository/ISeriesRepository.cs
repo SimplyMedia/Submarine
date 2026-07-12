@@ -67,4 +67,47 @@ public interface ISeriesRepository : IRepositoryBase<Series>
 	/// <param name="end">end of the range, inclusive</param>
 	/// <returns>matching episodes</returns>
 	Task<List<Episode>> FindEpisodesByAirDateAsync(DateTimeOffset start, DateTimeOffset end);
+
+	/// <summary>
+	///     Finds tracked episodes by their ids, for mutation
+	/// </summary>
+	/// <param name="ids">ids of the episodes</param>
+	/// <returns>matching episodes</returns>
+	Task<List<Episode>> FindEpisodesByIdsAsync(IReadOnlyList<int> ids);
+
+	/// <summary>
+	///     Finds a season of a series
+	/// </summary>
+	/// <param name="seriesId">id of the series</param>
+	/// <param name="seasonNumber">number of the season</param>
+	/// <returns>season if found</returns>
+	Task<Season?> FindSeasonAsync(int seriesId, int seasonNumber);
+
+	/// <summary>
+	///     Finds tracked episodes of a season, for mutation
+	/// </summary>
+	/// <param name="seriesId">id of the series</param>
+	/// <param name="seasonNumber">number of the season</param>
+	/// <returns>episodes of the season</returns>
+	Task<List<Episode>> FindEpisodesForSeasonAsync(int seriesId, int seasonNumber);
+
+	/// <summary>
+	///     Persists the monitored state of a season together with its episodes in a single save
+	/// </summary>
+	/// <param name="season">season to persist</param>
+	/// <param name="episodes">episodes to persist</param>
+	Task SaveSeasonWithEpisodesAsync(Season season, IEnumerable<Episode> episodes);
+
+	/// <summary>
+	///     Persists the given episodes
+	/// </summary>
+	/// <param name="episodes">episodes to persist</param>
+	Task SaveEpisodesAsync(IEnumerable<Episode> episodes);
+
+	/// <summary>
+	///     Finds tracked series by their ids, including versions, for mutation
+	/// </summary>
+	/// <param name="ids">ids of the series</param>
+	/// <returns>matching series with versions</returns>
+	Task<List<Series>> FindByIdsWithVersionsAsync(IReadOnlyList<int> ids);
 }

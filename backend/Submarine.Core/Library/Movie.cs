@@ -74,6 +74,21 @@ public class Movie : ICreatable, IUpdatable
 	public bool Monitored { get; set; }
 
 	/// <summary>
+	///     Earliest release lifecycle point at which this movie is considered available for grabbing
+	/// </summary>
+	public MinimumAvailability MinimumAvailability { get; set; } = MinimumAvailability.ANNOUNCED;
+
+	/// <summary>
+	///     TheMovieDB Id of the collection this movie belongs to
+	/// </summary>
+	public int? TmdbCollectionId { get; set; }
+
+	/// <summary>
+	///     Title of the collection this movie belongs to
+	/// </summary>
+	public string? CollectionTitle { get; set; }
+
+	/// <summary>
 	///     Tags of this movie
 	/// </summary>
 	public List<string> Tags { get; set; } = new();

@@ -101,8 +101,10 @@ public class ImportListSyncJobTest : DatabaseTestBase
 		services.AddSingleton(fetcher);
 		services.AddSingleton(metadata);
 		services.AddSingleton(new SeriesService(new SeriesRepository(Context), new RootFolderRepository(Context),
+			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
 			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context)));
 		services.AddSingleton(new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
+			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
 			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context)));
 		services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 

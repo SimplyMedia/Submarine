@@ -65,6 +65,11 @@ public class MovieFile : ICreatable
 	/// </summary>
 	public string? Edition { get; set; }
 
+	/// <summary>
+	///     Technical media information extracted from this file
+	/// </summary>
+	public MediaInfo? MediaInfo { get; set; }
+
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }
 }

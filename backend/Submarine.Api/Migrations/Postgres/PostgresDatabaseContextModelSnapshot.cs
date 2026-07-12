@@ -102,6 +102,9 @@ namespace Submarine.Api.Migrations.Postgres
                     b.Property<bool>("UseHardlinks")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("WriteNfo")
+                        .HasColumnType("boolean");
+
                     b.HasKey("Id");
 
                     b.ToTable("MediaManagementConfigs");
@@ -153,6 +156,10 @@ namespace Submarine.Api.Migrations.Postgres
                         .HasColumnType("integer");
 
                     b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FeedToken")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -307,6 +314,37 @@ namespace Submarine.Api.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("DownloadClients");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Download.RemotePathMapping", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LocalPath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RemotePath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RemotePathMappings");
                 });
 
             modelBuilder.Entity("Submarine.Core.Download.TrackedDownload", b =>
@@ -590,6 +628,9 @@ namespace Submarine.Api.Migrations.Postgres
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CollectionTitle")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -598,6 +639,9 @@ namespace Submarine.Api.Migrations.Postgres
 
                     b.Property<bool>("IsAnime")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("MinimumAvailability")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("Monitored")
                         .HasColumnType("boolean");
@@ -624,6 +668,9 @@ namespace Submarine.Api.Migrations.Postgres
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int?>("TmdbCollectionId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("TmdbId")
                         .HasColumnType("integer");
@@ -779,6 +826,9 @@ namespace Submarine.Api.Migrations.Postgres
                         .IsRequired()
                         .HasColumnType("integer[]");
 
+                    b.Property<string>("MediaInfo")
+                        .HasColumnType("text");
+
                     b.Property<int>("MediaVersionId")
                         .HasColumnType("integer");
 
@@ -829,6 +879,9 @@ namespace Submarine.Api.Migrations.Postgres
                     b.PrimitiveCollection<int[]>("Languages")
                         .IsRequired()
                         .HasColumnType("integer[]");
+
+                    b.Property<string>("MediaInfo")
+                        .HasColumnType("text");
 
                     b.Property<int>("MediaVersionId")
                         .HasColumnType("integer");
@@ -915,6 +968,48 @@ namespace Submarine.Api.Migrations.Postgres
                     b.ToTable("Connections");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Profile.DelayProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("BypassIfHighestQuality")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PreferredProtocol")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<string>>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<int>("TorrentDelayMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UsenetDelayMinutes")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DelayProfiles");
+                });
+
             modelBuilder.Entity("Submarine.Core.Profile.LanguageProfile", b =>
                 {
                     b.Property<int>("Id")
@@ -979,6 +1074,47 @@ namespace Submarine.Api.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("QualityProfiles");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Profile.ReleaseProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.PrimitiveCollection<List<string>>("Ignored")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("Indexer")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<List<string>>("Required")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.PrimitiveCollection<List<string>>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ReleaseProfiles");
                 });
 
             modelBuilder.Entity("Submarine.Core.Provider.Provider", b =>

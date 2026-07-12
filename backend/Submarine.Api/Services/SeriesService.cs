@@ -17,15 +17,20 @@ public class SeriesService
 {
 	private readonly ISeriesRepository _repository;
 	private readonly IRootFolderRepository _rootFolderRepository;
+	private readonly IQualityProfileRepository _qualityProfileRepository;
+	private readonly ILanguageProfileRepository _languageProfileRepository;
 	private readonly IMetadataClient _metadataClient;
 	private readonly IBackgroundTaskQueue _taskQueue;
 	private readonly VersionService _versionService;
 
 	public SeriesService(ISeriesRepository repository, IRootFolderRepository rootFolderRepository,
+		IQualityProfileRepository qualityProfileRepository, ILanguageProfileRepository languageProfileRepository,
 		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
+		_qualityProfileRepository = qualityProfileRepository;
+		_languageProfileRepository = languageProfileRepository;
 		_metadataClient = metadataClient;
 		_taskQueue = taskQueue;
 		_versionService = versionService;
@@ -244,6 +249,63 @@ public class SeriesService
 		await _repository.DeleteAsync(series);
 
 		return series;
+	}
+
+	public async Task<int> EditorAsync(SeriesEditorRequest request)
+	{
+		if (request.QualityProfileId != null
+		    && await _qualityProfileRepository.FirstByConditionAsync(p => p.Id == request.QualityProfileId) == null)
+			throw new BadRequestException($"Quality profile with id '{request.QualityProfileId}' does not exist");
+
+		if (request.LanguageProfileId != null
+		    && await _languageProfileRepository.FirstByConditionAsync(p => p.Id == request.LanguageProfileId) == null)
+			throw new BadRequestException($"Language profile with id '{request.LanguageProfileId}' does not exist");
+
+		var series = await _repository.FindByIdsWithVersionsAsync(request.SeriesIds);
+
+		foreach (var item in series)
+		{
+			if (request.Monitored != null)
+				item.Monitored = request.Monitored.Value;
+
+			if (request.QualityProfileId != null || request.LanguageProfileId != null)
+			{
+				var defaultVersion = item.Versions.OrderBy(v => v.Id).First();
+
+				if (request.QualityProfileId != null)
+					defaultVersion.QualityProfileId = request.QualityProfileId.Value;
+				if (request.LanguageProfileId != null)
+					defaultVersion.LanguageProfileId = request.LanguageProfileId.Value;
+			}
+
+			if (request.AddTags != null)
+				item.Tags = item.Tags.Union(request.AddTags).ToList();
+			if (request.RemoveTags != null)
+				item.Tags = item.Tags.Except(request.RemoveTags).ToList();
+		}
+
+		await _repository.UpdateAsync(series);
+
+		return series.Count;
+	}
+
+	public async Task<Season> SetSeasonMonitoredAsync(int seriesId, int seasonNumber, bool monitored)
+	{
+		var season = await _repository.FindSeasonAsync(seriesId, seasonNumber);
+
+		if (season == null)
+			throw new NotFoundException();
+
+		season.Monitored = monitored;
+
+		var episodes = await _repository.FindEpisodesForSeasonAsync(seriesId, seasonNumber);
+
+		foreach (var episode in episodes)
+			episode.Monitored = monitored;
+
+		await _repository.SaveSeasonWithEpisodesAsync(season, episodes);
+
+		return season;
 	}
 
 	public async Task<PagedResult<Episode>> GetEpisodesAsync(int seriesId, int? season, int page, int pageSize)

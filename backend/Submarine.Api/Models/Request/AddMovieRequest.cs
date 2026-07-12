@@ -1,3 +1,5 @@
+using Submarine.Core.Library;
+
 namespace Submarine.Api.Models.Request;
 
 public record AddMovieRequest
@@ -13,6 +15,8 @@ public record AddMovieRequest
 	public int LanguageProfileId { get; set; }
 
 	public bool? IsAnime { get; set; }
+
+	public MinimumAvailability? MinimumAvailability { get; set; }
 
 	public bool Monitored { get; set; } = true;
 

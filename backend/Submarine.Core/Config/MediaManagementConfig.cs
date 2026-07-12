@@ -32,6 +32,11 @@ public class MediaManagementConfig : IUpdatable
 	/// </summary>
 	public int MinimumFreeSpaceMb { get; set; } = 100;
 
+	/// <summary>
+	///     Whether an NFO metadata file should be written alongside imported Media Files
+	/// </summary>
+	public bool WriteNfo { get; set; }
+
 	/// <inheritdoc />
 	public DateTimeOffset UpdatedAt { get; set; }
 }

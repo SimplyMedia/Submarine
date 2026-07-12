@@ -36,4 +36,11 @@ public interface IMovieRepository : IRepositoryBase<Movie>
 	/// <param name="movieId">id of the movie</param>
 	/// <returns>movie files of the movie</returns>
 	Task<List<MovieFile>> FindMovieFilesAsync(int movieId);
+
+	/// <summary>
+	///     Finds tracked movies by their ids, including versions, for mutation
+	/// </summary>
+	/// <param name="ids">ids of the movies</param>
+	/// <returns>matching movies with versions</returns>
+	Task<List<Movie>> FindByIdsWithVersionsAsync(IReadOnlyList<int> ids);
 }

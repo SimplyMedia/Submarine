@@ -76,6 +76,7 @@ public class SettingsService
 		config.UseHardlinks = request.UseHardlinks;
 		config.ImportExtraFiles = request.ImportExtraFiles;
 		config.MinimumFreeSpaceMb = request.MinimumFreeSpaceMb;
+		config.WriteNfo = request.WriteNfo;
 
 		await _databaseContext.SaveChangesAsync();
 
@@ -141,14 +142,22 @@ public class SettingsService
 	{
 		var config = await _databaseContext.SecurityConfigs.FirstOrDefaultAsync(c => c.Id == SingletonId);
 
-		if (config != null)
-			return config;
+		if (config == null)
+		{
+			config = new SecurityConfig
+			{
+				Id = SingletonId, ApiKey = Guid.NewGuid().ToString("N"), FeedToken = Guid.NewGuid().ToString("N")
+			};
+			await _databaseContext.SecurityConfigs.AddAsync(config);
+			await _databaseContext.SaveChangesAsync();
 
-		config = new SecurityConfig { Id = SingletonId, ApiKey = Guid.NewGuid().ToString("N") };
-		await _databaseContext.SecurityConfigs.AddAsync(config);
-		await _databaseContext.SaveChangesAsync();
-
-		_logger.LogInformation("Generated API key: {Key}", config.ApiKey);
+			_logger.LogInformation("Generated API key: {Key}", config.ApiKey);
+		}
+		else if (string.IsNullOrEmpty(config.FeedToken))
+		{
+			config.FeedToken = Guid.NewGuid().ToString("N");
+			await _databaseContext.SaveChangesAsync();
+		}
 
 		return config;
 	}
@@ -166,6 +175,9 @@ public class SettingsService
 			config.ApiKey = request.NewApiKey;
 		else if (request.Regenerate)
 			config.ApiKey = Guid.NewGuid().ToString("N");
+
+		if (request.RegenerateFeedToken)
+			config.FeedToken = Guid.NewGuid().ToString("N");
 
 		await _databaseContext.SaveChangesAsync();
 

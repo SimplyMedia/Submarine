@@ -90,4 +90,25 @@ public class SeriesController : ControllerBase
 
 		return Ok(deleted);
 	}
+
+	[HttpPost("editor")]
+	[ProducesResponseType(typeof(EditorResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	public async Task<IActionResult> EditorAsync([FromBody] SeriesEditorRequest request)
+	{
+		var updated = await _service.EditorAsync(request);
+
+		return Ok(new EditorResult(updated));
+	}
+
+	[HttpPut("{id:int}/seasons/{seasonNumber:int}/monitor")]
+	[ProducesResponseType(typeof(Season), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+	public async Task<IActionResult> SetSeasonMonitoredAsync([FromRoute] int id, [FromRoute] int seasonNumber,
+		[FromBody] SetSeasonMonitoredRequest request)
+	{
+		var season = await _service.SetSeasonMonitoredAsync(id, seasonNumber, request.Monitored);
+
+		return Ok(season);
+	}
 }

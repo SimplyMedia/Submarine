@@ -7,4 +7,6 @@ public record UpdateMediaManagementConfigRequest
 	public bool ImportExtraFiles { get; set; }
 
 	public int MinimumFreeSpaceMb { get; set; }
+
+	public bool WriteNfo { get; set; }
 }

@@ -35,6 +35,13 @@ public class SubmarineDatabaseContext : DbContext
 		q => JsonSerializer.Deserialize<QualityModel>(
 			JsonSerializer.Serialize(q, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
 
+	private static readonly ValueComparer<MediaInfo> MediaInfoValueComparer = new(
+		(a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null)
+		          == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+		m => JsonSerializer.Serialize(m, (JsonSerializerOptions?)null).GetHashCode(),
+		m => JsonSerializer.Deserialize<MediaInfo>(
+			JsonSerializer.Serialize(m, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+
 	public DbSet<Provider> Providers { get; set; }
 
 	public DbSet<Tag> Tags { get; set; }
@@ -54,6 +61,12 @@ public class SubmarineDatabaseContext : DbContext
 	public DbSet<QualityProfile> QualityProfiles { get; set; }
 
 	public DbSet<LanguageProfile> LanguageProfiles { get; set; }
+
+	public DbSet<DelayProfile> DelayProfiles { get; set; }
+
+	public DbSet<ReleaseProfile> ReleaseProfiles { get; set; }
+
+	public DbSet<RemotePathMapping> RemotePathMappings { get; set; }
 
 	public DbSet<Series> Series { get; set; }
 
@@ -213,6 +226,24 @@ public class SubmarineDatabaseContext : DbContext
 				q => JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
 				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!,
 				QualityValueComparer);
+
+		builder.Entity<EpisodeFile>()
+			.Property(f => f.MediaInfo)
+			.HasConversion(
+				m => m == null ? null : JsonSerializer.Serialize(m, (JsonSerializerOptions?)null),
+				m => string.IsNullOrEmpty(m)
+					? null
+					: JsonSerializer.Deserialize<MediaInfo>(m, (JsonSerializerOptions?)null),
+				MediaInfoValueComparer);
+
+		builder.Entity<MovieFile>()
+			.Property(f => f.MediaInfo)
+			.HasConversion(
+				m => m == null ? null : JsonSerializer.Serialize(m, (JsonSerializerOptions?)null),
+				m => string.IsNullOrEmpty(m)
+					? null
+					: JsonSerializer.Deserialize<MediaInfo>(m, (JsonSerializerOptions?)null),
+				MediaInfoValueComparer);
 
 		builder.Entity<TrackedDownload>()
 			.Property(d => d.Quality)

@@ -95,6 +95,9 @@ builder.Services.AddScoped<IImportListRepository, ImportListRepository>();
 builder.Services.AddScoped<IConnectionRepository, ConnectionRepository>();
 builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
 builder.Services.AddScoped<IQualityOverrideRepository, QualityOverrideRepository>();
+builder.Services.AddScoped<IDelayProfileRepository, DelayProfileRepository>();
+builder.Services.AddScoped<IReleaseProfileRepository, ReleaseProfileRepository>();
+builder.Services.AddScoped<IRemotePathMappingRepository, RemotePathMappingRepository>();
 
 // Service
 builder.Services.AddScoped<ProviderService>();
@@ -103,6 +106,7 @@ builder.Services.AddScoped<RootFolderService>();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<SeriesService>();
+builder.Services.AddScoped<EpisodeService>();
 builder.Services.AddScoped<MovieService>();
 builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<CalendarService>();
@@ -126,6 +130,9 @@ builder.Services.AddScoped<ImportListService>();
 builder.Services.AddScoped<ConnectionService>();
 builder.Services.AddScoped<BlocklistService>();
 builder.Services.AddScoped<QualityOverrideService>();
+builder.Services.AddScoped<DelayProfileService>();
+builder.Services.AddScoped<ReleaseProfileService>();
+builder.Services.AddScoped<RemotePathMappingService>();
 builder.Services.AddSingleton<SecurityConfigStore>();
 
 builder.Services.AddSingleton<NamingTemplateRenderer>();
