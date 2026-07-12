@@ -16,14 +16,16 @@ public class MovieService
 	private readonly IRootFolderRepository _rootFolderRepository;
 	private readonly IMetadataClient _metadataClient;
 	private readonly IBackgroundTaskQueue _taskQueue;
+	private readonly VersionService _versionService;
 
 	public MovieService(IMovieRepository repository, IRootFolderRepository rootFolderRepository,
-		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue)
+		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
 		_metadataClient = metadataClient;
 		_taskQueue = taskQueue;
+		_versionService = versionService;
 	}
 
 	public Task<PagedResult<Movie>> GetPagedAsync(int page, int pageSize, bool? monitored, bool? isAnime,
@@ -69,6 +71,8 @@ public class MovieService
 			throw new BadRequestException("movie not found");
 
 		var versions = await BuildVersionsAsync(request, resource.Title, resource.Year);
+
+		await _versionService.EnsurePathsAvailableAsync(versions.Select(v => v.Path).ToList());
 
 		var movie = new Movie
 		{

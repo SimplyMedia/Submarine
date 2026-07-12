@@ -26,9 +26,9 @@ public class LibraryImportServiceTest : DatabaseTestBase
 	private LibraryImportService BuildService(FakeMetadataClient metadata)
 	{
 		var seriesService = new SeriesService(new SeriesRepository(Context), new RootFolderRepository(Context),
-			metadata, new FakeBackgroundTaskQueue());
+			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context));
 		var movieService = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context), metadata,
-			new FakeBackgroundTaskQueue());
+			new FakeBackgroundTaskQueue(), new VersionService(Context));
 
 		return new LibraryImportService(Context, seriesService, movieService, metadata, ReleaseParser(),
 			new HistoryService(Context), NullLogger<LibraryImportService>.Instance);
@@ -114,5 +114,61 @@ public class LibraryImportServiceTest : DatabaseTestBase
 		{
 			Directory.Delete(root, true);
 		}
+	}
+
+	[Fact]
+	public async Task ImportAsync_ShouldFail_WhenFolderAlreadyUsedByAnotherMedia()
+	{
+		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var folder = Path.Combine(root, "Show");
+		Directory.CreateDirectory(folder);
+		await File.WriteAllTextAsync(Path.Combine(folder, "Show.S01E01.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+
+		try
+		{
+			var existing = new Series { TvdbId = 99, Title = "Existing", Type = SeriesType.STANDARD };
+			Context.Series.Add(existing);
+			await Context.SaveChangesAsync();
+			Context.Versions.Add(new MediaVersion
+			{
+				SeriesId = existing.Id, Name = "Default", Path = folder, QualityProfileId = 1, LanguageProfileId = 1
+			});
+			await Context.SaveChangesAsync();
+
+			var metadata = new FakeMetadataClient { Series = SeriesResource(42, "Show") };
+			var service = BuildService(metadata);
+
+			var response = await service.ImportAsync(new LibraryImportRequest
+			{
+				MediaKind = MediaKind.SERIES,
+				Items = new List<LibraryImportItem>
+				{
+					new() { Folder = folder, TvdbId = 42, QualityProfileId = 1, LanguageProfileId = 1 }
+				}
+			});
+
+			var result = Assert.Single(response.Results);
+			Assert.False(result.Success);
+			Assert.Contains("path already in use", result.Error);
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public void TryGetRelativePath_ShouldSkipFile_WhenOutsideVersionPath()
+	{
+		var versionPath = Path.Combine(Path.GetTempPath(), "Show");
+		var nested = Path.Combine(versionPath, "Season 01", "ep.mkv");
+		var sibling = Path.Combine(Path.GetTempPath(), "Show (2)", "ep.mkv");
+		var elsewhere = Path.Combine(Path.GetTempPath(), "Other", "ep.mkv");
+
+		Assert.True(LibraryImportService.TryGetRelativePath(versionPath, nested, out var relative));
+		Assert.Equal(Path.Combine("Season 01", "ep.mkv"), relative);
+
+		Assert.False(LibraryImportService.TryGetRelativePath(versionPath, sibling, out _));
+		Assert.False(LibraryImportService.TryGetRelativePath(versionPath, elsewhere, out _));
 	}
 }

@@ -217,6 +217,18 @@ public class VersionService
 		throw new BadRequestException("either Path or RootFolderId must be provided");
 	}
 
+	/// <summary>
+	///     Ensures none of the given paths is already used by an existing version of any media, so two media can never
+	///     adopt the same library folder. Path comparison is case-insensitive.
+	/// </summary>
+	public async Task EnsurePathsAvailableAsync(IReadOnlyCollection<string> paths)
+	{
+		var used = await _context.Versions.AsNoTracking().Select(v => v.Path).ToListAsync();
+
+		if (used.Any(u => paths.Any(p => string.Equals(u, p, StringComparison.OrdinalIgnoreCase))))
+			throw new ConflictException("path already in use");
+	}
+
 	private async Task EnsureUniquePathAsync(int? seriesId, int? movieId, string path, int? excludeVersionId)
 	{
 		var query = QueryVersions(seriesId, movieId).Where(v => v.Path == path);

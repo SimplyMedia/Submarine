@@ -6,9 +6,12 @@ using Submarine.Api.Services;
 using Submarine.Core.Config;
 using Submarine.Core.DecisionEngine;
 using Submarine.Core.Indexer;
+using Submarine.Core.Languages;
 using Submarine.Core.Library;
 using Submarine.Core.Parser;
+using Submarine.Core.Profile;
 using Submarine.Core.Provider;
+using Submarine.Core.Quality;
 using Submarine.Core.Release;
 using Submarine.Core.Release.Exceptions;
 
@@ -195,21 +198,20 @@ public sealed class RssSyncJob : IScheduledJob
 		{
 			var series = _matcher.MatchSeries(parsed, info.TvdbId);
 
-			if (series == null)
+			if (series is not { Monitored: true })
 				return;
 
 			var data = parsed.SeriesReleaseData!;
-			var season = data.Seasons.Count > 0 ? data.Seasons[0] : -1;
-			var isPack = data.ReleaseType is SeriesReleaseType.FULL_SEASON or SeriesReleaseType.PARTIAL_SEASON
-				or SeriesReleaseType.MULTI_SEASON;
+			var contextSeason = data.Seasons.Count > 0 ? data.Seasons[0] : -1;
+			var wholeSeasonPack = data.ReleaseType is SeriesReleaseType.FULL_SEASON or SeriesReleaseType.MULTI_SEASON;
 
-			var seasonEpisodes = await _context.Episodes.AsNoTracking()
-				.Where(e => e.SeriesId == series.Id && e.SeasonNumber == season)
+			var episodes = await _context.Episodes.AsNoTracking()
+				.Where(e => e.SeriesId == series.Id && data.Seasons.Contains(e.SeasonNumber))
 				.ToListAsync(cancellationToken);
 
-			var targets = isPack
-				? seasonEpisodes.Where(e => e.Monitored).ToList()
-				: seasonEpisodes.Where(e => e.Monitored && data.Episodes.Contains(e.EpisodeNumber)).ToList();
+			var targets = wholeSeasonPack
+				? episodes.Where(e => e.Monitored).ToList()
+				: episodes.Where(e => e.Monitored && data.Episodes.Contains(e.EpisodeNumber)).ToList();
 
 			if (targets.Count == 0)
 				return;
@@ -227,20 +229,52 @@ public sealed class RssSyncJob : IScheduledJob
 
 			foreach (var version in versions)
 			{
-				var existing = targets.Count == 1 && !isPack
-					? await _context.EpisodeFiles.AsNoTracking()
-						.FirstOrDefaultAsync(f => f.MediaVersionId == version.Id
-						                          && f.Episodes.Any(e => e.Id == targets[0].Id), cancellationToken)
-					: null;
+				var (existingQuality, existingLanguages) = await ResolveExistingAsync(version, targets, cancellationToken);
 
-				var mediaContext = await _contextFactory.BuildSeriesContextAsync(version, series.Id, season,
-					existing?.Quality, existing?.Languages, filters, formats);
+				var mediaContext = await _contextFactory.BuildSeriesContextAsync(version, series.Id, contextSeason,
+					existingQuality, existingLanguages, filters, formats);
 
 				if (await TryGrabAsync(candidate, mediaContext, info, indexer, series.Id, episodeIds, movieId: null,
 					    version.Id, cancellationToken))
 					return;
 			}
 		}
+
+		// For packs/multi-episode releases the existing state is aggregated over the targeted episodes: gating only
+		// applies when every targeted episode already has a file for this version, using the worst quality and the
+		// languages shared by all of them, so a single lacking episode keeps the pack grabbable.
+		private async Task<(QualityModel? Quality, IReadOnlyList<Language>? Languages)> ResolveExistingAsync(
+			MediaVersion version, IReadOnlyList<Episode> targets, CancellationToken cancellationToken)
+		{
+			var targetIds = targets.Select(e => e.Id).ToHashSet();
+
+			var files = await _context.EpisodeFiles.AsNoTracking()
+				.Include(f => f.Episodes)
+				.Where(f => f.MediaVersionId == version.Id && f.Episodes.Any(e => targetIds.Contains(e.Id)))
+				.ToListAsync(cancellationToken);
+
+			var coveredEpisodeIds = files.SelectMany(f => f.Episodes.Select(e => e.Id)).ToHashSet();
+
+			if (!targetIds.All(coveredEpisodeIds.Contains))
+				return (null, null);
+
+			var profile = await _context.QualityProfiles.AsNoTracking()
+				.FirstAsync(p => p.Id == version.QualityProfileId, cancellationToken);
+
+			var worstQuality = files.OrderBy(f => QualityRank(profile, f.Quality)).First().Quality;
+
+			var sharedLanguages = files
+				.Select(f => (IEnumerable<Language>)f.Languages)
+				.Aggregate((shared, next) => shared.Intersect(next))
+				.ToList();
+
+			return (worstQuality, sharedLanguages);
+		}
+
+		// unknown qualities fall below every profile tier (index -1), so they always rank as the worst existing quality
+		private static int QualityRank(QualityProfile profile, QualityModel quality)
+			=> profile.Items.FindIndex(i =>
+				i.Quality.Source == quality.Resolution.Source && i.Quality.Resolution == quality.Resolution.Resolution);
 
 		private async Task ProcessMovieAsync(BaseRelease parsed, ReleaseInfo info, Provider indexer,
 			CancellationToken cancellationToken)

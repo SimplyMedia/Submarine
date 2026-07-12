@@ -17,10 +17,10 @@ public class ApiKeyMiddlewareTest
 	private bool _nextCalled;
 
 	private ApiKeyMiddleware CreateMiddleware(AuthenticationMethod method, string environment = "Production",
-		Dictionary<string, string?>? settings = null)
+		Dictionary<string, string?>? settings = null, string? apiKey = Key)
 	{
 		var store = new SecurityConfigStore(null!);
-		store.Set(new SecurityConfig { Id = 1, Method = method, ApiKey = Key });
+		store.Set(new SecurityConfig { Id = 1, Method = method, ApiKey = apiKey! });
 
 		var configuration = new ConfigurationBuilder()
 			.AddInMemoryCollection(settings ?? new Dictionary<string, string?>())
@@ -120,6 +120,32 @@ public class ApiKeyMiddlewareTest
 		var middleware = CreateMiddleware(AuthenticationMethod.API_KEY, "Development",
 			new Dictionary<string, string?> { ["Auth:Method"] = "ApiKey" });
 		var context = CreateContext("/api/v1/series");
+
+		await middleware.InvokeAsync(context);
+
+		Assert.False(_nextCalled);
+		Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
+	}
+
+	[Fact]
+	public async Task InvokeAsync_ShouldReturn401_WhenAuthMethodUnrecognized()
+	{
+		var middleware = CreateMiddleware(AuthenticationMethod.NONE,
+			settings: new Dictionary<string, string?> { ["Auth:Method"] = "typo" });
+		var context = CreateContext("/api/v1/series");
+
+		await middleware.InvokeAsync(context);
+
+		Assert.False(_nextCalled);
+		Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
+	}
+
+	[Fact]
+	public async Task InvokeAsync_ShouldReturn401_WhenStoredApiKeyEmpty()
+	{
+		var middleware = CreateMiddleware(AuthenticationMethod.API_KEY, apiKey: "");
+		var context = CreateContext("/api/v1/series");
+		context.Request.Headers["X-Api-Key"] = "";
 
 		await middleware.InvokeAsync(context);
 

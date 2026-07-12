@@ -117,6 +117,88 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync());
 	}
 
+	[Fact]
+	public async Task ExecuteAsync_ShouldRetryFailedHandling_WhenHandlerThrowsOnFirstPoll()
+	{
+		var (_, tracked, _) = await SeedFailingDownloadAsync(new DownloadConfig
+		{
+			Id = 1, EnableFailedDownloadHandling = true, RedownloadFailedReleases = false, RemoveFailedFromClient = false
+		});
+
+		var client = ClientWithFailedItem(tracked.DownloadId, "disk full");
+		var provider = BuildProvider(client, out _, new ThrowOnceHistoryService(Context));
+
+		await new DownloadMonitorJob().ExecuteAsync(provider, CancellationToken.None);
+
+		// first poll threw mid-handling: nothing persisted, status unchanged so the failure is retried
+		Assert.Empty(await Context.Blocklist.AsNoTracking().ToListAsync());
+		Assert.Single(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+
+		await new DownloadMonitorJob().ExecuteAsync(provider, CancellationToken.None);
+
+		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+	}
+
+	[Fact]
+	public async Task ExecuteAsync_ShouldReenqueueImport_WhenCompletedButNotImported()
+	{
+		Context.DownloadConfigs.Add(new DownloadConfig { Id = 1, EnableFailedDownloadHandling = true });
+
+		var config = new DownloadClientConfig
+		{
+			Name = "client", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1, SettingsJson = "{}"
+		};
+		Context.DownloadClients.Add(config);
+		await Context.SaveChangesAsync();
+
+		var tracked = new TrackedDownload
+		{
+			DownloadClientConfigId = config.Id, DownloadId = "abc", Title = "Show S01E05",
+			Protocol = Protocol.BITTORRENT, Status = DownloadItemStatus.COMPLETED, Imported = false,
+			ReleaseTitle = "Show S01E05 1080p WEB-DL x264-GROUP",
+			Quality = new QualityModel(new QualityResolutionModel(QualitySource.WEB_DL, QualityResolution.R1080_P),
+				new Revision()),
+			Languages = new List<Language> { Language.ENGLISH }, Indexer = "Indexer", EpisodeIds = new List<int>()
+		};
+		Context.TrackedDownloads.Add(tracked);
+		await Context.SaveChangesAsync();
+
+		var client = new FakeDownloadClient
+		{
+			Items = new[]
+			{
+				new DownloadClientItem
+				{
+					DownloadId = "abc", Title = "Show S01E05", Status = DownloadItemStatus.COMPLETED
+				}
+			}
+		};
+		var provider = BuildProvider(client, out var queue);
+		var job = new DownloadMonitorJob();
+
+		await job.ExecuteAsync(provider, CancellationToken.None);
+		Assert.Single(queue.Items);
+
+		// same instance within the re-enqueue window must not enqueue again
+		await job.ExecuteAsync(provider, CancellationToken.None);
+		Assert.Single(queue.Items);
+	}
+
+	private sealed class ThrowOnceHistoryService : HistoryService
+	{
+		private int _calls;
+
+		public ThrowOnceHistoryService(SubmarineDatabaseContext context) : base(context)
+		{
+		}
+
+		public override Task RecordAsync(HistoryEvent @event, CancellationToken cancellationToken = default)
+			=> ++_calls == 1
+				? throw new InvalidOperationException("history unavailable")
+				: base.RecordAsync(@event, cancellationToken);
+	}
+
 	private static FakeDownloadClient ClientWithFailedItem(string downloadId, string message)
 		=> new()
 		{
@@ -171,7 +253,8 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		return (config, tracked, episode);
 	}
 
-	private IServiceProvider BuildProvider(FakeDownloadClient client, out FakeBackgroundTaskQueue queue)
+	private IServiceProvider BuildProvider(FakeDownloadClient client, out FakeBackgroundTaskQueue queue,
+		HistoryService? history = null)
 	{
 		queue = new FakeBackgroundTaskQueue();
 
@@ -181,7 +264,7 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		services.AddSingleton<DownloadClientFactory>(new FakeDownloadClientFactory(client));
 		services.AddSingleton<IBackgroundTaskQueue>(queue);
 		services.AddSingleton(Settings());
-		services.AddSingleton(new HistoryService(Context));
+		services.AddSingleton(history ?? new HistoryService(Context));
 		services.AddSingleton(new BlocklistService(new BlocklistRepository(Context)));
 		services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 

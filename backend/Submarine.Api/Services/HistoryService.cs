@@ -13,7 +13,7 @@ public class HistoryService
 	public HistoryService(SubmarineDatabaseContext context)
 		=> _context = context;
 
-	public async Task RecordAsync(HistoryEvent @event, CancellationToken cancellationToken = default)
+	public virtual async Task RecordAsync(HistoryEvent @event, CancellationToken cancellationToken = default)
 	{
 		await _context.History.AddAsync(@event, cancellationToken);
 		await _context.SaveChangesAsync(cancellationToken);

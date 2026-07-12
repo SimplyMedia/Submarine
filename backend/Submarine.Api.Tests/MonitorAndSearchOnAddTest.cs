@@ -71,7 +71,7 @@ public class MonitorAndSearchOnAddTest : DatabaseTestBase
 		await SeedRootFoldersAsync();
 		var queue = new FakeBackgroundTaskQueue();
 		var service = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
-			MovieMetadata(), queue);
+			MovieMetadata(), queue, new VersionService(Context));
 
 		await service.AddAsync(new AddMovieRequest
 		{
@@ -87,7 +87,7 @@ public class MonitorAndSearchOnAddTest : DatabaseTestBase
 		await SeedRootFoldersAsync();
 		var queue = new FakeBackgroundTaskQueue();
 		var service = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
-			MovieMetadata(), queue);
+			MovieMetadata(), queue, new VersionService(Context));
 
 		await service.AddAsync(new AddMovieRequest
 		{
@@ -109,7 +109,7 @@ public class MonitorAndSearchOnAddTest : DatabaseTestBase
 		queue = new FakeBackgroundTaskQueue();
 
 		return new SeriesService(new SeriesRepository(Context), new RootFolderRepository(Context),
-			new FakeMetadataClient { Series = SeriesResourceWithEpisodes() }, queue);
+			new FakeMetadataClient { Series = SeriesResourceWithEpisodes() }, queue, new VersionService(Context));
 	}
 
 	private static FakeMetadataClient MovieMetadata()

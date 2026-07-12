@@ -16,6 +16,7 @@ using Submarine.Core.History;
 using Submarine.Core.Indexer;
 using Submarine.Core.Languages;
 using Submarine.Core.Library;
+using Submarine.Core.MediaFile;
 using Submarine.Core.Profile;
 using Submarine.Core.Provider;
 using Submarine.Core.Quality;
@@ -106,6 +107,64 @@ public class RssSyncJobTest : DatabaseTestBase
 		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
 	}
 
+	[Fact]
+	public async Task ExecuteAsync_ShouldSkipRelease_WhenSeriesNotMonitored()
+	{
+		var (series, _, _) = await SeedSeriesAsync();
+		series.Monitored = false;
+		await Context.SaveChangesAsync();
+
+		var torznab = FeedWith(Release());
+
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+	}
+
+	[Fact]
+	public async Task ExecuteAsync_ShouldTrackOnlyReleaseEpisodes_WhenPartialSeasonPack()
+	{
+		var (_, _, episodes) = await SeedSeasonAsync(4);
+
+		var torznab = FeedWith(ReleaseWith("Show S01E01E02 1080p WEB-DL x264-GROUP"));
+
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+
+		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync();
+		Assert.Equal(2, tracked.EpisodeIds.Count);
+		Assert.Contains(episodes[0].Id, tracked.EpisodeIds);
+		Assert.Contains(episodes[1].Id, tracked.EpisodeIds);
+		Assert.DoesNotContain(episodes[2].Id, tracked.EpisodeIds);
+	}
+
+	[Fact]
+	public async Task ExecuteAsync_ShouldSkipPack_WhenAllTargetedEpisodesHaveCutoffMetFiles()
+	{
+		var (_, version, episodes) = await SeedSeasonAsync(2);
+		await AddEpisodeFileAsync(version, episodes[0]);
+		await AddEpisodeFileAsync(version, episodes[1]);
+
+		var torznab = FeedWith(ReleaseWith("Show S01 1080p WEB-DL x264-GROUP"));
+
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+	}
+
+	[Fact]
+	public async Task ExecuteAsync_ShouldGrabPack_WhenOneTargetedEpisodeMissingFile()
+	{
+		var (_, version, episodes) = await SeedSeasonAsync(2);
+		await AddEpisodeFileAsync(version, episodes[0]);
+
+		var torznab = FeedWith(ReleaseWith("Show S01 1080p WEB-DL x264-GROUP"));
+
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+
+		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync();
+		Assert.Equal(2, tracked.EpisodeIds.Count);
+	}
+
 	private static ReleaseInfo Release(Protocol protocol = Protocol.BITTORRENT)
 		=> new()
 		{
@@ -113,8 +172,79 @@ public class RssSyncJobTest : DatabaseTestBase
 			DownloadUrl = "http://indexer/download", Protocol = protocol
 		};
 
+	private static ReleaseInfo ReleaseWith(string title)
+		=> new()
+		{
+			Title = title, Guid = "guid-1", DownloadUrl = "http://indexer/download", Protocol = Protocol.BITTORRENT
+		};
+
 	private static FakeTorznabSearchClient FeedWith(ReleaseInfo release)
 		=> new() { Result = new[] { release } };
+
+	private async Task<(Series Series, MediaVersion Version, List<Episode> Episodes)> SeedSeasonAsync(int episodeCount)
+	{
+		Context.QualityProfiles.Add(new QualityProfile
+		{
+			Id = 1, Name = "1080p", Cutoff = 0,
+			Items = new List<QualityProfileItem>
+			{
+				new()
+				{
+					Quality = new QualityResolutionModel(QualitySource.WEB_DL, QualityResolution.R1080_P),
+					Allowed = true
+				}
+			}
+		});
+		Context.LanguageProfiles.Add(new LanguageProfile
+		{
+			Id = 1, Name = "English", Languages = new List<Language> { Language.ENGLISH }, Cutoff = Language.ENGLISH
+		});
+		Context.Providers.Add(new TorznabIndexer
+		{
+			Name = "Indexer", Url = "http://indexer/", ApiKey = "key", Mode = ProviderMode.RSS,
+			Tags = new List<string>(), Categories = new List<int> { 5000 }, AnimeCategories = new List<int>()
+		});
+		Context.DownloadClients.Add(new DownloadClientConfig
+		{
+			Name = "client", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1, SettingsJson = "{}"
+		});
+
+		var series = new Series { TvdbId = 42, Title = "Show", Monitored = true, Type = SeriesType.STANDARD };
+		Context.Series.Add(series);
+		await Context.SaveChangesAsync();
+
+		var version = new MediaVersion
+		{
+			SeriesId = series.Id, Name = "Default", Path = "/lib/Show", QualityProfileId = 1, LanguageProfileId = 1,
+			Monitored = true
+		};
+		Context.Versions.Add(version);
+
+		var episodes = Enumerable.Range(1, episodeCount)
+			.Select(n => new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = n, Monitored = true })
+			.ToList();
+		Context.Episodes.AddRange(episodes);
+		await Context.SaveChangesAsync();
+
+		return (series, version, episodes);
+	}
+
+	private async Task AddEpisodeFileAsync(MediaVersion version, Episode episode)
+	{
+		Context.EpisodeFiles.Add(new EpisodeFile
+		{
+			SeriesId = episode.SeriesId,
+			MediaVersionId = version.Id,
+			RelativePath = $"S01E{episode.EpisodeNumber:00}.mkv",
+			Size = 1,
+			DateAdded = DateTimeOffset.UtcNow,
+			Quality = new QualityModel(new QualityResolutionModel(QualitySource.WEB_DL, QualityResolution.R1080_P),
+				new Revision()),
+			Languages = new List<Language> { Language.ENGLISH },
+			Episodes = new List<Episode> { episode }
+		});
+		await Context.SaveChangesAsync();
+	}
 
 	private async Task<(Series Series, Episode Episode, MediaVersion Version)> SeedSeriesAsync(bool usenet = false)
 	{

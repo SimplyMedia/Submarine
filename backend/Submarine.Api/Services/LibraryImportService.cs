@@ -153,7 +153,12 @@ public class LibraryImportService
 		var ordered = matched.OrderBy(e => e.EpisodeNumber).ToList();
 		var quality = parsed?.Quality ?? UnknownQuality();
 		var languages = parsed?.Languages.ToList() ?? new();
-		var relativePath = Path.GetRelativePath(version.Path, file);
+
+		if (!TryGetRelativePath(version.Path, file, out var relativePath))
+		{
+			_logger.LogWarning("Skipping {File}: outside version path {VersionPath}", file, version.Path);
+			return;
+		}
 
 		_context.EpisodeFiles.Add(new EpisodeFile
 		{
@@ -192,7 +197,12 @@ public class LibraryImportService
 		var parsed = TryParse(file);
 		var quality = parsed?.Quality ?? UnknownQuality();
 		var languages = parsed?.Languages.ToList() ?? new();
-		var relativePath = Path.GetRelativePath(version.Path, file);
+
+		if (!TryGetRelativePath(version.Path, file, out var relativePath))
+		{
+			_logger.LogWarning("Skipping {File}: outside version path {VersionPath}", file, version.Path);
+			return;
+		}
 
 		_context.MovieFiles.Add(new MovieFile
 		{
@@ -330,6 +340,25 @@ public class LibraryImportService
 		{
 			return null;
 		}
+	}
+
+	// guards against a file resolving outside the version folder, which would otherwise store a traversing ".." path
+	internal static bool TryGetRelativePath(string versionPath, string file, out string relativePath)
+	{
+		var root = Path.GetFullPath(versionPath);
+		var full = Path.GetFullPath(file);
+		var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+		var prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+
+		if (!full.StartsWith(prefix, comparison))
+		{
+			relativePath = string.Empty;
+			return false;
+		}
+
+		relativePath = Path.GetRelativePath(root, full);
+		return true;
 	}
 
 	private static string LargestFile(IEnumerable<string> files)

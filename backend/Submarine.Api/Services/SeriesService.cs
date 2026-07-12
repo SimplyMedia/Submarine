@@ -19,14 +19,16 @@ public class SeriesService
 	private readonly IRootFolderRepository _rootFolderRepository;
 	private readonly IMetadataClient _metadataClient;
 	private readonly IBackgroundTaskQueue _taskQueue;
+	private readonly VersionService _versionService;
 
 	public SeriesService(ISeriesRepository repository, IRootFolderRepository rootFolderRepository,
-		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue)
+		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
 		_metadataClient = metadataClient;
 		_taskQueue = taskQueue;
+		_versionService = versionService;
 	}
 
 	public Task<PagedResult<Series>> GetPagedAsync(int page, int pageSize, bool? monitored, SeriesType? type,
@@ -76,6 +78,8 @@ public class SeriesService
 
 		var numbering = request.Numbering ?? EpisodeNumbering.AIRED;
 		var versions = await BuildVersionsAsync(request, resource.Title);
+
+		await _versionService.EnsurePathsAvailableAsync(versions.Select(v => v.Path).ToList());
 
 		var episodes = resource.Episodes.Select(e => MapEpisode(e, numbering, monitored: false)).ToList();
 		ApplyMonitorOption(episodes, request.Monitor, request.Monitored);

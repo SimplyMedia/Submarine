@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Submarine.Api.Services;
 using Submarine.Core.Config;
@@ -28,6 +30,8 @@ public class ApiKeyMiddleware
 
 	private bool _developmentDefaultLogged;
 
+	private bool _unrecognizedMethodLogged;
+
 	public ApiKeyMiddleware(RequestDelegate next, SecurityConfigStore store, IConfiguration configuration,
 		IHostEnvironment environment, ILogger<ApiKeyMiddleware> logger)
 	{
@@ -57,7 +61,7 @@ public class ApiKeyMiddleware
 		var providedKey = context.Request.Headers[HeaderName].FirstOrDefault()
 		                  ?? context.Request.Query[QueryName].FirstOrDefault();
 
-		if (providedKey == config.ApiKey)
+		if (IsValidKey(providedKey, config.ApiKey))
 		{
 			await _next(context);
 			return;
@@ -73,14 +77,39 @@ public class ApiKeyMiddleware
 		}, options: null, contentType: "application/problem+json");
 	}
 
+	// constant-time compare avoids leaking the key through response timing; a null/empty stored key never authorizes
+	private static bool IsValidKey(string? providedKey, string? storedKey)
+	{
+		if (providedKey == null || string.IsNullOrEmpty(storedKey))
+			return false;
+
+		return CryptographicOperations.FixedTimeEquals(
+			Encoding.UTF8.GetBytes(providedKey), Encoding.UTF8.GetBytes(storedKey));
+	}
+
 	private AuthenticationMethod GetEffectiveMethod(SecurityConfig config)
 	{
 		var configured = _configuration.GetValue<string>("Auth:Method");
 
 		if (configured != null)
-			return configured.Equals("ApiKey", StringComparison.OrdinalIgnoreCase)
-				? AuthenticationMethod.API_KEY
-				: AuthenticationMethod.NONE;
+		{
+			// an unrecognized value must fail closed rather than silently disabling authentication
+			var normalized = configured.Replace("_", "");
+
+			if (normalized.Equals("ApiKey", StringComparison.OrdinalIgnoreCase))
+				return AuthenticationMethod.API_KEY;
+
+			if (normalized.Equals("None", StringComparison.OrdinalIgnoreCase))
+				return AuthenticationMethod.NONE;
+
+			if (!_unrecognizedMethodLogged)
+			{
+				_logger.LogWarning("Unrecognized Auth:Method '{Value}', enforcing API key", configured);
+				_unrecognizedMethodLogged = true;
+			}
+
+			return AuthenticationMethod.API_KEY;
+		}
 
 		if (_environment.IsDevelopment() && config.Method == AuthenticationMethod.API_KEY)
 		{

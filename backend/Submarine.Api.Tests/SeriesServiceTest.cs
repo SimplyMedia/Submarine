@@ -98,7 +98,7 @@ public class SeriesServiceTest : DatabaseTestBase
 
 	private SeriesService BuildService(FakeMetadataClient metadata, FakeBackgroundTaskQueue? queue = null)
 		=> new(new SeriesRepository(Context), new RootFolderRepository(Context), metadata,
-			queue ?? new FakeBackgroundTaskQueue());
+			queue ?? new FakeBackgroundTaskQueue(), new VersionService(Context));
 
 	private static SeriesResource Resource()
 		=> new(42, null, "Show", null, null, null, Submarine.Metadata.Contracts.SeriesStatus.Continuing, 30, null,

@@ -148,8 +148,7 @@ public class AutomaticSearchService
 		if (data == null)
 			return Array.Empty<int>();
 
-		if (data.ReleaseType is SeriesReleaseType.FULL_SEASON or SeriesReleaseType.PARTIAL_SEASON
-		    or SeriesReleaseType.MULTI_SEASON)
+		if (data.ReleaseType is SeriesReleaseType.FULL_SEASON or SeriesReleaseType.MULTI_SEASON)
 			return seasonEpisodes.Select(e => e.Id).ToList();
 
 		return seasonEpisodes.Where(e => data.Episodes.Contains(e.EpisodeNumber)).Select(e => e.Id).ToList();

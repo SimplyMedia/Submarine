@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Services;
@@ -12,6 +13,12 @@ namespace Submarine.Api.Jobs;
 /// </summary>
 public sealed class DownloadMonitorJob : IScheduledJob
 {
+	private static readonly TimeSpan ReimportInterval = TimeSpan.FromMinutes(15);
+
+	// tracks the last import enqueue per download so a completed-but-unimported row is retried, but not every tick;
+	// lives on the singleton job instance
+	private readonly ConcurrentDictionary<int, DateTimeOffset> _lastImportEnqueue = new();
+
 	public string Name => "DownloadMonitor";
 
 	public TimeSpan Interval => TimeSpan.FromMinutes(1);
@@ -45,6 +52,7 @@ public sealed class DownloadMonitorJob : IScheduledJob
 					.Where(t => t.DownloadClientConfigId == config.Id && !t.Imported)
 					.ToListAsync(cancellationToken);
 
+				var now = DateTimeOffset.UtcNow;
 				var toImport = new List<int>();
 				var toFail = new List<(TrackedDownload Download, DownloadClientItem Item)>();
 
@@ -53,22 +61,33 @@ public sealed class DownloadMonitorJob : IScheduledJob
 					if (!items.TryGetValue(download.DownloadId, out var item))
 						continue;
 
-					// Act only on the transition into COMPLETED/FAILED. Once the new status is persisted below,
-					// a slow import or an already handled failure cannot be processed again on later ticks.
 					var justCompleted = item.Status == DownloadItemStatus.COMPLETED
 					                    && download.Status != DownloadItemStatus.COMPLETED;
 					var justFailed = item.Status == DownloadItemStatus.FAILED
 					                 && download.Status != DownloadItemStatus.FAILED;
+
+					// Invariant: a failed download's status is persisted only after HandleFailedAsync succeeds. Handling
+					// runs after the batch save and removes the row, so a throw leaves the status unchanged and the
+					// failure is retried on the next tick instead of being silently consumed.
+					if (downloadConfig.EnableFailedDownloadHandling && justFailed)
+					{
+						toFail.Add((download, item));
+						continue;
+					}
 
 					download.Status = item.Status;
 
 					if (item.OutputPath != null)
 						download.OutputPath = item.OutputPath;
 
-					if (justCompleted)
+					// The first enqueue is edge-triggered; a still-completed row whose import never landed is retried
+					// after ReimportInterval. ImportService is idempotent, so a redundant enqueue is harmless.
+					if (item.Status == DownloadItemStatus.COMPLETED && !download.Imported
+					    && (justCompleted || ShouldReimport(download.Id, now)))
+					{
 						toImport.Add(download.Id);
-					else if (downloadConfig.EnableFailedDownloadHandling && justFailed)
-						toFail.Add((download, item));
+						_lastImportEnqueue[download.Id] = now;
+					}
 				}
 
 				await context.SaveChangesAsync(cancellationToken);
@@ -87,6 +106,9 @@ public sealed class DownloadMonitorJob : IScheduledJob
 			}
 		}
 	}
+
+	private bool ShouldReimport(int downloadId, DateTimeOffset now)
+		=> !_lastImportEnqueue.TryGetValue(downloadId, out var last) || now - last >= ReimportInterval;
 
 	private static async Task HandleFailedAsync(SubmarineDatabaseContext context, IDownloadClient client,
 		IBackgroundTaskQueue queue, HistoryService history, BlocklistService blocklist, DownloadConfig downloadConfig,
