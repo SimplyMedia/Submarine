@@ -7,6 +7,7 @@ using Submarine.Core.Languages;
 using Submarine.Core.Library;
 using Submarine.Core.MediaFile;
 using Submarine.Core.Parser;
+using Submarine.Core.Quality;
 using Submarine.Core.Release;
 using Submarine.Core.Release.Exceptions;
 
@@ -90,7 +91,7 @@ public class ImportService
 
 			if (series != null)
 				foreach (var file in files)
-					await ImportEpisodeFileAsync(tracked, series, version, episodes, file, namingConfig,
+					await ImportTrackedEpisodeFileAsync(tracked, series, version, episodes, file, namingConfig,
 						managementConfig, files.Count == 1, cancellationToken);
 		}
 		else if (tracked.MovieId is { } movieId)
@@ -99,7 +100,7 @@ public class ImportService
 
 			if (movie != null)
 				foreach (var file in files)
-					await ImportMovieFileAsync(tracked, movie, version, file, namingConfig, managementConfig,
+					await ImportTrackedMovieFileAsync(tracked, movie, version, file, namingConfig, managementConfig,
 						cancellationToken);
 		}
 
@@ -133,7 +134,7 @@ public class ImportService
 		return null;
 	}
 
-	private async Task ImportEpisodeFileAsync(Core.Download.TrackedDownload tracked, Series series,
+	private async Task ImportTrackedEpisodeFileAsync(Core.Download.TrackedDownload tracked, Series series,
 		MediaVersion version, List<Episode> seriesEpisodes, string sourceFile, Core.Config.NamingConfig namingConfig,
 		Core.Config.MediaManagementConfig managementConfig, bool singleFile, CancellationToken cancellationToken)
 	{
@@ -147,11 +148,40 @@ public class ImportService
 			return;
 		}
 
-		var ordered = episodes.OrderBy(e => e.EpisodeNumber).ToList();
 		var quality = tracked.Quality;
 		var languages = tracked.Languages.Count > 0 ? tracked.Languages : parsed?.Languages.ToList() ?? new();
 		var releaseGroup = tracked.ReleaseGroup ?? parsed?.ReleaseGroup;
 
+		await ImportEpisodeFileAsync(series, version, episodes, sourceFile, quality, languages, releaseGroup,
+			tracked.ReleaseTitle, new Dictionary<string, string> { ["downloadId"] = tracked.DownloadId },
+			namingConfig, managementConfig, cancellationToken);
+	}
+
+	private async Task ImportTrackedMovieFileAsync(Core.Download.TrackedDownload tracked, Movie movie,
+		MediaVersion version, string sourceFile, Core.Config.NamingConfig namingConfig,
+		Core.Config.MediaManagementConfig managementConfig, CancellationToken cancellationToken)
+	{
+		var parsed = TryParse(sourceFile);
+		var quality = tracked.Quality;
+		var languages = tracked.Languages.Count > 0 ? tracked.Languages : parsed?.Languages.ToList() ?? new();
+		var releaseGroup = tracked.ReleaseGroup ?? parsed?.ReleaseGroup;
+		var edition = parsed?.MovieReleaseData?.Edition;
+
+		await ImportMovieFileAsync(movie, version, sourceFile, quality, languages, releaseGroup, edition,
+			tracked.ReleaseTitle, new Dictionary<string, string> { ["downloadId"] = tracked.DownloadId },
+			namingConfig, managementConfig, cancellationToken);
+	}
+
+	/// <summary>
+	///     Places a single video file into a Series version, replacing any same-version file covering the same
+	///     episodes, and records the import in History. Shared by tracked download and manual imports.
+	/// </summary>
+	public async Task ImportEpisodeFileAsync(Series series, MediaVersion version, IReadOnlyList<Episode> episodes,
+		string sourceFile, QualityModel quality, IReadOnlyList<Language> languages, string? releaseGroup,
+		string sourceTitle, Dictionary<string, string> data, Core.Config.NamingConfig namingConfig,
+		Core.Config.MediaManagementConfig managementConfig, CancellationToken cancellationToken = default)
+	{
+		var ordered = episodes.OrderBy(e => e.EpisodeNumber).ToList();
 		var extension = Path.GetExtension(sourceFile);
 		string fileName;
 		bool namedFromPlaceholder;
@@ -198,31 +228,30 @@ public class ImportService
 
 		await SaveImportAsync(destination, cancellationToken);
 
+		data["path"] = episodeFile.RelativePath;
+		data["version"] = version.Name;
+
 		await _historyService.RecordAsync(new HistoryEvent
 		{
 			Type = HistoryEventType.IMPORTED,
 			SeriesId = series.Id,
 			EpisodeId = ordered.Count == 1 ? ordered[0].Id : null,
-			SourceTitle = tracked.ReleaseTitle,
+			SourceTitle = sourceTitle,
 			Quality = quality,
 			Languages = languages.ToList(),
-			Data = new Dictionary<string, string>
-			{
-				["path"] = episodeFile.RelativePath, ["downloadId"] = tracked.DownloadId, ["version"] = version.Name
-			}
+			Data = data
 		}, cancellationToken);
 	}
 
-	private async Task ImportMovieFileAsync(Core.Download.TrackedDownload tracked, Movie movie, MediaVersion version,
-		string sourceFile, Core.Config.NamingConfig namingConfig, Core.Config.MediaManagementConfig managementConfig,
-		CancellationToken cancellationToken)
+	/// <summary>
+	///     Places a single video file into a Movie version, replacing any same-version file, and records the import
+	///     in History. Shared by tracked download and manual imports.
+	/// </summary>
+	public async Task ImportMovieFileAsync(Movie movie, MediaVersion version, string sourceFile, QualityModel quality,
+		IReadOnlyList<Language> languages, string? releaseGroup, string? edition, string sourceTitle,
+		Dictionary<string, string> data, Core.Config.NamingConfig namingConfig,
+		Core.Config.MediaManagementConfig managementConfig, CancellationToken cancellationToken = default)
 	{
-		var parsed = TryParse(sourceFile);
-		var quality = tracked.Quality;
-		var languages = tracked.Languages.Count > 0 ? tracked.Languages : parsed?.Languages.ToList() ?? new();
-		var releaseGroup = tracked.ReleaseGroup ?? parsed?.ReleaseGroup;
-		var edition = parsed?.MovieReleaseData?.Edition;
-
 		var extension = Path.GetExtension(sourceFile);
 
 		var fileName = namingConfig.RenameEpisodes
@@ -254,17 +283,17 @@ public class ImportService
 
 		await SaveImportAsync(destination, cancellationToken);
 
+		data["path"] = movieFile.RelativePath;
+		data["version"] = version.Name;
+
 		await _historyService.RecordAsync(new HistoryEvent
 		{
 			Type = HistoryEventType.IMPORTED,
 			MovieId = movie.Id,
-			SourceTitle = tracked.ReleaseTitle,
+			SourceTitle = sourceTitle,
 			Quality = quality,
 			Languages = languages.ToList(),
-			Data = new Dictionary<string, string>
-			{
-				["path"] = movieFile.RelativePath, ["downloadId"] = tracked.DownloadId, ["version"] = version.Name
-			}
+			Data = data
 		}, cancellationToken);
 	}
 
