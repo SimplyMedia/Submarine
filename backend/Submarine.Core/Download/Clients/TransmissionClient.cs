@@ -46,7 +46,8 @@ public class TransmissionClient : IDownloadClient
 		=> Protocol.BITTORRENT;
 
 	/// <inheritdoc />
-	public async Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public async Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		if (release.DownloadUrl == null)
 			throw new DownloadClientException($"Release {release.Title} has no download url");
@@ -60,7 +61,34 @@ public class TransmissionClient : IDownloadClient
 		if (hash == null)
 			throw new DownloadClientException($"Transmission did not return a torrent hash for {release.Title}");
 
+		await ApplySeedCriteriaAsync(torrent!, hash, seedCriteria, cancellationToken);
+
 		return hash;
+	}
+
+	private async Task ApplySeedCriteriaAsync(JsonNode torrent, string hash, SeedCriteria? seedCriteria,
+		CancellationToken cancellationToken)
+	{
+		if (seedCriteria == null) return;
+
+		var arguments = new JsonObject();
+
+		if (seedCriteria.Ratio is { } ratio)
+		{
+			arguments["seedRatioLimit"] = ratio;
+			arguments["seedRatioMode"] = 1;
+		}
+
+		if ((seedCriteria.SeedTimeMinutes ?? seedCriteria.SeasonPackSeedTimeMinutes) is { } minutes)
+		{
+			arguments["seedIdleLimit"] = minutes;
+			arguments["seedIdleMode"] = 1;
+		}
+
+		if (arguments.Count == 0) return;
+
+		arguments["ids"] = new JsonArray(torrent["id"]?.DeepClone() ?? JsonValue.Create(hash));
+		await CallAsync("torrent-set", arguments, cancellationToken);
 	}
 
 	/// <inheritdoc />

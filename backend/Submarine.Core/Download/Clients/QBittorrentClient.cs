@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -44,7 +45,8 @@ public class QBittorrentClient : IDownloadClient
 		=> Protocol.BITTORRENT;
 
 	/// <inheritdoc />
-	public async Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public async Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		if (release.DownloadUrl == null)
 			throw new DownloadClientException($"Release {release.Title} has no download url");
@@ -55,6 +57,9 @@ public class QBittorrentClient : IDownloadClient
 		{
 			var form = new Dictionary<string, string> { ["urls"] = release.DownloadUrl };
 			if (_settings.Category != null) form["category"] = _settings.Category;
+
+			foreach (var (key, value) in SeedCriteriaFields(seedCriteria))
+				form[key] = value;
 
 			using var response = await SendAuthenticatedAsync(
 				() => new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/add"))
@@ -76,10 +81,25 @@ public class QBittorrentClient : IDownloadClient
 			content.Add(file, "torrents", "release.torrent");
 			if (_settings.Category != null) content.Add(new StringContent(_settings.Category), "category");
 
+			foreach (var (key, value) in SeedCriteriaFields(seedCriteria))
+				content.Add(new StringContent(value), key);
+
 			return new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/add")) { Content = content };
 		}, cancellationToken);
 
 		return infoHash;
+	}
+
+	// season pack seed time is not distinguishable at add, so the regular seed time wins when both are set
+	private static IEnumerable<(string Key, string Value)> SeedCriteriaFields(SeedCriteria? seedCriteria)
+	{
+		if (seedCriteria == null) yield break;
+
+		if (seedCriteria.Ratio is { } ratio)
+			yield return ("ratioLimit", ratio.ToString(CultureInfo.InvariantCulture));
+
+		if ((seedCriteria.SeedTimeMinutes ?? seedCriteria.SeasonPackSeedTimeMinutes) is { } minutes)
+			yield return ("seedingTimeLimit", minutes.ToString(CultureInfo.InvariantCulture));
 	}
 
 	/// <inheritdoc />

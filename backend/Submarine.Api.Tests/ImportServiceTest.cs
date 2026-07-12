@@ -67,7 +67,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.TrackedDownloads.Add(tracked);
 			await Context.SaveChangesAsync();
 
-			var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
+			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				NullLogger<ImportService>.Instance);
 
@@ -155,7 +155,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.TrackedDownloads.Add(tracked);
 			await Context.SaveChangesAsync();
 
-			var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
+			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				NullLogger<ImportService>.Instance);
 
@@ -201,7 +201,7 @@ public class ImportServiceTest : DatabaseTestBase
 		await Context.SaveChangesAsync();
 
 		var publisher = new FakeEventPublisher();
-		var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
+		var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 			new HistoryService(Context), publisher, new FakeMappingsClient(), NullLogger<ImportService>.Instance);
 
 		await service.ImportTrackedDownloadAsync(tracked.Id);
@@ -275,7 +275,7 @@ public class ImportServiceTest : DatabaseTestBase
 				}
 			};
 
-			var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
+			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), mappings, NullLogger<ImportService>.Instance);
 
 			await service.ImportTrackedDownloadAsync(tracked.Id);
@@ -359,7 +359,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.TrackedDownloads.Add(tracked);
 			await Context.SaveChangesAsync();
 
-			var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
+			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				NullLogger<ImportService>.Instance);
 

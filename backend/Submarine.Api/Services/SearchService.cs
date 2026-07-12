@@ -354,7 +354,8 @@ public class SearchService
 				try
 				{
 					var parsed = _releaseParser.Parse(info.Title);
-					candidates.Add(new ReleaseCandidate(parsed, info, indexer.Name, indexer.Priority));
+					candidates.Add(new ReleaseCandidate(parsed, info, indexer.Name, indexer.Priority,
+						(indexer as TorznabIndexer)?.MinimumSeeders));
 				}
 				catch (NotParsableReleaseException ex)
 				{

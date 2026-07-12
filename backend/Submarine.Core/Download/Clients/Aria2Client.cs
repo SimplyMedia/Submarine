@@ -35,10 +35,14 @@ public class Aria2Client : IDownloadClient
 	public Protocol Protocol => Protocol.BITTORRENT;
 
 	/// <inheritdoc />
-	public async Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public async Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		var url = release.DownloadUrl
 			?? throw new DownloadClientException("Release has no download url");
+
+		if (seedCriteria != null)
+			_logger.LogDebug("seed criteria not supported by aria2");
 
 		var result = await RpcAsync("aria2.addUri", new object?[] { new object?[] { url } }, cancellationToken);
 

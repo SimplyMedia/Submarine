@@ -42,10 +42,14 @@ public class UTorrentClient : IDownloadClient
 	public Protocol Protocol => Protocol.BITTORRENT;
 
 	/// <inheritdoc />
-	public async Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public async Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		var url = release.DownloadUrl
 			?? throw new DownloadClientException("Release has no download url");
+
+		if (seedCriteria != null)
+			_logger.LogDebug("seed criteria not supported by uTorrent");
 
 		var hash = MagnetHash(url)
 			?? throw new DownloadClientException("uTorrent add requires a magnet link to resolve the download id");

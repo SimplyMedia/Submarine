@@ -17,9 +17,11 @@ public interface IDownloadClient
 	///     Sends a release to the client
 	/// </summary>
 	/// <param name="release">Release to download</param>
+	/// <param name="seedCriteria">Seeding limits for the download; clients apply what their API supports and ignore the rest</param>
 	/// <param name="cancellationToken">Token to cancel the operation</param>
 	/// <returns>The client-side download id</returns>
-	Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default);
+	Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default);
 
 	/// <summary>
 	///     Lists downloads currently known to the client

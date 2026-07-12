@@ -41,7 +41,8 @@ public class DelugeClient : IDownloadClient
 	public Protocol Protocol => Protocol.BITTORRENT;
 
 	/// <inheritdoc />
-	public async Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public async Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		var url = release.DownloadUrl
 			?? throw new DownloadClientException("Release has no download url");
@@ -50,7 +51,16 @@ public class DelugeClient : IDownloadClient
 			? "core.add_torrent_magnet"
 			: "core.add_torrent_url";
 
-		var result = await RpcAsync(method, new object?[] { url, new Dictionary<string, object?>() },
+		var options = new Dictionary<string, object?>();
+
+		if (seedCriteria?.Ratio is { } ratio)
+		{
+			options["stop_at_ratio"] = true;
+			options["stop_ratio"] = ratio;
+			options["remove_at_ratio"] = false;
+		}
+
+		var result = await RpcAsync(method, new object?[] { url, options },
 			cancellationToken);
 
 		var hash = result.GetString()

@@ -56,7 +56,7 @@ public class RenameServiceTest : DatabaseTestBase
 			});
 			await Context.SaveChangesAsync();
 
-			var service = new RenameService(Context, new SettingsService(Context), NamingService(),
+			var service = new RenameService(Context, Settings(), NamingService(),
 				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher());
 
 			await service.RenameEpisodeFileAsync(file.Id);

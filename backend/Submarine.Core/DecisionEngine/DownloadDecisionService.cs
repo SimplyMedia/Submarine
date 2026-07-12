@@ -3,6 +3,7 @@ using Submarine.Core.DecisionEngine.CustomFormats;
 using Submarine.Core.DecisionEngine.Filter;
 using Submarine.Core.Languages;
 using Submarine.Core.Profile;
+using Submarine.Core.Provider;
 using Submarine.Core.Release;
 
 namespace Submarine.Core.DecisionEngine;
@@ -101,6 +102,13 @@ public class DownloadDecisionService
 				rejections.Add(new RejectionReason("existing file already meets the language cutoff",
 					RejectionType.PERMANENT));
 		}
+
+		if (release.Protocol == Protocol.BITTORRENT
+		    && candidate.MinimumSeeders is { } minimumSeeders
+		    && candidate.Info.Seeders is { } seeders
+		    && seeders < minimumSeeders)
+			rejections.Add(new RejectionReason($"{seeders} seeders, minimum is {minimumSeeders}",
+				RejectionType.TEMPORARY));
 
 		var filterResult = _filterEvaluator.Evaluate(FilterContext.From(release, candidate.IndexerName), ctx.Filters);
 

@@ -37,10 +37,14 @@ public class DownloadStationClient : IDownloadClient
 	public Protocol Protocol => Protocol.BITTORRENT;
 
 	/// <inheritdoc />
-	public async Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public async Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		var url = release.DownloadUrl
 			?? throw new DownloadClientException("Release has no download url");
+
+		if (seedCriteria != null)
+			_logger.LogDebug("seed criteria not supported by DownloadStation");
 
 		await ApiGetAsync("DownloadStation/task.cgi", new Dictionary<string, string>
 		{

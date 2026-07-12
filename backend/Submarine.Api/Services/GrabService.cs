@@ -3,6 +3,7 @@ using Submarine.Api.Events;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Models.Request;
+using Submarine.Api.Repository;
 using Submarine.Core.Download;
 using Submarine.Core.Indexer;
 using Submarine.Core.History;
@@ -20,15 +21,18 @@ public class GrabService
 	private readonly IParser<BaseRelease> _releaseParser;
 	private readonly HistoryService _historyService;
 	private readonly IEventPublisher _eventPublisher;
+	private readonly IProviderRepository _providerRepository;
 
 	public GrabService(SubmarineDatabaseContext context, DownloadClientFactory factory,
-		IParser<BaseRelease> releaseParser, HistoryService historyService, IEventPublisher eventPublisher)
+		IParser<BaseRelease> releaseParser, HistoryService historyService, IEventPublisher eventPublisher,
+		IProviderRepository providerRepository)
 	{
 		_context = context;
 		_factory = factory;
 		_releaseParser = releaseParser;
 		_historyService = historyService;
 		_eventPublisher = eventPublisher;
+		_providerRepository = providerRepository;
 	}
 
 	public async Task<TrackedDownload> GrabAsync(GrabReleaseRequest request, CancellationToken cancellationToken = default)
@@ -57,7 +61,9 @@ public class GrabService
 
 		var version = await ResolveVersionAsync(request, cancellationToken);
 
-		var downloadId = await client.AddDownloadAsync(releaseInfo, cancellationToken);
+		var seedCriteria = await ResolveSeedCriteriaAsync(request, parsed);
+
+		var downloadId = await client.AddDownloadAsync(releaseInfo, seedCriteria, cancellationToken);
 
 		var languages = parsed.Languages.ToList();
 
@@ -111,6 +117,31 @@ public class GrabService
 				cancellationToken);
 
 		return tracked;
+	}
+
+	private async Task<SeedCriteria?> ResolveSeedCriteriaAsync(GrabReleaseRequest request, BaseRelease parsed)
+	{
+		if (request.Protocol != Protocol.BITTORRENT || request.Indexer == null)
+			return null;
+
+		var provider = await _providerRepository.FirstByConditionAsync(p => p.Name == request.Indexer);
+
+		var (seedRatio, seedTime, seasonPackSeedTime) = provider switch
+		{
+			TorznabIndexer indexer => (indexer.SeedRatio, indexer.SeedTime, indexer.SeasonPackSeedTime),
+			BittorrentTracker tracker => (tracker.SeedRatio, tracker.SeedTime, tracker.SeasonPackSeedTime),
+			_ => ((float?)null, (long?)null, (long?)null)
+		};
+
+		if (seedRatio == null && seedTime == null && seasonPackSeedTime == null)
+			return null;
+
+		// season packs seed on the season pack time when the indexer defines one
+		var seedTimeMinutes = parsed.SeriesReleaseData?.ReleaseType == SeriesReleaseType.FULL_SEASON
+			? seasonPackSeedTime ?? seedTime
+			: seedTime;
+
+		return new SeedCriteria(seedRatio, (int?)seedTimeMinutes, (int?)seasonPackSeedTime);
 	}
 
 	private async Task<Core.Library.MediaVersion?> ResolveVersionAsync(GrabReleaseRequest request,

@@ -41,7 +41,8 @@ public class SabnzbdClient : IDownloadClient
 		=> Protocol.USENET;
 
 	/// <inheritdoc />
-	public async Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public async Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		if (release.DownloadUrl == null)
 			throw new DownloadClientException($"Release {release.Title} has no download url");
