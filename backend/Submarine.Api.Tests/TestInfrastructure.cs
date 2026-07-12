@@ -238,6 +238,10 @@ public sealed class FakeDownloadClient : IDownloadClient
 
 	public SeedCriteria? LastSeedCriteria { get; private set; }
 
+	public IReadOnlyList<DownloadClientItem> Items { get; set; } = Array.Empty<DownloadClientItem>();
+
+	public List<(string DownloadId, bool DeleteData)> Removed { get; } = new();
+
 	public Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
 		CancellationToken cancellationToken = default)
 	{
@@ -248,10 +252,14 @@ public sealed class FakeDownloadClient : IDownloadClient
 	}
 
 	public Task<IReadOnlyList<DownloadClientItem>> GetItemsAsync(CancellationToken cancellationToken = default)
-		=> Task.FromResult<IReadOnlyList<DownloadClientItem>>(Array.Empty<DownloadClientItem>());
+		=> Task.FromResult(Items);
 
 	public Task RemoveItemAsync(string downloadId, bool deleteData, CancellationToken cancellationToken = default)
-		=> Task.CompletedTask;
+	{
+		Removed.Add((downloadId, deleteData));
+
+		return Task.CompletedTask;
+	}
 
 	public Task TestAsync(CancellationToken cancellationToken = default)
 		=> Task.CompletedTask;
