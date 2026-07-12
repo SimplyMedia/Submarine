@@ -5,13 +5,15 @@ namespace Submarine.Api.Clients;
 /// <summary>
 ///     Message sent to a notification <see cref="Connection" /> for a media event
 /// </summary>
-/// <param name="EventType">"grab", "import", "rename" or "test"</param>
+/// <param name="EventType">"grab", "import", "upgrade", "rename", "delete", "health" or "test"</param>
 /// <param name="Title">Title of the series or movie the event relates to</param>
 /// <param name="Path">Library path of the media, if any</param>
 /// <param name="Quality">Quality of the media, if known</param>
 /// <param name="Timestamp">Time the event occurred</param>
+/// <param name="SeriesId">Id of the series the event relates to, if any</param>
+/// <param name="MovieId">Id of the movie the event relates to, if any</param>
 public sealed record NotificationMessage(string EventType, string Title, string? Path, string? Quality,
-	DateTimeOffset Timestamp)
+	DateTimeOffset Timestamp, int? SeriesId = null, int? MovieId = null)
 {
 	/// <summary>
 	///     Human readable message text for the event
@@ -20,7 +22,10 @@ public sealed record NotificationMessage(string EventType, string Title, string?
 	{
 		"grab" => $"Grabbed: {Title}",
 		"import" => $"Imported: {Title}",
+		"upgrade" => $"Upgraded: {Title}",
 		"rename" => $"Renamed: {Title}",
+		"delete" => $"Deleted: {Title}",
+		"health" => $"Health issue: {Title}",
 		_ => Title
 	};
 }

@@ -176,9 +176,9 @@ public class ConnectionService
 	{
 		var connection = await GetAsync(id);
 
-		if (connection is DiscordConnection or TelegramConnection or WebhookConnection)
-			await _notificationSenderFactory.Create(connection).TestAsync(cancellationToken);
-		else
+		if (connection.Type is ConnectionType.PLEX or ConnectionType.EMBY or ConnectionType.JELLYFIN)
 			await _clientFactory.Create(connection).TestAsync(cancellationToken);
+		else
+			await _notificationSenderFactory.Create(connection).TestAsync(cancellationToken);
 	}
 }

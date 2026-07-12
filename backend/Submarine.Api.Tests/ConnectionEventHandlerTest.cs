@@ -52,21 +52,25 @@ internal sealed class StubHttpMessageHandler : HttpMessageHandler
 
 	public List<HttpRequestMessage> Requests { get; } = new();
 
+	// request bodies captured at send time, since some senders dispose their request after sending
+	public List<string> Bodies { get; } = new();
+
 	public StubHttpMessageHandler(HttpStatusCode status, string content)
 	{
 		_status = status;
 		_content = content;
 	}
 
-	protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+	protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
 		CancellationToken cancellationToken)
 	{
 		Requests.Add(request);
+		Bodies.Add(request.Content == null ? "" : await request.Content.ReadAsStringAsync(cancellationToken));
 
-		return Task.FromResult(new HttpResponseMessage(_status)
+		return new HttpResponseMessage(_status)
 		{
 			Content = new StringContent(_content, Encoding.UTF8, "application/json")
-		});
+		};
 	}
 }
 
@@ -230,11 +234,99 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 		Assert.Equal("https://discord.example/a", request.RequestUri!.ToString());
 	}
 
+	[Fact]
+	public async Task HandleAsync_ShouldNotifyOnUpgradeConnections_WhenImportIsUpgrade()
+	{
+		Context.Connections.Add(new DiscordConnection
+		{
+			Name = "upgrade-only", Enable = true, OnUpgrade = true, WebhookUrl = "https://discord.example/webhook",
+			Tags = new List<string>()
+		});
+		await Context.SaveChangesAsync();
+
+		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
+			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
+
+		await handler.HandleAsync(new MediaImportedEvent(null, null, "/movies/movie", "Movie Title", IsUpgrade: true),
+			CancellationToken.None);
+
+		var request = Assert.Single(stub.Requests);
+		Assert.Contains("\"title\":\"Upgraded: Movie Title\"", await request.Content!.ReadAsStringAsync());
+	}
+
+	[Fact]
+	public async Task HandleAsync_ShouldNotNotifyOnUpgradeConnections_WhenImportIsNoUpgrade()
+	{
+		Context.Connections.Add(new DiscordConnection
+		{
+			Name = "upgrade-only", Enable = true, OnUpgrade = true, WebhookUrl = "https://discord.example/webhook",
+			Tags = new List<string>()
+		});
+		await Context.SaveChangesAsync();
+
+		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
+			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
+
+		await handler.HandleAsync(new MediaImportedEvent(null, null, "/movies/movie", "Movie Title"),
+			CancellationToken.None);
+
+		Assert.Empty(stub.Requests);
+	}
+
+	[Fact]
+	public async Task HandleAsync_ShouldNotifySendersButNotMediaServers_WhenMediaDeleted()
+	{
+		Context.Connections.AddRange(
+			new DiscordConnection
+			{
+				Name = "discord", Enable = true, OnDelete = true, WebhookUrl = "https://discord.example/webhook",
+				Tags = new List<string>()
+			},
+			new Connection
+			{
+				Name = "jellyfin", Type = ConnectionType.JELLYFIN, Enable = true, OnDelete = true, Host = "localhost",
+				Port = 8096, ApiKey = "key", Tags = new List<string>()
+			});
+		await Context.SaveChangesAsync();
+
+		var factory = new FakeMediaServerClientFactory();
+		var handler = new ConnectionEventHandler(Context, factory, NewNotificationSenderFactory(out var stub),
+			NullLogger<ConnectionEventHandler>.Instance);
+
+		await handler.HandleAsync(new MediaDeletedEvent(null, null, "Movie Title", "/movies/movie"),
+			CancellationToken.None);
+
+		var request = Assert.Single(stub.Requests);
+		Assert.Contains("\"title\":\"Deleted: Movie Title\"", await request.Content!.ReadAsStringAsync());
+		Assert.Empty(factory.Notified);
+	}
+
+	[Fact]
+	public async Task HandleAsync_ShouldNotifyOnHealthIssueConnections_WhenHealthIssue()
+	{
+		Context.Connections.Add(new DiscordConnection
+		{
+			Name = "discord", Enable = true, OnHealthIssue = true, WebhookUrl = "https://discord.example/webhook",
+			Tags = new List<string>()
+		});
+		await Context.SaveChangesAsync();
+
+		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
+			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
+
+		await handler.HandleAsync(new HealthIssueEvent("warning", "indexers", "No indexers are enabled"),
+			CancellationToken.None);
+
+		var request = Assert.Single(stub.Requests);
+		Assert.Contains("\"title\":\"Health issue: indexers: No indexers are enabled\"",
+			await request.Content!.ReadAsStringAsync());
+	}
+
 	private static INotificationSenderFactory NewNotificationSenderFactory(out StubHttpMessageHandler stub)
 	{
 		stub = new StubHttpMessageHandler(HttpStatusCode.OK, "{}");
 
-		return new NotificationSenderFactory(new FakeHttpClientFactory(stub));
+		return new NotificationSenderFactory(new FakeHttpClientFactory(stub), NullLoggerFactory.Instance);
 	}
 
 	private static Connection NewConnection(string name, bool enable, bool onImport, List<string>? tags = null)

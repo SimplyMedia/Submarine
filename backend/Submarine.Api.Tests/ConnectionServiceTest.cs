@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Submarine.Api.Clients;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Models.Request;
@@ -122,5 +123,5 @@ public class ConnectionServiceTest : DatabaseTestBase
 	private ConnectionService BuildService()
 		=> new(new ConnectionRepository(Context), new FakeMediaServerClientFactory(),
 			new NotificationSenderFactory(new FakeHttpClientFactory(new StubHttpMessageHandler(
-				System.Net.HttpStatusCode.OK, "{}"))));
+				System.Net.HttpStatusCode.OK, "{}")), NullLoggerFactory.Instance));
 }

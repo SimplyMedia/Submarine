@@ -6,10 +6,10 @@ using Submarine.Core.Notification;
 namespace Submarine.Api.Events;
 
 /// <summary>
-///     Notifies enabled media server connections about grabbed, imported and renamed media
+///     Notifies enabled connections about grabbed, imported, upgraded, renamed and deleted media and health issues
 /// </summary>
 public sealed class ConnectionEventHandler : IEventHandler<MediaGrabbedEvent>, IEventHandler<MediaImportedEvent>,
-	IEventHandler<MediaRenamedEvent>
+	IEventHandler<MediaRenamedEvent>, IEventHandler<MediaDeletedEvent>, IEventHandler<HealthIssueEvent>
 {
 	private readonly SubmarineDatabaseContext _context;
 	private readonly IMediaServerClientFactory _clientFactory;
@@ -29,16 +29,32 @@ public sealed class ConnectionEventHandler : IEventHandler<MediaGrabbedEvent>, I
 		=> NotifyAsync(c => c.OnGrab, "grab", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
 			cancellationToken);
 
-	public Task HandleAsync(MediaImportedEvent @event, CancellationToken cancellationToken)
-		=> NotifyAsync(c => c.OnImport, "import", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
+	public async Task HandleAsync(MediaImportedEvent @event, CancellationToken cancellationToken)
+	{
+		await NotifyAsync(c => c.OnImport, "import", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
 			cancellationToken);
+
+		// OnImport fires on all imports including upgrades; OnUpgrade is a distinct toggle notified with its
+		// own event type. Connections with both toggles are only notified once, via OnImport.
+		if (@event.IsUpgrade)
+			await NotifyAsync(c => c.OnUpgrade && !c.OnImport, "upgrade", @event.SeriesId, @event.MovieId,
+				@event.Path, @event.Title, cancellationToken);
+	}
 
 	public Task HandleAsync(MediaRenamedEvent @event, CancellationToken cancellationToken)
 		=> NotifyAsync(c => c.OnRename, "rename", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
 			cancellationToken);
 
+	public Task HandleAsync(MediaDeletedEvent @event, CancellationToken cancellationToken)
+		=> NotifyAsync(c => c.OnDelete, "delete", @event.SeriesId, @event.MovieId, @event.Path, @event.Title,
+			cancellationToken);
+
+	public Task HandleAsync(HealthIssueEvent @event, CancellationToken cancellationToken)
+		=> NotifyAsync(c => c.OnHealthIssue, "health", null, null, null, $"{@event.Source}: {@event.Message}",
+			cancellationToken);
+
 	private async Task NotifyAsync(Func<Connection, bool> toggle, string eventType, int? seriesId, int? movieId,
-		string path, string title, CancellationToken cancellationToken)
+		string? path, string title, CancellationToken cancellationToken)
 	{
 		var connections = await _context.Connections.AsNoTracking()
 			.Where(c => c.Enable)
@@ -58,14 +74,17 @@ public sealed class ConnectionEventHandler : IEventHandler<MediaGrabbedEvent>, I
 
 			try
 			{
-				if (connection is DiscordConnection or TelegramConnection or WebhookConnection)
+				if (connection.Type is ConnectionType.PLEX or ConnectionType.EMBY or ConnectionType.JELLYFIN)
 				{
-					var message = new NotificationMessage(eventType, title, path, null, DateTimeOffset.UtcNow);
-					await _notificationSenderFactory.Create(connection).SendAsync(message, cancellationToken);
+					// media servers only refresh their library; deletes and health issues carry no path change
+					if (path != null && eventType is not ("delete" or "health"))
+						await _clientFactory.Create(connection).NotifyMediaUpdatedAsync(path, cancellationToken);
 				}
 				else
 				{
-					await _clientFactory.Create(connection).NotifyMediaUpdatedAsync(path, cancellationToken);
+					var message = new NotificationMessage(eventType, title, path, null, DateTimeOffset.UtcNow,
+						seriesId, movieId);
+					await _notificationSenderFactory.Create(connection).SendAsync(message, cancellationToken);
 				}
 			}
 			catch (Exception ex)

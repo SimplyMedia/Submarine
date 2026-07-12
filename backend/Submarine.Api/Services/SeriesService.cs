@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Clients;
+using Submarine.Api.Events;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Extensions;
 using Submarine.Api.Jobs;
@@ -22,10 +23,12 @@ public class SeriesService
 	private readonly IMetadataClient _metadataClient;
 	private readonly IBackgroundTaskQueue _taskQueue;
 	private readonly VersionService _versionService;
+	private readonly IEventPublisher _eventPublisher;
 
 	public SeriesService(ISeriesRepository repository, IRootFolderRepository rootFolderRepository,
 		IQualityProfileRepository qualityProfileRepository, ILanguageProfileRepository languageProfileRepository,
-		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService)
+		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService,
+		IEventPublisher eventPublisher)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
@@ -34,6 +37,7 @@ public class SeriesService
 		_metadataClient = metadataClient;
 		_taskQueue = taskQueue;
 		_versionService = versionService;
+		_eventPublisher = eventPublisher;
 	}
 
 	public Task<PagedResult<Series>> GetPagedAsync(int page, int pageSize, bool? monitored, SeriesType? type,
@@ -101,6 +105,8 @@ public class SeriesService
 			Network = resource.Network,
 			Runtime = resource.Runtime,
 			Year = resource.Year,
+			PosterUrl = resource.ImageUrl,
+			BackdropUrl = resource.BackdropUrl,
 			Status = MapStatus(resource.Status),
 			Type = request.Type ?? SeriesType.STANDARD,
 			MetadataProvider = request.MetadataProvider ?? MetadataProvider.TVDB,
@@ -237,16 +243,17 @@ public class SeriesService
 		if (series == null)
 			throw new NotFoundException();
 
-		if (deleteFiles)
-		{
-			var versions = (await _repository.FindVersionsAsync(id)).ToDictionary(v => v.Id, v => v.Path);
+		var versions = (await _repository.FindVersionsAsync(id)).ToDictionary(v => v.Id, v => v.Path);
 
+		if (deleteFiles)
 			foreach (var file in await _repository.FindEpisodeFilesAsync(id))
 				if (versions.TryGetValue(file.MediaVersionId, out var versionPath))
 					DeleteFromDisk(Path.Combine(versionPath, file.RelativePath));
-		}
 
 		await _repository.DeleteAsync(series);
+
+		await _eventPublisher.PublishAsync(
+			new MediaDeletedEvent(series.Id, null, series.Title, versions.Values.FirstOrDefault()));
 
 		return series;
 	}

@@ -1,4 +1,5 @@
 using Submarine.Api.Clients;
+using Submarine.Api.Events;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Extensions;
 using Submarine.Api.Jobs;
@@ -19,10 +20,12 @@ public class MovieService
 	private readonly IMetadataClient _metadataClient;
 	private readonly IBackgroundTaskQueue _taskQueue;
 	private readonly VersionService _versionService;
+	private readonly IEventPublisher _eventPublisher;
 
 	public MovieService(IMovieRepository repository, IRootFolderRepository rootFolderRepository,
 		IQualityProfileRepository qualityProfileRepository, ILanguageProfileRepository languageProfileRepository,
-		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService)
+		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue, VersionService versionService,
+		IEventPublisher eventPublisher)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
@@ -31,6 +34,7 @@ public class MovieService
 		_metadataClient = metadataClient;
 		_taskQueue = taskQueue;
 		_versionService = versionService;
+		_eventPublisher = eventPublisher;
 	}
 
 	public Task<PagedResult<Movie>> GetPagedAsync(int page, int pageSize, bool? monitored, bool? isAnime,
@@ -89,6 +93,8 @@ public class MovieService
 			Year = resource.Year,
 			Runtime = resource.Runtime,
 			Studio = resource.Studio,
+			PosterUrl = resource.ImageUrl,
+			BackdropUrl = resource.BackdropUrl,
 			TmdbCollectionId = resource.TmdbCollectionId,
 			CollectionTitle = resource.CollectionTitle,
 			ReleaseDate = resource.ReleaseDate == null
@@ -208,16 +214,17 @@ public class MovieService
 		if (movie == null)
 			throw new NotFoundException();
 
-		if (deleteFiles)
-		{
-			var versions = (await _repository.FindVersionsAsync(id)).ToDictionary(v => v.Id, v => v.Path);
+		var versions = (await _repository.FindVersionsAsync(id)).ToDictionary(v => v.Id, v => v.Path);
 
+		if (deleteFiles)
 			foreach (var file in await _repository.FindMovieFilesAsync(id))
 				if (versions.TryGetValue(file.MediaVersionId, out var versionPath))
 					DeleteFromDisk(Path.Combine(versionPath, file.RelativePath));
-		}
 
 		await _repository.DeleteAsync(movie);
+
+		await _eventPublisher.PublishAsync(
+			new MediaDeletedEvent(null, movie.Id, movie.Title, versions.Values.FirstOrDefault()));
 
 		return movie;
 	}
