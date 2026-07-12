@@ -61,8 +61,44 @@ public class SeriesServiceTest : DatabaseTestBase
 		}));
 	}
 
-	private SeriesService BuildService(FakeMetadataClient metadata)
-		=> new(new SeriesRepository(Context), new RootFolderRepository(Context), metadata);
+	[Fact]
+	public async Task UpdateAsync_ShouldEnqueueRefresh_WhenNumberingChanges()
+	{
+		Context.Series.Add(new Series
+		{
+			TvdbId = 7, Title = "Show", MetadataProvider = MetadataProvider.TVDB, Numbering = EpisodeNumbering.AIRED
+		});
+		await Context.SaveChangesAsync();
+		Context.ChangeTracker.Clear();
+
+		var queue = new FakeBackgroundTaskQueue();
+		var service = BuildService(new FakeMetadataClient(), queue);
+
+		await service.UpdateAsync(1, new UpdateSeriesRequest { Numbering = EpisodeNumbering.DVD });
+
+		Assert.Single(queue.Items);
+		Assert.Equal(EpisodeNumbering.DVD,
+			(await Context.Series.AsNoTracking().FirstAsync(s => s.Id == 1)).Numbering);
+	}
+
+	[Fact]
+	public async Task UpdateAsync_ShouldNotEnqueueRefresh_WhenNumberingUnchanged()
+	{
+		Context.Series.Add(new Series { TvdbId = 7, Title = "Show", Numbering = EpisodeNumbering.AIRED });
+		await Context.SaveChangesAsync();
+		Context.ChangeTracker.Clear();
+
+		var queue = new FakeBackgroundTaskQueue();
+		var service = BuildService(new FakeMetadataClient(), queue);
+
+		await service.UpdateAsync(1, new UpdateSeriesRequest { Numbering = EpisodeNumbering.AIRED, Monitored = false });
+
+		Assert.Empty(queue.Items);
+	}
+
+	private SeriesService BuildService(FakeMetadataClient metadata, FakeBackgroundTaskQueue? queue = null)
+		=> new(new SeriesRepository(Context), new RootFolderRepository(Context), metadata,
+			queue ?? new FakeBackgroundTaskQueue());
 
 	private static SeriesResource Resource()
 		=> new(42, null, "Show", null, null, null, Submarine.Metadata.Contracts.SeriesStatus.Continuing, 30, null,

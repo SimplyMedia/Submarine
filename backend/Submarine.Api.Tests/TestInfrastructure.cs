@@ -4,9 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Submarine.Api.Clients;
 using Submarine.Api.Events;
+using Submarine.Api.Jobs;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Services;
 using Submarine.Core.Download;
+using Submarine.Core.Library;
 using Submarine.Core.Indexer;
 using Submarine.Core.MediaFile.Naming;
 using Submarine.Core.Parser;
@@ -88,21 +90,62 @@ public sealed class FakeMetadataClient : IMetadataClient
 {
 	public SeriesResource? Series { get; set; }
 
+	public SeriesResource? TmdbSeries { get; set; }
+
 	public MovieResource? Movie { get; set; }
 
-	public Task<SeriesResource?> GetSeriesAsync(int tvdbId, CancellationToken cancellationToken = default)
-		=> Task.FromResult(Series);
+	public int TvdbSeriesCalls { get; private set; }
+
+	public int TmdbSeriesCalls { get; private set; }
+
+	public List<MetadataProvider> SearchProviders { get; } = new();
+
+	public Task<SeriesResource?> GetSeriesByTvdbAsync(int tvdbId, CancellationToken cancellationToken = default)
+	{
+		TvdbSeriesCalls++;
+
+		return Task.FromResult(Series);
+	}
+
+	public Task<SeriesResource?> GetSeriesByTmdbAsync(int tmdbId, CancellationToken cancellationToken = default)
+	{
+		TmdbSeriesCalls++;
+
+		return Task.FromResult(TmdbSeries ?? Series);
+	}
 
 	public Task<MovieResource?> GetMovieAsync(int tmdbId, CancellationToken cancellationToken = default)
 		=> Task.FromResult(Movie);
 
 	public Task<IReadOnlyList<SeriesResource>> SearchSeriesAsync(string term,
-		CancellationToken cancellationToken = default)
-		=> Task.FromResult<IReadOnlyList<SeriesResource>>(Array.Empty<SeriesResource>());
+		MetadataProvider provider = MetadataProvider.TVDB, CancellationToken cancellationToken = default)
+	{
+		SearchProviders.Add(provider);
+
+		return Task.FromResult<IReadOnlyList<SeriesResource>>(Array.Empty<SeriesResource>());
+	}
 
 	public Task<IReadOnlyList<MovieResource>> SearchMoviesAsync(string term,
 		CancellationToken cancellationToken = default)
 		=> Task.FromResult<IReadOnlyList<MovieResource>>(Array.Empty<MovieResource>());
+}
+
+/// <summary>
+///     Captures queued work items instead of scheduling them
+/// </summary>
+public sealed class FakeBackgroundTaskQueue : IBackgroundTaskQueue
+{
+	public List<Func<IServiceProvider, CancellationToken, Task>> Items { get; } = new();
+
+	public ValueTask QueueAsync(Func<IServiceProvider, CancellationToken, Task> workItem)
+	{
+		Items.Add(workItem);
+
+		return ValueTask.CompletedTask;
+	}
+
+	public ValueTask<Func<IServiceProvider, CancellationToken, Task>> DequeueAsync(CancellationToken cancellationToken)
+		=> throw new NotSupportedException();
 }
 
 /// <summary>

@@ -17,6 +17,8 @@ public record SeriesResponse(
 	int? Year,
 	SeriesStatus Status,
 	SeriesType Type,
+	MetadataProvider MetadataProvider,
+	EpisodeNumbering Numbering,
 	bool Monitored,
 	bool SeasonFolder,
 	List<string> Tags,
@@ -26,7 +28,8 @@ public record SeriesResponse(
 {
 	public static SeriesResponse FromSeries(Series series, int episodeCount)
 		=> new(series.Id, series.TvdbId, series.TmdbId, series.Title, series.SortTitle, series.Overview,
-			series.Network, series.Runtime, series.Year, series.Status, series.Type, series.Monitored,
+			series.Network, series.Runtime, series.Year, series.Status, series.Type, series.MetadataProvider,
+			series.Numbering, series.Monitored,
 			series.SeasonFolder, series.Tags, episodeCount,
 			series.Seasons.Select(s => new SeriesSeasonResponse(s.Id, s.SeasonNumber, s.Monitored)).ToList(),
 			series.Versions.Select(MediaVersionResponse.FromVersion).ToList());

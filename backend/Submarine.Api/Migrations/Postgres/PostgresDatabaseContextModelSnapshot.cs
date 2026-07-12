@@ -413,6 +413,9 @@ namespace Submarine.Api.Migrations.Postgres
                     b.Property<string>("Title")
                         .HasColumnType("text");
 
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("TvdbId")
                         .HasColumnType("integer");
 
@@ -590,11 +593,17 @@ namespace Submarine.Api.Migrations.Postgres
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("MetadataProvider")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("Monitored")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Network")
                         .HasColumnType("text");
+
+                    b.Property<int>("Numbering")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Overview")
                         .HasColumnType("text");

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Submarine.Core.Library;
 using Submarine.Metadata.Contracts;
 
 namespace Submarine.Api.Clients;
@@ -27,18 +28,30 @@ public class MetadataClient : IMetadataClient
 
 	/// <inheritdoc />
 	public async Task<IReadOnlyList<SeriesResource>> SearchSeriesAsync(string term,
-		CancellationToken cancellationToken = default)
+		MetadataProvider provider = MetadataProvider.TVDB, CancellationToken cancellationToken = default)
 	{
+		var query = $"api/v1/series/search?term={Uri.EscapeDataString(term)}";
+
+		if (provider == MetadataProvider.TMDB)
+			query += "&provider=tmdb";
+
 		var results = await _httpClient.GetFromJsonAsync<IReadOnlyList<SeriesResource>>(
-			$"api/v1/series/search?term={Uri.EscapeDataString(term)}", JsonOptions, cancellationToken);
+			query, JsonOptions, cancellationToken);
 
 		return results ?? Array.Empty<SeriesResource>();
 	}
 
 	/// <inheritdoc />
-	public async Task<SeriesResource?> GetSeriesAsync(int tvdbId, CancellationToken cancellationToken = default)
+	public Task<SeriesResource?> GetSeriesByTvdbAsync(int tvdbId, CancellationToken cancellationToken = default)
+		=> GetSeriesAsync($"api/v1/series/tvdb/{tvdbId}", cancellationToken);
+
+	/// <inheritdoc />
+	public Task<SeriesResource?> GetSeriesByTmdbAsync(int tmdbId, CancellationToken cancellationToken = default)
+		=> GetSeriesAsync($"api/v1/series/tmdb/{tmdbId}", cancellationToken);
+
+	private async Task<SeriesResource?> GetSeriesAsync(string path, CancellationToken cancellationToken)
 	{
-		using var response = await _httpClient.GetAsync($"api/v1/series/{tvdbId}", cancellationToken);
+		using var response = await _httpClient.GetAsync(path, cancellationToken);
 
 		if (response.StatusCode == HttpStatusCode.NotFound)
 			return null;

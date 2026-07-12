@@ -43,6 +43,11 @@ public class Episode
 	public int? TvdbId { get; set; }
 
 	/// <summary>
+	///     TheMovieDB Id of this episode
+	/// </summary>
+	public int? TmdbId { get; set; }
+
+	/// <summary>
 	///     Title of the episode
 	/// </summary>
 	public string? Title { get; set; }

@@ -69,6 +69,16 @@ public class Series : ICreatable, IUpdatable
 	public SeriesType Type { get; set; }
 
 	/// <summary>
+	///     Metadata provider this series is resolved from
+	/// </summary>
+	public MetadataProvider MetadataProvider { get; set; } = MetadataProvider.TVDB;
+
+	/// <summary>
+	///     Episode numbering scheme used to materialize this series' episodes
+	/// </summary>
+	public EpisodeNumbering Numbering { get; set; } = EpisodeNumbering.AIRED;
+
+	/// <summary>
 	///     Whether this series is monitored for new Episodes
 	/// </summary>
 	public bool Monitored { get; set; }

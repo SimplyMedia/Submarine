@@ -8,5 +8,9 @@ public record UpdateSeriesRequest
 
 	public SeriesType? Type { get; set; }
 
+	public MetadataProvider? MetadataProvider { get; set; }
+
+	public EpisodeNumbering? Numbering { get; set; }
+
 	public List<string>? Tags { get; set; }
 }

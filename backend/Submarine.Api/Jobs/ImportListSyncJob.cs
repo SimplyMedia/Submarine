@@ -117,7 +117,7 @@ public sealed class ImportListSyncJob : IScheduledJob
 	private static async Task<int?> ResolveSeriesTvdbIdAsync(IMetadataClient metadataClient, ImportListItem item,
 		ILogger logger, CancellationToken cancellationToken)
 	{
-		var results = await metadataClient.SearchSeriesAsync(item.Title, cancellationToken);
+		var results = await metadataClient.SearchSeriesAsync(item.Title, cancellationToken: cancellationToken);
 		var match = results.FirstOrDefault(r => r.Title == item.Title);
 
 		if (match == null)

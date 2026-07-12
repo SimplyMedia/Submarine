@@ -1,3 +1,4 @@
+using Submarine.Core.Library;
 using Submarine.Metadata.Contracts;
 
 namespace Submarine.Api.Clients;
@@ -8,12 +9,14 @@ namespace Submarine.Api.Clients;
 public interface IMetadataClient
 {
 	/// <summary>
-	///     Searches for series matching the given term
+	///     Searches for series matching the given term against the given provider
 	/// </summary>
 	/// <param name="term">search term</param>
+	/// <param name="provider">metadata provider to search</param>
 	/// <param name="cancellationToken">cancellation token</param>
 	/// <returns>matching series</returns>
-	Task<IReadOnlyList<SeriesResource>> SearchSeriesAsync(string term, CancellationToken cancellationToken = default);
+	Task<IReadOnlyList<SeriesResource>> SearchSeriesAsync(string term,
+		MetadataProvider provider = MetadataProvider.TVDB, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	///     Gets a single series by its TVDB identifier
@@ -21,7 +24,15 @@ public interface IMetadataClient
 	/// <param name="tvdbId">TheTVDB identifier of the series</param>
 	/// <param name="cancellationToken">cancellation token</param>
 	/// <returns>series if found, otherwise null</returns>
-	Task<SeriesResource?> GetSeriesAsync(int tvdbId, CancellationToken cancellationToken = default);
+	Task<SeriesResource?> GetSeriesByTvdbAsync(int tvdbId, CancellationToken cancellationToken = default);
+
+	/// <summary>
+	///     Gets a single series by its TMDB identifier
+	/// </summary>
+	/// <param name="tmdbId">TheMovieDB identifier of the series</param>
+	/// <param name="cancellationToken">cancellation token</param>
+	/// <returns>series if found, otherwise null</returns>
+	Task<SeriesResource?> GetSeriesByTmdbAsync(int tmdbId, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	///     Searches for movies matching the given term

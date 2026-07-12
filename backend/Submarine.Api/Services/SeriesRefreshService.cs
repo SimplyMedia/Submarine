@@ -26,7 +26,7 @@ public class SeriesRefreshService
 
 	public async Task RefreshSeriesAsync(Series series, CancellationToken cancellationToken = default)
 	{
-		var resource = await _metadataClient.GetSeriesAsync(series.TvdbId, cancellationToken);
+		var resource = await FetchAsync(series, cancellationToken);
 
 		if (resource == null)
 		{
@@ -55,14 +55,10 @@ public class SeriesRefreshService
 
 		foreach (var episodeResource in resource.Episodes)
 		{
-			var aired = episodeResource.Numbers.FirstOrDefault(n => n.Ordering == EpisodeOrdering.Aired);
 			var absolute = episodeResource.Numbers.FirstOrDefault(n => n.Ordering == EpisodeOrdering.Absolute);
+			var (seasonNumber, episodeNumber) = EpisodeNumberResolver.Resolve(episodeResource, series.Numbering);
 
-			var seasonNumber = aired?.SeasonNumber ?? 0;
-			var episodeNumber = aired?.Number ?? 0;
-
-			var existing = episodes.FirstOrDefault(e =>
-				e.SeasonNumber == seasonNumber && e.EpisodeNumber == episodeNumber);
+			var existing = FindExisting(episodes, episodeResource, seasonNumber, episodeNumber);
 
 			var airDate = episodeResource.AirDate == null
 				? (DateTimeOffset?)null
@@ -77,6 +73,7 @@ public class SeriesRefreshService
 					EpisodeNumber = episodeNumber,
 					AbsoluteEpisodeNumber = absolute?.AbsoluteNumber,
 					TvdbId = episodeResource.TvdbId,
+					TmdbId = episodeResource.TmdbId,
 					Title = episodeResource.Title,
 					Overview = episodeResource.Overview,
 					AirDate = airDate,
@@ -94,6 +91,10 @@ public class SeriesRefreshService
 				await _eventPublisher.PublishAsync(
 					new EpisodeTitleChangedEvent(existing.Id, series.Id, oldTitle, newTitle!), cancellationToken);
 
+			existing.SeasonNumber = seasonNumber;
+			existing.EpisodeNumber = episodeNumber;
+			existing.TvdbId = episodeResource.TvdbId;
+			existing.TmdbId = episodeResource.TmdbId;
 			existing.Title = newTitle;
 			existing.Overview = episodeResource.Overview;
 			existing.AirDate = airDate;
@@ -102,6 +103,42 @@ public class SeriesRefreshService
 		}
 
 		await _context.SaveChangesAsync(cancellationToken);
+	}
+
+	private async Task<SeriesResource?> FetchAsync(Series series, CancellationToken cancellationToken)
+	{
+		if (series.MetadataProvider == MetadataProvider.TMDB)
+		{
+			if (series.TmdbId != null)
+				return await _metadataClient.GetSeriesByTmdbAsync(series.TmdbId.Value, cancellationToken);
+
+			_logger.LogWarning(
+				"Series {SeriesId} uses TMDB metadata but has no TMDB id, falling back to TVDB", series.Id);
+		}
+
+		return await _metadataClient.GetSeriesByTvdbAsync(series.TvdbId, cancellationToken);
+	}
+
+	private static Episode? FindExisting(List<Episode> episodes, EpisodeResource resource, int seasonNumber,
+		int episodeNumber)
+	{
+		if (resource.TvdbId != null)
+		{
+			var match = episodes.FirstOrDefault(e => e.TvdbId == resource.TvdbId);
+
+			if (match != null)
+				return match;
+		}
+
+		if (resource.TmdbId != null)
+		{
+			var match = episodes.FirstOrDefault(e => e.TmdbId == resource.TmdbId);
+
+			if (match != null)
+				return match;
+		}
+
+		return episodes.FirstOrDefault(e => e.SeasonNumber == seasonNumber && e.EpisodeNumber == episodeNumber);
 	}
 
 	public async Task RefreshMovieAsync(Movie movie, CancellationToken cancellationToken = default)

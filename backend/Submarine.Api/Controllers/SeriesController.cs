@@ -40,9 +40,10 @@ public class SeriesController : ControllerBase
 	[HttpGet("lookup")]
 	[ProducesResponseType(typeof(IReadOnlyList<SeriesResource>), StatusCodes.Status200OK)]
 	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-	public async Task<IActionResult> LookupAsync([FromQuery] string term)
+	public async Task<IActionResult> LookupAsync([FromQuery] string term,
+		[FromQuery] Core.Library.MetadataProvider provider = Core.Library.MetadataProvider.TVDB)
 	{
-		var results = await _service.LookupAsync(term);
+		var results = await _service.LookupAsync(term, provider);
 
 		return Ok(results);
 	}

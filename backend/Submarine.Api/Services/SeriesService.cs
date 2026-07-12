@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Clients;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Extensions;
+using Submarine.Api.Jobs;
+using Submarine.Api.Models.Database;
 using Submarine.Api.Models.Request;
 using Submarine.Api.Models.Response;
 using Submarine.Api.Repository;
@@ -16,13 +18,15 @@ public class SeriesService
 	private readonly ISeriesRepository _repository;
 	private readonly IRootFolderRepository _rootFolderRepository;
 	private readonly IMetadataClient _metadataClient;
+	private readonly IBackgroundTaskQueue _taskQueue;
 
 	public SeriesService(ISeriesRepository repository, IRootFolderRepository rootFolderRepository,
-		IMetadataClient metadataClient)
+		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
 		_metadataClient = metadataClient;
+		_taskQueue = taskQueue;
 	}
 
 	public Task<PagedResult<Series>> GetPagedAsync(int page, int pageSize, bool? monitored, SeriesType? type,
@@ -54,8 +58,9 @@ public class SeriesService
 		return SeriesResponse.FromSeries(series, episodeCount);
 	}
 
-	public Task<IReadOnlyList<SeriesResource>> LookupAsync(string term)
-		=> _metadataClient.SearchSeriesAsync(term);
+	public Task<IReadOnlyList<SeriesResource>> LookupAsync(string term,
+		MetadataProvider provider = MetadataProvider.TVDB)
+		=> _metadataClient.SearchSeriesAsync(term, provider);
 
 	public async Task<Series> AddAsync(AddSeriesRequest request)
 	{
@@ -64,11 +69,12 @@ public class SeriesService
 		if (existing != null)
 			throw new ConflictException($"Series with TVDB id '{request.TvdbId}' already exists");
 
-		var resource = await _metadataClient.GetSeriesAsync(request.TvdbId);
+		var resource = await _metadataClient.GetSeriesByTvdbAsync(request.TvdbId);
 
 		if (resource == null)
 			throw new BadRequestException("series not found");
 
+		var numbering = request.Numbering ?? EpisodeNumbering.AIRED;
 		var versions = await BuildVersionsAsync(request, resource.Title);
 
 		var series = new Series
@@ -83,6 +89,8 @@ public class SeriesService
 			Year = resource.Year,
 			Status = MapStatus(resource.Status),
 			Type = request.Type ?? SeriesType.STANDARD,
+			MetadataProvider = request.MetadataProvider ?? MetadataProvider.TVDB,
+			Numbering = numbering,
 			Monitored = request.Monitored,
 			SeasonFolder = request.SeasonFolder,
 			Tags = request.Tags,
@@ -90,7 +98,7 @@ public class SeriesService
 			Seasons = resource.Seasons
 				.Select(s => new Season { SeasonNumber = s.SeasonNumber, Monitored = request.Monitored })
 				.ToList(),
-			Episodes = resource.Episodes.Select(e => MapEpisode(e, request.Monitored)).ToList()
+			Episodes = resource.Episodes.Select(e => MapEpisode(e, numbering, request.Monitored)).ToList()
 		};
 
 		await _repository.CreateAsync(series);
@@ -142,10 +150,37 @@ public class SeriesService
 		if (request.Tags != null)
 			series.Tags = request.Tags;
 
+		var refreshNeeded = false;
+
+		if (request.MetadataProvider != null && request.MetadataProvider.Value != series.MetadataProvider)
+		{
+			series.MetadataProvider = request.MetadataProvider.Value;
+			refreshNeeded = true;
+		}
+
+		if (request.Numbering != null && request.Numbering.Value != series.Numbering)
+		{
+			series.Numbering = request.Numbering.Value;
+			refreshNeeded = true;
+		}
+
 		await _repository.UpdateAsync(series);
+
+		if (refreshNeeded)
+			await QueueRefreshAsync(series.Id);
 
 		return series;
 	}
+
+	private ValueTask QueueRefreshAsync(int seriesId)
+		=> _taskQueue.QueueAsync(async (sp, ct) =>
+		{
+			var context = sp.GetRequiredService<SubmarineDatabaseContext>();
+			var series = await context.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+
+			if (series != null)
+				await sp.GetRequiredService<SeriesRefreshService>().RefreshSeriesAsync(series, ct);
+		});
 
 	public async Task<Series> DeleteAsync(int id, bool deleteFiles)
 	{
@@ -204,17 +239,18 @@ public class SeriesService
 		throw new BadRequestException("either Path or RootFolderId must be provided");
 	}
 
-	private static Episode MapEpisode(EpisodeResource resource, bool monitored)
+	private static Episode MapEpisode(EpisodeResource resource, EpisodeNumbering numbering, bool monitored)
 	{
-		var aired = resource.Numbers.FirstOrDefault(n => n.Ordering == EpisodeOrdering.Aired);
 		var absolute = resource.Numbers.FirstOrDefault(n => n.Ordering == EpisodeOrdering.Absolute);
+		var (seasonNumber, episodeNumber) = EpisodeNumberResolver.Resolve(resource, numbering);
 
 		return new Episode
 		{
-			SeasonNumber = aired?.SeasonNumber ?? 0,
-			EpisodeNumber = aired?.Number ?? 0,
+			SeasonNumber = seasonNumber,
+			EpisodeNumber = episodeNumber,
 			AbsoluteEpisodeNumber = absolute?.AbsoluteNumber,
 			TvdbId = resource.TvdbId,
+			TmdbId = resource.TmdbId,
 			Title = resource.Title,
 			Overview = resource.Overview,
 			AirDate = resource.AirDate == null
