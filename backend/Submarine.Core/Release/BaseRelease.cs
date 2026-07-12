@@ -78,6 +78,11 @@ public record BaseRelease
 	public string? ReleaseHash { get; init; }
 
 	/// <summary>
+	///     Whether the Release has hardcoded (burned-in) subtitles
+	/// </summary>
+	public bool HardcodedSubs { get; init; }
+
+	/// <summary>
 	///     Creates a new instance of <see cref="BaseRelease" />
 	/// </summary>
 	public BaseRelease()
