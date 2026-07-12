@@ -52,4 +52,61 @@ public class SettingsController : ControllerBase
 
 		return Ok(config);
 	}
+
+	[HttpGet("indexer")]
+	[ProducesResponseType(typeof(IndexerConfig), StatusCodes.Status200OK)]
+	public async Task<IActionResult> GetIndexerAsync()
+	{
+		var config = await _service.GetIndexerConfigAsync();
+
+		return Ok(config);
+	}
+
+	[HttpPut("indexer")]
+	[ProducesResponseType(typeof(IndexerConfig), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	public async Task<IActionResult> UpdateIndexerAsync([FromBody] UpdateIndexerConfigRequest request)
+	{
+		var config = await _service.UpdateIndexerConfigAsync(request);
+
+		return Ok(config);
+	}
+
+	[HttpGet("download")]
+	[ProducesResponseType(typeof(DownloadConfig), StatusCodes.Status200OK)]
+	public async Task<IActionResult> GetDownloadAsync()
+	{
+		var config = await _service.GetDownloadConfigAsync();
+
+		return Ok(config);
+	}
+
+	[HttpPut("download")]
+	[ProducesResponseType(typeof(DownloadConfig), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	public async Task<IActionResult> UpdateDownloadAsync([FromBody] UpdateDownloadConfigRequest request)
+	{
+		var config = await _service.UpdateDownloadConfigAsync(request);
+
+		return Ok(config);
+	}
+
+	[HttpGet("security")]
+	[ProducesResponseType(typeof(SecurityConfig), StatusCodes.Status200OK)]
+	public async Task<IActionResult> GetSecurityAsync()
+	{
+		var config = await _service.GetSecurityConfigAsync();
+
+		return Ok(config);
+	}
+
+	[HttpPut("security")]
+	[ProducesResponseType(typeof(SecurityConfig), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	public async Task<IActionResult> UpdateSecurityAsync([FromBody] UpdateSecurityConfigRequest request)
+	{
+		var config = await _service.UpdateSecurityConfigAsync(request);
+
+		return Ok(config);
+	}
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Submarine.Api.Exceptions;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Models.Request;
 using Submarine.Core.Config;
@@ -11,8 +12,17 @@ public class SettingsService
 
 	private readonly SubmarineDatabaseContext _databaseContext;
 
-	public SettingsService(SubmarineDatabaseContext databaseContext)
-		=> _databaseContext = databaseContext;
+	private readonly ILogger<SettingsService> _logger;
+
+	private readonly SecurityConfigStore _securityConfigStore;
+
+	public SettingsService(SubmarineDatabaseContext databaseContext, ILogger<SettingsService> logger,
+		SecurityConfigStore securityConfigStore)
+	{
+		_databaseContext = databaseContext;
+		_logger = logger;
+		_securityConfigStore = securityConfigStore;
+	}
 
 	public async Task<NamingConfig> GetNamingConfigAsync()
 	{
@@ -68,6 +78,98 @@ public class SettingsService
 		config.MinimumFreeSpaceMb = request.MinimumFreeSpaceMb;
 
 		await _databaseContext.SaveChangesAsync();
+
+		return config;
+	}
+
+	public async Task<IndexerConfig> GetIndexerConfigAsync()
+	{
+		var config = await _databaseContext.IndexerConfigs.FirstOrDefaultAsync(c => c.Id == SingletonId);
+
+		if (config != null)
+			return config;
+
+		config = new IndexerConfig { Id = SingletonId };
+		await _databaseContext.IndexerConfigs.AddAsync(config);
+		await _databaseContext.SaveChangesAsync();
+
+		return config;
+	}
+
+	public async Task<IndexerConfig> UpdateIndexerConfigAsync(UpdateIndexerConfigRequest request)
+	{
+		var config = await GetIndexerConfigAsync();
+
+		config.RssSyncIntervalMinutes = request.RssSyncIntervalMinutes;
+		config.MinimumAgeMinutes = request.MinimumAgeMinutes;
+		config.RetentionDays = request.RetentionDays;
+		config.MaximumSizeMb = request.MaximumSizeMb;
+
+		await _databaseContext.SaveChangesAsync();
+
+		return config;
+	}
+
+	public async Task<DownloadConfig> GetDownloadConfigAsync()
+	{
+		var config = await _databaseContext.DownloadConfigs.FirstOrDefaultAsync(c => c.Id == SingletonId);
+
+		if (config != null)
+			return config;
+
+		config = new DownloadConfig { Id = SingletonId };
+		await _databaseContext.DownloadConfigs.AddAsync(config);
+		await _databaseContext.SaveChangesAsync();
+
+		return config;
+	}
+
+	public async Task<DownloadConfig> UpdateDownloadConfigAsync(UpdateDownloadConfigRequest request)
+	{
+		var config = await GetDownloadConfigAsync();
+
+		config.EnableFailedDownloadHandling = request.EnableFailedDownloadHandling;
+		config.RedownloadFailedReleases = request.RedownloadFailedReleases;
+		config.RemoveFailedFromClient = request.RemoveFailedFromClient;
+
+		await _databaseContext.SaveChangesAsync();
+
+		return config;
+	}
+
+	public async Task<SecurityConfig> GetSecurityConfigAsync()
+	{
+		var config = await _databaseContext.SecurityConfigs.FirstOrDefaultAsync(c => c.Id == SingletonId);
+
+		if (config != null)
+			return config;
+
+		config = new SecurityConfig { Id = SingletonId, ApiKey = Guid.NewGuid().ToString("N") };
+		await _databaseContext.SecurityConfigs.AddAsync(config);
+		await _databaseContext.SaveChangesAsync();
+
+		_logger.LogInformation("Generated API key: {Key}", config.ApiKey);
+
+		return config;
+	}
+
+	public async Task<SecurityConfig> UpdateSecurityConfigAsync(UpdateSecurityConfigRequest request)
+	{
+		if (!Enum.IsDefined(request.Method))
+			throw new BadRequestException($"Invalid authentication method '{request.Method}'");
+
+		var config = await GetSecurityConfigAsync();
+
+		config.Method = request.Method;
+
+		if (!string.IsNullOrEmpty(request.NewApiKey))
+			config.ApiKey = request.NewApiKey;
+		else if (request.Regenerate)
+			config.ApiKey = Guid.NewGuid().ToString("N");
+
+		await _databaseContext.SaveChangesAsync();
+
+		_securityConfigStore.Set(config);
 
 		return config;
 	}

@@ -8,6 +8,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 using Submarine.Api.Clients;
 using Submarine.Api.Events;
 using Submarine.Api.Jobs;
+using Submarine.Api.Middleware;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Repository;
 using Submarine.Api.Services;
@@ -59,6 +60,8 @@ builder.Services.AddControllers().AddJsonOptions(opts =>
 });
 
 // Parser
+builder.Services.AddSingleton<QualityOverrideStore>();
+builder.Services.AddSingleton<IQualityOverrideSource>(sp => sp.GetRequiredService<QualityOverrideStore>());
 builder.Services.AddSingleton<IParser<BaseRelease>, ReleaseParserService>();
 builder.Services.AddSingleton<IParser<TorrentRelease>, TorrentReleaseParserService>();
 builder.Services.AddSingleton<IParser<UsenetRelease>, UsenetReleaseParserService>();
@@ -90,6 +93,8 @@ builder.Services.AddScoped<IReleaseFilterRepository, ReleaseFilterRepository>();
 builder.Services.AddScoped<ICustomFormatRepository, CustomFormatRepository>();
 builder.Services.AddScoped<IImportListRepository, ImportListRepository>();
 builder.Services.AddScoped<IConnectionRepository, ConnectionRepository>();
+builder.Services.AddScoped<IBlocklistRepository, BlocklistRepository>();
+builder.Services.AddScoped<IQualityOverrideRepository, QualityOverrideRepository>();
 
 // Service
 builder.Services.AddScoped<ProviderService>();
@@ -114,6 +119,9 @@ builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<RenameService>();
 builder.Services.AddScoped<ImportListService>();
 builder.Services.AddScoped<ConnectionService>();
+builder.Services.AddScoped<BlocklistService>();
+builder.Services.AddScoped<QualityOverrideService>();
+builder.Services.AddSingleton<SecurityConfigStore>();
 
 builder.Services.AddSingleton<NamingTemplateRenderer>();
 builder.Services.AddSingleton<MediaNamingService>();
@@ -210,6 +218,19 @@ builder.Services.AddSwaggerGen(c =>
 
 	c.CustomOperationIds(apiDesc => $"{apiDesc.ActionDescriptor.RouteValues["controller"]}_{apiDesc.ActionDescriptor.RouteValues["action"]}");
 
+	c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+	{
+		Type = SecuritySchemeType.ApiKey,
+		In = ParameterLocation.Header,
+		Name = "X-Api-Key",
+		Description = "API key required when API key authentication is enabled"
+	});
+
+	c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+	{
+		[new OpenApiSecuritySchemeReference("ApiKey", document)] = new List<string>()
+	});
+
 	// Default schemaId selector plus a "Metadata" prefix for Submarine.Metadata.Contracts types,
 	// which otherwise collide with same-named Submarine.Core types (e.g. SeriesStatus).
 	c.CustomSchemaIds(SchemaId);
@@ -245,6 +266,14 @@ using (var scope = app.Services.GetService<IServiceScopeFactory>()?.CreateScope(
 		scope?.ServiceProvider.GetRequiredService<SubmarineDatabaseContext>().Database.Migrate();
 
 		await (scope?.ServiceProvider.GetRequiredService<ProfileService>().SeedDefaultsAsync() ?? Task.CompletedTask);
+
+		if (scope != null)
+		{
+			var overrides = await scope.ServiceProvider.GetRequiredService<SubmarineDatabaseContext>()
+				.ReleaseGroupQualityOverrides.AsNoTracking().ToListAsync();
+
+			app.Services.GetRequiredService<QualityOverrideStore>().Reload(overrides);
+		}
 	}
 	catch (Exception ex)
 	{
@@ -279,6 +308,8 @@ app.UseSerilogRequestLogging(opt => opt.GetLevel = (_, _, _) => LogEventLevel.De
 app.UseCors();
 
 app.UseRouting();
+
+app.UseMiddleware<ApiKeyMiddleware>();
 
 app.UseAuthorization();
 

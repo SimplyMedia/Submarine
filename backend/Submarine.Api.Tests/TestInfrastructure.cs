@@ -47,13 +47,17 @@ public abstract class DatabaseTestBase : IDisposable
 	protected static MediaNamingService NamingService()
 		=> new(new NamingTemplateRenderer());
 
+	protected SettingsService Settings()
+		=> new(Context, NullLogger<SettingsService>.Instance, new SecurityConfigStore(null!));
+
 	protected static IParser<BaseRelease> ReleaseParser()
 		=> new ReleaseParserService(
 			NullLogger<ReleaseParserService>.Instance,
 			new LanguageParserService(NullLogger<LanguageParserService>.Instance),
 			new StreamingProviderParserService(NullLogger<StreamingProviderParserService>.Instance),
 			new QualityParserService(NullLogger<QualityParserService>.Instance),
-			new ReleaseGroupParserService(NullLogger<ReleaseGroupParserService>.Instance));
+			new ReleaseGroupParserService(NullLogger<ReleaseGroupParserService>.Instance),
+			new QualityOverrideStore());
 
 	public void Dispose()
 	{
@@ -224,9 +228,13 @@ public sealed class FakeDownloadClient : IDownloadClient
 
 	public ReleaseInfo? LastAdded { get; private set; }
 
-	public Task<string> AddDownloadAsync(ReleaseInfo release, CancellationToken cancellationToken = default)
+	public SeedCriteria? LastSeedCriteria { get; private set; }
+
+	public Task<string> AddDownloadAsync(ReleaseInfo release, SeedCriteria? seedCriteria = default,
+		CancellationToken cancellationToken = default)
 	{
 		LastAdded = release;
+		LastSeedCriteria = seedCriteria;
 
 		return Task.FromResult(DownloadId);
 	}
