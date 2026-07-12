@@ -184,6 +184,42 @@ public class DownloadDecisionServiceTest
 	}
 
 	[Fact]
+	public void Decide_ShouldRejectTemporary_WhenSeedersBelowMinimum()
+	{
+		var decision = _instance.Decide(Candidate(Release(), seeders: 1, minimumSeeders: 3), Context());
+
+		Assert.False(decision.Approved);
+		var rejection = Assert.Single(decision.Rejections);
+		Assert.Equal("1 seeders, minimum is 3", rejection.Reason);
+		Assert.Equal(RejectionType.TEMPORARY, rejection.Type);
+	}
+
+	[Fact]
+	public void Decide_ShouldApprove_WhenSeedersMeetMinimum()
+	{
+		var decision = _instance.Decide(Candidate(Release(), seeders: 3, minimumSeeders: 3), Context());
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
+	public void Decide_ShouldApprove_WhenSeedersUnknown()
+	{
+		var decision = _instance.Decide(Candidate(Release(), minimumSeeders: 3), Context());
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
+	public void Decide_ShouldIgnoreMinimumSeeders_WhenReleaseIsUsenet()
+	{
+		var decision = _instance.Decide(
+			Candidate(Release(protocol: Protocol.USENET), seeders: 1, minimumSeeders: 3), Context());
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
 	public void DecideAll_ShouldOrderApprovedFirst_WhenSomeRejected()
 	{
 		var result = _instance.DecideAll(
@@ -204,7 +240,8 @@ public class DownloadDecisionServiceTest
 		string? releaseGroup = "FLUX",
 		IReadOnlyList<Language>? languages = null,
 		StreamingProvider? source = StreamingProvider.AMAZON,
-		SeriesReleaseData? seriesData = null)
+		SeriesReleaseData? seriesData = null,
+		Protocol protocol = Protocol.BITTORRENT)
 		=> new()
 		{
 			FullTitle = "Series.Title.S01.1080p.AMZN.WEB-DL.DDP5.1.H.264-FLUX",
@@ -216,13 +253,14 @@ public class DownloadDecisionServiceTest
 			SeriesReleaseData = seriesData,
 			Quality = new QualityModel(new QualityResolutionModel(QualitySource.WEB_DL, resolution),
 				revision ?? new Revision()),
-			Protocol = Protocol.BITTORRENT,
+			Protocol = protocol,
 			ReleaseGroup = releaseGroup
 		};
 
 	private static ReleaseCandidate Candidate(BaseRelease release, string? indexerName = "MyIndexer",
-		int indexerPriority = 25)
-		=> new(release, Info, indexerName, indexerPriority);
+		int indexerPriority = 25, int? seeders = null, int? minimumSeeders = null)
+		=> new(release, seeders is null ? Info : Info with { Seeders = seeders }, indexerName, indexerPriority,
+			minimumSeeders);
 
 	private static MediaContext Context(
 		QualityProfile? profile = null,

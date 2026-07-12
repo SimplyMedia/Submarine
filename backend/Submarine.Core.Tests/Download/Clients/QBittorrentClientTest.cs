@@ -53,6 +53,32 @@ public class QBittorrentClientTest
 	}
 
 	[Fact]
+	public async Task AddDownloadAsync_ShouldIncludeSeedLimits_WhenSeedCriteriaProvided()
+	{
+		var handler = new StubHandler((request, _) =>
+		{
+			var path = request.RequestUri!.AbsolutePath;
+			if (path.EndsWith("auth/login")) return LoginSuccessResponse();
+			if (path.EndsWith("torrents/add")) return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Ok.") };
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var client = CreateClient(handler);
+		var release = new ReleaseInfo
+		{
+			Title = "Movie 1",
+			Guid = "guid-1",
+			DownloadUrl = "magnet:?xt=urn:btih:ABCDEF1234567890ABCDEF1234567890ABCDEF12&dn=Movie",
+			Protocol = Protocol.BITTORRENT
+		};
+
+		await client.AddDownloadAsync(release, new SeedCriteria(1.5, 10080, null));
+
+		var addCall = handler.Calls.Single(call => call.Request.RequestUri!.AbsolutePath.EndsWith("torrents/add"));
+		Assert.Contains("ratioLimit=1.5", addCall.Body);
+		Assert.Contains("seedingTimeLimit=10080", addCall.Body);
+	}
+
+	[Fact]
 	public async Task AddDownloadAsync_ShouldReturnComputedInfoHash_WhenReleaseIsNotAMagnetLink()
 	{
 		const string info = "d6:lengthi12e4:name4:teste";

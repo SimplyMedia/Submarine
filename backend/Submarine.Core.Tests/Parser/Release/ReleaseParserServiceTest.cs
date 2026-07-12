@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Submarine.Core.Parser;
 using Submarine.Core.Parser.Release;
 using Submarine.Core.Quality;
@@ -11,12 +12,21 @@ public class ReleaseParserServiceTest
 {
 	private readonly IParser<BaseRelease> _instance;
 
+	private readonly ITestOutputHelper _output;
+
 	public ReleaseParserServiceTest(ITestOutputHelper output)
-		=> _instance = new ReleaseParserService(new XunitLogger<ReleaseParserService>(output),
+	{
+		_output = output;
+		_instance = CreateInstance(output, new StaticQualityOverrideSource());
+	}
+
+	private static ReleaseParserService CreateInstance(ITestOutputHelper output, IQualityOverrideSource overrideSource)
+		=> new(new XunitLogger<ReleaseParserService>(output),
 			new LanguageParserService(new XunitLogger<LanguageParserService>(output)),
 			new StreamingProviderParserService(new XunitLogger<StreamingProviderParserService>(output)),
 			new QualityParserService(new XunitLogger<QualityParserService>(output)),
-			new ReleaseGroupParserService(new XunitLogger<ReleaseGroupParserService>(output)));
+			new ReleaseGroupParserService(new XunitLogger<ReleaseGroupParserService>(output)),
+			overrideSource);
 
 
 	[Theory]
@@ -104,6 +114,20 @@ public class ReleaseParserServiceTest
 		string input, QualitySource expected)
 	{
 		var parsed = _instance.Parse(input);
+
+		Assert.Equal(expected, parsed.Quality.Resolution.Source);
+	}
+
+	[Theory]
+	[InlineData("[CustomGroup] Anime - 12 [1080p].mkv", "CustomGroup", QualitySource.BLURAY)]
+	[InlineData("[AnotherGroup] Anime - 03 (720p) [ABCD1234].mkv", "anothergroup", QualitySource.WEB_RIP)]
+	public void Parse_ShouldApplyConfiguredQualityOverride_WhenReleaseHasNoExplicitQuality(string input, string group,
+		QualitySource expected)
+	{
+		var instance = CreateInstance(_output, new StaticQualityOverrideSource(
+			new Dictionary<string, QualitySource>(StringComparer.OrdinalIgnoreCase) { { group, expected } }));
+
+		var parsed = instance.Parse(input);
 
 		Assert.Equal(expected, parsed.Quality.Resolution.Source);
 	}

@@ -56,6 +56,48 @@ public class TransmissionClientTest
 	}
 
 	[Fact]
+	public async Task AddDownloadAsync_ShouldIssueTorrentSet_WhenSeedCriteriaProvided()
+	{
+		string? torrentSetBody = null;
+		var handler = new StubHandler((request, body) => RouteRequest(request, body, method =>
+		{
+			switch (method)
+			{
+				case "torrent-add":
+					return JsonResponse("""
+						{ "result": "success", "arguments": { "torrent-added": { "id": 7, "hashString": "abcdef0123456789" } } }
+						""");
+				case "torrent-set":
+					torrentSetBody = body;
+					return JsonResponse("""{ "result": "success", "arguments": {} }""");
+				default:
+					return new HttpResponseMessage(HttpStatusCode.NotFound);
+			}
+		}));
+		var client = CreateClient(handler);
+		var release = new ReleaseInfo
+		{
+			Title = "Movie 1",
+			Guid = "guid-1",
+			DownloadUrl = "https://indexer.example/download/1.torrent",
+			Protocol = Protocol.BITTORRENT
+		};
+
+		var id = await client.AddDownloadAsync(release, new SeedCriteria(2.0, 4320, null));
+
+		Assert.Equal("abcdef0123456789", id);
+		Assert.NotNull(torrentSetBody);
+
+		using var doc = JsonDocument.Parse(torrentSetBody);
+		var arguments = doc.RootElement.GetProperty("arguments");
+		Assert.Equal(7, arguments.GetProperty("ids")[0].GetInt32());
+		Assert.Equal(2.0, arguments.GetProperty("seedRatioLimit").GetDouble());
+		Assert.Equal(1, arguments.GetProperty("seedRatioMode").GetInt32());
+		Assert.Equal(4320, arguments.GetProperty("seedIdleLimit").GetInt32());
+		Assert.Equal(1, arguments.GetProperty("seedIdleMode").GetInt32());
+	}
+
+	[Fact]
 	public async Task GetItemsAsync_ShouldMapStatusesAndSizes_WhenTransmissionReturnsTorrents()
 	{
 		var handler = new StubHandler((request, body) => RouteRequest(request, body,

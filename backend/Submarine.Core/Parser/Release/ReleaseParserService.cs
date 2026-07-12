@@ -503,6 +503,8 @@ public class ReleaseParserService : IParser<BaseRelease>
 
 	private readonly IParser<QualityModel> _qualityParser;
 
+	private readonly IQualityOverrideSource _qualityOverrideSource;
+
 	private readonly IParser<string?> _releaseGroupParser;
 
 	private readonly IParser<StreamingProvider?> _streamingProviderParser;
@@ -512,13 +514,15 @@ public class ReleaseParserService : IParser<BaseRelease>
 		IParser<IReadOnlyList<Language>> languageParser,
 		IParser<StreamingProvider?> streamingProviderParser,
 		IParser<QualityModel> qualityParser,
-		IParser<string?> releaseGroupParser)
+		IParser<string?> releaseGroupParser,
+		IQualityOverrideSource qualityOverrideSource)
 	{
 		_logger = logger;
 		_languageParser = languageParser;
 		_streamingProviderParser = streamingProviderParser;
 		_qualityParser = qualityParser;
 		_releaseGroupParser = releaseGroupParser;
+		_qualityOverrideSource = qualityOverrideSource;
 	}
 
 	/// <summary>
@@ -560,7 +564,7 @@ public class ReleaseParserService : IParser<BaseRelease>
 				input);
 
 		if (quality.Resolution.Source is QualitySource.UNKNOWN && releaseGroup != null &&
-		    QualityEdgeCasesConstants.EdgeCaseReleaseGroupQualitySourceMapping.TryGetValue(releaseGroup,
+		    _qualityOverrideSource.Overrides.TryGetValue(releaseGroup,
 			    out var qualitySource))
 		{
 			_logger.LogDebug(

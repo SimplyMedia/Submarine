@@ -15,7 +15,8 @@ public class TorrentReleaseParserServiceTest
 			new LanguageParserService(new XunitLogger<LanguageParserService>(output)),
 			new StreamingProviderParserService(new XunitLogger<StreamingProviderParserService>(output)),
 			new QualityParserService(new XunitLogger<QualityParserService>(output)),
-			new ReleaseGroupParserService(new XunitLogger<ReleaseGroupParserService>(output)));
+			new ReleaseGroupParserService(new XunitLogger<ReleaseGroupParserService>(output)),
+			new StaticQualityOverrideSource());
 
 		_instance = new TorrentReleaseParserService(new XunitLogger<TorrentReleaseParserService>(output),
 			releaseParserService);
