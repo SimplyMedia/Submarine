@@ -32,6 +32,53 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.ToTable("EpisodeFileEpisodes");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Config.DownloadConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("EnableFailedDownloadHandling")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("RedownloadFailedReleases")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("RemoveFailedFromClient")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DownloadConfigs");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Config.IndexerConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaximumSizeMb")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MinimumAgeMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RetentionDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RssSyncIntervalMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IndexerConfigs");
+                });
+
             modelBuilder.Entity("Submarine.Core.Config.MediaManagementConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -94,6 +141,26 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.ToTable("NamingConfigs");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Config.SecurityConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SecurityConfigs");
+                });
+
             modelBuilder.Entity("Submarine.Core.DecisionEngine.CustomFormats.CustomFormatConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -147,6 +214,47 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.ToTable("ReleaseFilters");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Download.BlocklistItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Guid")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Indexer")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MovieId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Protocol")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReleaseTitle")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MovieId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("Blocklist");
                 });
 
             modelBuilder.Entity("Submarine.Core.Download.DownloadClientConfig", b =>
@@ -882,6 +990,33 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("Submarine.Core.Quality.ReleaseGroupQualityOverride", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReleaseGroup")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReleaseGroup")
+                        .IsUnique();
+
+                    b.ToTable("ReleaseGroupQualityOverrides");
+                });
+
             modelBuilder.Entity("Submarine.Core.Tag.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -1005,6 +1140,19 @@ namespace Submarine.Api.Migrations.Sqlite
                         .HasForeignKey("FilesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Submarine.Core.Download.BlocklistItem", b =>
+                {
+                    b.HasOne("Submarine.Core.Library.Movie", null)
+                        .WithMany()
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Submarine.Core.Library.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Submarine.Core.Download.TrackedDownload", b =>

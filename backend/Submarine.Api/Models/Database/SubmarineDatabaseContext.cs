@@ -45,6 +45,12 @@ public class SubmarineDatabaseContext : DbContext
 
 	public DbSet<MediaManagementConfig> MediaManagementConfigs { get; set; }
 
+	public DbSet<IndexerConfig> IndexerConfigs { get; set; }
+
+	public DbSet<DownloadConfig> DownloadConfigs { get; set; }
+
+	public DbSet<SecurityConfig> SecurityConfigs { get; set; }
+
 	public DbSet<QualityProfile> QualityProfiles { get; set; }
 
 	public DbSet<LanguageProfile> LanguageProfiles { get; set; }
@@ -76,6 +82,10 @@ public class SubmarineDatabaseContext : DbContext
 	public DbSet<ImportList> ImportLists { get; set; }
 
 	public DbSet<Connection> Connections { get; set; }
+
+	public DbSet<BlocklistItem> Blocklist { get; set; }
+
+	public DbSet<ReleaseGroupQualityOverride> ReleaseGroupQualityOverrides { get; set; }
 
 	/// <inheritdoc />
 	public SubmarineDatabaseContext(DbContextOptions options, IConfiguration configuration) : base(options)
@@ -268,6 +278,28 @@ public class SubmarineDatabaseContext : DbContext
 			.WithMany()
 			.HasForeignKey(h => h.MovieId)
 			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<BlocklistItem>()
+			.HasIndex(b => b.SeriesId);
+
+		builder.Entity<BlocklistItem>()
+			.HasIndex(b => b.MovieId);
+
+		builder.Entity<BlocklistItem>()
+			.HasOne<Series>()
+			.WithMany()
+			.HasForeignKey(b => b.SeriesId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<BlocklistItem>()
+			.HasOne<Movie>()
+			.WithMany()
+			.HasForeignKey(b => b.MovieId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<ReleaseGroupQualityOverride>()
+			.HasIndex(o => o.ReleaseGroup)
+			.IsUnique();
 
 		base.OnModelCreating(builder);
 	}
