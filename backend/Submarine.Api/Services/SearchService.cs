@@ -1,13 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Clients;
 using Submarine.Api.Exceptions;
+using Submarine.Api.Models.Response;
 using Submarine.Api.Repository;
 using Submarine.Core.DecisionEngine;
+using Submarine.Core.DecisionEngine.CustomFormats;
+using Submarine.Core.DecisionEngine.Filter;
 using Submarine.Core.Indexer;
+using Submarine.Core.Languages;
 using Submarine.Core.Library;
 using Submarine.Core.Parser;
 using Submarine.Core.Profile;
 using Submarine.Core.Provider;
+using Submarine.Core.Quality;
 using Submarine.Core.Release;
 using Submarine.Core.Release.Exceptions;
 
@@ -49,8 +54,8 @@ public class SearchService
 		_decisionService = decisionService;
 	}
 
-	public async Task<IReadOnlyList<DownloadDecision>> SearchEpisodeAsync(int seriesId, int season, int episode,
-		CancellationToken cancellationToken = default)
+	public async Task<IReadOnlyList<VersionedDownloadDecision>> SearchEpisodeAsync(int seriesId, int season,
+		int episode, CancellationToken cancellationToken = default)
 	{
 		var series = await GetSeriesAsync(seriesId);
 
@@ -63,7 +68,7 @@ public class SearchService
 		return await SearchForEpisodeAsync(series, target, cancellationToken);
 	}
 
-	public async Task<IReadOnlyList<DownloadDecision>> SearchEpisodeByIdAsync(int episodeId,
+	public async Task<IReadOnlyList<VersionedDownloadDecision>> SearchEpisodeByIdAsync(int episodeId,
 		CancellationToken cancellationToken = default)
 	{
 		var target = await _seriesRepository.FindEpisodeAsync(episodeId);
@@ -74,18 +79,15 @@ public class SearchService
 		return await SearchForEpisodeAsync(await GetSeriesAsync(target.SeriesId), target, cancellationToken);
 	}
 
-	public async Task<IReadOnlyList<DownloadDecision>> SearchSeasonAsync(int seriesId, int season,
+	public async Task<IReadOnlyList<VersionedDownloadDecision>> SearchSeasonAsync(int seriesId, int season,
 		CancellationToken cancellationToken = default)
 	{
 		var series = await GetSeriesAsync(seriesId);
 
-		var context = await BuildSeriesContextAsync(series, season, existingFileQuality: null,
-			existingFileLanguages: null, cancellationToken);
-
 		var scene = ResolveSceneVariant(await TryGetSceneMappingsAsync(series.TvdbId, cancellationToken), series,
 			season, episode: null);
 
-		return await SearchAsync(protocol: null, cancellationToken, async indexer =>
+		var candidates = await FetchCandidatesAsync(protocol: null, cancellationToken, async indexer =>
 		{
 			var releases = new List<ReleaseInfo>(await _torznabHttpClient.TvSearchAsync(indexer, series.TvdbId, season,
 				categories: SeriesCategories(indexer, series.Type), cancellationToken: cancellationToken));
@@ -96,10 +98,24 @@ public class SearchService
 					categories: SeriesCategories(indexer, series.Type), cancellationToken: cancellationToken));
 
 			return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
-		}, context);
+		});
+
+		var filters = await LoadFiltersAsync();
+		var formats = await LoadFormatsAsync();
+		var results = new List<VersionedDownloadDecision>();
+
+		foreach (var version in await LoadMonitoredSeriesVersionsAsync(series.Id))
+		{
+			var context = await BuildSeriesContextAsync(version, series.Id, season, existingFileQuality: null,
+				existingFileLanguages: null, filters, formats);
+
+			AddDecisions(results, candidates, context, version);
+		}
+
+		return results;
 	}
 
-	public async Task<IReadOnlyList<DownloadDecision>> SearchMovieAsync(int movieId,
+	public async Task<IReadOnlyList<VersionedDownloadDecision>> SearchMovieAsync(int movieId,
 		CancellationToken cancellationToken = default)
 	{
 		var movie = await _movieRepository.FirstByConditionAsync(m => m.Id == movieId);
@@ -107,29 +123,37 @@ public class SearchService
 		if (movie == null)
 			throw new NotFoundException();
 
-		var existingFile = movie.MovieFileId != null
-			? await _movieRepository.FindMovieFileAsync(movie.MovieFileId.Value)
-			: null;
-
-		var qualityProfile = await GetQualityProfileAsync(movie.QualityProfileId);
-
-		var context = new MediaContext
-		{
-			QualityProfile = qualityProfile,
-			LanguageProfile = await GetLanguageProfileAsync(movie.LanguageProfileId),
-			Filters = await LoadFiltersAsync(),
-			CustomFormats = await LoadFormatsAsync(),
-			CustomFormatScores = qualityProfile.FormatScores,
-			ExistingFileQuality = existingFile?.Quality,
-			ExistingFileLanguages = existingFile?.Languages
-		};
-
-		return await SearchAsync(protocol: null, cancellationToken, indexer =>
+		var candidates = await FetchCandidatesAsync(protocol: null, cancellationToken, indexer =>
 			_torznabHttpClient.MovieSearchAsync(indexer, movie.TmdbId, movie.ImdbId,
-				categories: Categories(indexer), cancellationToken: cancellationToken), context);
+				categories: Categories(indexer), cancellationToken: cancellationToken));
+
+		var filters = await LoadFiltersAsync();
+		var formats = await LoadFormatsAsync();
+		var results = new List<VersionedDownloadDecision>();
+
+		foreach (var version in (await _movieRepository.FindVersionsAsync(movie.Id)).Where(v => v.Monitored))
+		{
+			var existingFile = await _movieRepository.FindMovieFileForVersionAsync(movie.Id, version.Id);
+			var qualityProfile = await GetQualityProfileAsync(version.QualityProfileId);
+
+			var context = new MediaContext
+			{
+				QualityProfile = qualityProfile,
+				LanguageProfile = await GetLanguageProfileAsync(version.LanguageProfileId),
+				Filters = filters,
+				CustomFormats = formats,
+				CustomFormatScores = qualityProfile.FormatScores,
+				ExistingFileQuality = existingFile?.Quality,
+				ExistingFileLanguages = existingFile?.Languages
+			};
+
+			AddDecisions(results, candidates, context, version);
+		}
+
+		return results;
 	}
 
-	public async Task<IReadOnlyList<DownloadDecision>> SearchTermAsync(string term, Protocol? protocol,
+	public async Task<IReadOnlyList<VersionedDownloadDecision>> SearchTermAsync(string term, Protocol? protocol,
 		CancellationToken cancellationToken = default)
 	{
 		var qualityProfile = await _qualityProfileRepository.Query().OrderBy(p => p.Id)
@@ -138,7 +162,7 @@ public class SearchService
 			.FirstOrDefaultAsync(cancellationToken);
 
 		if (qualityProfile == null || languageProfile == null)
-			return Array.Empty<DownloadDecision>();
+			return Array.Empty<VersionedDownloadDecision>();
 
 		var context = new MediaContext
 		{
@@ -149,20 +173,17 @@ public class SearchService
 			CustomFormatScores = qualityProfile.FormatScores
 		};
 
-		return await SearchAsync(protocol, cancellationToken, indexer =>
-			_torznabHttpClient.SearchAsync(indexer, term, Categories(indexer), cancellationToken), context);
+		var candidates = await FetchCandidatesAsync(protocol, cancellationToken, indexer =>
+			_torznabHttpClient.SearchAsync(indexer, term, Categories(indexer), cancellationToken));
+
+		return _decisionService.DecideAll(candidates, context)
+			.Select(decision => new VersionedDownloadDecision(decision, null, null))
+			.ToList();
 	}
 
-	private async Task<IReadOnlyList<DownloadDecision>> SearchForEpisodeAsync(Series series, Episode episode,
+	private async Task<IReadOnlyList<VersionedDownloadDecision>> SearchForEpisodeAsync(Series series, Episode episode,
 		CancellationToken cancellationToken)
 	{
-		var existingFile = episode.EpisodeFileId != null
-			? await _seriesRepository.FindEpisodeFileAsync(episode.EpisodeFileId.Value)
-			: null;
-
-		var context = await BuildSeriesContextAsync(series, episode.SeasonNumber, existingFile?.Quality,
-			existingFile?.Languages, cancellationToken);
-
 		var scene = ResolveSceneVariant(await TryGetSceneMappingsAsync(series.TvdbId, cancellationToken), series,
 			episode.SeasonNumber, episode.EpisodeNumber);
 
@@ -170,7 +191,7 @@ public class SearchService
 			? await TryResolveAniListAsync(series.TvdbId, episode.SeasonNumber, episode.EpisodeNumber, cancellationToken)
 			: null;
 
-		return await SearchAsync(protocol: null, cancellationToken, async indexer =>
+		var candidates = await FetchCandidatesAsync(protocol: null, cancellationToken, async indexer =>
 		{
 			var releases = new List<ReleaseInfo>(await _torznabHttpClient.TvSearchAsync(indexer, series.TvdbId,
 				episode.SeasonNumber, episode.EpisodeNumber, categories: SeriesCategories(indexer, series.Type),
@@ -191,7 +212,33 @@ public class SearchService
 					cancellationToken));
 
 			return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
-		}, context);
+		});
+
+		var filters = await LoadFiltersAsync();
+		var formats = await LoadFormatsAsync();
+		var results = new List<VersionedDownloadDecision>();
+
+		foreach (var version in await LoadMonitoredSeriesVersionsAsync(series.Id))
+		{
+			var existingFile = await _seriesRepository.FindEpisodeFileForVersionAsync(episode.Id, version.Id);
+
+			var context = await BuildSeriesContextAsync(version, series.Id, episode.SeasonNumber,
+				existingFile?.Quality, existingFile?.Languages, filters, formats);
+
+			AddDecisions(results, candidates, context, version);
+		}
+
+		return results;
+	}
+
+	private async Task<List<MediaVersion>> LoadMonitoredSeriesVersionsAsync(int seriesId)
+		=> (await _seriesRepository.FindVersionsAsync(seriesId)).Where(v => v.Monitored).ToList();
+
+	private void AddDecisions(List<VersionedDownloadDecision> results,
+		IReadOnlyCollection<ReleaseCandidate> candidates, MediaContext context, MediaVersion version)
+	{
+		foreach (var decision in _decisionService.DecideAll(candidates, context))
+			results.Add(new VersionedDownloadDecision(decision, version.Id, version.Name));
 	}
 
 	private async Task<SceneMappingSet?> TryGetSceneMappingsAsync(int tvdbId, CancellationToken cancellationToken)
@@ -257,13 +304,13 @@ public class SearchService
 
 	private sealed record SceneVariant(int Season, int? Episode, string Title);
 
-	private async Task<MediaContext> BuildSeriesContextAsync(Series series, int season,
-		Submarine.Core.Quality.QualityModel? existingFileQuality,
-		IReadOnlyList<Submarine.Core.Languages.Language>? existingFileLanguages, CancellationToken cancellationToken)
+	private async Task<MediaContext> BuildSeriesContextAsync(MediaVersion version, int seriesId, int season,
+		QualityModel? existingFileQuality, IReadOnlyList<Language>? existingFileLanguages,
+		IReadOnlyCollection<ReleaseFilter> filters, IReadOnlyCollection<CustomFormat> formats)
 	{
-		var qualityProfile = await GetQualityProfileAsync(series.QualityProfileId);
+		var qualityProfile = await GetQualityProfileAsync(version.QualityProfileId);
 
-		var seasonFiles = await _seriesRepository.FindEpisodeFilesBySeasonAsync(series.Id, season);
+		var seasonFiles = await _seriesRepository.FindEpisodeFilesBySeasonAsync(seriesId, season, version.Id);
 		var seasonReleaseGroup = seasonFiles
 			.Select(f => f.ReleaseGroup)
 			.Where(group => group != null)
@@ -275,9 +322,9 @@ public class SearchService
 		return new MediaContext
 		{
 			QualityProfile = qualityProfile,
-			LanguageProfile = await GetLanguageProfileAsync(series.LanguageProfileId),
-			Filters = await LoadFiltersAsync(),
-			CustomFormats = await LoadFormatsAsync(),
+			LanguageProfile = await GetLanguageProfileAsync(version.LanguageProfileId),
+			Filters = filters,
+			CustomFormats = formats,
 			CustomFormatScores = qualityProfile.FormatScores,
 			ExistingFileQuality = existingFileQuality,
 			ExistingFileLanguages = existingFileLanguages,
@@ -285,17 +332,14 @@ public class SearchService
 		};
 	}
 
-	private async Task<IReadOnlyList<DownloadDecision>> SearchAsync(Protocol? protocol,
-		CancellationToken cancellationToken, Func<Provider, Task<IReadOnlyList<ReleaseInfo>>> fetch, MediaContext context)
+	private async Task<List<ReleaseCandidate>> FetchCandidatesAsync(Protocol? protocol,
+		CancellationToken cancellationToken, Func<Provider, Task<IReadOnlyList<ReleaseInfo>>> fetch)
 	{
 		var indexers = await LoadIndexersAsync(protocol, cancellationToken);
 
-		var candidates =
-			(await Task.WhenAll(indexers.Select(indexer => FetchCandidatesAsync(indexer, fetch, cancellationToken))))
+		return (await Task.WhenAll(indexers.Select(indexer => FetchCandidatesAsync(indexer, fetch, cancellationToken))))
 			.SelectMany(candidate => candidate)
 			.ToList();
-
-		return _decisionService.DecideAll(candidates, context);
 	}
 
 	private async Task<IReadOnlyList<ReleaseCandidate>> FetchCandidatesAsync(Provider indexer,

@@ -26,7 +26,12 @@ public class EpisodeFile : ICreatable
 	public int SeriesId { get; set; }
 
 	/// <summary>
-	///     Path of this file, relative to the series' path
+	///     Id of the version this episode file belongs to
+	/// </summary>
+	public int MediaVersionId { get; set; }
+
+	/// <summary>
+	///     Path of this file, relative to its version's path
 	/// </summary>
 	public string RelativePath { get; set; }
 
@@ -62,4 +67,9 @@ public class EpisodeFile : ICreatable
 
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }
+
+	/// <summary>
+	///     Episodes this file satisfies
+	/// </summary>
+	public ICollection<Library.Episode> Episodes { get; set; } = new List<Library.Episode>();
 }

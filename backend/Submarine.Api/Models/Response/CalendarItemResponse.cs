@@ -17,11 +17,11 @@ public record CalendarItemResponse(
 	public static CalendarItemResponse FromEpisode(Episode episode, string seriesTitle)
 		=> new("episode", episode.Id, seriesTitle,
 			new CalendarEpisodeInfo(episode.SeasonNumber, episode.EpisodeNumber, episode.Title),
-			episode.AirDate!.Value, episode.Monitored, episode.EpisodeFileId != null);
+			episode.AirDate!.Value, episode.Monitored, episode.Files.Count > 0);
 
 	public static CalendarItemResponse FromMovie(Movie movie)
 		=> new("movie", movie.Id, movie.Title, null, movie.ReleaseDate!.Value, movie.Monitored,
-			movie.MovieFileId != null);
+			movie.Files.Count > 0);
 }
 
 /// <summary>

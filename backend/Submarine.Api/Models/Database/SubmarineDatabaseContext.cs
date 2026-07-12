@@ -57,6 +57,8 @@ public class SubmarineDatabaseContext : DbContext
 
 	public DbSet<Movie> Movies { get; set; }
 
+	public DbSet<MediaVersion> Versions { get; set; }
+
 	public DbSet<EpisodeFile> EpisodeFiles { get; set; }
 
 	public DbSet<MovieFile> MovieFiles { get; set; }
@@ -147,17 +149,46 @@ public class SubmarineDatabaseContext : DbContext
 			.HasIndex(m => m.TmdbId)
 			.IsUnique();
 
-		builder.Entity<Episode>()
-			.HasOne<EpisodeFile>()
-			.WithMany()
-			.HasForeignKey(e => e.EpisodeFileId)
-			.OnDelete(DeleteBehavior.SetNull);
+		builder.Entity<MediaVersion>()
+			.HasIndex(v => v.SeriesId);
+
+		builder.Entity<MediaVersion>()
+			.HasIndex(v => v.MovieId);
+
+		builder.Entity<Series>()
+			.HasMany(s => s.Versions)
+			.WithOne()
+			.HasForeignKey(v => v.SeriesId)
+			.OnDelete(DeleteBehavior.Cascade);
 
 		builder.Entity<Movie>()
-			.HasOne<MovieFile>()
+			.HasMany(m => m.Versions)
+			.WithOne()
+			.HasForeignKey(v => v.MovieId)
+			.OnDelete(DeleteBehavior.Cascade);
+
+		builder.Entity<Episode>()
+			.HasMany(e => e.Files)
+			.WithMany(f => f.Episodes)
+			.UsingEntity("EpisodeFileEpisodes");
+
+		builder.Entity<EpisodeFile>()
+			.HasOne<MediaVersion>()
 			.WithMany()
-			.HasForeignKey(m => m.MovieFileId)
-			.OnDelete(DeleteBehavior.SetNull);
+			.HasForeignKey(f => f.MediaVersionId)
+			.OnDelete(DeleteBehavior.Cascade);
+
+		builder.Entity<Movie>()
+			.HasMany(m => m.Files)
+			.WithOne()
+			.HasForeignKey(f => f.MovieId)
+			.OnDelete(DeleteBehavior.Cascade);
+
+		builder.Entity<MovieFile>()
+			.HasOne<MediaVersion>()
+			.WithMany()
+			.HasForeignKey(f => f.MediaVersionId)
+			.OnDelete(DeleteBehavior.Cascade);
 
 		builder.Entity<EpisodeFile>()
 			.Property(f => f.Quality)
@@ -190,6 +221,12 @@ public class SubmarineDatabaseContext : DbContext
 			.HasOne<Movie>()
 			.WithMany()
 			.HasForeignKey(d => d.MovieId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		builder.Entity<TrackedDownload>()
+			.HasOne<MediaVersion>()
+			.WithMany()
+			.HasForeignKey(d => d.MediaVersionId)
 			.OnDelete(DeleteBehavior.SetNull);
 
 		builder.Entity<HistoryEvent>()

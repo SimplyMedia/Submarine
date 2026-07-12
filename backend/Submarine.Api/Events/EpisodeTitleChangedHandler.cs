@@ -29,11 +29,13 @@ public sealed class EpisodeTitleChangedHandler : IEventHandler<EpisodeTitleChang
 			return;
 
 		var episode = await _context.Episodes.AsNoTracking()
+			.Include(e => e.Files)
 			.FirstOrDefaultAsync(e => e.Id == @event.EpisodeId, cancellationToken);
 
-		if (episode?.EpisodeFileId == null)
+		if (episode == null)
 			return;
 
-		await _renameService.RenameEpisodeFileAsync(episode.EpisodeFileId.Value, cancellationToken);
+		foreach (var file in episode.Files)
+			await _renameService.RenameEpisodeFileAsync(file.Id, cancellationToken);
 	}
 }

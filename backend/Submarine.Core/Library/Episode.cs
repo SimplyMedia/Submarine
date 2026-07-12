@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -67,7 +68,7 @@ public class Episode
 	public bool Monitored { get; set; }
 
 	/// <summary>
-	///     Id of the Episode File which satisfies this episode, if any
+	///     Files satisfying this episode, one per version at most. A single file may span multiple episodes.
 	/// </summary>
-	public int? EpisodeFileId { get; set; }
+	public ICollection<MediaFile.EpisodeFile> Files { get; set; } = new List<MediaFile.EpisodeFile>();
 }

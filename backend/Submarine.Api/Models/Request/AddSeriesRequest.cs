@@ -21,4 +21,9 @@ public record AddSeriesRequest
 	public bool SeasonFolder { get; set; } = true;
 
 	public List<string> Tags { get; set; } = new();
+
+	/// <summary>
+	///     Additional versions to create alongside the default one
+	/// </summary>
+	public List<AddMediaVersionRequest> Versions { get; set; } = new();
 }

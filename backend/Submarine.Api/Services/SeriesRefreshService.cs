@@ -49,10 +49,9 @@ public class SeriesRefreshService
 					SeriesId = series.Id, SeasonNumber = seasonResource.SeasonNumber, Monitored = series.Monitored
 				});
 
-		var episodes = await _context.Episodes.Where(e => e.SeriesId == series.Id).ToListAsync(cancellationToken);
-		var files = await _context.EpisodeFiles.AsNoTracking()
-			.Where(f => f.SeriesId == series.Id)
-			.ToDictionaryAsync(f => f.Id, cancellationToken);
+		var episodes = await _context.Episodes.Where(e => e.SeriesId == series.Id)
+			.Include(e => e.Files)
+			.ToListAsync(cancellationToken);
 
 		foreach (var episodeResource in resource.Episodes)
 		{
@@ -91,7 +90,7 @@ public class SeriesRefreshService
 			var oldTitle = existing.Title;
 			var newTitle = episodeResource.Title;
 
-			if (ShouldPublishTitleChange(existing, oldTitle, newTitle, files))
+			if (ShouldPublishTitleChange(existing, oldTitle, newTitle))
 				await _eventPublisher.PublishAsync(
 					new EpisodeTitleChangedEvent(existing.Id, series.Id, oldTitle, newTitle!), cancellationToken);
 
@@ -127,17 +126,15 @@ public class SeriesRefreshService
 		await _context.SaveChangesAsync(cancellationToken);
 	}
 
-	private static bool ShouldPublishTitleChange(Episode episode, string? oldTitle, string? newTitle,
-		IReadOnlyDictionary<int, Core.MediaFile.EpisodeFile> files)
+	private static bool ShouldPublishTitleChange(Episode episode, string? oldTitle, string? newTitle)
 	{
-		if (episode.EpisodeFileId == null || string.IsNullOrEmpty(newTitle))
+		if (episode.Files.Count == 0 || string.IsNullOrEmpty(newTitle))
 			return false;
 
 		if (string.Equals(oldTitle, newTitle, StringComparison.Ordinal))
 			return false;
 
-		var namedFromPlaceholder = files.TryGetValue(episode.EpisodeFileId.Value, out var file)
-		                           && file.NamedFromPlaceholder;
+		var namedFromPlaceholder = episode.Files.Any(f => f.NamedFromPlaceholder);
 
 		return !string.IsNullOrEmpty(oldTitle) || namedFromPlaceholder;
 	}

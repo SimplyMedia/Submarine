@@ -87,6 +87,11 @@ public class TrackedDownload : ICreatable, IUpdatable
 	public int? MovieId { get; set; }
 
 	/// <summary>
+	///     Id of the version this download targets, if any
+	/// </summary>
+	public int? MediaVersionId { get; set; }
+
+	/// <summary>
 	///     Ids of the Episodes this download covers, if any
 	/// </summary>
 	public List<int> EpisodeIds { get; set; } = new();

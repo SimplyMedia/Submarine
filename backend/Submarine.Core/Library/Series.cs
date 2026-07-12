@@ -69,11 +69,6 @@ public class Series : ICreatable, IUpdatable
 	public SeriesType Type { get; set; }
 
 	/// <summary>
-	///     Path on disk this series is stored at
-	/// </summary>
-	public string Path { get; set; }
-
-	/// <summary>
 	///     Whether this series is monitored for new Episodes
 	/// </summary>
 	public bool Monitored { get; set; }
@@ -82,16 +77,6 @@ public class Series : ICreatable, IUpdatable
 	///     Whether Episodes of this series are stored in Season subfolders
 	/// </summary>
 	public bool SeasonFolder { get; set; } = true;
-
-	/// <summary>
-	///     Id of the Quality Profile used for this series
-	/// </summary>
-	public int QualityProfileId { get; set; }
-
-	/// <summary>
-	///     Id of the Language Profile used for this series
-	/// </summary>
-	public int LanguageProfileId { get; set; }
 
 	/// <summary>
 	///     Tags of this series
@@ -113,4 +98,9 @@ public class Series : ICreatable, IUpdatable
 	///     Episodes of this series
 	/// </summary>
 	public ICollection<Episode> Episodes { get; set; } = new List<Episode>();
+
+	/// <summary>
+	///     Versions of this series, each stored in its own library folder
+	/// </summary>
+	public ICollection<MediaVersion> Versions { get; set; } = new List<MediaVersion>();
 }

@@ -85,7 +85,7 @@ public class SeriesController : ControllerBase
 	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> DeleteAsync([FromRoute] int id, [FromQuery] bool deleteFiles = false)
 	{
-		var deleted = await _service.DeleteAsync(id);
+		var deleted = await _service.DeleteAsync(id, deleteFiles);
 
 		return Ok(deleted);
 	}

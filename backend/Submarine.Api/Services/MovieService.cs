@@ -40,14 +40,14 @@ public class MovieService
 		return query.OrderBy(m => m.SortTitle ?? m.Title).ToPagedResultAsync(page, pageSize);
 	}
 
-	public async Task<Movie> GetAsync(int id)
+	public async Task<MovieResponse> GetAsync(int id)
 	{
-		var movie = await _repository.FirstByConditionAsync(m => m.Id == id);
+		var movie = await _repository.FindByIdWithVersionsAsync(id);
 
 		if (movie == null)
 			throw new NotFoundException();
 
-		return movie;
+		return MovieResponse.FromMovie(movie);
 	}
 
 	public Task<IReadOnlyList<MovieResource>> LookupAsync(string term)
@@ -65,7 +65,7 @@ public class MovieService
 		if (resource == null)
 			throw new BadRequestException("movie not found");
 
-		var path = await ResolvePathAsync(request.Path, request.RootFolderId, resource.Title, resource.Year);
+		var versions = await BuildVersionsAsync(request, resource.Title, resource.Year);
 
 		var movie = new Movie
 		{
@@ -81,16 +81,44 @@ public class MovieService
 				? null
 				: new DateTimeOffset(resource.ReleaseDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
 			IsAnime = request.IsAnime ?? false,
-			Path = path,
 			Monitored = request.Monitored,
-			QualityProfileId = request.QualityProfileId,
-			LanguageProfileId = request.LanguageProfileId,
-			Tags = request.Tags
+			Tags = request.Tags,
+			Versions = versions
 		};
 
 		await _repository.CreateAsync(movie);
 
 		return movie;
+	}
+
+	private async Task<List<MediaVersion>> BuildVersionsAsync(AddMovieRequest request, string title, int? year)
+	{
+		var versions = new List<MediaVersion>
+		{
+			new()
+			{
+				Name = "Default",
+				QualityProfileId = request.QualityProfileId,
+				LanguageProfileId = request.LanguageProfileId,
+				Path = await ResolvePathAsync(request.Path, request.RootFolderId, title, year),
+				Monitored = request.Monitored
+			}
+		};
+
+		foreach (var version in request.Versions)
+			versions.Add(new MediaVersion
+			{
+				Name = version.Name,
+				QualityProfileId = version.QualityProfileId,
+				LanguageProfileId = version.LanguageProfileId,
+				Path = await ResolvePathAsync(version.Path, version.RootFolderId, title, year),
+				Monitored = version.Monitored
+			});
+
+		if (versions.Select(v => v.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() != versions.Count)
+			throw new BadRequestException("versions must resolve to distinct paths");
+
+		return versions;
 	}
 
 	public async Task<Movie> UpdateAsync(int id, UpdateMovieRequest request)
@@ -102,12 +130,6 @@ public class MovieService
 
 		if (request.Monitored != null)
 			movie.Monitored = request.Monitored.Value;
-		if (request.Path != null)
-			movie.Path = request.Path;
-		if (request.QualityProfileId != null)
-			movie.QualityProfileId = request.QualityProfileId.Value;
-		if (request.LanguageProfileId != null)
-			movie.LanguageProfileId = request.LanguageProfileId.Value;
 		if (request.IsAnime != null)
 			movie.IsAnime = request.IsAnime.Value;
 		if (request.Tags != null)
@@ -118,12 +140,21 @@ public class MovieService
 		return movie;
 	}
 
-	public async Task<Movie> DeleteAsync(int id)
+	public async Task<Movie> DeleteAsync(int id, bool deleteFiles)
 	{
 		var movie = await _repository.FirstByConditionAsync(m => m.Id == id);
 
 		if (movie == null)
 			throw new NotFoundException();
+
+		if (deleteFiles)
+		{
+			var versions = (await _repository.FindVersionsAsync(id)).ToDictionary(v => v.Id, v => v.Path);
+
+			foreach (var file in await _repository.FindMovieFilesAsync(id))
+				if (versions.TryGetValue(file.MediaVersionId, out var versionPath))
+					DeleteFromDisk(Path.Combine(versionPath, file.RelativePath));
+		}
 
 		await _repository.DeleteAsync(movie);
 
@@ -152,4 +183,10 @@ public class MovieService
 
 	private static string SanitizeFolderName(string name)
 		=> string.Concat(name.Split(Path.GetInvalidFileNameChars())).Trim();
+
+	private static void DeleteFromDisk(string path)
+	{
+		if (File.Exists(path))
+			File.Delete(path);
+	}
 }

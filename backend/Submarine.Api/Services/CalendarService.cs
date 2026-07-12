@@ -32,7 +32,8 @@ public class CalendarService
 			.ToDictionaryAsync(s => s.Id, s => s.Title);
 
 		// SQLite can't translate DateTimeOffset comparison operators, so the range filter runs in memory
-		var movies = (await _movieRepository.Query().Where(m => m.ReleaseDate != null).ToListAsync())
+		var movies = (await _movieRepository.Query().Where(m => m.ReleaseDate != null)
+				.Include(m => m.Files).ToListAsync())
 			.Where(m => m.ReleaseDate >= start && m.ReleaseDate <= end)
 			.ToList();
 

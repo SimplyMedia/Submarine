@@ -55,6 +55,8 @@ public class GrabService
 			Protocol = request.Protocol
 		};
 
+		var version = await ResolveVersionAsync(request, cancellationToken);
+
 		var downloadId = await client.AddDownloadAsync(releaseInfo, cancellationToken);
 
 		var languages = parsed.Languages.ToList();
@@ -73,11 +75,23 @@ public class GrabService
 			Indexer = request.Indexer,
 			SeriesId = request.SeriesId,
 			MovieId = request.MovieId,
+			MediaVersionId = version?.Id,
 			EpisodeIds = request.EpisodeIds?.ToList() ?? new List<int>()
 		};
 
 		await _context.TrackedDownloads.AddAsync(tracked, cancellationToken);
 		await _context.SaveChangesAsync(cancellationToken);
+
+		var data = new Dictionary<string, string>
+		{
+			["downloadClient"] = config.Name,
+			["downloadId"] = downloadId,
+			["protocol"] = request.Protocol.ToString(),
+			["indexer"] = request.Indexer ?? ""
+		};
+
+		if (version != null)
+			data["version"] = version.Name;
 
 		await _historyService.RecordAsync(new HistoryEvent
 		{
@@ -88,26 +102,43 @@ public class GrabService
 			SourceTitle = request.Title,
 			Quality = parsed.Quality,
 			Languages = languages,
-			Data = new Dictionary<string, string>
-			{
-				["downloadClient"] = config.Name,
-				["downloadId"] = downloadId,
-				["protocol"] = request.Protocol.ToString(),
-				["indexer"] = request.Indexer ?? ""
-			}
+			Data = data
 		}, cancellationToken);
 
-		var mediaPath = request.SeriesId != null
-			? await _context.Series.AsNoTracking().Where(s => s.Id == request.SeriesId).Select(s => s.Path)
-				.FirstOrDefaultAsync(cancellationToken)
-			: await _context.Movies.AsNoTracking().Where(m => m.Id == request.MovieId).Select(m => m.Path)
-				.FirstOrDefaultAsync(cancellationToken);
-
-		if (mediaPath != null)
+		if (version != null)
 			await _eventPublisher.PublishAsync(
-				new MediaGrabbedEvent(request.SeriesId, request.MovieId, mediaPath, request.Title), cancellationToken);
+				new MediaGrabbedEvent(request.SeriesId, request.MovieId, version.Path, request.Title),
+				cancellationToken);
 
 		return tracked;
+	}
+
+	private async Task<Core.Library.MediaVersion?> ResolveVersionAsync(GrabReleaseRequest request,
+		CancellationToken cancellationToken)
+	{
+		if (request.SeriesId == null && request.MovieId == null)
+			return null;
+
+		Core.Library.MediaVersion? version;
+
+		if (request.MediaVersionId != null)
+			version = await _context.Versions.AsNoTracking()
+				.FirstOrDefaultAsync(v => v.Id == request.MediaVersionId, cancellationToken);
+		else if (request.SeriesId != null)
+			version = await _context.Versions.AsNoTracking()
+				.Where(v => v.SeriesId == request.SeriesId)
+				.OrderBy(v => v.Id)
+				.FirstOrDefaultAsync(cancellationToken);
+		else
+			version = await _context.Versions.AsNoTracking()
+				.Where(v => v.MovieId == request.MovieId)
+				.OrderBy(v => v.Id)
+				.FirstOrDefaultAsync(cancellationToken);
+
+		if (version == null)
+			throw new BadRequestException("no version found for the requested media");
+
+		return version;
 	}
 
 	private async Task<(DownloadClientConfig Config, IDownloadClient Client)> ResolveClientAsync(Protocol protocol,

@@ -69,7 +69,7 @@ public class SeriesService
 		if (resource == null)
 			throw new BadRequestException("series not found");
 
-		var path = await ResolvePathAsync(request.Path, request.RootFolderId, resource.Title);
+		var versions = await BuildVersionsAsync(request, resource.Title);
 
 		var series = new Series
 		{
@@ -83,12 +83,10 @@ public class SeriesService
 			Year = resource.Year,
 			Status = MapStatus(resource.Status),
 			Type = request.Type ?? SeriesType.STANDARD,
-			Path = path,
 			Monitored = request.Monitored,
 			SeasonFolder = request.SeasonFolder,
-			QualityProfileId = request.QualityProfileId,
-			LanguageProfileId = request.LanguageProfileId,
 			Tags = request.Tags,
+			Versions = versions,
 			Seasons = resource.Seasons
 				.Select(s => new Season { SeasonNumber = s.SeasonNumber, Monitored = request.Monitored })
 				.ToList(),
@@ -100,6 +98,36 @@ public class SeriesService
 		return series;
 	}
 
+	private async Task<List<MediaVersion>> BuildVersionsAsync(AddSeriesRequest request, string title)
+	{
+		var versions = new List<MediaVersion>
+		{
+			new()
+			{
+				Name = "Default",
+				QualityProfileId = request.QualityProfileId,
+				LanguageProfileId = request.LanguageProfileId,
+				Path = await ResolvePathAsync(request.Path, request.RootFolderId, title),
+				Monitored = request.Monitored
+			}
+		};
+
+		foreach (var version in request.Versions)
+			versions.Add(new MediaVersion
+			{
+				Name = version.Name,
+				QualityProfileId = version.QualityProfileId,
+				LanguageProfileId = version.LanguageProfileId,
+				Path = await ResolvePathAsync(version.Path, version.RootFolderId, title),
+				Monitored = version.Monitored
+			});
+
+		if (versions.Select(v => v.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() != versions.Count)
+			throw new BadRequestException("versions must resolve to distinct paths");
+
+		return versions;
+	}
+
 	public async Task<Series> UpdateAsync(int id, UpdateSeriesRequest request)
 	{
 		var series = await _repository.FirstByConditionAsync(s => s.Id == id);
@@ -109,12 +137,6 @@ public class SeriesService
 
 		if (request.Monitored != null)
 			series.Monitored = request.Monitored.Value;
-		if (request.Path != null)
-			series.Path = request.Path;
-		if (request.QualityProfileId != null)
-			series.QualityProfileId = request.QualityProfileId.Value;
-		if (request.LanguageProfileId != null)
-			series.LanguageProfileId = request.LanguageProfileId.Value;
 		if (request.Type != null)
 			series.Type = request.Type.Value;
 		if (request.Tags != null)
@@ -125,12 +147,21 @@ public class SeriesService
 		return series;
 	}
 
-	public async Task<Series> DeleteAsync(int id)
+	public async Task<Series> DeleteAsync(int id, bool deleteFiles)
 	{
 		var series = await _repository.FirstByConditionAsync(s => s.Id == id);
 
 		if (series == null)
 			throw new NotFoundException();
+
+		if (deleteFiles)
+		{
+			var versions = (await _repository.FindVersionsAsync(id)).ToDictionary(v => v.Id, v => v.Path);
+
+			foreach (var file in await _repository.FindEpisodeFilesAsync(id))
+				if (versions.TryGetValue(file.MediaVersionId, out var versionPath))
+					DeleteFromDisk(Path.Combine(versionPath, file.RelativePath));
+		}
 
 		await _repository.DeleteAsync(series);
 
@@ -205,4 +236,10 @@ public class SeriesService
 
 	private static string SanitizeFolderName(string name)
 		=> string.Concat(name.Split(Path.GetInvalidFileNameChars())).Trim();
+
+	private static void DeleteFromDisk(string path)
+	{
+		if (File.Exists(path))
+			File.Delete(path);
+	}
 }

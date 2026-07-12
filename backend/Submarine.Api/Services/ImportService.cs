@@ -67,6 +67,14 @@ public class ImportService
 		var namingConfig = await _settingsService.GetNamingConfigAsync();
 		var managementConfig = await _settingsService.GetMediaManagementConfigAsync();
 
+		var version = await ResolveVersionAsync(tracked, cancellationToken);
+
+		if (version == null)
+		{
+			_logger.LogWarning("Tracked download {Id} has no version to import into", trackedDownloadId);
+			return;
+		}
+
 		if (tracked.SeriesId is { } seriesId)
 		{
 			var series = await _context.Series.FirstOrDefaultAsync(s => s.Id == seriesId, cancellationToken);
@@ -74,8 +82,8 @@ public class ImportService
 
 			if (series != null)
 				foreach (var file in files)
-					await ImportEpisodeFileAsync(tracked, series, episodes, file, namingConfig, managementConfig,
-						files.Count == 1, cancellationToken);
+					await ImportEpisodeFileAsync(tracked, series, version, episodes, file, namingConfig,
+						managementConfig, files.Count == 1, cancellationToken);
 		}
 		else if (tracked.MovieId is { } movieId)
 		{
@@ -83,26 +91,42 @@ public class ImportService
 
 			if (movie != null)
 				foreach (var file in files)
-					await ImportMovieFileAsync(tracked, movie, file, namingConfig, managementConfig, cancellationToken);
+					await ImportMovieFileAsync(tracked, movie, version, file, namingConfig, managementConfig,
+						cancellationToken);
 		}
 
 		tracked.Imported = true;
 		await _context.SaveChangesAsync(cancellationToken);
 
-		var importedPath = tracked.SeriesId != null
-			? await _context.Series.AsNoTracking().Where(s => s.Id == tracked.SeriesId).Select(s => s.Path)
-				.FirstOrDefaultAsync(cancellationToken)
-			: await _context.Movies.AsNoTracking().Where(m => m.Id == tracked.MovieId).Select(m => m.Path)
+		await _eventPublisher.PublishAsync(
+			new MediaImportedEvent(tracked.SeriesId, tracked.MovieId, version.Path, tracked.Title),
+			cancellationToken);
+	}
+
+	private async Task<MediaVersion?> ResolveVersionAsync(Core.Download.TrackedDownload tracked,
+		CancellationToken cancellationToken)
+	{
+		if (tracked.MediaVersionId != null)
+			return await _context.Versions.AsNoTracking()
+				.FirstOrDefaultAsync(v => v.Id == tracked.MediaVersionId, cancellationToken);
+
+		if (tracked.SeriesId != null)
+			return await _context.Versions.AsNoTracking()
+				.Where(v => v.SeriesId == tracked.SeriesId)
+				.OrderBy(v => v.Id)
 				.FirstOrDefaultAsync(cancellationToken);
 
-		if (importedPath != null)
-			await _eventPublisher.PublishAsync(
-				new MediaImportedEvent(tracked.SeriesId, tracked.MovieId, importedPath, tracked.Title),
-				cancellationToken);
+		if (tracked.MovieId != null)
+			return await _context.Versions.AsNoTracking()
+				.Where(v => v.MovieId == tracked.MovieId)
+				.OrderBy(v => v.Id)
+				.FirstOrDefaultAsync(cancellationToken);
+
+		return null;
 	}
 
 	private async Task ImportEpisodeFileAsync(Core.Download.TrackedDownload tracked, Series series,
-		List<Episode> seriesEpisodes, string sourceFile, Core.Config.NamingConfig namingConfig,
+		MediaVersion version, List<Episode> seriesEpisodes, string sourceFile, Core.Config.NamingConfig namingConfig,
 		Core.Config.MediaManagementConfig managementConfig, bool singleFile, CancellationToken cancellationToken)
 	{
 		var parsed = TryParse(sourceFile);
@@ -140,30 +164,27 @@ public class ImportService
 			? _naming.RenderSeasonFolder(series, ordered[0].SeasonNumber, namingConfig)
 			: "";
 
-		var destination = Path.Combine(series.Path, seasonFolder, fileName + extension);
+		var destination = Path.Combine(version.Path, seasonFolder, fileName + extension);
 
-		await ReplaceExistingEpisodeFilesAsync(series, ordered, cancellationToken);
+		await ReplaceExistingEpisodeFilesAsync(version, ordered, cancellationToken);
 
 		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks);
 
 		var episodeFile = new EpisodeFile
 		{
 			SeriesId = series.Id,
-			RelativePath = Path.GetRelativePath(series.Path, destination),
+			MediaVersionId = version.Id,
+			RelativePath = Path.GetRelativePath(version.Path, destination),
 			Size = new FileInfo(destination).Length,
 			DateAdded = DateTimeOffset.UtcNow,
 			Quality = quality,
 			Languages = languages.ToList(),
 			ReleaseGroup = releaseGroup,
-			NamedFromPlaceholder = namedFromPlaceholder
+			NamedFromPlaceholder = namedFromPlaceholder,
+			Episodes = ordered
 		};
 
 		_context.EpisodeFiles.Add(episodeFile);
-		await _context.SaveChangesAsync(cancellationToken);
-
-		foreach (var episode in ordered)
-			episode.EpisodeFileId = episodeFile.Id;
-
 		await _context.SaveChangesAsync(cancellationToken);
 
 		await _historyService.RecordAsync(new HistoryEvent
@@ -176,13 +197,13 @@ public class ImportService
 			Languages = languages.ToList(),
 			Data = new Dictionary<string, string>
 			{
-				["path"] = episodeFile.RelativePath, ["downloadId"] = tracked.DownloadId
+				["path"] = episodeFile.RelativePath, ["downloadId"] = tracked.DownloadId, ["version"] = version.Name
 			}
 		}, cancellationToken);
 	}
 
-	private async Task ImportMovieFileAsync(Core.Download.TrackedDownload tracked, Movie movie, string sourceFile,
-		Core.Config.NamingConfig namingConfig, Core.Config.MediaManagementConfig managementConfig,
+	private async Task ImportMovieFileAsync(Core.Download.TrackedDownload tracked, Movie movie, MediaVersion version,
+		string sourceFile, Core.Config.NamingConfig namingConfig, Core.Config.MediaManagementConfig managementConfig,
 		CancellationToken cancellationToken)
 	{
 		var parsed = TryParse(sourceFile);
@@ -197,17 +218,17 @@ public class ImportService
 			? _naming.RenderMovieFile(movie, quality, languages, releaseGroup, edition, namingConfig).Name
 			: Path.GetFileNameWithoutExtension(sourceFile);
 
-		var destination = Path.Combine(movie.Path, fileName + extension);
+		var destination = Path.Combine(version.Path, fileName + extension);
 
-		if (movie.MovieFileId is { } oldId)
-			await ReplaceExistingMovieFileAsync(movie, oldId, cancellationToken);
+		await ReplaceExistingMovieFileAsync(movie, version, cancellationToken);
 
 		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks);
 
 		var movieFile = new MovieFile
 		{
 			MovieId = movie.Id,
-			RelativePath = Path.GetRelativePath(movie.Path, destination),
+			MediaVersionId = version.Id,
+			RelativePath = Path.GetRelativePath(version.Path, destination),
 			Size = new FileInfo(destination).Length,
 			DateAdded = DateTimeOffset.UtcNow,
 			Quality = quality,
@@ -219,9 +240,6 @@ public class ImportService
 		_context.MovieFiles.Add(movieFile);
 		await _context.SaveChangesAsync(cancellationToken);
 
-		movie.MovieFileId = movieFile.Id;
-		await _context.SaveChangesAsync(cancellationToken);
-
 		await _historyService.RecordAsync(new HistoryEvent
 		{
 			Type = HistoryEventType.IMPORTED,
@@ -231,47 +249,43 @@ public class ImportService
 			Languages = languages.ToList(),
 			Data = new Dictionary<string, string>
 			{
-				["path"] = movieFile.RelativePath, ["downloadId"] = tracked.DownloadId
+				["path"] = movieFile.RelativePath, ["downloadId"] = tracked.DownloadId, ["version"] = version.Name
 			}
 		}, cancellationToken);
 	}
 
-	private async Task ReplaceExistingEpisodeFilesAsync(Series series, IReadOnlyList<Episode> episodes,
+	private async Task ReplaceExistingEpisodeFilesAsync(MediaVersion version, IReadOnlyList<Episode> episodes,
 		CancellationToken cancellationToken)
 	{
-		var fileIds = episodes.Where(e => e.EpisodeFileId != null)
-			.Select(e => e.EpisodeFileId!.Value)
-			.Distinct()
-			.ToList();
+		var episodeIds = episodes.Select(e => e.Id).ToList();
 
-		if (fileIds.Count == 0)
+		var oldFiles = await _context.EpisodeFiles
+			.Where(f => f.MediaVersionId == version.Id && f.Episodes.Any(e => episodeIds.Contains(e.Id)))
+			.ToListAsync(cancellationToken);
+
+		if (oldFiles.Count == 0)
 			return;
-
-		foreach (var episode in episodes)
-			episode.EpisodeFileId = null;
-
-		var oldFiles = await _context.EpisodeFiles.Where(f => fileIds.Contains(f.Id)).ToListAsync(cancellationToken);
 
 		foreach (var oldFile in oldFiles)
 		{
-			DeleteFromDisk(Path.Combine(series.Path, oldFile.RelativePath));
+			DeleteFromDisk(Path.Combine(version.Path, oldFile.RelativePath));
 			_context.EpisodeFiles.Remove(oldFile);
 		}
 
 		await _context.SaveChangesAsync(cancellationToken);
 	}
 
-	private async Task ReplaceExistingMovieFileAsync(Movie movie, int oldFileId, CancellationToken cancellationToken)
+	private async Task ReplaceExistingMovieFileAsync(Movie movie, MediaVersion version,
+		CancellationToken cancellationToken)
 	{
-		movie.MovieFileId = null;
+		var oldFile = await _context.MovieFiles
+			.FirstOrDefaultAsync(f => f.MovieId == movie.Id && f.MediaVersionId == version.Id, cancellationToken);
 
-		var oldFile = await _context.MovieFiles.FirstOrDefaultAsync(f => f.Id == oldFileId, cancellationToken);
+		if (oldFile == null)
+			return;
 
-		if (oldFile != null)
-		{
-			DeleteFromDisk(Path.Combine(movie.Path, oldFile.RelativePath));
-			_context.MovieFiles.Remove(oldFile);
-		}
+		DeleteFromDisk(Path.Combine(version.Path, oldFile.RelativePath));
+		_context.MovieFiles.Remove(oldFile);
 
 		await _context.SaveChangesAsync(cancellationToken);
 	}

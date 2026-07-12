@@ -26,7 +26,12 @@ public class MovieFile : ICreatable
 	public int MovieId { get; set; }
 
 	/// <summary>
-	///     Path of this file, relative to the movie's path
+	///     Id of the version this file belongs to
+	/// </summary>
+	public int MediaVersionId { get; set; }
+
+	/// <summary>
+	///     Path of this file, relative to its version's path
 	/// </summary>
 	public string RelativePath { get; set; }
 

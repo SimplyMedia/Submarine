@@ -66,7 +66,7 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 	{
 		Context.Movies.Add(new Movie
 		{
-			TmdbId = 1, Title = "Movie", Path = "/movies/movie", Tags = new List<string> { "anime" }
+			TmdbId = 1, Title = "Movie", Tags = new List<string> { "anime" }
 		});
 		Context.Connections.AddRange(
 			NewConnection("matching-tag", enable: true, onImport: true, tags: new List<string> { "anime" }),

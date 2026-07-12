@@ -99,6 +99,7 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<SeriesService>();
 builder.Services.AddScoped<MovieService>();
+builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<CalendarService>();
 builder.Services.AddScoped<IndexerService>();
 builder.Services.AddScoped<DownloadClientService>();

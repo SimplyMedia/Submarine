@@ -17,6 +17,21 @@ namespace Submarine.Api.Migrations.Sqlite
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("EpisodeFileEpisodes", b =>
+                {
+                    b.Property<int>("EpisodesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FilesId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("EpisodesId", "FilesId");
+
+                    b.HasIndex("FilesId");
+
+                    b.ToTable("EpisodeFileEpisodes");
+                });
+
             modelBuilder.Entity("Submarine.Core.Config.MediaManagementConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -202,6 +217,9 @@ namespace Submarine.Api.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("MediaVersionId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("MovieId")
                         .HasColumnType("INTEGER");
 
@@ -236,6 +254,8 @@ namespace Submarine.Api.Migrations.Sqlite
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MediaVersionId");
 
                     b.HasIndex("MovieId");
 
@@ -352,9 +372,6 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.Property<DateTimeOffset?>("AirDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("EpisodeFileId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("EpisodeNumber")
                         .HasColumnType("INTEGER");
 
@@ -381,11 +398,53 @@ namespace Submarine.Api.Migrations.Sqlite
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EpisodeFileId");
-
                     b.HasIndex("SeriesId");
 
                     b.ToTable("Episodes");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Library.MediaVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LanguageProfileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Monitored")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MovieId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QualityProfileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MovieId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("Versions");
                 });
 
             modelBuilder.Entity("Submarine.Core.Library.Movie", b =>
@@ -403,24 +462,11 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.Property<bool>("IsAnime")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("LanguageProfileId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("Monitored")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("MovieFileId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Overview")
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("Path")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("QualityProfileId")
-                        .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset?>("ReleaseDate")
                         .HasColumnType("TEXT");
@@ -452,8 +498,6 @@ namespace Submarine.Api.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("MovieFileId");
 
                     b.HasIndex("TmdbId")
                         .IsUnique();
@@ -516,9 +560,6 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LanguageProfileId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("Monitored")
                         .HasColumnType("INTEGER");
 
@@ -527,13 +568,6 @@ namespace Submarine.Api.Migrations.Sqlite
 
                     b.Property<string>("Overview")
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("Path")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("QualityProfileId")
-                        .HasColumnType("INTEGER");
 
                     b.Property<int?>("Runtime")
                         .HasColumnType("INTEGER");
@@ -594,6 +628,9 @@ namespace Submarine.Api.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("MediaVersionId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("NamedFromPlaceholder")
                         .HasColumnType("INTEGER");
 
@@ -615,6 +652,8 @@ namespace Submarine.Api.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MediaVersionId");
 
                     b.ToTable("EpisodeFiles");
                 });
@@ -638,6 +677,9 @@ namespace Submarine.Api.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("MediaVersionId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("MovieId")
                         .HasColumnType("INTEGER");
 
@@ -656,6 +698,10 @@ namespace Submarine.Api.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MediaVersionId");
+
+                    b.HasIndex("MovieId");
 
                     b.ToTable("MovieFiles");
                 });
@@ -937,8 +983,28 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.HasDiscriminator().HasValue("UsenetIndexer");
                 });
 
+            modelBuilder.Entity("EpisodeFileEpisodes", b =>
+                {
+                    b.HasOne("Submarine.Core.Library.Episode", null)
+                        .WithMany()
+                        .HasForeignKey("EpisodesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Submarine.Core.MediaFile.EpisodeFile", null)
+                        .WithMany()
+                        .HasForeignKey("FilesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Submarine.Core.Download.TrackedDownload", b =>
                 {
+                    b.HasOne("Submarine.Core.Library.MediaVersion", null)
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Submarine.Core.Library.Movie", null)
                         .WithMany()
                         .HasForeignKey("MovieId")
@@ -970,11 +1036,6 @@ namespace Submarine.Api.Migrations.Sqlite
 
             modelBuilder.Entity("Submarine.Core.Library.Episode", b =>
                 {
-                    b.HasOne("Submarine.Core.MediaFile.EpisodeFile", null)
-                        .WithMany()
-                        .HasForeignKey("EpisodeFileId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("Submarine.Core.Library.Series", null)
                         .WithMany("Episodes")
                         .HasForeignKey("SeriesId")
@@ -982,12 +1043,17 @@ namespace Submarine.Api.Migrations.Sqlite
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Submarine.Core.Library.Movie", b =>
+            modelBuilder.Entity("Submarine.Core.Library.MediaVersion", b =>
                 {
-                    b.HasOne("Submarine.Core.MediaFile.MovieFile", null)
-                        .WithMany()
-                        .HasForeignKey("MovieFileId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                    b.HasOne("Submarine.Core.Library.Movie", null)
+                        .WithMany("Versions")
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Submarine.Core.Library.Series", null)
+                        .WithMany("Versions")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Submarine.Core.Library.Season", b =>
@@ -995,6 +1061,30 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.HasOne("Submarine.Core.Library.Series", null)
                         .WithMany("Seasons")
                         .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Submarine.Core.MediaFile.EpisodeFile", b =>
+                {
+                    b.HasOne("Submarine.Core.Library.MediaVersion", null)
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Submarine.Core.MediaFile.MovieFile", b =>
+                {
+                    b.HasOne("Submarine.Core.Library.MediaVersion", null)
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Submarine.Core.Library.Movie", null)
+                        .WithMany("Files")
+                        .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -1046,11 +1136,20 @@ namespace Submarine.Api.Migrations.Sqlite
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Library.Movie", b =>
+                {
+                    b.Navigation("Files");
+
+                    b.Navigation("Versions");
+                });
+
             modelBuilder.Entity("Submarine.Core.Library.Series", b =>
                 {
                     b.Navigation("Episodes");
 
                     b.Navigation("Seasons");
+
+                    b.Navigation("Versions");
                 });
 #pragma warning restore 612, 618
         }

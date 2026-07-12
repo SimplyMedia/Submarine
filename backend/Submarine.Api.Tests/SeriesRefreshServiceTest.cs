@@ -46,16 +46,22 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 
 	private async Task<Series> SeedSeriesWithFiledEpisodeAsync(string storedTitle)
 	{
-		var series = new Series
-		{
-			TvdbId = 100, Title = "Show", Path = Path.Combine(Path.GetTempPath(), "show"), Monitored = true
-		};
+		var series = new Series { TvdbId = 100, Title = "Show", Monitored = true };
 		Context.Series.Add(series);
+		await Context.SaveChangesAsync();
+
+		var version = new MediaVersion
+		{
+			SeriesId = series.Id, Name = "Default", Path = Path.Combine(Path.GetTempPath(), "show"),
+			QualityProfileId = 1, LanguageProfileId = 1, Monitored = true
+		};
+		Context.Versions.Add(version);
 		await Context.SaveChangesAsync();
 
 		var file = new EpisodeFile
 		{
 			SeriesId = series.Id,
+			MediaVersionId = version.Id,
 			RelativePath = "Season 01/episode.mkv",
 			Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
 				new Revision())
@@ -65,7 +71,8 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 
 		Context.Episodes.Add(new Episode
 		{
-			SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 1, Title = storedTitle, EpisodeFileId = file.Id
+			SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 1, Title = storedTitle,
+			Files = new List<EpisodeFile> { file }
 		});
 		await Context.SaveChangesAsync();
 

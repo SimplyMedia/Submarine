@@ -15,4 +15,5 @@ public record GrabReleaseRequest(
 	long? Size,
 	int? SeriesId,
 	IReadOnlyList<int>? EpisodeIds,
-	int? MovieId);
+	int? MovieId,
+	int? MediaVersionId = null);

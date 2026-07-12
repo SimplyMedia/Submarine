@@ -16,24 +16,41 @@ public interface ISeriesRepository : IRepositoryBase<Series>
 	Task<Episode?> FindEpisodeAsync(int id);
 
 	/// <summary>
-	///     Finds an episode file by its id
+	///     Finds the episode file satisfying the given episode in the given version
 	/// </summary>
-	/// <param name="id">id of the episode file</param>
+	/// <param name="episodeId">id of the episode</param>
+	/// <param name="versionId">id of the version</param>
 	/// <returns>episode file if found</returns>
-	Task<EpisodeFile?> FindEpisodeFileAsync(int id);
+	Task<EpisodeFile?> FindEpisodeFileForVersionAsync(int episodeId, int versionId);
 
 	/// <summary>
-	///     Finds the episode files satisfying episodes of the given series and season
+	///     Finds the episode files satisfying episodes of the given series and season within a version
 	/// </summary>
 	/// <param name="seriesId">id of the series</param>
 	/// <param name="seasonNumber">season number</param>
+	/// <param name="versionId">id of the version</param>
 	/// <returns>matching episode files</returns>
-	Task<List<EpisodeFile>> FindEpisodeFilesBySeasonAsync(int seriesId, int seasonNumber);
+	Task<List<EpisodeFile>> FindEpisodeFilesBySeasonAsync(int seriesId, int seasonNumber, int versionId);
+
 	/// <summary>
-	///     Finds a series by id, including its seasons
+	///     Finds the versions of the given series
+	/// </summary>
+	/// <param name="seriesId">id of the series</param>
+	/// <returns>versions of the series</returns>
+	Task<List<MediaVersion>> FindVersionsAsync(int seriesId);
+
+	/// <summary>
+	///     Finds all episode files of the given series across versions
+	/// </summary>
+	/// <param name="seriesId">id of the series</param>
+	/// <returns>episode files of the series</returns>
+	Task<List<EpisodeFile>> FindEpisodeFilesAsync(int seriesId);
+
+	/// <summary>
+	///     Finds a series by id, including its seasons and versions
 	/// </summary>
 	/// <param name="id">id of the series</param>
-	/// <returns>series with seasons if found</returns>
+	/// <returns>series with seasons and versions if found</returns>
 	Task<Series?> FindByIdWithSeasonsAsync(int id);
 
 	/// <summary>

@@ -47,8 +47,13 @@ public class RenameService
 		if (series == null)
 			return;
 
+		var version = await _context.Versions.FirstOrDefaultAsync(v => v.Id == file.MediaVersionId, cancellationToken);
+
+		if (version == null)
+			return;
+
 		var episodes = await _context.Episodes
-			.Where(e => e.EpisodeFileId == episodeFileId)
+			.Where(e => e.Files.Any(f => f.Id == episodeFileId))
 			.ToListAsync(cancellationToken);
 
 		if (episodes.Count == 0)
@@ -60,8 +65,8 @@ public class RenameService
 		if (string.Equals(newRelativePath, file.RelativePath, StringComparison.Ordinal))
 			return;
 
-		var currentPath = Path.Combine(series.Path, file.RelativePath);
-		var destination = Path.Combine(series.Path, newRelativePath);
+		var currentPath = Path.Combine(version.Path, file.RelativePath);
+		var destination = Path.Combine(version.Path, newRelativePath);
 
 		var directory = Path.GetDirectoryName(destination);
 
@@ -90,7 +95,7 @@ public class RenameService
 			Data = new Dictionary<string, string> { ["newPath"] = newRelativePath }
 		}, cancellationToken);
 
-		await _eventPublisher.PublishAsync(new MediaRenamedEvent(series.Id, null, series.Path, series.Title),
+		await _eventPublisher.PublishAsync(new MediaRenamedEvent(series.Id, null, version.Path, series.Title),
 			cancellationToken);
 	}
 
@@ -156,12 +161,11 @@ public class RenameService
 
 	private async Task<Dictionary<int, List<Episode>>> LoadEpisodesByFileAsync(int seriesId)
 	{
-		var episodes = await _context.Episodes.AsNoTracking()
-			.Where(e => e.SeriesId == seriesId && e.EpisodeFileId != null)
+		var files = await _context.EpisodeFiles.AsNoTracking()
+			.Where(f => f.SeriesId == seriesId)
+			.Include(f => f.Episodes)
 			.ToListAsync();
 
-		return episodes
-			.GroupBy(e => e.EpisodeFileId!.Value)
-			.ToDictionary(g => g.Key, g => g.ToList());
+		return files.ToDictionary(f => f.Id, f => f.Episodes.ToList());
 	}
 }

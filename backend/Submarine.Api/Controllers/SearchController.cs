@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Models.Response;
 using Submarine.Api.Services;
-using Submarine.Core.DecisionEngine;
 using Submarine.Core.Provider;
 
 namespace Submarine.Api.Controllers;
@@ -37,8 +36,9 @@ public class SearchController : ControllerBase
 		return Ok(decisions.Select(SearchDecisionResponse.FromDecision).ToList());
 	}
 
-	private Task<IReadOnlyList<DownloadDecision>> ResolveAsync(int? seriesId, int? seasonNumber, int? episodeId,
-		int? episodeNumber, int? movieId, string? term, Protocol? protocol, CancellationToken cancellationToken)
+	private Task<IReadOnlyList<VersionedDownloadDecision>> ResolveAsync(int? seriesId, int? seasonNumber,
+		int? episodeId, int? episodeNumber, int? movieId, string? term, Protocol? protocol,
+		CancellationToken cancellationToken)
 	{
 		if (movieId != null)
 			return _service.SearchMovieAsync(movieId.Value, cancellationToken);

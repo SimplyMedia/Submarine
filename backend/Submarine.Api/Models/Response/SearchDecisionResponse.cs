@@ -22,10 +22,13 @@ public record SearchDecisionResponse(
 	Protocol Protocol,
 	string Quality,
 	IReadOnlyList<Language> Languages,
-	string? ReleaseGroup)
+	string? ReleaseGroup,
+	int? VersionId,
+	string? VersionName)
 {
-	public static SearchDecisionResponse FromDecision(DownloadDecision decision)
+	public static SearchDecisionResponse FromDecision(VersionedDownloadDecision versioned)
 	{
+		var decision = versioned.Decision;
 		var info = decision.Candidate.Info;
 		var release = decision.Candidate.Release;
 
@@ -44,6 +47,8 @@ public record SearchDecisionResponse(
 			info.Protocol,
 			release.Quality.Resolution.Name,
 			release.Languages,
-			release.ReleaseGroup);
+			release.ReleaseGroup,
+			versioned.VersionId,
+			versioned.VersionName);
 	}
 }

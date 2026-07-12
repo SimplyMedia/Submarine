@@ -20,7 +20,7 @@ public class SeriesRepository : RepositoryBase<Series>, ISeriesRepository
 
 	/// <inheritdoc />
 	public Task<Series?> FindByIdWithSeasonsAsync(int id)
-		=> Query().Include(s => s.Seasons).FirstOrDefaultAsync(s => s.Id == id);
+		=> Query().Include(s => s.Seasons).Include(s => s.Versions).FirstOrDefaultAsync(s => s.Id == id);
 
 	/// <inheritdoc />
 	public IQueryable<Episode> QueryEpisodes(int seriesId)
@@ -31,27 +31,36 @@ public class SeriesRepository : RepositoryBase<Series>, ISeriesRepository
 		=> DatabaseContext.Set<Episode>().AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
 
 	/// <inheritdoc />
-	public Task<EpisodeFile?> FindEpisodeFileAsync(int id)
-		=> DatabaseContext.Set<EpisodeFile>().AsNoTracking().FirstOrDefaultAsync(f => f.Id == id);
+	public Task<EpisodeFile?> FindEpisodeFileForVersionAsync(int episodeId, int versionId)
+		=> DatabaseContext.Set<EpisodeFile>().AsNoTracking()
+			.FirstOrDefaultAsync(f => f.MediaVersionId == versionId && f.Episodes.Any(e => e.Id == episodeId));
 
 	/// <inheritdoc />
-	public async Task<List<EpisodeFile>> FindEpisodeFilesBySeasonAsync(int seriesId, int seasonNumber)
-	{
-		var fileIds = await DatabaseContext.Set<Episode>().AsNoTracking()
-			.Where(e => e.SeriesId == seriesId && e.SeasonNumber == seasonNumber && e.EpisodeFileId != null)
-			.Select(e => e.EpisodeFileId!.Value)
+	public Task<List<EpisodeFile>> FindEpisodeFilesBySeasonAsync(int seriesId, int seasonNumber, int versionId)
+		=> DatabaseContext.Set<EpisodeFile>().AsNoTracking()
+			.Where(f => f.SeriesId == seriesId && f.MediaVersionId == versionId
+			                                   && f.Episodes.Any(e => e.SeasonNumber == seasonNumber))
 			.ToListAsync();
 
-		return await DatabaseContext.Set<EpisodeFile>().AsNoTracking()
-			.Where(f => fileIds.Contains(f.Id))
+	/// <inheritdoc />
+	public Task<List<MediaVersion>> FindVersionsAsync(int seriesId)
+		=> DatabaseContext.Set<MediaVersion>().AsNoTracking()
+			.Where(v => v.SeriesId == seriesId)
+			.OrderBy(v => v.Id)
 			.ToListAsync();
-	}
+
+	/// <inheritdoc />
+	public Task<List<EpisodeFile>> FindEpisodeFilesAsync(int seriesId)
+		=> DatabaseContext.Set<EpisodeFile>().AsNoTracking()
+			.Where(f => f.SeriesId == seriesId)
+			.ToListAsync();
 
 	/// <inheritdoc />
 	public async Task<List<Episode>> FindEpisodesByAirDateAsync(DateTimeOffset start, DateTimeOffset end)
 	{
 		// SQLite can't translate DateTimeOffset comparison operators, so the range filter runs in memory
 		var episodes = await DatabaseContext.Set<Episode>().AsNoTracking()
+			.Include(e => e.Files)
 			.Where(e => e.AirDate != null)
 			.ToListAsync();
 

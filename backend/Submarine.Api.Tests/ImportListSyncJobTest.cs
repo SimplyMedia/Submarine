@@ -32,7 +32,7 @@ public class ImportListSyncJobTest : DatabaseTestBase
 	public async Task ExecuteAsync_ShouldAddNewAndSkipExisting_WhenListContainsBoth()
 	{
 		Context.RootFolders.Add(new RootFolder { Path = Path.GetTempPath(), MediaKind = MediaKind.MOVIES });
-		Context.Movies.Add(new Movie { TmdbId = 100, Title = "Existing Movie", Path = "/movies/existing" });
+		Context.Movies.Add(new Movie { TmdbId = 100, Title = "Existing Movie" });
 		Context.ImportLists.Add(new ImportList
 		{
 			Name = "list", Type = ImportListType.TMDB_POPULAR, Enable = true, SettingsJson = "{}",
@@ -64,9 +64,12 @@ public class ImportListSyncJobTest : DatabaseTestBase
 		var added = movies.Single(m => m.TmdbId == 200);
 		Assert.Equal("New Movie", added.Title);
 		Assert.True(added.Monitored);
-		Assert.Equal(1, added.QualityProfileId);
-		Assert.Equal(1, added.LanguageProfileId);
 		Assert.Contains("from-list", added.Tags);
+
+		var version = await Context.Versions.AsNoTracking().SingleAsync(v => v.MovieId == added.Id);
+		Assert.Equal("Default", version.Name);
+		Assert.Equal(1, version.QualityProfileId);
+		Assert.Equal(1, version.LanguageProfileId);
 	}
 
 	[Fact]

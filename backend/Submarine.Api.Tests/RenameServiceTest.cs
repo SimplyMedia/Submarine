@@ -24,14 +24,23 @@ public class RenameServiceTest : DatabaseTestBase
 		{
 			var series = new Series
 			{
-				TvdbId = 1, Title = "Show", Path = libraryPath, SeasonFolder = true, Type = SeriesType.STANDARD
+				TvdbId = 1, Title = "Show", SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
+			await Context.SaveChangesAsync();
+
+			var version = new MediaVersion
+			{
+				SeriesId = series.Id, Name = "Default", Path = libraryPath, QualityProfileId = 1,
+				LanguageProfileId = 1, Monitored = true
+			};
+			Context.Versions.Add(version);
 			await Context.SaveChangesAsync();
 
 			var file = new EpisodeFile
 			{
 				SeriesId = series.Id,
+				MediaVersionId = version.Id,
 				RelativePath = oldRelative,
 				NamedFromPlaceholder = true,
 				Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
@@ -43,7 +52,7 @@ public class RenameServiceTest : DatabaseTestBase
 			Context.Episodes.Add(new Episode
 			{
 				SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real Title",
-				EpisodeFileId = file.Id
+				Files = new List<EpisodeFile> { file }
 			});
 			await Context.SaveChangesAsync();
 

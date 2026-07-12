@@ -69,38 +69,28 @@ public class Movie : ICreatable, IUpdatable
 	public bool IsAnime { get; set; }
 
 	/// <summary>
-	///     Path on disk this movie is stored at
-	/// </summary>
-	public string Path { get; set; }
-
-	/// <summary>
 	///     Whether this movie is monitored for download
 	/// </summary>
 	public bool Monitored { get; set; }
-
-	/// <summary>
-	///     Id of the Quality Profile used for this movie
-	/// </summary>
-	public int QualityProfileId { get; set; }
-
-	/// <summary>
-	///     Id of the Language Profile used for this movie
-	/// </summary>
-	public int LanguageProfileId { get; set; }
 
 	/// <summary>
 	///     Tags of this movie
 	/// </summary>
 	public List<string> Tags { get; set; } = new();
 
-	/// <summary>
-	///     Id of the Movie File which satisfies this movie, if any
-	/// </summary>
-	public int? MovieFileId { get; set; }
-
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }
 
 	/// <inheritdoc />
 	public DateTimeOffset UpdatedAt { get; set; }
+
+	/// <summary>
+	///     Versions of this movie, each stored in its own library folder
+	/// </summary>
+	public ICollection<MediaVersion> Versions { get; set; } = new List<MediaVersion>();
+
+	/// <summary>
+	///     Files satisfying this movie, one per version at most
+	/// </summary>
+	public ICollection<MediaFile.MovieFile> Files { get; set; } = new List<MediaFile.MovieFile>();
 }
