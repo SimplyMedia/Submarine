@@ -532,4 +532,144 @@ public class ImportServiceTest : DatabaseTestBase
 			Directory.Delete(root, true);
 		}
 	}
+
+	[Fact]
+	public async Task ImportTrackedDownloadAsync_ShouldWriteNfoFiles_WhenWriteNfoEnabled()
+	{
+		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var libraryPath = Path.Combine(root, "library", "Show");
+		var downloadPath = Path.Combine(root, "download");
+		Directory.CreateDirectory(libraryPath);
+		Directory.CreateDirectory(downloadPath);
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+
+		try
+		{
+			Context.MediaManagementConfigs.Add(new MediaManagementConfig { Id = 1, UseHardlinks = false, WriteNfo = true });
+
+			var series = new Series
+			{
+				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
+			};
+			Context.Series.Add(series);
+			await Context.SaveChangesAsync();
+
+			var version = new MediaVersion
+			{
+				SeriesId = series.Id, Name = "Default", Path = libraryPath, QualityProfileId = 1,
+				LanguageProfileId = 1, Monitored = true
+			};
+			Context.Versions.Add(version);
+			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
+			Context.Episodes.Add(episode);
+			await Context.SaveChangesAsync();
+
+			var tracked = new TrackedDownload
+			{
+				DownloadClientConfigId = 1,
+				DownloadId = "abc",
+				Title = "Show S01E05",
+				Protocol = Protocol.BITTORRENT,
+				Status = DownloadItemStatus.COMPLETED,
+				ReleaseTitle = "Show S01E05 1080p WEB-DL x264-GROUP",
+				Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
+					new Revision()),
+				Languages = new List<Language> { Language.ENGLISH },
+				SeriesId = series.Id,
+				MediaVersionId = version.Id,
+				EpisodeIds = new List<int> { episode.Id },
+				OutputPath = downloadPath
+			};
+			Context.TrackedDownloads.Add(tracked);
+			await Context.SaveChangesAsync();
+
+			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
+				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
+				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
+
+			await service.ImportTrackedDownloadAsync(tracked.Id);
+
+			var file = await Context.EpisodeFiles.SingleAsync();
+			var episodeNfoPath = Path.ChangeExtension(Path.Combine(libraryPath, file.RelativePath), ".nfo");
+			Assert.True(File.Exists(episodeNfoPath));
+
+			var doc = System.Xml.Linq.XDocument.Parse(await File.ReadAllTextAsync(episodeNfoPath));
+			Assert.Equal("Real", doc.Root!.Element("title")!.Value);
+			Assert.Equal("1", doc.Root.Element("season")!.Value);
+			Assert.Equal("5", doc.Root.Element("episode")!.Value);
+
+			Assert.True(File.Exists(Path.Combine(libraryPath, "tvshow.nfo")));
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportTrackedDownloadAsync_ShouldSkipNfoFiles_WhenWriteNfoDisabled()
+	{
+		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var libraryPath = Path.Combine(root, "library", "Show");
+		var downloadPath = Path.Combine(root, "download");
+		Directory.CreateDirectory(libraryPath);
+		Directory.CreateDirectory(downloadPath);
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+
+		try
+		{
+			Context.MediaManagementConfigs.Add(new MediaManagementConfig { Id = 1, UseHardlinks = false, WriteNfo = false });
+
+			var series = new Series
+			{
+				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
+			};
+			Context.Series.Add(series);
+			await Context.SaveChangesAsync();
+
+			var version = new MediaVersion
+			{
+				SeriesId = series.Id, Name = "Default", Path = libraryPath, QualityProfileId = 1,
+				LanguageProfileId = 1, Monitored = true
+			};
+			Context.Versions.Add(version);
+			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
+			Context.Episodes.Add(episode);
+			await Context.SaveChangesAsync();
+
+			var tracked = new TrackedDownload
+			{
+				DownloadClientConfigId = 1,
+				DownloadId = "abc",
+				Title = "Show S01E05",
+				Protocol = Protocol.BITTORRENT,
+				Status = DownloadItemStatus.COMPLETED,
+				ReleaseTitle = "Show S01E05 1080p WEB-DL x264-GROUP",
+				Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
+					new Revision()),
+				Languages = new List<Language> { Language.ENGLISH },
+				SeriesId = series.Id,
+				MediaVersionId = version.Id,
+				EpisodeIds = new List<int> { episode.Id },
+				OutputPath = downloadPath
+			};
+			Context.TrackedDownloads.Add(tracked);
+			await Context.SaveChangesAsync();
+
+			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
+				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
+				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
+
+			await service.ImportTrackedDownloadAsync(tracked.Id);
+
+			var file = await Context.EpisodeFiles.SingleAsync();
+			var episodeNfoPath = Path.ChangeExtension(Path.Combine(libraryPath, file.RelativePath), ".nfo");
+			Assert.False(File.Exists(episodeNfoPath));
+			Assert.False(File.Exists(Path.Combine(libraryPath, "tvshow.nfo")));
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
 }

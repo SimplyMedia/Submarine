@@ -214,6 +214,12 @@ public class ImportService
 		if (managementConfig.ImportExtraFiles)
 			ExtraFileService.CopySubtitles(sourceFile, destination);
 
+		if (managementConfig.WriteNfo)
+		{
+			NfoWriterService.WriteEpisodeNfo(destination, ordered);
+			NfoWriterService.WriteTvShowNfo(version.Path, series);
+		}
+
 		var episodeFile = new EpisodeFile
 		{
 			SeriesId = series.Id,
@@ -273,6 +279,9 @@ public class ImportService
 
 		if (managementConfig.ImportExtraFiles)
 			ExtraFileService.CopySubtitles(sourceFile, destination);
+
+		if (managementConfig.WriteNfo)
+			NfoWriterService.WriteMovieNfo(destination, movie);
 
 		var movieFile = new MovieFile
 		{

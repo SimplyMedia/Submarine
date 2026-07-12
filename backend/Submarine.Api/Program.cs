@@ -108,6 +108,7 @@ builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<SeriesService>();
 builder.Services.AddScoped<EpisodeService>();
 builder.Services.AddScoped<MovieService>();
+builder.Services.AddScoped<CollectionService>();
 builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<CalendarService>();
 builder.Services.AddScoped<IndexerService>();
@@ -138,6 +139,7 @@ builder.Services.AddScoped<RemotePathResolver>();
 builder.Services.AddScoped<HealthService>();
 builder.Services.AddScoped<StatsService>();
 builder.Services.AddSingleton<SecurityConfigStore>();
+builder.Services.AddScoped<BackupService>();
 
 builder.Services.AddSingleton<NamingTemplateRenderer>();
 builder.Services.AddSingleton<MediaNamingService>();
@@ -187,6 +189,7 @@ builder.Services.AddSingleton<IScheduledJob, DownloadMonitorJob>();
 builder.Services.AddSingleton<IScheduledJob, MetadataRefreshJob>();
 builder.Services.AddSingleton<IScheduledJob, ImportListSyncJob>();
 builder.Services.AddSingleton<IScheduledJob, RssSyncJob>();
+builder.Services.AddSingleton<IScheduledJob, BackupJob>();
 
 // Events
 builder.Services.AddScoped<IEventPublisher, EventPublisher>();

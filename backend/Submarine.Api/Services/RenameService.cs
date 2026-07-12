@@ -78,6 +78,11 @@ public class RenameService
 
 		ExtraFileService.RenameSubtitles(currentPath, destination);
 
+		var managementConfig = await _settingsService.GetMediaManagementConfigAsync();
+
+		if (managementConfig.WriteNfo)
+			MoveNfoSidecar(currentPath, destination);
+
 		var oldRelativePath = file.RelativePath;
 		file.RelativePath = newRelativePath;
 		file.NamedFromPlaceholder = rendered.UsedPlaceholderTitle;
@@ -144,6 +149,14 @@ public class RenameService
 		}
 
 		return mismatched.Count;
+	}
+
+	private static void MoveNfoSidecar(string currentVideo, string newVideo)
+	{
+		var currentNfo = Path.ChangeExtension(currentVideo, ".nfo");
+
+		if (File.Exists(currentNfo))
+			File.Move(currentNfo, Path.ChangeExtension(newVideo, ".nfo"), true);
 	}
 
 	private (string RelativePath, RenderedName Rendered) RenderTarget(Series series, EpisodeFile file,

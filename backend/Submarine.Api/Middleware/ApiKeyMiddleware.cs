@@ -16,6 +16,10 @@ public class ApiKeyMiddleware
 {
 	private const string BearerPrefix = "Bearer ";
 
+	// Calendar apps can't send an Authorization header; the feed enforces its own token via a query
+	// parameter (see CalendarController.GetFeedAsync), so it must bypass Bearer auth here
+	private const string CalendarFeedPath = "/api/v1/calendar/feed";
+
 	private readonly IConfiguration _configuration;
 
 	private readonly IHostEnvironment _environment;
@@ -43,6 +47,12 @@ public class ApiKeyMiddleware
 	public async Task InvokeAsync(HttpContext context)
 	{
 		if (!context.Request.Path.StartsWithSegments("/api"))
+		{
+			await _next(context);
+			return;
+		}
+
+		if (string.Equals(context.Request.Path.Value, CalendarFeedPath, StringComparison.OrdinalIgnoreCase))
 		{
 			await _next(context);
 			return;
