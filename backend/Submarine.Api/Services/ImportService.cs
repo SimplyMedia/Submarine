@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Submarine.Api.Events;
 using Submarine.Api.Models.Database;
 using Submarine.Core.History;
 using Submarine.Core.Languages;
@@ -22,17 +23,19 @@ public class ImportService
 	private readonly IParser<BaseRelease> _releaseParser;
 	private readonly MediaNamingService _naming;
 	private readonly HistoryService _historyService;
+	private readonly IEventPublisher _eventPublisher;
 	private readonly ILogger<ImportService> _logger;
 
 	public ImportService(SubmarineDatabaseContext context, SettingsService settingsService,
 		IParser<BaseRelease> releaseParser, MediaNamingService naming, HistoryService historyService,
-		ILogger<ImportService> logger)
+		IEventPublisher eventPublisher, ILogger<ImportService> logger)
 	{
 		_context = context;
 		_settingsService = settingsService;
 		_releaseParser = releaseParser;
 		_naming = naming;
 		_historyService = historyService;
+		_eventPublisher = eventPublisher;
 		_logger = logger;
 	}
 
@@ -82,6 +85,17 @@ public class ImportService
 
 		tracked.Imported = true;
 		await _context.SaveChangesAsync(cancellationToken);
+
+		var importedPath = tracked.SeriesId != null
+			? await _context.Series.AsNoTracking().Where(s => s.Id == tracked.SeriesId).Select(s => s.Path)
+				.FirstOrDefaultAsync(cancellationToken)
+			: await _context.Movies.AsNoTracking().Where(m => m.Id == tracked.MovieId).Select(m => m.Path)
+				.FirstOrDefaultAsync(cancellationToken);
+
+		if (importedPath != null)
+			await _eventPublisher.PublishAsync(
+				new MediaImportedEvent(tracked.SeriesId, tracked.MovieId, importedPath, tracked.Title),
+				cancellationToken);
 	}
 
 	private async Task ImportEpisodeFileAsync(Core.Download.TrackedDownload tracked, Series series,

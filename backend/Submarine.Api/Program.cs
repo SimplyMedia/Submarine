@@ -88,6 +88,8 @@ builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddScoped<IDownloadClientRepository, DownloadClientRepository>();
 builder.Services.AddScoped<IReleaseFilterRepository, ReleaseFilterRepository>();
 builder.Services.AddScoped<ICustomFormatRepository, CustomFormatRepository>();
+builder.Services.AddScoped<IImportListRepository, ImportListRepository>();
+builder.Services.AddScoped<IConnectionRepository, ConnectionRepository>();
 
 // Service
 builder.Services.AddScoped<ProviderService>();
@@ -109,6 +111,8 @@ builder.Services.AddScoped<QueueService>();
 builder.Services.AddScoped<SeriesRefreshService>();
 builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<RenameService>();
+builder.Services.AddScoped<ImportListService>();
+builder.Services.AddScoped<ConnectionService>();
 
 builder.Services.AddSingleton<NamingTemplateRenderer>();
 builder.Services.AddSingleton<MediaNamingService>();
@@ -128,6 +132,11 @@ builder.Services.AddHttpClient("downloadclient", client => client.Timeout = Time
 
 builder.Services.AddSingleton<TorznabHttpClient>();
 
+builder.Services.AddHttpClient<IImportListFetcher, ImportListFetcher>(client =>
+	client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddHttpClient("mediaserver", client => client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddSingleton<IMediaServerClientFactory, MediaServerClientFactory>();
+
 // Background jobs
 builder.Services.AddSingleton<IBackgroundTaskQueue, ChannelBackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();
@@ -139,12 +148,20 @@ builder.Services.AddHostedService<SchedulerHostedService>();
 
 builder.Services.AddSingleton<IScheduledJob, DownloadMonitorJob>();
 builder.Services.AddSingleton<IScheduledJob, MetadataRefreshJob>();
+builder.Services.AddSingleton<IScheduledJob, ImportListSyncJob>();
 
 // Events
 builder.Services.AddScoped<IEventPublisher, EventPublisher>();
 builder.Services.AddScoped<EpisodeTitleChangedHandler>();
 builder.Services.AddScoped<IEventHandler<EpisodeTitleChangedEvent>>(sp =>
 	sp.GetRequiredService<EpisodeTitleChangedHandler>());
+builder.Services.AddScoped<ConnectionEventHandler>();
+builder.Services.AddScoped<IEventHandler<MediaGrabbedEvent>>(sp =>
+	sp.GetRequiredService<ConnectionEventHandler>());
+builder.Services.AddScoped<IEventHandler<MediaImportedEvent>>(sp =>
+	sp.GetRequiredService<ConnectionEventHandler>());
+builder.Services.AddScoped<IEventHandler<MediaRenamedEvent>>(sp =>
+	sp.GetRequiredService<ConnectionEventHandler>());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

@@ -59,7 +59,7 @@ public class ImportServiceTest : DatabaseTestBase
 			await Context.SaveChangesAsync();
 
 			var service = new ImportService(Context, new SettingsService(Context), ReleaseParser(), NamingService(),
-				new HistoryService(Context), NullLogger<ImportService>.Instance);
+				new HistoryService(Context), new FakeEventPublisher(), NullLogger<ImportService>.Instance);
 
 			await service.ImportTrackedDownloadAsync(tracked.Id);
 

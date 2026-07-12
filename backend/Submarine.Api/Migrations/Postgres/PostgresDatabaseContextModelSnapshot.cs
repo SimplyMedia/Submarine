@@ -306,6 +306,58 @@ namespace Submarine.Api.Migrations.Postgres
                     b.ToTable("History");
                 });
 
+            modelBuilder.Entity("Submarine.Core.ImportList.ImportList", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enable")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LanguageProfileId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MediaKind")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Monitored")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("QualityProfileId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RootFolderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SettingsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<List<string>>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImportLists");
+                });
+
             modelBuilder.Entity("Submarine.Core.Library.Episode", b =>
                 {
                     b.Property<int>("Id")
@@ -638,6 +690,62 @@ namespace Submarine.Api.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("MovieFiles");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Notification.Connection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enable")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("OnGrab")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("OnImport")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("OnRename")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<string>>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("UseSsl")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Connections");
                 });
 
             modelBuilder.Entity("Submarine.Core.Profile.LanguageProfile", b =>

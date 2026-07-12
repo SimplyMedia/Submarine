@@ -21,7 +21,7 @@ public class GrabServiceTest : DatabaseTestBase
 
 		var client = new FakeDownloadClient { Protocol = Protocol.BITTORRENT, DownloadId = "hash123" };
 		var service = new GrabService(Context, new FakeDownloadClientFactory(client), ReleaseParser(),
-			new HistoryService(Context));
+			new HistoryService(Context), new FakeEventPublisher());
 
 		var request = new GrabReleaseRequest("The Show S01E01 1080p WEB-DL x264-GROUP", "guid-1",
 			"http://indexer/download", "MyIndexer", Protocol.BITTORRENT, 1234, null, null, null);
@@ -46,7 +46,7 @@ public class GrabServiceTest : DatabaseTestBase
 	{
 		var client = new FakeDownloadClient { Protocol = Protocol.USENET };
 		var service = new GrabService(Context, new FakeDownloadClientFactory(client), ReleaseParser(),
-			new HistoryService(Context));
+			new HistoryService(Context), new FakeEventPublisher());
 
 		Context.DownloadClients.Add(new DownloadClientConfig
 		{

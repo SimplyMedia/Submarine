@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Submarine.Api.Events;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Models.Database;
 using Submarine.Api.Models.Request;
@@ -18,14 +19,16 @@ public class GrabService
 	private readonly DownloadClientFactory _factory;
 	private readonly IParser<BaseRelease> _releaseParser;
 	private readonly HistoryService _historyService;
+	private readonly IEventPublisher _eventPublisher;
 
 	public GrabService(SubmarineDatabaseContext context, DownloadClientFactory factory,
-		IParser<BaseRelease> releaseParser, HistoryService historyService)
+		IParser<BaseRelease> releaseParser, HistoryService historyService, IEventPublisher eventPublisher)
 	{
 		_context = context;
 		_factory = factory;
 		_releaseParser = releaseParser;
 		_historyService = historyService;
+		_eventPublisher = eventPublisher;
 	}
 
 	public async Task<TrackedDownload> GrabAsync(GrabReleaseRequest request, CancellationToken cancellationToken = default)
@@ -93,6 +96,16 @@ public class GrabService
 				["indexer"] = request.Indexer ?? ""
 			}
 		}, cancellationToken);
+
+		var mediaPath = request.SeriesId != null
+			? await _context.Series.AsNoTracking().Where(s => s.Id == request.SeriesId).Select(s => s.Path)
+				.FirstOrDefaultAsync(cancellationToken)
+			: await _context.Movies.AsNoTracking().Where(m => m.Id == request.MovieId).Select(m => m.Path)
+				.FirstOrDefaultAsync(cancellationToken);
+
+		if (mediaPath != null)
+			await _eventPublisher.PublishAsync(
+				new MediaGrabbedEvent(request.SeriesId, request.MovieId, mediaPath, request.Title), cancellationToken);
 
 		return tracked;
 	}

@@ -7,7 +7,9 @@ using Submarine.Core.DecisionEngine.CustomFormats;
 using Submarine.Core.DecisionEngine.Filter;
 using Submarine.Core.Download;
 using Submarine.Core.History;
+using Submarine.Core.ImportList;
 using Submarine.Core.Library;
+using Submarine.Core.Notification;
 using Submarine.Core.MediaFile;
 using Submarine.Core.Profile;
 using Submarine.Core.Provider;
@@ -25,6 +27,13 @@ public class SubmarineDatabaseContext : DbContext
 	///     Configuration of this Database Context
 	/// </summary>
 	protected readonly IConfiguration Configuration;
+
+	private static readonly ValueComparer<QualityModel> QualityValueComparer = new(
+		(a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null)
+		          == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+		q => JsonSerializer.Serialize(q, (JsonSerializerOptions?)null).GetHashCode(),
+		q => JsonSerializer.Deserialize<QualityModel>(
+			JsonSerializer.Serialize(q, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
 
 	public DbSet<Provider> Providers { get; set; }
 
@@ -62,6 +71,10 @@ public class SubmarineDatabaseContext : DbContext
 
 	public DbSet<HistoryEvent> History { get; set; }
 
+	public DbSet<ImportList> ImportLists { get; set; }
+
+	public DbSet<Connection> Connections { get; set; }
+
 	/// <inheritdoc />
 	public SubmarineDatabaseContext(DbContextOptions options, IConfiguration configuration) : base(options)
 		=> Configuration = configuration;
@@ -97,8 +110,8 @@ public class SubmarineDatabaseContext : DbContext
 					: JsonSerializer.Deserialize<Dictionary<int, int>>(s, (JsonSerializerOptions?)null)
 					  ?? new Dictionary<int, int>(),
 				new ValueComparer<Dictionary<int, int>>(
-					(a, b) => a!.SequenceEqual(b!),
-					d => d.Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
+					(a, b) => a!.Count == b!.Count && a.All(pair => b.ContainsKey(pair.Key) && b[pair.Key] == pair.Value),
+					d => d.Aggregate(0, (hash, pair) => hash ^ HashCode.Combine(pair.Key, pair.Value)),
 					d => d.ToDictionary(pair => pair.Key, pair => pair.Value)));
 
 		builder.Entity<CustomFormatConfig>()
@@ -150,19 +163,22 @@ public class SubmarineDatabaseContext : DbContext
 			.Property(f => f.Quality)
 			.HasConversion(
 				q => JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
-				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!);
+				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!,
+				QualityValueComparer);
 
 		builder.Entity<MovieFile>()
 			.Property(f => f.Quality)
 			.HasConversion(
 				q => JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
-				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!);
+				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!,
+				QualityValueComparer);
 
 		builder.Entity<TrackedDownload>()
 			.Property(d => d.Quality)
 			.HasConversion(
 				q => JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
-				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!);
+				q => JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null)!,
+				QualityValueComparer);
 
 		builder.Entity<TrackedDownload>()
 			.HasOne<Series>()
@@ -182,7 +198,8 @@ public class SubmarineDatabaseContext : DbContext
 				q => q == null ? null : JsonSerializer.Serialize(q, (JsonSerializerOptions?)null),
 				q => string.IsNullOrEmpty(q)
 					? null
-					: JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null));
+					: JsonSerializer.Deserialize<QualityModel>(q, (JsonSerializerOptions?)null),
+				QualityValueComparer);
 
 		builder.Entity<HistoryEvent>()
 			.Property(h => h.Data)

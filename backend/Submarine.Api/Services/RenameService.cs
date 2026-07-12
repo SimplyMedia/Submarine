@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Submarine.Api.Events;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Jobs;
 using Submarine.Api.Models.Database;
@@ -21,15 +22,17 @@ public class RenameService
 	private readonly MediaNamingService _naming;
 	private readonly HistoryService _historyService;
 	private readonly IBackgroundTaskQueue _taskQueue;
+	private readonly IEventPublisher _eventPublisher;
 
 	public RenameService(SubmarineDatabaseContext context, SettingsService settingsService, MediaNamingService naming,
-		HistoryService historyService, IBackgroundTaskQueue taskQueue)
+		HistoryService historyService, IBackgroundTaskQueue taskQueue, IEventPublisher eventPublisher)
 	{
 		_context = context;
 		_settingsService = settingsService;
 		_naming = naming;
 		_historyService = historyService;
 		_taskQueue = taskQueue;
+		_eventPublisher = eventPublisher;
 	}
 
 	public async Task RenameEpisodeFileAsync(int episodeFileId, CancellationToken cancellationToken = default)
@@ -86,6 +89,9 @@ public class RenameService
 			Languages = file.Languages,
 			Data = new Dictionary<string, string> { ["newPath"] = newRelativePath }
 		}, cancellationToken);
+
+		await _eventPublisher.PublishAsync(new MediaRenamedEvent(series.Id, null, series.Path, series.Title),
+			cancellationToken);
 	}
 
 	public async Task<IReadOnlyList<RenamePreviewItem>> PreviewSeriesAsync(int seriesId)
