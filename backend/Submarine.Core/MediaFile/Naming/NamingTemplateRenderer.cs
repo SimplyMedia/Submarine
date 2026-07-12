@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Submarine.Core.Languages;
@@ -25,15 +26,40 @@ public class NamingTemplateRenderer
 
 	private static readonly Regex InvalidPathCharsRegex = new(@"[<>:""/\\|?*]", RegexOptions.Compiled);
 
+	private static readonly Regex SeasonEpisodeClusterRegex = new(
+		@"(?<sprefix>[A-Za-z]*)\{[Ss]eason(?::(?<sformat>[^{}]+))?\}(?<eprefix>[A-Za-z]*)\{[Ee]pisode(?::(?<eformat>[^{}]+))?\}",
+		RegexOptions.Compiled);
+
 	/// <summary>
 	///     Renders a template for a Series episode
 	/// </summary>
 	/// <param name="template">The naming template</param>
 	/// <param name="context">The Series naming context</param>
+	/// <param name="multiEpisodeStyle">
+	///     Style used to render an adjacent <c>{Season}{Episode}</c> token cluster (e.g. <c>S{Season:00}E{Episode:00}</c>)
+	///     when the file covers multiple episodes. A single episode always renders as the plain cluster (e.g. "S01E01").
+	///     For episodes [1,2,3] with season 1 and pattern <c>S{Season:00}E{Episode:00}</c> the styles produce:
+	///     <list type="bullet">
+	///         <item><see cref="MultiEpisodeStyle.EXTEND" />: "S01E01-02-03"</item>
+	///         <item><see cref="MultiEpisodeStyle.DUPLICATE" />: "S01E01.S01E02.S01E03"</item>
+	///         <item><see cref="MultiEpisodeStyle.REPEAT" />: "S01E01E02E03"</item>
+	///         <item><see cref="MultiEpisodeStyle.SCENE" />: "1x01x02x03"</item>
+	///         <item><see cref="MultiEpisodeStyle.RANGE" />: "S01E01-03"</item>
+	///         <item><see cref="MultiEpisodeStyle.PREFIXED_RANGE" />: "S01E01-E03"</item>
+	///     </list>
+	///     <see cref="MultiEpisodeStyle.RANGE" />, <see cref="MultiEpisodeStyle.PREFIXED_RANGE" /> and
+	///     <see cref="MultiEpisodeStyle.EXTEND" /> fall back to <see cref="MultiEpisodeStyle.REPEAT" /> when the episode
+	///     numbers are not contiguous, since a gap cannot be expressed as a range.
+	///     <see cref="MultiEpisodeStyle.SCENE" /> drops the season prefix and renders the season number unpadded, but only
+	///     inside this cluster; a <c>{Season}</c> token used elsewhere is unaffected.
+	/// </param>
 	/// <returns>The rendered name</returns>
-	public RenderedName Render(string template, SeriesNamingContext context)
+	public RenderedName Render(string template, SeriesNamingContext context,
+		MultiEpisodeStyle multiEpisodeStyle = MultiEpisodeStyle.PREFIXED_RANGE)
 	{
 		var (episodeTitle, usedPlaceholder) = BuildEpisodeTitle(context);
+
+		template = ApplyMultiEpisodeStyle(template, context, multiEpisodeStyle);
 
 		(string Value, bool EmptySafe) Resolve(string key, string? format)
 			=> key switch
@@ -49,6 +75,10 @@ public class NamingTemplateRenderer
 				"quality title" => (QualityTitle(context.QualityModel), true),
 				"release group" => (context.ReleaseGroup ?? "", true),
 				"languages" => (RenderLanguages(context.Languages), true),
+				"mediainfo videocodec" => (context.MediaInfo?.VideoCodec ?? "", true),
+				"mediainfo audiocodec" => (context.MediaInfo?.AudioCodec ?? "", true),
+				"mediainfo audiochannels" => (FormatChannels(context.MediaInfo?.AudioChannels), true),
+				"mediainfo videodynamicrange" => (context.MediaInfo?.VideoDynamicRange ?? "", true),
 				_ => ("", false)
 			};
 
@@ -74,6 +104,10 @@ public class NamingTemplateRenderer
 				"quality title" => (QualityTitle(context.QualityModel), true),
 				"release group" => (context.ReleaseGroup ?? "", true),
 				"languages" => (RenderLanguages(context.Languages), true),
+				"mediainfo videocodec" => (context.MediaInfo?.VideoCodec ?? "", true),
+				"mediainfo audiocodec" => (context.MediaInfo?.AudioCodec ?? "", true),
+				"mediainfo audiochannels" => (FormatChannels(context.MediaInfo?.AudioChannels), true),
+				"mediainfo videodynamicrange" => (context.MediaInfo?.VideoDynamicRange ?? "", true),
 				_ => ("", false)
 			};
 
@@ -168,6 +202,63 @@ public class NamingTemplateRenderer
 
 	private static string Pad(int number, string? format)
 		=> number.ToString().PadLeft(format?.Length ?? 0, '0');
+
+	private static string ApplyMultiEpisodeStyle(string template, SeriesNamingContext context, MultiEpisodeStyle style)
+	{
+		if (context.EpisodeNumbers.Count == 0)
+			return template;
+
+		return SeasonEpisodeClusterRegex.Replace(template, match => RenderCluster(
+			context.SeasonNumber,
+			context.EpisodeNumbers,
+			match.Groups["sprefix"].Value,
+			match.Groups["sformat"].Success ? match.Groups["sformat"].Value : null,
+			match.Groups["eprefix"].Value,
+			match.Groups["eformat"].Success ? match.Groups["eformat"].Value : null,
+			style));
+	}
+
+	private static string RenderCluster(int season, IReadOnlyList<int> episodes, string seasonPrefix, string? seasonFormat,
+		string episodePrefix, string? episodeFormat, MultiEpisodeStyle style)
+	{
+		var sorted = episodes.OrderBy(n => n).ToList();
+		var seasonPart = seasonPrefix + Pad(season, seasonFormat);
+
+		string Full(int episode) => seasonPart + episodePrefix + Pad(episode, episodeFormat);
+		string Repeat() => Full(sorted[0]) +
+		                   string.Concat(sorted.Skip(1).Select(e => episodePrefix + Pad(e, episodeFormat)));
+
+		if (sorted.Count == 1)
+			return Full(sorted[0]);
+
+		var contiguous = sorted[^1] - sorted[0] + 1 == sorted.Count
+		                 && sorted.Zip(sorted.Skip(1), (a, b) => b - a == 1).All(x => x);
+
+		return style switch
+		{
+			MultiEpisodeStyle.DUPLICATE => string.Join(".", sorted.Select(Full)),
+			MultiEpisodeStyle.REPEAT => Repeat(),
+			MultiEpisodeStyle.SCENE => season.ToString() +
+			                           string.Concat(sorted.Select(e => "x" + Pad(e, episodeFormat))),
+			MultiEpisodeStyle.EXTEND when contiguous => Full(sorted[0]) +
+			                                            string.Concat(sorted.Skip(1)
+				                                            .Select(e => "-" + Pad(e, episodeFormat))),
+			MultiEpisodeStyle.RANGE when contiguous => Full(sorted[0]) + "-" + Pad(sorted[^1], episodeFormat),
+			MultiEpisodeStyle.PREFIXED_RANGE when contiguous => Full(sorted[0]) + "-" + episodePrefix +
+			                                                    Pad(sorted[^1], episodeFormat),
+			_ => Repeat()
+		};
+	}
+
+	private static string FormatChannels(double? channels)
+		=> channels switch
+		{
+			null => "",
+			6 => "5.1",
+			8 => "7.1",
+			2 => "2.0",
+			_ => channels.Value.ToString("0.0", CultureInfo.InvariantCulture)
+		};
 
 	private static string CleanTitle(string title)
 	{

@@ -1,6 +1,7 @@
 using Submarine.Core.Config;
 using Submarine.Core.Languages;
 using Submarine.Core.Library;
+using Submarine.Core.MediaFile;
 using Submarine.Core.MediaFile.Naming;
 using Submarine.Core.Quality;
 
@@ -17,7 +18,7 @@ public class MediaNamingService
 		=> _renderer = renderer;
 
 	public RenderedName RenderEpisodeFile(Series series, IReadOnlyList<Episode> episodes, QualityModel? quality,
-		IReadOnlyList<Language> languages, string? releaseGroup, NamingConfig config)
+		IReadOnlyList<Language> languages, string? releaseGroup, MediaInfo? mediaInfo, NamingConfig config)
 	{
 		var ordered = episodes.OrderBy(e => e.EpisodeNumber).ToList();
 		var isAnime = series.Type == SeriesType.ANIME;
@@ -36,10 +37,12 @@ public class MediaNamingService
 			QualityModel = quality,
 			Languages = languages,
 			ReleaseGroup = releaseGroup,
-			IsAnime = isAnime
+			IsAnime = isAnime,
+			MediaInfo = mediaInfo
 		};
 
-		return _renderer.Render(isAnime ? config.AnimeEpisodeFormat : config.StandardEpisodeFormat, context);
+		return _renderer.Render(isAnime ? config.AnimeEpisodeFormat : config.StandardEpisodeFormat, context,
+			config.MultiEpisodeStyle);
 	}
 
 	public string RenderSeasonFolder(Series series, int seasonNumber, NamingConfig config)
@@ -53,7 +56,7 @@ public class MediaNamingService
 	}
 
 	public RenderedName RenderMovieFile(Movie movie, QualityModel? quality, IReadOnlyList<Language> languages,
-		string? releaseGroup, string? edition, NamingConfig config)
+		string? releaseGroup, string? edition, MediaInfo? mediaInfo, NamingConfig config)
 	{
 		var context = new MovieNamingContext
 		{
@@ -62,7 +65,8 @@ public class MediaNamingService
 			Edition = edition,
 			QualityModel = quality,
 			Languages = languages,
-			ReleaseGroup = releaseGroup
+			ReleaseGroup = releaseGroup,
+			MediaInfo = mediaInfo
 		};
 
 		return _renderer.Render(config.MovieFormat, context);

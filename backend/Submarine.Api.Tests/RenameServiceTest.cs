@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Submarine.Api.Jobs;
 using Submarine.Api.Services;
 using Submarine.Core.Library;
@@ -57,7 +58,8 @@ public class RenameServiceTest : DatabaseTestBase
 			await Context.SaveChangesAsync();
 
 			var service = new RenameService(Context, Settings(), NamingService(),
-				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher());
+				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher(),
+				NullLogger<RenameService>.Instance);
 
 			await service.RenameEpisodeFileAsync(file.Id);
 
@@ -128,7 +130,8 @@ public class RenameServiceTest : DatabaseTestBase
 			await Context.SaveChangesAsync();
 
 			var service = new RenameService(Context, Settings(), NamingService(),
-				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher());
+				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher(),
+				NullLogger<RenameService>.Instance);
 
 			await service.RenameEpisodeFileAsync(file.Id);
 

@@ -23,9 +23,11 @@ public class RenameService
 	private readonly HistoryService _historyService;
 	private readonly IBackgroundTaskQueue _taskQueue;
 	private readonly IEventPublisher _eventPublisher;
+	private readonly ILogger<RenameService> _logger;
 
 	public RenameService(SubmarineDatabaseContext context, SettingsService settingsService, MediaNamingService naming,
-		HistoryService historyService, IBackgroundTaskQueue taskQueue, IEventPublisher eventPublisher)
+		HistoryService historyService, IBackgroundTaskQueue taskQueue, IEventPublisher eventPublisher,
+		ILogger<RenameService> logger)
 	{
 		_context = context;
 		_settingsService = settingsService;
@@ -33,6 +35,7 @@ public class RenameService
 		_historyService = historyService;
 		_taskQueue = taskQueue;
 		_eventPublisher = eventPublisher;
+		_logger = logger;
 	}
 
 	public async Task RenameEpisodeFileAsync(int episodeFileId, CancellationToken cancellationToken = default)
@@ -82,6 +85,12 @@ public class RenameService
 
 		if (managementConfig.WriteNfo)
 			MoveNfoSidecar(currentPath, destination);
+
+		if (File.Exists(destination))
+			PermissionApplier.ApplyToFile(destination, managementConfig, _logger);
+
+		if (!string.IsNullOrEmpty(directory))
+			PermissionApplier.ApplyToDirectory(directory, managementConfig, _logger);
 
 		var oldRelativePath = file.RelativePath;
 		file.RelativePath = newRelativePath;
@@ -164,7 +173,7 @@ public class RenameService
 	{
 		var ordered = episodes.OrderBy(e => e.EpisodeNumber).ToList();
 		var rendered = _naming.RenderEpisodeFile(series, ordered, file.Quality, file.Languages, file.ReleaseGroup,
-			config);
+			file.MediaInfo, config);
 
 		var extension = Path.GetExtension(file.RelativePath);
 		var seasonFolder = series.SeasonFolder

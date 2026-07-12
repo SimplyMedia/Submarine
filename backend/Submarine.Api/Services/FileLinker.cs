@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Submarine.Core.Config;
 
 namespace Submarine.Api.Services;
 
@@ -16,17 +17,25 @@ public static class FileLinker
 	/// <param name="minimumFreeSpaceMb">
 	///     Minimum free space in megabytes required on the destination drive, 0 skips the check
 	/// </param>
+	/// <param name="config">Media management config supplying Unix chmod/chown to apply after placement, if any</param>
+	/// <param name="logger">Logger used when applying Unix permissions</param>
 	/// <exception cref="InvalidOperationException">The destination drive has less free space than required</exception>
 	/// <remarks>
 	///     An existing destination is overwritten. The content stays safe because <paramref name="source" /> holds
 	///     it until the hardlink or move completes.
 	/// </remarks>
-	public static void Place(string source, string destination, bool useHardlink, int minimumFreeSpaceMb = 0)
+	public static void Place(string source, string destination, bool useHardlink, int minimumFreeSpaceMb = 0,
+		MediaManagementConfig? config = null, ILogger? logger = null)
 	{
 		var directory = Path.GetDirectoryName(destination);
 
 		if (!string.IsNullOrEmpty(directory))
+		{
 			Directory.CreateDirectory(directory);
+
+			if (config != null && logger != null)
+				PermissionApplier.ApplyToDirectory(directory, config, logger);
+		}
 
 		if (minimumFreeSpaceMb > 0)
 			EnsureFreeSpace(destination, minimumFreeSpaceMb);
@@ -34,10 +43,11 @@ public static class FileLinker
 		if (File.Exists(destination))
 			File.Delete(destination);
 
-		if (useHardlink && TryHardLink(source, destination))
-			return;
+		if (!useHardlink || !TryHardLink(source, destination))
+			File.Move(source, destination, false);
 
-		File.Move(source, destination, false);
+		if (config != null && logger != null)
+			PermissionApplier.ApplyToFile(destination, config, logger);
 	}
 
 	private static void EnsureFreeSpace(string destination, int minimumFreeSpaceMb)

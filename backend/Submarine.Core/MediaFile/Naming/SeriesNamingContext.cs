@@ -58,4 +58,9 @@ public record SeriesNamingContext
 	///     If the Series is an Anime
 	/// </summary>
 	public bool IsAnime { get; init; }
+
+	/// <summary>
+	///     Technical media information of the file, if available
+	/// </summary>
+	public MediaInfo? MediaInfo { get; init; }
 }

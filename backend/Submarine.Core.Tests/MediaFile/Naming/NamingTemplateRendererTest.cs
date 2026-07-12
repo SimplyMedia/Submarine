@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Submarine.Core.Languages;
+using Submarine.Core.MediaFile;
 using Submarine.Core.MediaFile.Naming;
 using Submarine.Core.Quality;
 using Xunit;
@@ -206,6 +207,105 @@ public class NamingTemplateRendererTest
 		var context = new MovieNamingContext { MovieTitle = "Some Movie", Languages = languages };
 
 		var result = _instance.Render("{Movie Title} {Languages}", context);
+
+		Assert.Equal(expected, result.Name);
+	}
+
+	[Theory]
+	[InlineData(MultiEpisodeStyle.EXTEND, "S01E01-02-03")]
+	[InlineData(MultiEpisodeStyle.DUPLICATE, "S01E01.S01E02.S01E03")]
+	[InlineData(MultiEpisodeStyle.REPEAT, "S01E01E02E03")]
+	[InlineData(MultiEpisodeStyle.SCENE, "1x01x02x03")]
+	[InlineData(MultiEpisodeStyle.RANGE, "S01E01-03")]
+	[InlineData(MultiEpisodeStyle.PREFIXED_RANGE, "S01E01-E03")]
+	public void Render_ShouldRenderCluster_WhenMultiEpisodeContiguous(MultiEpisodeStyle style, string expected)
+	{
+		var context = new SeriesNamingContext { SeasonNumber = 1, EpisodeNumbers = new[] { 1, 2, 3 } };
+
+		var result = _instance.Render("S{Season:00}E{Episode:00}", context, style);
+
+		Assert.Equal(expected, result.Name);
+	}
+
+	[Theory]
+	[InlineData(MultiEpisodeStyle.EXTEND)]
+	[InlineData(MultiEpisodeStyle.RANGE)]
+	[InlineData(MultiEpisodeStyle.PREFIXED_RANGE)]
+	public void Render_ShouldFallBackToRepeat_WhenMultiEpisodeNonContiguous(MultiEpisodeStyle style)
+	{
+		var context = new SeriesNamingContext { SeasonNumber = 1, EpisodeNumbers = new[] { 1, 3 } };
+
+		var result = _instance.Render("S{Season:00}E{Episode:00}", context, style);
+
+		Assert.Equal("S01E01E03", result.Name);
+	}
+
+	[Theory]
+	[InlineData(MultiEpisodeStyle.EXTEND)]
+	[InlineData(MultiEpisodeStyle.DUPLICATE)]
+	[InlineData(MultiEpisodeStyle.REPEAT)]
+	[InlineData(MultiEpisodeStyle.SCENE)]
+	[InlineData(MultiEpisodeStyle.RANGE)]
+	[InlineData(MultiEpisodeStyle.PREFIXED_RANGE)]
+	public void Render_ShouldRenderPlainCluster_WhenSingleEpisode(MultiEpisodeStyle style)
+	{
+		var context = new SeriesNamingContext { SeasonNumber = 1, EpisodeNumbers = new[] { 1 } };
+
+		var result = _instance.Render("S{Season:00}E{Episode:00}", context, style);
+
+		Assert.Equal("S01E01", result.Name);
+	}
+
+	[Fact]
+	public void Render_ShouldScopeSceneSeasonToCluster_WhenSceneStyle()
+	{
+		var context = new SeriesNamingContext { SeasonNumber = 1, EpisodeNumbers = new[] { 1, 2 } };
+
+		var result = _instance.Render("Season {Season:00} - S{Season:00}E{Episode:00}", context, MultiEpisodeStyle.SCENE);
+
+		Assert.Equal("Season 01 - 1x01x02", result.Name);
+	}
+
+	[Fact]
+	public void Render_ShouldRenderMediaInfoTokens_WhenPresent()
+	{
+		var context = new SeriesNamingContext
+		{
+			MediaInfo = new MediaInfo
+			{
+				VideoCodec = "x265", AudioCodec = "dts", AudioChannels = 6, VideoDynamicRange = "HDR10"
+			}
+		};
+
+		var result = _instance.Render(
+			"{MediaInfo VideoCodec} {MediaInfo AudioCodec} {MediaInfo AudioChannels} {MediaInfo VideoDynamicRange}",
+			context);
+
+		Assert.Equal("x265 dts 5.1 HDR10", result.Name);
+	}
+
+	[Theory]
+	[InlineData("The Series-{MediaInfo VideoCodec}", "The Series")]
+	[InlineData("The Series [{MediaInfo VideoCodec}]", "The Series")]
+	public void Render_ShouldCollapseMediaInfoToken_WhenAbsent(string template, string expected)
+	{
+		var context = new SeriesNamingContext { SeriesTitle = "The Series" };
+
+		var result = _instance.Render(template, context);
+
+		Assert.Equal(expected, result.Name);
+	}
+
+	[Theory]
+	[InlineData(2.0, "2.0")]
+	[InlineData(6.0, "5.1")]
+	[InlineData(8.0, "7.1")]
+	[InlineData(7.0, "7.0")]
+	public void Render_ShouldFormatAudioChannels_PerChannelCount(double channels, string expected)
+	{
+		var context = new SeriesNamingContext { MediaInfo = new MediaInfo { AudioChannels = channels } };
+
+		var result = _instance.Render("{MediaInfo AudioChannels}", context);
 
 		Assert.Equal(expected, result.Name);
 	}

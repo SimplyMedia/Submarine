@@ -38,4 +38,9 @@ public record MovieNamingContext
 	///     The Release Group of the file, if any
 	/// </summary>
 	public string? ReleaseGroup { get; init; }
+
+	/// <summary>
+	///     Technical media information of the file, if available
+	/// </summary>
+	public MediaInfo? MediaInfo { get; init; }
 }
