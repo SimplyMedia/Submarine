@@ -163,6 +163,7 @@ builder.Services.AddHttpClient<IMappingsClient, MappingsClient>((sp, client) =>
 	})
 	.AddStandardResilienceHandler();
 
+builder.Services.AddHttpClient("metadata-images", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddHttpClient("indexer", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddHttpClient("downloadclient", client => client.Timeout = TimeSpan.FromSeconds(100));
 
@@ -190,6 +191,7 @@ builder.Services.AddSingleton<IScheduledJob, MetadataRefreshJob>();
 builder.Services.AddSingleton<IScheduledJob, ImportListSyncJob>();
 builder.Services.AddSingleton<IScheduledJob, RssSyncJob>();
 builder.Services.AddSingleton<IScheduledJob, BackupJob>();
+builder.Services.AddSingleton<IScheduledJob, HealthCheckJob>();
 
 // Events
 builder.Services.AddScoped<IEventPublisher, EventPublisher>();
@@ -202,6 +204,10 @@ builder.Services.AddScoped<IEventHandler<MediaGrabbedEvent>>(sp =>
 builder.Services.AddScoped<IEventHandler<MediaImportedEvent>>(sp =>
 	sp.GetRequiredService<ConnectionEventHandler>());
 builder.Services.AddScoped<IEventHandler<MediaRenamedEvent>>(sp =>
+	sp.GetRequiredService<ConnectionEventHandler>());
+builder.Services.AddScoped<IEventHandler<MediaDeletedEvent>>(sp =>
+	sp.GetRequiredService<ConnectionEventHandler>());
+builder.Services.AddScoped<IEventHandler<HealthIssueEvent>>(sp =>
 	sp.GetRequiredService<ConnectionEventHandler>());
 
 builder.Services.AddEndpointsApiExplorer();
@@ -277,6 +283,9 @@ else
 	builder.Services.AddDbContext<SubmarineDatabaseContext, SqliteDatabaseContext>();
 
 var app = builder.Build();
+
+NfoWriterService.HttpClientFactory = app.Services.GetRequiredService<IHttpClientFactory>();
+NfoWriterService.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("NfoWriterService");
 
 using (var scope = app.Services.GetService<IServiceScopeFactory>()?.CreateScope())
 {

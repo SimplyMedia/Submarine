@@ -87,6 +87,13 @@ public class ImportService
 			return;
 		}
 
+		// An import is an upgrade when it replaced files that existed in the version before it ran
+		var existingFileIds = tracked.SeriesId != null
+			? await _context.EpisodeFiles.AsNoTracking().Where(f => f.MediaVersionId == version.Id)
+				.Select(f => f.Id).ToListAsync(cancellationToken)
+			: await _context.MovieFiles.AsNoTracking().Where(f => f.MediaVersionId == version.Id)
+				.Select(f => f.Id).ToListAsync(cancellationToken);
+
 		if (tracked.SeriesId is { } seriesId)
 		{
 			var series = await _context.Series.FirstOrDefaultAsync(s => s.Id == seriesId, cancellationToken);
@@ -110,8 +117,19 @@ public class ImportService
 		tracked.Imported = true;
 		await _context.SaveChangesAsync(cancellationToken);
 
+		var isUpgrade = false;
+
+		if (existingFileIds.Count > 0)
+		{
+			var remaining = tracked.SeriesId != null
+				? await _context.EpisodeFiles.CountAsync(f => existingFileIds.Contains(f.Id), cancellationToken)
+				: await _context.MovieFiles.CountAsync(f => existingFileIds.Contains(f.Id), cancellationToken);
+
+			isUpgrade = remaining < existingFileIds.Count;
+		}
+
 		await _eventPublisher.PublishAsync(
-			new MediaImportedEvent(tracked.SeriesId, tracked.MovieId, version.Path, tracked.Title),
+			new MediaImportedEvent(tracked.SeriesId, tracked.MovieId, version.Path, tracked.Title, isUpgrade),
 			cancellationToken);
 	}
 
@@ -186,12 +204,14 @@ public class ImportService
 	{
 		var ordered = episodes.OrderBy(e => e.EpisodeNumber).ToList();
 		var extension = Path.GetExtension(sourceFile);
+		var mediaInfo = await _mediaInfoService.ProbeAsync(sourceFile, cancellationToken);
 		string fileName;
 		bool namedFromPlaceholder;
 
 		if (namingConfig.RenameEpisodes)
 		{
-			var rendered = _naming.RenderEpisodeFile(series, ordered, quality, languages, releaseGroup, namingConfig);
+			var rendered = _naming.RenderEpisodeFile(series, ordered, quality, languages, releaseGroup, mediaInfo,
+				namingConfig);
 			fileName = rendered.Name;
 			namedFromPlaceholder = rendered.UsedPlaceholderTitle;
 		}
@@ -209,7 +229,8 @@ public class ImportService
 
 		// Place the new file before removing the old one so a failed placement can never leave the
 		// version without a file. If the save below throws, the placed file is left as an orphan.
-		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks, managementConfig.MinimumFreeSpaceMb);
+		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks, managementConfig.MinimumFreeSpaceMb,
+			managementConfig, _logger);
 
 		if (managementConfig.ImportExtraFiles)
 			ExtraFileService.CopySubtitles(sourceFile, destination);
@@ -231,7 +252,7 @@ public class ImportService
 			Languages = languages.ToList(),
 			ReleaseGroup = releaseGroup,
 			NamedFromPlaceholder = namedFromPlaceholder,
-			MediaInfo = await _mediaInfoService.ProbeAsync(destination, cancellationToken),
+			MediaInfo = mediaInfo,
 			Episodes = ordered
 		};
 
@@ -266,16 +287,18 @@ public class ImportService
 		Core.Config.MediaManagementConfig managementConfig, CancellationToken cancellationToken = default)
 	{
 		var extension = Path.GetExtension(sourceFile);
+		var mediaInfo = await _mediaInfoService.ProbeAsync(sourceFile, cancellationToken);
 
 		var fileName = namingConfig.RenameEpisodes
-			? _naming.RenderMovieFile(movie, quality, languages, releaseGroup, edition, namingConfig).Name
+			? _naming.RenderMovieFile(movie, quality, languages, releaseGroup, edition, mediaInfo, namingConfig).Name
 			: Path.GetFileNameWithoutExtension(sourceFile);
 
 		var destination = Path.Combine(version.Path, fileName + extension);
 
 		// Place the new file before removing the old one so a failed placement can never leave the
 		// version without a file. If the save below throws, the placed file is left as an orphan.
-		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks, managementConfig.MinimumFreeSpaceMb);
+		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks, managementConfig.MinimumFreeSpaceMb,
+			managementConfig, _logger);
 
 		if (managementConfig.ImportExtraFiles)
 			ExtraFileService.CopySubtitles(sourceFile, destination);
@@ -294,7 +317,7 @@ public class ImportService
 			Languages = languages.ToList(),
 			ReleaseGroup = releaseGroup,
 			Edition = edition,
-			MediaInfo = await _mediaInfoService.ProbeAsync(destination, cancellationToken)
+			MediaInfo = mediaInfo
 		};
 
 		_context.MovieFiles.Add(movieFile);

@@ -39,6 +39,8 @@ public class SeriesRefreshService
 		series.Status = MapStatus(resource.Status);
 		series.Network = resource.Network;
 		series.Runtime = resource.Runtime;
+		series.PosterUrl = resource.ImageUrl;
+		series.BackdropUrl = resource.BackdropUrl;
 
 		var seasons = await _context.Seasons.Where(s => s.SeriesId == series.Id).ToListAsync(cancellationToken);
 
@@ -161,6 +163,8 @@ public class SeriesRefreshService
 		movie.Runtime = resource.Runtime;
 		movie.Studio = resource.Studio;
 		movie.Year = resource.Year;
+		movie.PosterUrl = resource.ImageUrl;
+		movie.BackdropUrl = resource.BackdropUrl;
 		movie.TmdbCollectionId = resource.TmdbCollectionId;
 		movie.CollectionTitle = resource.CollectionTitle;
 		movie.ReleaseDate = resource.ReleaseDate == null

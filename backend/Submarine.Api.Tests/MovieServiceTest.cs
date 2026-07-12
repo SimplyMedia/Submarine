@@ -25,7 +25,7 @@ public class MovieServiceTest : DatabaseTestBase
 
 		var service = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
 			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
-			metadataClient, new FakeBackgroundTaskQueue(), new VersionService(Context));
+			metadataClient, new FakeBackgroundTaskQueue(), new VersionService(Context), new FakeEventPublisher());
 
 		var movie = await service.AddAsync(new AddMovieRequest
 		{
@@ -93,5 +93,5 @@ public class MovieServiceTest : DatabaseTestBase
 	private MovieService BuildService()
 		=> new(new MovieRepository(Context), new RootFolderRepository(Context),
 			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
-			new FakeMetadataClient(), new FakeBackgroundTaskQueue(), new VersionService(Context));
+			new FakeMetadataClient(), new FakeBackgroundTaskQueue(), new VersionService(Context), new FakeEventPublisher());
 }

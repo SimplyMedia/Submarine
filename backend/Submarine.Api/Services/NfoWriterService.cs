@@ -9,6 +9,17 @@ namespace Submarine.Api.Services;
 public static class NfoWriterService
 {
 	/// <summary>
+	///     Factory used to resolve the "metadata-images" http client for poster/fanart downloads. Configured once at
+	///     startup; when null, image downloads are skipped.
+	/// </summary>
+	public static IHttpClientFactory? HttpClientFactory { get; set; }
+
+	/// <summary>
+	///     Logger used to record image download failures at debug level; when null, failures are swallowed silently.
+	/// </summary>
+	public static ILogger? Logger { get; set; }
+
+	/// <summary>
 	///     Writes {episodefilename}.nfo next to <paramref name="videoPath" />, one episodedetails block per episode
 	///     the file satisfies, overwriting any existing file
 	/// </summary>
@@ -21,7 +32,8 @@ public static class NfoWriterService
 	}
 
 	/// <summary>
-	///     Writes {moviefilename}.nfo next to <paramref name="videoPath" />, overwriting any existing file
+	///     Writes {moviefilename}.nfo next to <paramref name="videoPath" />, overwriting any existing file, and downloads
+	///     poster/fanart artwork into the movie folder when it is not already present
 	/// </summary>
 	public static void WriteMovieNfo(string videoPath, Movie movie)
 	{
@@ -39,10 +51,13 @@ public static class NfoWriterService
 			root.Add(new XElement("uniqueid", new XAttribute("type", "imdb"), movie.ImdbId));
 
 		new XDocument(root).Save(path);
+
+		DownloadImages(Path.GetDirectoryName(path)!, movie.PosterUrl, movie.BackdropUrl);
 	}
 
 	/// <summary>
-	///     Writes tvshow.nfo in the series version folder, overwriting any existing file
+	///     Writes tvshow.nfo in the series version folder, overwriting any existing file, and downloads poster/fanart
+	///     artwork into the version folder when it is not already present
 	/// </summary>
 	public static void WriteTvShowNfo(string versionPath, Series series)
 	{
@@ -63,6 +78,8 @@ public static class NfoWriterService
 			root.Add(new XElement("genre", tag));
 
 		new XDocument(root).Save(path);
+
+		DownloadImages(versionPath, series.PosterUrl, series.BackdropUrl);
 	}
 
 	private static XDocument BuildEpisodeDocument(Episode episode)
@@ -72,4 +89,42 @@ public static class NfoWriterService
 			new XElement("episode", episode.EpisodeNumber),
 			new XElement("aired", episode.AirDate?.ToString("yyyy-MM-dd")),
 			new XElement("plot", episode.Overview)));
+
+	private static void DownloadImages(string folder, string? posterUrl, string? backdropUrl)
+	{
+		if (HttpClientFactory == null)
+			return;
+
+		DownloadImage(folder, "poster.jpg", posterUrl);
+		DownloadImage(folder, "fanart.jpg", backdropUrl);
+	}
+
+	// Best-effort: a missing url, an existing file, or any transport/status failure never blocks the import
+	private static void DownloadImage(string folder, string fileName, string? url)
+	{
+		if (string.IsNullOrEmpty(url))
+			return;
+
+		var target = Path.Combine(folder, fileName);
+
+		if (File.Exists(target))
+			return;
+
+		try
+		{
+			using var client = HttpClientFactory!.CreateClient("metadata-images");
+			using var response = client.GetAsync(url).GetAwaiter().GetResult();
+
+			if (!response.IsSuccessStatusCode)
+				return;
+
+			var bytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+
+			File.WriteAllBytes(target, bytes);
+		}
+		catch (Exception ex)
+		{
+			Logger?.LogDebug(ex, "Failed to download {File} from {Url}", fileName, url);
+		}
+	}
 }

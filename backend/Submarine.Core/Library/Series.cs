@@ -59,6 +59,16 @@ public class Series : ICreatable, IUpdatable
 	public int? Year { get; set; }
 
 	/// <summary>
+	///     Url of the poster image of this series
+	/// </summary>
+	public string? PosterUrl { get; set; }
+
+	/// <summary>
+	///     Url of the backdrop image of this series
+	/// </summary>
+	public string? BackdropUrl { get; set; }
+
+	/// <summary>
 	///     Status of the series
 	/// </summary>
 	public SeriesStatus Status { get; set; }

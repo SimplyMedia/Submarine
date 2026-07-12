@@ -12,6 +12,7 @@ internal record TmdbMovie(
 	[property: JsonPropertyName("genres")] IReadOnlyList<TmdbGenre>? Genres,
 	[property: JsonPropertyName("production_companies")] IReadOnlyList<TmdbProductionCompany>? ProductionCompanies,
 	[property: JsonPropertyName("poster_path")] string? PosterPath,
+	[property: JsonPropertyName("backdrop_path")] string? BackdropPath,
 	[property: JsonPropertyName("belongs_to_collection")] TmdbBelongsToCollection? BelongsToCollection);
 
 internal record TmdbBelongsToCollection(
@@ -57,6 +58,7 @@ internal record TmdbSeries(
 	[property: JsonPropertyName("networks")] IReadOnlyList<TmdbNetwork>? Networks,
 	[property: JsonPropertyName("genres")] IReadOnlyList<TmdbGenre>? Genres,
 	[property: JsonPropertyName("poster_path")] string? PosterPath,
+	[property: JsonPropertyName("backdrop_path")] string? BackdropPath,
 	[property: JsonPropertyName("seasons")] IReadOnlyList<TmdbSeasonSummary>? Seasons,
 	[property: JsonPropertyName("external_ids")] TmdbExternalIds? ExternalIds);
 
@@ -79,3 +81,22 @@ internal record TmdbEpisode(
 	[property: JsonPropertyName("runtime")] int? Runtime,
 	[property: JsonPropertyName("season_number")] int SeasonNumber,
 	[property: JsonPropertyName("episode_number")] int EpisodeNumber);
+
+internal record TmdbEpisodeGroupsResponse(
+	[property: JsonPropertyName("results")] IReadOnlyList<TmdbEpisodeGroupSummary>? Results);
+
+internal record TmdbEpisodeGroupSummary(
+	[property: JsonPropertyName("id")] string Id,
+	[property: JsonPropertyName("type")] int Type,
+	[property: JsonPropertyName("group_count")] int GroupCount);
+
+internal record TmdbEpisodeGroupDetail(
+	[property: JsonPropertyName("groups")] IReadOnlyList<TmdbEpisodeGroupSeason>? Groups);
+
+internal record TmdbEpisodeGroupSeason(
+	[property: JsonPropertyName("order")] int Order,
+	[property: JsonPropertyName("episodes")] IReadOnlyList<TmdbEpisodeGroupEpisode>? Episodes);
+
+internal record TmdbEpisodeGroupEpisode(
+	[property: JsonPropertyName("id")] int Id,
+	[property: JsonPropertyName("order")] int Order);

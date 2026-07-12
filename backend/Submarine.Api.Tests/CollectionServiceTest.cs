@@ -92,7 +92,7 @@ public class CollectionServiceTest : DatabaseTestBase
 	{
 		var movieService = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
 			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
-			metadataClient, new FakeBackgroundTaskQueue(), new VersionService(Context));
+			metadataClient, new FakeBackgroundTaskQueue(), new VersionService(Context), new FakeEventPublisher());
 
 		return new CollectionService(new MovieRepository(Context), metadataClient, movieService);
 	}

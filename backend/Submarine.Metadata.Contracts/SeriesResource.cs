@@ -17,6 +17,7 @@ namespace Submarine.Metadata.Contracts;
 /// <param name="Episodes">episodes of this series</param>
 /// <param name="ImageUrl">url of the poster image of this series</param>
 /// <param name="Year">year this series first aired</param>
+/// <param name="BackdropUrl">url of the backdrop image of this series, if known</param>
 public record SeriesResource(
 	int TvdbId,
 	int? TmdbId,
@@ -31,4 +32,5 @@ public record SeriesResource(
 	IReadOnlyList<SeasonResource> Seasons,
 	IReadOnlyList<EpisodeResource> Episodes,
 	string? ImageUrl,
-	int? Year);
+	int? Year,
+	string? BackdropUrl = null);

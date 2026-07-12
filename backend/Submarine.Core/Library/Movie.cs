@@ -59,6 +59,16 @@ public class Movie : ICreatable, IUpdatable
 	public string? Studio { get; set; }
 
 	/// <summary>
+	///     Url of the poster image of this movie
+	/// </summary>
+	public string? PosterUrl { get; set; }
+
+	/// <summary>
+	///     Url of the backdrop image of this movie
+	/// </summary>
+	public string? BackdropUrl { get; set; }
+
+	/// <summary>
 	///     Release date of this movie
 	/// </summary>
 	public DateTimeOffset? ReleaseDate { get; set; }

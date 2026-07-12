@@ -643,6 +643,9 @@ namespace Submarine.Api.Migrations.Postgres
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BackdropUrl")
+                        .HasColumnType("text");
+
                     b.Property<string>("CollectionTitle")
                         .HasColumnType("text");
 
@@ -662,6 +665,9 @@ namespace Submarine.Api.Migrations.Postgres
                         .HasColumnType("boolean");
 
                     b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PosterUrl")
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset?>("ReleaseDate")
@@ -762,6 +768,9 @@ namespace Submarine.Api.Migrations.Postgres
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BackdropUrl")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -778,6 +787,9 @@ namespace Submarine.Api.Migrations.Postgres
                         .HasColumnType("integer");
 
                     b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PosterUrl")
                         .HasColumnType("text");
 
                     b.Property<int?>("Runtime")

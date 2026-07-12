@@ -301,6 +301,77 @@ public class TmdbClientTest
 		Assert.Empty(result.Episodes);
 	}
 
+	[Fact]
+	public async Task GetSeriesAsync_ShouldMergeDvdAndAbsoluteOrderings_WhenEpisodeGroupsExist()
+	{
+		const string detailJson = """
+			{
+				"id": 1399,
+				"name": "Grouped Show",
+				"status": "Ended",
+				"first_air_date": "2011-04-17",
+				"seasons": [
+					{ "season_number": 1, "name": "Season 1", "episode_count": 2 },
+					{ "season_number": 2, "name": "Season 2", "episode_count": 2 }
+				]
+			}
+			""";
+
+		const string season1Json = """
+			{ "episodes": [
+				{ "id": 1, "name": "A", "season_number": 1, "episode_number": 1 },
+				{ "id": 2, "name": "B", "season_number": 1, "episode_number": 2 }
+			] }
+			""";
+
+		const string season2Json = """
+			{ "episodes": [
+				{ "id": 21, "name": "C", "season_number": 2, "episode_number": 1 },
+				{ "id": 22, "name": "D", "season_number": 2, "episode_number": 2 }
+			] }
+			""";
+
+		const string episodeGroupsJson = """
+			{ "results": [
+				{ "id": "dvd-group", "type": 3, "group_count": 2 },
+				{ "id": "abs-group", "type": 2, "group_count": 1 }
+			] }
+			""";
+
+		const string dvdGroupJson = """
+			{ "groups": [
+				{ "order": 1, "episodes": [ { "id": 1, "order": 0 }, { "id": 2, "order": 1 } ] },
+				{ "order": 2, "episodes": [ { "id": 21, "order": 0 } ] }
+			] }
+			""";
+
+		const string absoluteGroupJson = """
+			{ "groups": [
+				{ "order": 1, "episodes": [ { "id": 1, "order": 0 }, { "id": 2, "order": 1 }, { "id": 21, "order": 2 } ] }
+			] }
+			""";
+
+		var client = CreateClient(detailJson, season1Json, season2Json, episodeGroupsJson, dvdGroupJson,
+			absoluteGroupJson);
+
+		var series = await client.GetSeriesAsync(1399);
+
+		Assert.NotNull(series);
+
+		var first = series.Episodes.Single(e => e.TmdbId == 1);
+		Assert.Contains(new EpisodeNumber(EpisodeOrdering.Aired, 1, 1, null), first.Numbers);
+		Assert.Contains(new EpisodeNumber(EpisodeOrdering.Dvd, 1, 1, null), first.Numbers);
+		Assert.Contains(new EpisodeNumber(EpisodeOrdering.Absolute, null, null, 1), first.Numbers);
+
+		var third = series.Episodes.Single(e => e.TmdbId == 21);
+		Assert.Contains(new EpisodeNumber(EpisodeOrdering.Dvd, 2, 1, null), third.Numbers);
+		Assert.Contains(new EpisodeNumber(EpisodeOrdering.Absolute, null, null, 3), third.Numbers);
+
+		var missing = series.Episodes.Single(e => e.TmdbId == 22);
+		var airedOnly = Assert.Single(missing.Numbers);
+		Assert.Equal(new EpisodeNumber(EpisodeOrdering.Aired, 2, 2, null), airedOnly);
+	}
+
 	private static TmdbClient CreateClient(string responseJson)
 	{
 		var httpClient = new HttpClient(new StubHttpMessageHandler(responseJson))

@@ -27,10 +27,10 @@ public class LibraryImportServiceTest : DatabaseTestBase
 	{
 		var seriesService = new SeriesService(new SeriesRepository(Context), new RootFolderRepository(Context),
 			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
-			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context));
+			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context), new FakeEventPublisher());
 		var movieService = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
 			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
-			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context));
+			metadata, new FakeBackgroundTaskQueue(), new VersionService(Context), new FakeEventPublisher());
 
 		return new LibraryImportService(Context, seriesService, movieService, metadata, ReleaseParser(),
 			new HistoryService(Context), NullLogger<LibraryImportService>.Instance);

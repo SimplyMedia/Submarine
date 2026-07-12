@@ -17,6 +17,7 @@ namespace Submarine.Metadata.Contracts;
 /// <param name="Editions">known editions of this movie</param>
 /// <param name="TmdbCollectionId">TheMovieDB identifier of the collection this movie belongs to, if any</param>
 /// <param name="CollectionTitle">title of the collection this movie belongs to, if any</param>
+/// <param name="BackdropUrl">url of the backdrop image of this movie, if known</param>
 public record MovieResource(
 	int TmdbId,
 	string? ImdbId,
@@ -31,4 +32,5 @@ public record MovieResource(
 	string? ImageUrl,
 	IReadOnlyList<string> Editions,
 	int? TmdbCollectionId = null,
-	string? CollectionTitle = null);
+	string? CollectionTitle = null,
+	string? BackdropUrl = null);

@@ -88,7 +88,8 @@ public class TmdbClient
 
 	/// <summary>
 	///     Gets a single series from TMDB by its identifier, fanning out per-season episode fetches (specials included as
-	///     season 0). TMDB only exposes aired ordering, so every episode carries a single aired <see cref="EpisodeNumber" />.
+	///     season 0). Every episode carries an aired <see cref="EpisodeNumber" />; dvd and absolute orderings are merged
+	///     in from TMDB episode groups when available.
 	/// </summary>
 	/// <param name="tmdbId">TheMovieDB identifier of the series</param>
 	/// <returns>normalized series, or null if it could not be found</returns>
@@ -108,12 +109,88 @@ public class TmdbClient
 			.Select(MapEpisode)
 			.ToList();
 
-		return MapSeries(series, episodes);
+		var enriched = await ApplyEpisodeGroupsAsync(tmdbId, episodes);
+
+		return MapSeries(series, enriched);
 	}
 
 	private Task<TmdbSeasonDetail?> GetSeasonAsync(int tmdbId, int seasonNumber)
 		=> _httpClient.GetFromJsonAsync<TmdbSeasonDetail>(
 			$"tv/{tmdbId}/season/{seasonNumber}?api_key={_apiKey}", JsonOptions);
+
+	// TMDB episode group type ids: 2 = absolute ordering, 3 = dvd ordering
+	private async Task<IReadOnlyList<EpisodeResource>> ApplyEpisodeGroupsAsync(int tmdbId,
+		IReadOnlyList<EpisodeResource> episodes)
+	{
+		var groups = await _httpClient.GetFromJsonAsync<TmdbEpisodeGroupsResponse>(
+			$"tv/{tmdbId}/episode_groups?api_key={_apiKey}", JsonOptions);
+
+		var results = groups?.Results ?? [];
+		var dvdGroup = results.FirstOrDefault(g => g.Type == 3);
+		var absoluteGroup = results.FirstOrDefault(g => g.Type == 2);
+
+		if (dvdGroup == null && absoluteGroup == null)
+			return episodes;
+
+		var dvdNumbers = dvdGroup == null ? null : await BuildDvdNumbersAsync(dvdGroup.Id);
+		var absoluteNumbers = absoluteGroup == null ? null : await BuildAbsoluteNumbersAsync(absoluteGroup.Id);
+
+		return episodes.Select(e => MergeOrderings(e, dvdNumbers, absoluteNumbers)).ToList();
+	}
+
+	private async Task<IReadOnlyDictionary<int, EpisodeNumber>> BuildDvdNumbersAsync(string groupId)
+	{
+		var detail = await GetEpisodeGroupAsync(groupId);
+		var numbers = new Dictionary<int, EpisodeNumber>();
+
+		foreach (var season in (detail?.Groups ?? []).OrderBy(g => g.Order))
+			foreach (var episode in (season.Episodes ?? []).OrderBy(e => e.Order))
+				numbers[episode.Id] = new EpisodeNumber(EpisodeOrdering.Dvd, season.Order, episode.Order + 1, null);
+
+		return numbers;
+	}
+
+	private async Task<IReadOnlyDictionary<int, EpisodeNumber>> BuildAbsoluteNumbersAsync(string groupId)
+	{
+		var detail = await GetEpisodeGroupAsync(groupId);
+		var numbers = new Dictionary<int, EpisodeNumber>();
+		var running = 0;
+
+		foreach (var season in (detail?.Groups ?? []).OrderBy(g => g.Order))
+			foreach (var episode in (season.Episodes ?? []).OrderBy(e => e.Order))
+				numbers[episode.Id] = new EpisodeNumber(EpisodeOrdering.Absolute, null, null, ++running);
+
+		return numbers;
+	}
+
+	private Task<TmdbEpisodeGroupDetail?> GetEpisodeGroupAsync(string groupId)
+		=> _httpClient.GetFromJsonAsync<TmdbEpisodeGroupDetail>(
+			$"tv/episode_group/{groupId}?api_key={_apiKey}", JsonOptions);
+
+	private static EpisodeResource MergeOrderings(EpisodeResource episode,
+		IReadOnlyDictionary<int, EpisodeNumber>? dvdNumbers, IReadOnlyDictionary<int, EpisodeNumber>? absoluteNumbers)
+	{
+		if (episode.TmdbId == null)
+			return episode;
+
+		var dvd = dvdNumbers != null && dvdNumbers.TryGetValue(episode.TmdbId.Value, out var d) ? d : null;
+		var absolute = absoluteNumbers != null && absoluteNumbers.TryGetValue(episode.TmdbId.Value, out var a)
+			? a
+			: null;
+
+		if (dvd == null && absolute == null)
+			return episode;
+
+		var numbers = episode.Numbers.ToList();
+
+		if (dvd != null)
+			numbers.Add(dvd);
+
+		if (absolute != null)
+			numbers.Add(absolute);
+
+		return episode with { Numbers = numbers };
+	}
 
 	private static SeriesResource MapSeries(TmdbSeries series, IReadOnlyList<EpisodeResource> episodes)
 	{
@@ -140,7 +217,8 @@ public class TmdbClient
 			seasons,
 			episodes,
 			series.PosterPath == null ? null : ImageBaseUrl + series.PosterPath,
-			firstAired?.Year);
+			firstAired?.Year,
+			series.BackdropPath == null ? null : ImageBaseUrl + series.BackdropPath);
 	}
 
 	private static SeriesResource MapSearchResult(TmdbTvSearchResult result)
@@ -201,7 +279,8 @@ public class TmdbClient
 			movie.PosterPath == null ? null : ImageBaseUrl + movie.PosterPath,
 			[],
 			movie.BelongsToCollection?.Id,
-			movie.BelongsToCollection?.Name);
+			movie.BelongsToCollection?.Name,
+			movie.BackdropPath == null ? null : ImageBaseUrl + movie.BackdropPath);
 	}
 
 	private static MovieResource MapCollectionPart(TmdbCollectionPart part, int collectionId, string collectionTitle)

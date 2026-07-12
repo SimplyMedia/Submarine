@@ -467,6 +467,79 @@ public class ImportServiceTest : DatabaseTestBase
 	}
 
 	[Fact]
+	public async Task ImportTrackedDownloadAsync_ShouldRenderNameWithMediaInfoToken_WhenTemplateUsesCodec()
+	{
+		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var libraryPath = Path.Combine(root, "library", "Show");
+		var downloadPath = Path.Combine(root, "download");
+		Directory.CreateDirectory(libraryPath);
+		Directory.CreateDirectory(downloadPath);
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+
+		try
+		{
+			Context.MediaManagementConfigs.Add(new MediaManagementConfig { Id = 1, UseHardlinks = false });
+			Context.NamingConfigs.Add(new NamingConfig
+			{
+				Id = 1,
+				StandardEpisodeFormat = "{Series Title} - S{Season:00}E{Episode:00} - {Episode Title} {MediaInfo VideoCodec}"
+			});
+
+			var series = new Series
+			{
+				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
+			};
+			Context.Series.Add(series);
+			await Context.SaveChangesAsync();
+
+			var version = new MediaVersion
+			{
+				SeriesId = series.Id, Name = "Default", Path = libraryPath, QualityProfileId = 1,
+				LanguageProfileId = 1, Monitored = true
+			};
+			Context.Versions.Add(version);
+			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
+			Context.Episodes.Add(episode);
+			await Context.SaveChangesAsync();
+
+			var tracked = new TrackedDownload
+			{
+				DownloadClientConfigId = 1,
+				DownloadId = "abc",
+				Title = "Show S01E05",
+				Protocol = Protocol.BITTORRENT,
+				Status = DownloadItemStatus.COMPLETED,
+				ReleaseTitle = "Show S01E05 1080p WEB-DL x264-GROUP",
+				Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
+					new Revision()),
+				Languages = new List<Language> { Language.ENGLISH },
+				SeriesId = series.Id,
+				MediaVersionId = version.Id,
+				EpisodeIds = new List<int> { episode.Id },
+				OutputPath = downloadPath
+			};
+			Context.TrackedDownloads.Add(tracked);
+			await Context.SaveChangesAsync();
+
+			const string probeJson =
+				"{ \"streams\": [ { \"codec_type\": \"video\", \"codec_name\": \"h264\" } ] }";
+
+			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
+				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
+				new FakeMediaInfoService(probeJson), NullLogger<ImportService>.Instance);
+
+			await service.ImportTrackedDownloadAsync(tracked.Id);
+
+			var file = await Context.EpisodeFiles.SingleAsync();
+			Assert.Equal(Path.Combine("Season 01", "Show - S01E05 - Real h264.mkv"), file.RelativePath);
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
 	public async Task ImportTrackedDownloadAsync_ShouldSkipSidecars_WhenImportExtraFilesDisabled()
 	{
 		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
