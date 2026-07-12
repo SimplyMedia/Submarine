@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Submarine.Api.Models.Request;
+using Submarine.Api.Models.Response;
 using Submarine.Api.Services;
+using Submarine.Core.Profile;
 
 namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class QualityProfileController : ControllerBase
 {
 	private readonly ProfileService _service;
@@ -14,6 +17,7 @@ public class QualityProfileController : ControllerBase
 		=> _service = service;
 
 	[HttpGet]
+	[ProducesResponseType(typeof(PagedResult<QualityProfile>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAllAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
 	{
 		var profiles = await _service.GetAllQualityProfilesAsync(page, pageSize);
@@ -22,6 +26,8 @@ public class QualityProfileController : ControllerBase
 	}
 
 	[HttpGet("{id:int}")]
+	[ProducesResponseType(typeof(QualityProfile), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> GetAsync([FromRoute] int id)
 	{
 		var profile = await _service.GetQualityProfileAsync(id);
@@ -30,6 +36,8 @@ public class QualityProfileController : ControllerBase
 	}
 
 	[HttpPost]
+	[ProducesResponseType(typeof(QualityProfile), StatusCodes.Status201Created)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> CreateAsync([FromBody] CreateQualityProfileRequest request)
 	{
 		var profile = await _service.CreateQualityProfileAsync(request);
@@ -38,6 +46,9 @@ public class QualityProfileController : ControllerBase
 	}
 
 	[HttpPut("{id:int}")]
+	[ProducesResponseType(typeof(QualityProfile), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateQualityProfileRequest request)
 	{
 		var profile = await _service.UpdateQualityProfileAsync(id, request);
@@ -46,6 +57,8 @@ public class QualityProfileController : ControllerBase
 	}
 
 	[HttpDelete("{id:int}")]
+	[ProducesResponseType(typeof(QualityProfile), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> DeleteAsync([FromRoute] int id)
 	{
 		var deleted = await _service.DeleteQualityProfileAsync(id);

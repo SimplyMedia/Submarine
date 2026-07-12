@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Submarine.Api.Models.Response;
 using Submarine.Api.Services;
 
 namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class CalendarController : ControllerBase
 {
 	private readonly CalendarService _service;
@@ -13,6 +15,8 @@ public class CalendarController : ControllerBase
 		=> _service = service;
 
 	[HttpGet]
+	[ProducesResponseType(typeof(IReadOnlyList<CalendarItemResponse>), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> GetAsync([FromQuery] DateTimeOffset? start = null,
 		[FromQuery] DateTimeOffset? end = null)
 	{

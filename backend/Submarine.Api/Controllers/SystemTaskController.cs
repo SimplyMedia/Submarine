@@ -6,6 +6,7 @@ namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class SystemTaskController : ControllerBase
 {
 	private readonly IScheduledJobRegistry _registry;
@@ -21,10 +22,13 @@ public class SystemTaskController : ControllerBase
 	}
 
 	[HttpGet]
+	[ProducesResponseType(typeof(IReadOnlyCollection<ScheduledJobStatus>), StatusCodes.Status200OK)]
 	public IActionResult GetAll()
 		=> Ok(_registry.GetAll());
 
 	[HttpPost("{name}")]
+	[ProducesResponseType(StatusCodes.Status202Accepted)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> TriggerAsync([FromRoute] string name)
 	{
 		if (!_runner.Contains(name))

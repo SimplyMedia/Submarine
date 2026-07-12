@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Submarine.Api.Models.Request;
+using Submarine.Api.Models.Response;
 using Submarine.Api.Services;
+using Submarine.Core.Library;
+using Submarine.Metadata.Contracts;
 
 namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class MovieController : ControllerBase
 {
 	private readonly MovieService _service;
@@ -14,6 +18,7 @@ public class MovieController : ControllerBase
 		=> _service = service;
 
 	[HttpGet]
+	[ProducesResponseType(typeof(PagedResult<Movie>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAllAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 50,
 		[FromQuery] bool? monitored = null, [FromQuery] string? term = null, [FromQuery] bool? isAnime = null)
 	{
@@ -23,6 +28,8 @@ public class MovieController : ControllerBase
 	}
 
 	[HttpGet("{id:int}")]
+	[ProducesResponseType(typeof(Movie), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> GetAsync([FromRoute] int id)
 	{
 		var movie = await _service.GetAsync(id);
@@ -31,6 +38,8 @@ public class MovieController : ControllerBase
 	}
 
 	[HttpGet("lookup")]
+	[ProducesResponseType(typeof(IReadOnlyList<MovieResource>), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> LookupAsync([FromQuery] string term)
 	{
 		var results = await _service.LookupAsync(term);
@@ -39,6 +48,9 @@ public class MovieController : ControllerBase
 	}
 
 	[HttpPost]
+	[ProducesResponseType(typeof(Movie), StatusCodes.Status201Created)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
 	public async Task<IActionResult> AddAsync([FromBody] AddMovieRequest request)
 	{
 		var movie = await _service.AddAsync(request);
@@ -47,6 +59,9 @@ public class MovieController : ControllerBase
 	}
 
 	[HttpPut("{id:int}")]
+	[ProducesResponseType(typeof(Movie), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateMovieRequest request)
 	{
 		var movie = await _service.UpdateAsync(id, request);
@@ -55,6 +70,8 @@ public class MovieController : ControllerBase
 	}
 
 	[HttpDelete("{id:int}")]
+	[ProducesResponseType(typeof(Movie), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> DeleteAsync([FromRoute] int id, [FromQuery] bool deleteFiles = false)
 	{
 		var deleted = await _service.DeleteAsync(id);

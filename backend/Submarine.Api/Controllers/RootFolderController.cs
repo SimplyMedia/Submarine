@@ -7,6 +7,7 @@ namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class RootFolderController : ControllerBase
 {
 	private readonly RootFolderService _service;
@@ -15,6 +16,7 @@ public class RootFolderController : ControllerBase
 		=> _service = service;
 
 	[HttpGet]
+	[ProducesResponseType(typeof(PagedResult<RootFolderResponse>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAllAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
 	{
 		var rootFolders = await _service.GetAllAsync(page, pageSize);
@@ -23,6 +25,8 @@ public class RootFolderController : ControllerBase
 	}
 
 	[HttpGet("{id:int}")]
+	[ProducesResponseType(typeof(RootFolderResponse), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> GetAsync([FromRoute] int id)
 	{
 		var rootFolder = await _service.GetAsync(id);
@@ -31,6 +35,9 @@ public class RootFolderController : ControllerBase
 	}
 
 	[HttpPost]
+	[ProducesResponseType(typeof(RootFolderResponse), StatusCodes.Status201Created)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
 	public async Task<IActionResult> CreateAsync([FromBody] CreateRootFolderRequest request)
 	{
 		var rootFolder = await _service.CreateAsync(request);
@@ -39,6 +46,8 @@ public class RootFolderController : ControllerBase
 	}
 
 	[HttpDelete("{id:int}")]
+	[ProducesResponseType(typeof(RootFolderResponse), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> DeleteAsync([FromRoute] int id)
 	{
 		var deleted = await _service.DeleteAsync(id);

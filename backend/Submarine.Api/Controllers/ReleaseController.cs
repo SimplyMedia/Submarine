@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Submarine.Api.Models.Request;
 using Submarine.Api.Services;
+using Submarine.Core.Download;
 using Submarine.Core.Parser;
 using Submarine.Core.Provider;
 using Submarine.Core.Release;
@@ -13,6 +14,7 @@ namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class ReleaseController : ControllerBase
 {
 	private readonly ILogger<ReleaseController> _logger;
@@ -31,6 +33,9 @@ public class ReleaseController : ControllerBase
 	}
 
 	[HttpGet]
+	[ProducesResponseType(typeof(BaseRelease), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
 	public IActionResult Get([FromQuery] [Required] string title, [FromQuery] [Required] Protocol protocol)
 	{
 		try
@@ -52,6 +57,8 @@ public class ReleaseController : ControllerBase
 	}
 
 	[HttpPost("grab")]
+	[ProducesResponseType(typeof(TrackedDownload), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> GrabAsync([FromBody] GrabReleaseRequest request,
 		CancellationToken cancellationToken)
 	{

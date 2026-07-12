@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Submarine.Api.Models.Request;
 using Submarine.Api.Services;
+using Submarine.Core.Config;
 
 namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/settings")]
+[Produces("application/json")]
 public class SettingsController : ControllerBase
 {
 	private readonly SettingsService _service;
@@ -14,6 +16,7 @@ public class SettingsController : ControllerBase
 		=> _service = service;
 
 	[HttpGet("naming")]
+	[ProducesResponseType(typeof(NamingConfig), StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetNamingAsync()
 	{
 		var config = await _service.GetNamingConfigAsync();
@@ -22,6 +25,8 @@ public class SettingsController : ControllerBase
 	}
 
 	[HttpPut("naming")]
+	[ProducesResponseType(typeof(NamingConfig), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> UpdateNamingAsync([FromBody] UpdateNamingConfigRequest request)
 	{
 		var config = await _service.UpdateNamingConfigAsync(request);
@@ -30,6 +35,7 @@ public class SettingsController : ControllerBase
 	}
 
 	[HttpGet("mediamanagement")]
+	[ProducesResponseType(typeof(MediaManagementConfig), StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetMediaManagementAsync()
 	{
 		var config = await _service.GetMediaManagementConfigAsync();
@@ -38,6 +44,8 @@ public class SettingsController : ControllerBase
 	}
 
 	[HttpPut("mediamanagement")]
+	[ProducesResponseType(typeof(MediaManagementConfig), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> UpdateMediaManagementAsync([FromBody] UpdateMediaManagementConfigRequest request)
 	{
 		var config = await _service.UpdateMediaManagementConfigAsync(request);

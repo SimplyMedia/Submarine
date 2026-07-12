@@ -11,6 +11,7 @@ namespace Submarine.Mappings.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/scenemapping")]
+[Produces("application/json")]
 public class SceneMappingController : ControllerBase
 {
 	private readonly MappingsDatabaseContext _context;
@@ -27,6 +28,7 @@ public class SceneMappingController : ControllerBase
 	/// </summary>
 	/// <param name="tvdbId">TheTVDB identifier of the series</param>
 	[HttpGet("{tvdbId:int}")]
+	[ProducesResponseType(typeof(SceneMappingSetResource), StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAsync([FromRoute] int tvdbId)
 	{
 		var mappings = await _context.SceneMappings.AsNoTracking()
@@ -49,6 +51,8 @@ public class SceneMappingController : ControllerBase
 	/// </summary>
 	/// <param name="request">mapping to create</param>
 	[HttpPost]
+	[ProducesResponseType(typeof(SceneMappingResource), StatusCodes.Status201Created)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> CreateAsync([FromBody] SceneMappingResource request)
 	{
 		var entity = new SceneMapping
@@ -72,6 +76,9 @@ public class SceneMappingController : ControllerBase
 	/// <param name="id">identifier of the mapping to update</param>
 	/// <param name="request">updated mapping data</param>
 	[HttpPut("{id:int}")]
+	[ProducesResponseType(typeof(SceneMappingResource), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] SceneMappingResource request)
 	{
 		var entity = await _context.SceneMappings.FirstOrDefaultAsync(m => m.Id == id);
@@ -95,6 +102,8 @@ public class SceneMappingController : ControllerBase
 	/// </summary>
 	/// <param name="id">identifier of the mapping to delete</param>
 	[HttpDelete("{id:int}")]
+	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> DeleteAsync([FromRoute] int id)
 	{
 		var entity = await _context.SceneMappings.FirstOrDefaultAsync(m => m.Id == id);

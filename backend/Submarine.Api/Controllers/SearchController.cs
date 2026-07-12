@@ -9,6 +9,7 @@ namespace Submarine.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class SearchController : ControllerBase
 {
 	private readonly SearchService _service;
@@ -17,6 +18,9 @@ public class SearchController : ControllerBase
 		=> _service = service;
 
 	[HttpGet]
+	[ProducesResponseType(typeof(List<SearchDecisionResponse>), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> SearchAsync(
 		[FromQuery] int? seriesId,
 		[FromQuery] int? seasonNumber,

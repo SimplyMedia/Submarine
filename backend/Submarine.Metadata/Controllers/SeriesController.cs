@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Submarine.Metadata.Clients;
+using Submarine.Metadata.Contracts;
 
 namespace Submarine.Metadata.Controllers;
 
@@ -10,6 +11,7 @@ namespace Submarine.Metadata.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/series")]
+[Produces("application/json")]
 public class SeriesController : ControllerBase
 {
 	private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromHours(6);
@@ -36,6 +38,8 @@ public class SeriesController : ControllerBase
 	/// </summary>
 	/// <param name="tvdbId">TheTVDB identifier of the series</param>
 	[HttpGet("{tvdbId:int}")]
+	[ProducesResponseType(typeof(SeriesResource), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 	public async Task<IActionResult> GetAsync([FromRoute] int tvdbId)
 	{
 		var series = await _cache.GetOrCreateAsync(Request.GetEncodedPathAndQuery(), async entry =>
@@ -56,6 +60,8 @@ public class SeriesController : ControllerBase
 	/// </summary>
 	/// <param name="term">search term</param>
 	[HttpGet("search")]
+	[ProducesResponseType(typeof(IReadOnlyList<SeriesResource>), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
 	public async Task<IActionResult> SearchAsync([FromQuery] string term)
 	{
 		var results = await _cache.GetOrCreateAsync(Request.GetEncodedPathAndQuery(), async entry =>

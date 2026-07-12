@@ -79,17 +79,25 @@ builder.Services.AddSwaggerGen(c =>
 	var contractsFilePath = Path.Combine(AppContext.BaseDirectory, "Submarine.Metadata.Contracts.xml");
 	c.IncludeXmlComments(apiFilePath, true);
 	c.IncludeXmlComments(contractsFilePath);
+
+	c.CustomOperationIds(apiDesc => $"{apiDesc.ActionDescriptor.RouteValues["controller"]}_{apiDesc.ActionDescriptor.RouteValues["action"]}");
 });
 
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+var swaggerEnabled = builder.Configuration.GetValue<bool?>("Swagger:Enabled") ?? app.Environment.IsDevelopment();
+
 if (app.Environment.IsDevelopment())
 {
 	app.UseHttpsRedirection();
 
 	app.UseDeveloperExceptionPage();
+}
+
+if (swaggerEnabled)
+{
 	app.UseSwagger();
 	app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Submarine.Metadata v1"));
 }
