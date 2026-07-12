@@ -133,6 +133,8 @@ public class ConnectionService
 					kodi.Username = request.Username;
 				if (request.Password != null)
 					kodi.Password = request.Password;
+				if (string.IsNullOrWhiteSpace(kodi.Username) != string.IsNullOrWhiteSpace(kodi.Password))
+					throw new BadRequestException("Username and Password must be provided together for Kodi connections");
 				break;
 			case CustomScriptConnection customScript:
 				if (request.ScriptPath != null)

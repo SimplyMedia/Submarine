@@ -139,6 +139,9 @@ public record CreateConnectionRequest
 				if (string.IsNullOrWhiteSpace(Host))
 					throw new BadRequestException("Host is required for Kodi connections");
 
+				if (string.IsNullOrWhiteSpace(Username) != string.IsNullOrWhiteSpace(Password))
+					throw new BadRequestException("Username and Password must be provided together for Kodi connections");
+
 				return new KodiConnection
 				{
 					Name = Name, Enable = Enable, Host = Host, Port = Port, UseSsl = UseSsl,
