@@ -27,11 +27,13 @@ public class ImportService
 	private readonly HistoryService _historyService;
 	private readonly IEventPublisher _eventPublisher;
 	private readonly IMappingsClient _mappingsClient;
+	private readonly MediaInfoService _mediaInfoService;
 	private readonly ILogger<ImportService> _logger;
 
 	public ImportService(SubmarineDatabaseContext context, SettingsService settingsService,
 		IParser<BaseRelease> releaseParser, MediaNamingService naming, HistoryService historyService,
-		IEventPublisher eventPublisher, IMappingsClient mappingsClient, ILogger<ImportService> logger)
+		IEventPublisher eventPublisher, IMappingsClient mappingsClient, MediaInfoService mediaInfoService,
+		ILogger<ImportService> logger)
 	{
 		_context = context;
 		_settingsService = settingsService;
@@ -40,6 +42,7 @@ public class ImportService
 		_historyService = historyService;
 		_eventPublisher = eventPublisher;
 		_mappingsClient = mappingsClient;
+		_mediaInfoService = mediaInfoService;
 		_logger = logger;
 	}
 
@@ -206,7 +209,10 @@ public class ImportService
 
 		// Place the new file before removing the old one so a failed placement can never leave the
 		// version without a file. If the save below throws, the placed file is left as an orphan.
-		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks);
+		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks, managementConfig.MinimumFreeSpaceMb);
+
+		if (managementConfig.ImportExtraFiles)
+			ExtraFileService.CopySubtitles(sourceFile, destination);
 
 		var episodeFile = new EpisodeFile
 		{
@@ -219,6 +225,7 @@ public class ImportService
 			Languages = languages.ToList(),
 			ReleaseGroup = releaseGroup,
 			NamedFromPlaceholder = namedFromPlaceholder,
+			MediaInfo = await _mediaInfoService.ProbeAsync(destination, cancellationToken),
 			Episodes = ordered
 		};
 
@@ -262,7 +269,10 @@ public class ImportService
 
 		// Place the new file before removing the old one so a failed placement can never leave the
 		// version without a file. If the save below throws, the placed file is left as an orphan.
-		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks);
+		FileLinker.Place(sourceFile, destination, managementConfig.UseHardlinks, managementConfig.MinimumFreeSpaceMb);
+
+		if (managementConfig.ImportExtraFiles)
+			ExtraFileService.CopySubtitles(sourceFile, destination);
 
 		var movieFile = new MovieFile
 		{
@@ -274,7 +284,8 @@ public class ImportService
 			Quality = quality,
 			Languages = languages.ToList(),
 			ReleaseGroup = releaseGroup,
-			Edition = edition
+			Edition = edition,
+			MediaInfo = await _mediaInfoService.ProbeAsync(destination, cancellationToken)
 		};
 
 		_context.MovieFiles.Add(movieFile);

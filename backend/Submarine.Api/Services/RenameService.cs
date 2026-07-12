@@ -76,6 +76,8 @@ public class RenameService
 		if (File.Exists(currentPath))
 			File.Move(currentPath, destination, false);
 
+		ExtraFileService.RenameSubtitles(currentPath, destination);
+
 		var oldRelativePath = file.RelativePath;
 		file.RelativePath = newRelativePath;
 		file.NamedFromPlaceholder = rendered.UsedPlaceholderTitle;

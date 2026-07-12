@@ -11,7 +11,7 @@ public class ManualImportServiceTest : DatabaseTestBase
 {
 	private ManualImportService BuildService()
 		=> new(Context, new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
-			new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
+			new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(), new FakeMediaInfoService(),
 			Microsoft.Extensions.Logging.Abstractions.NullLogger<ImportService>.Instance), Settings(), ReleaseParser());
 
 	[Fact]

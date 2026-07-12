@@ -78,4 +78,68 @@ public class RenameServiceTest : DatabaseTestBase
 			Directory.Delete(root, true);
 		}
 	}
+
+	[Fact]
+	public async Task RenameEpisodeFileAsync_ShouldRenameSidecars_WhenVideoIsRenamed()
+	{
+		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		var libraryPath = Path.Combine(root, "Show");
+		var seasonPath = Path.Combine(libraryPath, "Season 01");
+		var oldRelative = Path.Combine("Season 01", "Show - S01E05 - Episode 5.mkv");
+		Directory.CreateDirectory(seasonPath);
+		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "video");
+		await File.WriteAllTextAsync(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.srt"), "sub");
+		await File.WriteAllTextAsync(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.en.forced.srt"), "sub-en");
+
+		try
+		{
+			var series = new Series
+			{
+				TvdbId = 1, Title = "Show", SeasonFolder = true, Type = SeriesType.STANDARD
+			};
+			Context.Series.Add(series);
+			await Context.SaveChangesAsync();
+
+			var version = new MediaVersion
+			{
+				SeriesId = series.Id, Name = "Default", Path = libraryPath, QualityProfileId = 1,
+				LanguageProfileId = 1, Monitored = true
+			};
+			Context.Versions.Add(version);
+			await Context.SaveChangesAsync();
+
+			var file = new EpisodeFile
+			{
+				SeriesId = series.Id,
+				MediaVersionId = version.Id,
+				RelativePath = oldRelative,
+				NamedFromPlaceholder = true,
+				Quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
+					new Revision())
+			};
+			Context.EpisodeFiles.Add(file);
+			await Context.SaveChangesAsync();
+
+			Context.Episodes.Add(new Episode
+			{
+				SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real Title",
+				Files = new List<EpisodeFile> { file }
+			});
+			await Context.SaveChangesAsync();
+
+			var service = new RenameService(Context, Settings(), NamingService(),
+				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher());
+
+			await service.RenameEpisodeFileAsync(file.Id);
+
+			Assert.True(File.Exists(Path.Combine(seasonPath, "Show - S01E05 - Real Title.srt")));
+			Assert.True(File.Exists(Path.Combine(seasonPath, "Show - S01E05 - Real Title.en.forced.srt")));
+			Assert.False(File.Exists(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.srt")));
+			Assert.False(File.Exists(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.en.forced.srt")));
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
 }
