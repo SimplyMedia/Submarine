@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -48,21 +49,37 @@ public class QBittorrentClient : IDownloadClient
 		if (release.DownloadUrl == null)
 			throw new DownloadClientException($"Release {release.Title} has no download url");
 
-		var form = new Dictionary<string, string> { ["urls"] = release.DownloadUrl };
-		if (_settings.Category != null) form["category"] = _settings.Category;
+		var magnetHash = ParseMagnetHash(release.DownloadUrl);
 
-		using var addResponse = await SendAuthenticatedAsync(() => new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/add"))
+		if (magnetHash != null)
 		{
-			Content = new FormUrlEncodedContent(form)
+			var form = new Dictionary<string, string> { ["urls"] = release.DownloadUrl };
+			if (_settings.Category != null) form["category"] = _settings.Category;
+
+			using var response = await SendAuthenticatedAsync(
+				() => new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/add"))
+				{
+					Content = new FormUrlEncodedContent(form)
+				}, cancellationToken);
+
+			return magnetHash;
+		}
+
+		var torrent = await _httpClient.GetByteArrayAsync(release.DownloadUrl, cancellationToken);
+		var infoHash = TorrentInfoHash.Compute(torrent);
+
+		using var addResponse = await SendAuthenticatedAsync(() =>
+		{
+			var content = new MultipartFormDataContent();
+			var file = new ByteArrayContent(torrent);
+			file.Headers.ContentType = new MediaTypeHeaderValue("application/x-bittorrent");
+			content.Add(file, "torrents", "release.torrent");
+			if (_settings.Category != null) content.Add(new StringContent(_settings.Category), "category");
+
+			return new HttpRequestMessage(HttpMethod.Post, BuildUrl("torrents/add")) { Content = content };
 		}, cancellationToken);
 
-		var hash = ParseMagnetHash(release.DownloadUrl);
-		if (hash != null) return hash;
-
-		_logger.LogWarning(
-			"Could not determine the torrent hash of {Title} from a non-magnet download url, falling back to the release guid",
-			release.Title);
-		return release.Guid;
+		return infoHash;
 	}
 
 	/// <inheritdoc />
@@ -186,8 +203,8 @@ public class QBittorrentClient : IDownloadClient
 		=> state switch
 		{
 			"error" or "missingFiles" => DownloadItemStatus.FAILED,
-			"pausedDL" => DownloadItemStatus.PAUSED,
-			"pausedUP" or "uploading" or "stalledUP" or "forcedUP" or "queuedUP" or "checkingUP"
+			"pausedDL" or "stoppedDL" => DownloadItemStatus.PAUSED,
+			"pausedUP" or "stoppedUP" or "uploading" or "stalledUP" or "forcedUP" or "queuedUP" or "checkingUP"
 				=> DownloadItemStatus.COMPLETED,
 			"downloading" or "metaDL" or "forcedDL" or "stalledDL" or "checkingDL" or "allocating" or "moving"
 				=> DownloadItemStatus.DOWNLOADING,

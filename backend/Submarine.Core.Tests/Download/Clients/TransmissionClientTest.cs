@@ -19,7 +19,8 @@ public class TransmissionClientTest
 					{ "id": 1, "hashString": "hash1", "name": "Movie.1", "totalSize": 1000, "leftUntilDone": 500, "eta": 300, "status": 4, "downloadDir": "/downloads", "errorString": "" },
 					{ "id": 2, "hashString": "hash2", "name": "Movie.2", "totalSize": 2000, "leftUntilDone": 0, "eta": -1, "status": 6, "downloadDir": "/downloads", "errorString": "" },
 					{ "id": 3, "hashString": "hash3", "name": "Movie.3", "totalSize": 1500, "leftUntilDone": 1500, "eta": -1, "status": 0, "downloadDir": "/downloads", "errorString": "" },
-					{ "id": 4, "hashString": "hash4", "name": "Movie.4", "totalSize": 500, "leftUntilDone": 500, "eta": -1, "status": 4, "downloadDir": "/downloads", "errorString": "Tracker gave an error" }
+					{ "id": 4, "hashString": "hash4", "name": "Movie.4", "totalSize": 500, "leftUntilDone": 500, "eta": -1, "status": 4, "downloadDir": "/downloads", "errorString": "Tracker gave an error" },
+					{ "id": 5, "hashString": "hash5", "name": "Movie.5", "totalSize": 1000, "leftUntilDone": 0, "eta": -1, "status": 0, "downloadDir": "/downloads", "errorString": "" }
 				]
 			}
 		}
@@ -63,7 +64,7 @@ public class TransmissionClientTest
 
 		var items = await client.GetItemsAsync();
 
-		Assert.Equal(4, items.Count);
+		Assert.Equal(5, items.Count);
 
 		var downloading = items.Single(item => item.DownloadId == "hash1");
 		Assert.Equal(DownloadItemStatus.DOWNLOADING, downloading.Status);
@@ -73,6 +74,7 @@ public class TransmissionClientTest
 
 		Assert.Equal(DownloadItemStatus.COMPLETED, items.Single(item => item.DownloadId == "hash2").Status);
 		Assert.Equal(DownloadItemStatus.PAUSED, items.Single(item => item.DownloadId == "hash3").Status);
+		Assert.Equal(DownloadItemStatus.COMPLETED, items.Single(item => item.DownloadId == "hash5").Status);
 
 		var failed = items.Single(item => item.DownloadId == "hash4");
 		Assert.Equal(DownloadItemStatus.FAILED, failed.Status);
@@ -101,7 +103,7 @@ public class TransmissionClientTest
 		var items = await client.GetItemsAsync();
 
 		Assert.Equal(1, conflictResponses);
-		Assert.Equal(4, items.Count);
+		Assert.Equal(5, items.Count);
 	}
 
 	[Fact]

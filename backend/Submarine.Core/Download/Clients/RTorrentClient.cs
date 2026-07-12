@@ -1,6 +1,4 @@
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Download.Rpc;
@@ -54,7 +52,7 @@ public class RTorrentClient : IDownloadClient
 		var torrent = await _httpClient.GetByteArrayAsync(url, cancellationToken);
 		await _rpc.CallAsync(_settings.Endpoint, "load.raw_start", BuildLoadParameters(torrent), cancellationToken);
 
-		return ComputeInfoHash(torrent);
+		return TorrentInfoHash.Compute(torrent);
 	}
 
 	/// <inheritdoc />
@@ -137,60 +135,5 @@ public class RTorrentClient : IDownloadClient
 		var match = Regex.Match(url, "xt=urn:btih:([^&]+)", RegexOptions.IgnoreCase);
 
 		return match.Success ? match.Groups[1].Value.ToUpperInvariant() : null;
-	}
-
-	private static string ComputeInfoHash(byte[] data)
-	{
-		var position = 0;
-		if (position >= data.Length || data[position++] != 'd')
-			throw new DownloadClientException("Torrent file is not a bencoded dictionary");
-
-		while (position < data.Length && data[position] != 'e')
-		{
-			var key = ReadBencodeString(data, ref position);
-			var valueStart = position;
-			SkipBencodeElement(data, ref position);
-
-			if (key == "info")
-				return Convert.ToHexString(SHA1.HashData(data.AsSpan(valueStart, position - valueStart)));
-		}
-
-		throw new DownloadClientException("Torrent file has no info dictionary");
-	}
-
-	private static string ReadBencodeString(byte[] data, ref int position)
-	{
-		var colon = Array.IndexOf(data, (byte)':', position);
-		var length = int.Parse(Encoding.ASCII.GetString(data, position, colon - position));
-		var value = Encoding.ASCII.GetString(data, colon + 1, length);
-		position = colon + 1 + length;
-
-		return value;
-	}
-
-	private static void SkipBencodeElement(byte[] data, ref int position)
-	{
-		switch ((char)data[position])
-		{
-			case 'i':
-				position = Array.IndexOf(data, (byte)'e', position) + 1;
-				break;
-			case 'l':
-			case 'd':
-				position++;
-				while (data[position] != 'e')
-				{
-					if (data[position] == 'd' || data[position] == 'l' || data[position] == 'i')
-						SkipBencodeElement(data, ref position);
-					else
-						ReadBencodeString(data, ref position);
-				}
-
-				position++;
-				break;
-			default:
-				ReadBencodeString(data, ref position);
-				break;
-		}
 	}
 }

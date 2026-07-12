@@ -147,25 +147,26 @@ public class TransmissionClient : IDownloadClient
 		var eta = torrent?["eta"]?.GetValue<long>() ?? -1;
 		var errorString = torrent?["errorString"]?.GetValue<string>();
 		var status = torrent?["status"]?.GetValue<int>() ?? 0;
+		var leftUntilDone = torrent?["leftUntilDone"]?.GetValue<long>() ?? 0;
 
 		return new DownloadClientItem
 		{
 			DownloadId = hash,
 			Title = torrent?["name"]?.GetValue<string>() ?? string.Empty,
 			TotalSize = torrent?["totalSize"]?.GetValue<long>() ?? 0,
-			RemainingSize = torrent?["leftUntilDone"]?.GetValue<long>() ?? 0,
+			RemainingSize = leftUntilDone,
 			RemainingTime = eta >= 0 ? TimeSpan.FromSeconds(eta) : null,
-			Status = string.IsNullOrEmpty(errorString) ? MapStatus(status) : DownloadItemStatus.FAILED,
+			Status = string.IsNullOrEmpty(errorString) ? MapStatus(status, leftUntilDone) : DownloadItemStatus.FAILED,
 			OutputPath = torrent?["downloadDir"]?.GetValue<string>(),
 			Category = _settings.Category,
 			Message = string.IsNullOrEmpty(errorString) ? null : errorString
 		};
 	}
 
-	private static DownloadItemStatus MapStatus(int status)
+	private static DownloadItemStatus MapStatus(int status, long leftUntilDone)
 		=> status switch
 		{
-			0 => DownloadItemStatus.PAUSED,
+			0 => leftUntilDone == 0 ? DownloadItemStatus.COMPLETED : DownloadItemStatus.PAUSED,
 			1 or 3 => DownloadItemStatus.QUEUED,
 			2 or 4 => DownloadItemStatus.DOWNLOADING,
 			5 or 6 => DownloadItemStatus.COMPLETED,

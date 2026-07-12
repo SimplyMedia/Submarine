@@ -1,4 +1,6 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using Submarine.Core.Download;
 using Submarine.Core.Download.Clients;
 using Submarine.Core.Indexer;
@@ -51,12 +53,17 @@ public class QBittorrentClientTest
 	}
 
 	[Fact]
-	public async Task AddDownloadAsync_ShouldFallBackToGuid_WhenReleaseIsNotAMagnetLink()
+	public async Task AddDownloadAsync_ShouldReturnComputedInfoHash_WhenReleaseIsNotAMagnetLink()
 	{
+		const string info = "d6:lengthi12e4:name4:teste";
+		var torrent = Encoding.ASCII.GetBytes("d8:announce3:url4:info" + info + "e");
+		var expected = Convert.ToHexString(SHA1.HashData(Encoding.ASCII.GetBytes(info)));
+
 		var handler = new StubHandler((request, _) =>
 		{
 			var path = request.RequestUri!.AbsolutePath;
 			if (path.EndsWith("auth/login")) return LoginSuccessResponse();
+			if (path.EndsWith("1.torrent")) return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(torrent) };
 			if (path.EndsWith("torrents/add")) return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Ok.") };
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
@@ -71,7 +78,8 @@ public class QBittorrentClientTest
 
 		var id = await client.AddDownloadAsync(release);
 
-		Assert.Equal("guid-1", id);
+		Assert.Equal(expected, id);
+		Assert.Contains(handler.Calls, call => call.Request.RequestUri!.AbsolutePath.EndsWith("torrents/add"));
 	}
 
 	[Fact]
