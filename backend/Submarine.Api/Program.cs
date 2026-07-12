@@ -224,17 +224,16 @@ builder.Services.AddSwaggerGen(c =>
 
 	c.CustomOperationIds(apiDesc => $"{apiDesc.ActionDescriptor.RouteValues["controller"]}_{apiDesc.ActionDescriptor.RouteValues["action"]}");
 
-	c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 	{
-		Type = SecuritySchemeType.ApiKey,
-		In = ParameterLocation.Header,
-		Name = "X-Api-Key",
-		Description = "API key required when API key authentication is enabled"
+		Type = SecuritySchemeType.Http,
+		Scheme = "bearer",
+		Description = "API key passed as Bearer token when API key authentication is enabled"
 	});
 
 	c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
 	{
-		[new OpenApiSecuritySchemeReference("ApiKey", document)] = new List<string>()
+		[new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
 	});
 
 	// Default schemaId selector plus a "Metadata" prefix for Submarine.Metadata.Contracts types,

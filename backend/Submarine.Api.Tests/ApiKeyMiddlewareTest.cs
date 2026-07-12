@@ -58,11 +58,11 @@ public class ApiKeyMiddlewareTest
 	}
 
 	[Fact]
-	public async Task InvokeAsync_ShouldCallNext_WhenApiKeyHeaderMatches()
+	public async Task InvokeAsync_ShouldCallNext_WhenBearerTokenMatches()
 	{
 		var middleware = CreateMiddleware(AuthenticationMethod.API_KEY);
 		var context = CreateContext("/api/v1/series");
-		context.Request.Headers["X-Api-Key"] = Key;
+		context.Request.Headers.Authorization = $"Bearer {Key}";
 
 		await middleware.InvokeAsync(context);
 
@@ -70,15 +70,16 @@ public class ApiKeyMiddlewareTest
 	}
 
 	[Fact]
-	public async Task InvokeAsync_ShouldCallNext_WhenApiKeyQueryParameterMatches()
+	public async Task InvokeAsync_ShouldReturn401_WhenAuthorizationHeaderLacksBearerPrefix()
 	{
 		var middleware = CreateMiddleware(AuthenticationMethod.API_KEY);
 		var context = CreateContext("/api/v1/series");
-		context.Request.QueryString = new QueryString($"?apikey={Key}");
+		context.Request.Headers.Authorization = Key;
 
 		await middleware.InvokeAsync(context);
 
-		Assert.True(_nextCalled);
+		Assert.False(_nextCalled);
+		Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
 	}
 
 	[Fact]
@@ -145,7 +146,7 @@ public class ApiKeyMiddlewareTest
 	{
 		var middleware = CreateMiddleware(AuthenticationMethod.API_KEY, apiKey: "");
 		var context = CreateContext("/api/v1/series");
-		context.Request.Headers["X-Api-Key"] = "";
+		context.Request.Headers.Authorization = "Bearer ";
 
 		await middleware.InvokeAsync(context);
 

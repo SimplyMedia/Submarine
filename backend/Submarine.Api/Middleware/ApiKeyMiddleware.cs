@@ -14,9 +14,7 @@ namespace Submarine.Api.Middleware;
 /// </summary>
 public class ApiKeyMiddleware
 {
-	private const string HeaderName = "X-Api-Key";
-
-	private const string QueryName = "apikey";
+	private const string BearerPrefix = "Bearer ";
 
 	private readonly IConfiguration _configuration;
 
@@ -58,8 +56,10 @@ public class ApiKeyMiddleware
 			return;
 		}
 
-		var providedKey = context.Request.Headers[HeaderName].FirstOrDefault()
-		                  ?? context.Request.Query[QueryName].FirstOrDefault();
+		var authorization = context.Request.Headers.Authorization.FirstOrDefault();
+		var providedKey = authorization?.StartsWith(BearerPrefix, StringComparison.Ordinal) == true
+			? authorization[BearerPrefix.Length..]
+			: null;
 
 		if (IsValidKey(providedKey, config.ApiKey))
 		{
@@ -73,7 +73,7 @@ public class ApiKeyMiddleware
 		{
 			Status = StatusCodes.Status401Unauthorized,
 			Title = "Unauthorized",
-			Detail = "A valid API key is required"
+			Detail = "A valid API key is required via the Authorization header (Bearer scheme)"
 		}, options: null, contentType: "application/problem+json");
 	}
 
