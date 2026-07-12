@@ -22,6 +22,16 @@ public record AddSeriesRequest
 
 	public bool Monitored { get; set; } = true;
 
+	/// <summary>
+	///     Which Episodes to monitor on add, defaults to all
+	/// </summary>
+	public MonitorOption Monitor { get; set; } = MonitorOption.ALL;
+
+	/// <summary>
+	///     Whether to run an automatic search for the monitored Episodes right after the Series is added
+	/// </summary>
+	public bool SearchOnAdd { get; set; }
+
 	public bool SeasonFolder { get; set; } = true;
 
 	public List<string> Tags { get; set; } = new();

@@ -77,6 +77,11 @@ public class SeriesService
 		var numbering = request.Numbering ?? EpisodeNumbering.AIRED;
 		var versions = await BuildVersionsAsync(request, resource.Title);
 
+		var episodes = resource.Episodes.Select(e => MapEpisode(e, numbering, monitored: false)).ToList();
+		ApplyMonitorOption(episodes, request.Monitor, request.Monitored);
+
+		var monitoredSeasons = episodes.Where(e => e.Monitored).Select(e => e.SeasonNumber).ToHashSet();
+
 		var series = new Series
 		{
 			TvdbId = resource.TvdbId,
@@ -96,14 +101,48 @@ public class SeriesService
 			Tags = request.Tags,
 			Versions = versions,
 			Seasons = resource.Seasons
-				.Select(s => new Season { SeasonNumber = s.SeasonNumber, Monitored = request.Monitored })
+				.Select(s => new Season
+					{ SeasonNumber = s.SeasonNumber, Monitored = monitoredSeasons.Contains(s.SeasonNumber) })
 				.ToList(),
-			Episodes = resource.Episodes.Select(e => MapEpisode(e, numbering, request.Monitored)).ToList()
+			Episodes = episodes
 		};
 
 		await _repository.CreateAsync(series);
 
+		if (request.SearchOnAdd)
+			foreach (var season in monitoredSeasons.OrderBy(s => s))
+			{
+				var target = season;
+
+				await _taskQueue.QueueAsync((sp, ct) =>
+					sp.GetRequiredService<AutomaticSearchService>().SearchAndGrabSeasonAsync(series.Id, target, ct));
+			}
+
 		return series;
+	}
+
+	// specials/season 0 are never auto-monitored; episode monitoring is additionally gated by the series monitored flag
+	private static void ApplyMonitorOption(IReadOnlyList<Episode> episodes, MonitorOption option, bool seriesMonitored)
+	{
+		if (!seriesMonitored)
+			return;
+
+		var now = DateTimeOffset.UtcNow;
+		var latestSeason = episodes.Where(e => e.SeasonNumber > 0).Select(e => e.SeasonNumber).DefaultIfEmpty(0).Max();
+
+		foreach (var episode in episodes)
+			episode.Monitored = episode.SeasonNumber != 0 && option switch
+			{
+				MonitorOption.ALL => true,
+				MonitorOption.FUTURE => episode.AirDate == null || episode.AirDate > now,
+				MonitorOption.MISSING => episode.AirDate != null && episode.AirDate <= now,
+				MonitorOption.EXISTING => false,
+				MonitorOption.PILOT => episode is { SeasonNumber: 1, EpisodeNumber: 1 },
+				MonitorOption.FIRST_SEASON => episode.SeasonNumber == 1,
+				MonitorOption.LATEST_SEASON => episode.SeasonNumber == latestSeason,
+				MonitorOption.NONE => false,
+				_ => true
+			};
 	}
 
 	private async Task<List<MediaVersion>> BuildVersionsAsync(AddSeriesRequest request, string title)

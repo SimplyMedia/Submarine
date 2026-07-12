@@ -26,12 +26,11 @@ public class SearchService
 	private readonly IMovieRepository _movieRepository;
 	private readonly IQualityProfileRepository _qualityProfileRepository;
 	private readonly ILanguageProfileRepository _languageProfileRepository;
-	private readonly IReleaseFilterRepository _filterRepository;
-	private readonly ICustomFormatRepository _formatRepository;
 	private readonly ITorznabSearchClient _torznabHttpClient;
 	private readonly IMappingsClient _mappingsClient;
 	private readonly IParser<BaseRelease> _releaseParser;
 	private readonly DownloadDecisionService _decisionService;
+	private readonly MediaContextFactory _contextFactory;
 
 	public SearchService(ILogger<SearchService> logger, IProviderRepository providerRepository,
 		ISeriesRepository seriesRepository, IMovieRepository movieRepository,
@@ -46,12 +45,12 @@ public class SearchService
 		_movieRepository = movieRepository;
 		_qualityProfileRepository = qualityProfileRepository;
 		_languageProfileRepository = languageProfileRepository;
-		_filterRepository = filterRepository;
-		_formatRepository = formatRepository;
 		_torznabHttpClient = torznabHttpClient;
 		_mappingsClient = mappingsClient;
 		_releaseParser = releaseParser;
 		_decisionService = decisionService;
+		_contextFactory = new MediaContextFactory(seriesRepository, qualityProfileRepository, languageProfileRepository,
+			filterRepository, formatRepository);
 	}
 
 	public async Task<IReadOnlyList<VersionedDownloadDecision>> SearchEpisodeAsync(int seriesId, int season,
@@ -100,14 +99,14 @@ public class SearchService
 			return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
 		});
 
-		var filters = await LoadFiltersAsync();
-		var formats = await LoadFormatsAsync();
+		var filters = await _contextFactory.LoadFiltersAsync();
+		var formats = await _contextFactory.LoadFormatsAsync();
 		var results = new List<VersionedDownloadDecision>();
 
 		foreach (var version in await LoadMonitoredSeriesVersionsAsync(series.Id))
 		{
-			var context = await BuildSeriesContextAsync(version, series.Id, season, existingFileQuality: null,
-				existingFileLanguages: null, filters, formats);
+			var context = await _contextFactory.BuildSeriesContextAsync(version, series.Id, season,
+				existingFileQuality: null, existingFileLanguages: null, filters, formats);
 
 			AddDecisions(results, candidates, context, version);
 		}
@@ -127,25 +126,16 @@ public class SearchService
 			_torznabHttpClient.MovieSearchAsync(indexer, movie.TmdbId, movie.ImdbId,
 				categories: Categories(indexer), cancellationToken: cancellationToken));
 
-		var filters = await LoadFiltersAsync();
-		var formats = await LoadFormatsAsync();
+		var filters = await _contextFactory.LoadFiltersAsync();
+		var formats = await _contextFactory.LoadFormatsAsync();
 		var results = new List<VersionedDownloadDecision>();
 
 		foreach (var version in (await _movieRepository.FindVersionsAsync(movie.Id)).Where(v => v.Monitored))
 		{
 			var existingFile = await _movieRepository.FindMovieFileForVersionAsync(movie.Id, version.Id);
-			var qualityProfile = await GetQualityProfileAsync(version.QualityProfileId);
 
-			var context = new MediaContext
-			{
-				QualityProfile = qualityProfile,
-				LanguageProfile = await GetLanguageProfileAsync(version.LanguageProfileId),
-				Filters = filters,
-				CustomFormats = formats,
-				CustomFormatScores = qualityProfile.FormatScores,
-				ExistingFileQuality = existingFile?.Quality,
-				ExistingFileLanguages = existingFile?.Languages
-			};
+			var context = await _contextFactory.BuildMovieContextAsync(version, existingFile?.Quality,
+				existingFile?.Languages, filters, formats);
 
 			AddDecisions(results, candidates, context, version);
 		}
@@ -168,8 +158,8 @@ public class SearchService
 		{
 			QualityProfile = qualityProfile,
 			LanguageProfile = languageProfile,
-			Filters = await LoadFiltersAsync(),
-			CustomFormats = await LoadFormatsAsync(),
+			Filters = await _contextFactory.LoadFiltersAsync(),
+			CustomFormats = await _contextFactory.LoadFormatsAsync(),
 			CustomFormatScores = qualityProfile.FormatScores
 		};
 
@@ -214,15 +204,15 @@ public class SearchService
 			return releases.DistinctBy(release => release.Guid ?? release.DownloadUrl).ToList();
 		});
 
-		var filters = await LoadFiltersAsync();
-		var formats = await LoadFormatsAsync();
+		var filters = await _contextFactory.LoadFiltersAsync();
+		var formats = await _contextFactory.LoadFormatsAsync();
 		var results = new List<VersionedDownloadDecision>();
 
 		foreach (var version in await LoadMonitoredSeriesVersionsAsync(series.Id))
 		{
 			var existingFile = await _seriesRepository.FindEpisodeFileForVersionAsync(episode.Id, version.Id);
 
-			var context = await BuildSeriesContextAsync(version, series.Id, episode.SeasonNumber,
+			var context = await _contextFactory.BuildSeriesContextAsync(version, series.Id, episode.SeasonNumber,
 				existingFile?.Quality, existingFile?.Languages, filters, formats);
 
 			AddDecisions(results, candidates, context, version);
@@ -304,34 +294,6 @@ public class SearchService
 
 	private sealed record SceneVariant(int Season, int? Episode, string Title);
 
-	private async Task<MediaContext> BuildSeriesContextAsync(MediaVersion version, int seriesId, int season,
-		QualityModel? existingFileQuality, IReadOnlyList<Language>? existingFileLanguages,
-		IReadOnlyCollection<ReleaseFilter> filters, IReadOnlyCollection<CustomFormat> formats)
-	{
-		var qualityProfile = await GetQualityProfileAsync(version.QualityProfileId);
-
-		var seasonFiles = await _seriesRepository.FindEpisodeFilesBySeasonAsync(seriesId, season, version.Id);
-		var seasonReleaseGroup = seasonFiles
-			.Select(f => f.ReleaseGroup)
-			.Where(group => group != null)
-			.GroupBy(group => group)
-			.OrderByDescending(group => group.Count())
-			.Select(group => group.Key)
-			.FirstOrDefault();
-
-		return new MediaContext
-		{
-			QualityProfile = qualityProfile,
-			LanguageProfile = await GetLanguageProfileAsync(version.LanguageProfileId),
-			Filters = filters,
-			CustomFormats = formats,
-			CustomFormatScores = qualityProfile.FormatScores,
-			ExistingFileQuality = existingFileQuality,
-			ExistingFileLanguages = existingFileLanguages,
-			SeasonReleaseGroup = seasonReleaseGroup
-		};
-	}
-
 	private async Task<List<ReleaseCandidate>> FetchCandidatesAsync(Protocol? protocol,
 		CancellationToken cancellationToken, Func<Provider, Task<IReadOnlyList<ReleaseInfo>>> fetch)
 	{
@@ -396,32 +358,6 @@ public class SearchService
 
 		return series;
 	}
-
-	private async Task<QualityProfile> GetQualityProfileAsync(int id)
-	{
-		var profile = await _qualityProfileRepository.FirstByConditionAsync(p => p.Id == id);
-
-		if (profile == null)
-			throw new NotFoundException();
-
-		return profile;
-	}
-
-	private async Task<LanguageProfile> GetLanguageProfileAsync(int id)
-	{
-		var profile = await _languageProfileRepository.FirstByConditionAsync(p => p.Id == id);
-
-		if (profile == null)
-			throw new NotFoundException();
-
-		return profile;
-	}
-
-	private async Task<IReadOnlyCollection<Core.DecisionEngine.Filter.ReleaseFilter>> LoadFiltersAsync()
-		=> (await _filterRepository.FindAllAsync()).Select(f => f.ToFilter()).ToList();
-
-	private async Task<IReadOnlyCollection<Core.DecisionEngine.CustomFormats.CustomFormat>> LoadFormatsAsync()
-		=> (await _formatRepository.FindAllAsync()).Select(f => f.ToFormat()).ToList();
 
 	private static IReadOnlyList<int> Categories(Provider indexer)
 		=> indexer switch

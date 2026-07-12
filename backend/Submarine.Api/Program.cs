@@ -110,12 +110,17 @@ builder.Services.AddScoped<IndexerService>();
 builder.Services.AddScoped<DownloadClientService>();
 builder.Services.AddSingleton<DownloadClientFactory>();
 builder.Services.AddScoped<DecisionConfigService>();
+builder.Services.AddScoped<MediaContextFactory>();
 builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<AutomaticSearchService>();
+builder.Services.AddScoped<WantedService>();
 builder.Services.AddScoped<HistoryService>();
 builder.Services.AddScoped<GrabService>();
 builder.Services.AddScoped<QueueService>();
 builder.Services.AddScoped<SeriesRefreshService>();
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<LibraryImportService>();
+builder.Services.AddScoped<ManualImportService>();
 builder.Services.AddScoped<RenameService>();
 builder.Services.AddScoped<ImportListService>();
 builder.Services.AddScoped<ConnectionService>();
@@ -168,6 +173,7 @@ builder.Services.AddHostedService<SchedulerHostedService>();
 builder.Services.AddSingleton<IScheduledJob, DownloadMonitorJob>();
 builder.Services.AddSingleton<IScheduledJob, MetadataRefreshJob>();
 builder.Services.AddSingleton<IScheduledJob, ImportListSyncJob>();
+builder.Services.AddSingleton<IScheduledJob, RssSyncJob>();
 
 // Events
 builder.Services.AddScoped<IEventPublisher, EventPublisher>();

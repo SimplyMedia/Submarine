@@ -26,4 +26,10 @@ public interface ITorznabSearchClient
 	/// </summary>
 	Task<IReadOnlyList<ReleaseInfo>> SearchAsync(Provider indexer, string? query = null,
 		IReadOnlyList<int>? categories = null, CancellationToken cancellationToken = default);
+
+	/// <summary>
+	///     Fetches the most recent releases of an indexer for RSS sync, i.e. a query-less search
+	/// </summary>
+	Task<IReadOnlyList<ReleaseInfo>> RecentAsync(Provider indexer, IReadOnlyList<int>? categories = null,
+		int? limit = null, CancellationToken cancellationToken = default);
 }

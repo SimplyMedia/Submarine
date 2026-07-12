@@ -16,6 +16,11 @@ public record AddMovieRequest
 
 	public bool Monitored { get; set; } = true;
 
+	/// <summary>
+	///     Whether to run an automatic search for the Movie right after it is added
+	/// </summary>
+	public bool SearchOnAdd { get; set; }
+
 	public List<string> Tags { get; set; } = new();
 
 	/// <summary>

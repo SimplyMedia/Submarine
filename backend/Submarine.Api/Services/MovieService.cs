@@ -1,6 +1,7 @@
 using Submarine.Api.Clients;
 using Submarine.Api.Exceptions;
 using Submarine.Api.Extensions;
+using Submarine.Api.Jobs;
 using Submarine.Api.Models.Request;
 using Submarine.Api.Models.Response;
 using Submarine.Api.Repository;
@@ -14,13 +15,15 @@ public class MovieService
 	private readonly IMovieRepository _repository;
 	private readonly IRootFolderRepository _rootFolderRepository;
 	private readonly IMetadataClient _metadataClient;
+	private readonly IBackgroundTaskQueue _taskQueue;
 
 	public MovieService(IMovieRepository repository, IRootFolderRepository rootFolderRepository,
-		IMetadataClient metadataClient)
+		IMetadataClient metadataClient, IBackgroundTaskQueue taskQueue)
 	{
 		_repository = repository;
 		_rootFolderRepository = rootFolderRepository;
 		_metadataClient = metadataClient;
+		_taskQueue = taskQueue;
 	}
 
 	public Task<PagedResult<Movie>> GetPagedAsync(int page, int pageSize, bool? monitored, bool? isAnime,
@@ -87,6 +90,10 @@ public class MovieService
 		};
 
 		await _repository.CreateAsync(movie);
+
+		if (request.SearchOnAdd && movie.Monitored)
+			await _taskQueue.QueueAsync((sp, ct) =>
+				sp.GetRequiredService<AutomaticSearchService>().SearchAndGrabMovieAsync(movie.Id, ct));
 
 		return movie;
 	}

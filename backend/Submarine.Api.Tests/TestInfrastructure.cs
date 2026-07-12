@@ -104,6 +104,10 @@ public sealed class FakeMetadataClient : IMetadataClient
 
 	public List<MetadataProvider> SearchProviders { get; } = new();
 
+	public List<SeriesResource> SeriesSearchResults { get; } = new();
+
+	public List<MovieResource> MovieSearchResults { get; } = new();
+
 	public Task<SeriesResource?> GetSeriesByTvdbAsync(int tvdbId, CancellationToken cancellationToken = default)
 	{
 		TvdbSeriesCalls++;
@@ -126,12 +130,12 @@ public sealed class FakeMetadataClient : IMetadataClient
 	{
 		SearchProviders.Add(provider);
 
-		return Task.FromResult<IReadOnlyList<SeriesResource>>(Array.Empty<SeriesResource>());
+		return Task.FromResult<IReadOnlyList<SeriesResource>>(SeriesSearchResults);
 	}
 
 	public Task<IReadOnlyList<MovieResource>> SearchMoviesAsync(string term,
 		CancellationToken cancellationToken = default)
-		=> Task.FromResult<IReadOnlyList<MovieResource>>(Array.Empty<MovieResource>());
+		=> Task.FromResult<IReadOnlyList<MovieResource>>(MovieSearchResults);
 }
 
 /// <summary>
@@ -206,6 +210,10 @@ public sealed class FakeTorznabSearchClient : ITorznabSearchClient
 
 	public Task<IReadOnlyList<ReleaseInfo>> MovieSearchAsync(Provider indexer, int? tmdbId = null, string? imdbId = null,
 		string? query = null, IReadOnlyList<int>? categories = null, CancellationToken cancellationToken = default)
+		=> Task.FromResult(Result);
+
+	public Task<IReadOnlyList<ReleaseInfo>> RecentAsync(Provider indexer, IReadOnlyList<int>? categories = null,
+		int? limit = null, CancellationToken cancellationToken = default)
 		=> Task.FromResult(Result);
 
 	public Task<IReadOnlyList<ReleaseInfo>> SearchAsync(Provider indexer, string? query = null,

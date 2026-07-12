@@ -59,6 +59,15 @@ public class TorznabHttpClient : ITorznabSearchClient
 		=> ParseFeedAsync(indexer, new TorznabRequestBuilder(indexer.ApiKey).BuildSearchQuery(query, categories),
 			cancellationToken);
 
+	/// <summary>
+	///     Fetches the most recent releases of an indexer for RSS sync, i.e. a query-less search
+	/// </summary>
+	public Task<IReadOnlyList<ReleaseInfo>> RecentAsync(Provider indexer, IReadOnlyList<int>? categories = null,
+		int? limit = null, CancellationToken cancellationToken = default)
+		=> ParseFeedAsync(indexer,
+			new TorznabRequestBuilder(indexer.ApiKey).BuildSearchQuery(query: null, categories, limit),
+			cancellationToken);
+
 	private async Task<IReadOnlyList<ReleaseInfo>> ParseFeedAsync(Provider indexer, string query,
 		CancellationToken cancellationToken)
 		=> _feedParser.Parse(await FetchAsync(indexer, query, cancellationToken))
