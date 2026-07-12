@@ -106,6 +106,8 @@ public record BaseRelease
 		Quality = source.Quality;
 		Protocol = source.Protocol;
 		ReleaseGroup = source.ReleaseGroup;
+		ReleaseHash = source.ReleaseHash;
+		HardcodedSubs = source.HardcodedSubs;
 	}
 
 	/// <summary>

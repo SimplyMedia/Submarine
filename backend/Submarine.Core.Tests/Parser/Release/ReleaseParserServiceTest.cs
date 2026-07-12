@@ -48,6 +48,17 @@ public class ReleaseParserServiceTest
 	}
 
 	[Theory]
+	[InlineData("Show.Name - S01E01 1080p WEB-DL x264-GROUP", "Show Name")]
+	[InlineData("[ www.Torrenting.com ] - Show.Name.S01E01.1080p.WEB-DL.x264-GROUP", "Show Name")]
+	[InlineData("www.tamilblasters.rest - Show Name S01E01 1080p WEB-DL x264-GROUP", "Show Name")]
+	public void Parse_ShouldParseTitle_WhenWebsiteLikePrefixIsPresent(string input, string title)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.Equal(title, parsed.Title);
+	}
+
+	[Theory]
 	[InlineData("Anime S01 2021 1080p WEB-DL AVC AAC 2.0 Dual Audio -ZR-", "Anime")]
 	[InlineData("The Anime Title (Japanese Alias) S01 2021 1080p WEB-DL AVC AAC 2.0 Dual Audio -ZR-",
 		"The Anime Title")]

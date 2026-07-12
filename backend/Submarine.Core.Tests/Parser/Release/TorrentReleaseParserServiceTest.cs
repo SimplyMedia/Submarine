@@ -26,6 +26,16 @@ public class TorrentReleaseParserServiceTest
 	}
 
 	[Theory]
+	[InlineData("Movie.Title.2020.1080p.KORSUB.HDRip.x264-GROUP")]
+	[InlineData("Movie.Title.2020.1080p.HC.WEBRip.x264-GROUP")]
+	public void Parse_ShouldKeepHardcodedSubs_WhenConvertedToTorrent(string input)
+	{
+		var parsed = _instance.Parse(input);
+
+		Assert.True(parsed.HardcodedSubs);
+	}
+
+	[Theory]
 	[InlineData("Movie.Title.1987.1080p.BluRay.REMUX.DD+2.0.AVC-GROUP [Freeleech]")]
 	[InlineData("Movie.Title.1987.1080p.BluRay.REMUX.DD+2.0.AVC-GROUP [FL]")]
 	public void Parse_ShouldSetFreeleechFlag_WhenTitleContainsFreeleech(string input)

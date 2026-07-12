@@ -22,8 +22,10 @@ public class ReleaseParserService : IParser<BaseRelease>
 		@"\(?\b(?<edition>(((Recut.|Extended.|Ultimate.)?(Director.?s|Collector.?s|Theatrical|Ultimate|Extended|Despecialized|Limited|Criterion|(Special|Rouge|Final|Assembly|Imperial|Diamond|Signature|Hunter|Rekall)(?=(.(Cut|Edition|Version)))|\d{2,3}(th)?.Anniversary)(?:.(Cut|Edition|Version))?(.(Extended|Uncensored|Remastered|Unrated|Uncut|IMAX|Fan.?Edit))?|((Uncensored|Remastered|Unrated|Uncut|IMAX|Fan.?Edit|Restored|3D|((2|3|4)in1))))))\b\)?",
 		RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+	// unlike Sonarr this runs against the canonical input, so a bare "Show.Name - " prefix must never
+	// count as a website: the domain form is only stripped when bracketed/parenthesized or www.-prefixed
 	private static readonly RegexReplace WebsitePrefixRegex = new(
-		@"^(?:(?:\[|\()\s*)?(?:www\.)?[-a-z0-9-]{1,256}\.(?<!Naruto-Kun\.)(?:[a-z]{2,6}\.[a-z]{2,6}|xn--[a-z0-9-]{4,}|[a-z]{2,})\b(?:\s*(?:\]|\))|[ -]{2,})[ -]*",
+		@"^(?:\[|\()\s*(?:www\.)?[-a-z0-9-]{1,256}\.(?<!Naruto-Kun\.)(?:[a-z]{2,6}\.[a-z]{2,6}|xn--[a-z0-9-]{4,}|[a-z]{2,})\b\s*(?:\]|\))[ -]*|^www\.[-a-z0-9-]{1,256}\.(?<!Naruto-Kun\.)(?:[a-z]{2,6}\.[a-z]{2,6}|xn--[a-z0-9-]{4,}|[a-z]{2,})\b[ -]*",
 		string.Empty,
 		RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
