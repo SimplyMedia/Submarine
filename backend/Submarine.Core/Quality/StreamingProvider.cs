@@ -28,7 +28,7 @@ public enum StreamingProvider
 	/// <summary>
 	///     HBO Max <see href="https://en.wikipedia.org/wiki/HBO_Max" />
 	/// </summary>
-	[RegEx("(hmax)(?=[ ._-]web[ ._-]?(dl|rip)?)")]
+	[RegEx(@"(hmax|(?<![a-z])max)(?=[ ._-]web[ ._-]?(dl|rip)?)")]
 	HBO_MAX,
 
 	/// <summary>
@@ -113,5 +113,17 @@ public enum StreamingProvider
 	///     Movies Anywhere <see href="https://en.wikipedia.org/wiki/Movies_Anywhere" />
 	/// </summary>
 	[RegEx(@"(?<!dts[ .-]?hd[ .-]?)ma\b(?=.*\bweb[ ._-]?(dl|rip)\b)")]
-	MOVIES_ANYWHERE
+	MOVIES_ANYWHERE,
+
+	/// <summary>
+	///     Stan <see href="https://en.wikipedia.org/wiki/Stan_(streaming_service)" />
+	/// </summary>
+	[RegEx("(stan)(?=[ ._-]web[ ._-]?(dl|rip)?)")]
+	STAN,
+
+	/// <summary>
+	///     The Roku Channel <see href="https://en.wikipedia.org/wiki/The_Roku_Channel" />
+	/// </summary>
+	[RegEx("(roku)(?=[ ._-]web[ ._-]?(dl|rip)?)")]
+	ROKU
 }

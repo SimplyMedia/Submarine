@@ -48,5 +48,10 @@ public enum CustomFormatConditionType
 	/// <summary>
 	///     Match against the Protocol of the Release
 	/// </summary>
-	PROTOCOL
+	PROTOCOL,
+
+	/// <summary>
+	///     Matches when the Release has Hardcoded Subs, Value is ignored
+	/// </summary>
+	HARDCODED_SUBS
 }

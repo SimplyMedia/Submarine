@@ -24,6 +24,8 @@ public class QualityParserServiceTest
 	[InlineData("Series.Title.2x11.Nato.Per.La.Truffa.Bluray.Remux.AVC.1080p.AC3.ITA")]
 	[InlineData("Series.Title.2x11.Nato.Per.La.Truffa.Bluray.Remux.AVC.AC3.ITA")]
 	[InlineData("Series.Title.S03E01.The.Calm.1080p.DTS-HD.MA.5.1.AVC.REMUX-FraMeSToR")]
+	[InlineData("Movie.Title.2016.2160p.UHD.Remux.HEVC.DTS-HD.MA.5.1-GRP")]
+	[InlineData("Movie.Title.2019.1080p.Hybrid-Remux.AVC.TrueHD.5.1-GRP")]
 	public void Parse_ShouldReturnQualitySourceBlurayRemux_WhenReleaseIsBlurayRemux(string input)
 		=> AssertQualitySource(input, QualitySource.BLURAY_REMUX);
 
@@ -33,6 +35,7 @@ public class QualityParserServiceTest
 	[InlineData("Movie AKA Movie Alias 1986 1080p BluRay DTS 2.0 x264-HeavyWeight")]
 	[InlineData("Movie 3D 2013 BluRay 1080p x264 DTS-CMCT")]
 	[InlineData("Series Title in Some other Language - 40 BD XviD MP3 4329FA2F")]
+	[InlineData("Movie.Title.2019.1080p.BDLight.x265-AVBER")]
 	public void Parse_ShouldReturnQualitySourceBluray_WhenReleaseIsBluray(string input)
 		=> AssertQualitySource(input, QualitySource.BLURAY);
 
@@ -50,6 +53,9 @@ public class QualityParserServiceTest
 	[InlineData("The.Series.S01E04.Rod.Trip.mit.meinem.Onkel.German.DL.NetflixUHD.x264")]
 	[InlineData("[HorribleSubs] Series Title! S01 [Web][MKV][h264][480p][AAC 2.0][Softsubs (HorribleSubs)]")]
 	[InlineData("Series.Title.S16.DP.WEB.720p.DDP.5.1.H.264.PLEX")]
+	[InlineData("Movie.Title.2022.1080p.Hybrid.WEB.DDP5.1.Atmos.H.264-GRP")]
+	[InlineData("Series.Title.S01E01.2160p.WEB.HEVC.x265-GRP")]
+	[InlineData("Movie.Title.2021.WEB.1080p.DD5.1.H.264-GRP")]
 	public void Parse_ShouldReturnQualitySourceWebDL_WhenReleaseIsWebDL(string input)
 		=> AssertQualitySource(input, QualitySource.WEB_DL);
 
@@ -106,12 +112,22 @@ public class QualityParserServiceTest
 	[InlineData("[HorribleSubs] The Series - 32 [480p]")]
 	[InlineData("[CR] The Series - 004 [480p][48CE2D0F]")]
 	[InlineData("[Hatsuyuki] The Series - 363 [848x480][ADE35E38]")]
+	// TELESYNCH is recognized by SourceRegex (ts group) but has no dedicated QualitySource yet
+	[InlineData("Movie.Title.2023.720p.TELESYNCH.x264-GRP")]
 	public void Parse_ShouldReturnQualitySourceUNKNOWN_WhenNoQualitySourceFound(string input)
 		=> AssertQualitySource(input, QualitySource.UNKNOWN);
 
 	[Theory]
+	[InlineData("Movie.Title.2023.NEWCAM.x264-GRP")]
+	[InlineData("Movie.Title.2023.720p.HQCAM.x264-GRP")]
+	public void Parse_ShouldReturnQualitySourceCam_WhenReleaseIsCam(string input)
+		=> AssertQualitySource(input, QualitySource.CAM);
+
+	[Theory]
 	[InlineData("IT.DO.BE.QUIET.Part.II.2020.THAI.2160p.UHD.BLURAY.X265-HOA")]
 	[InlineData("Some.Movie.Title.2007.MULTi.COMPLETE.UHD.BLURAY-DUPLiKAT")]
+	[InlineData("Movie.Name.2020.3840x2160.WEB-DL.DTS-HD.MA.5.1.x265-GRP")]
+	[InlineData("Movie.Title.2019.[4K].WEB-DL.H264-GRP")]
 	public void Parse_ShouldReturnQualityResolution2160p_WhenReleaseIs2160p(string input)
 		=> AssertQualityResolution(input, QualityResolution.R2160_P);
 
@@ -126,6 +142,7 @@ public class QualityParserServiceTest
 	[InlineData("Anime Title - 15 (2021) [Golumpa] [English Dubbed] [WEBRip] [HD 720p]")]
 	[InlineData("Do.Not.Get.Pregnant.2.S10E20.REPACK.720p.WEB.h264-BAE")]
 	[InlineData("Series.Title.S23E17.HDTV.x264-PHOENiX[TGx]")]
+	[InlineData("[Group] Anime Title - 01 (960p) [ABC12345]")]
 	public void Parse_ShouldReturnQualityResolution720p_WhenReleaseIs720p(string input)
 		=> AssertQualityResolution(input, QualityResolution.R720_P);
 
@@ -143,6 +160,8 @@ public class QualityParserServiceTest
 	[InlineData("[SubsPlease] Anime Title - 15 (480p) [BDE17E52].mkv")]
 	[InlineData("A very long Movie Title 2012 SDTV MP3 2.0-NoGroup")]
 	[InlineData("Series Title in Some other Language - 40 BD XviD MP3 4329FA2F")]
+	[InlineData("Series Title in Some other Language - 40 BD X-vid MP3 4329FA2F")]
+	[InlineData("Series.Title.S01E01.480i.HDTV.DD5.1.H.264-GRP")]
 	public void Parse_ShouldReturnQualityResolution480p_WhenReleaseIs480p(string input)
 		=> AssertQualityResolution(input, QualityResolution.R480_P);
 
@@ -229,8 +248,23 @@ public class QualityParserServiceTest
 	[InlineData("[Kulot] Anime Title v3 [Dual-Audio][BDRip 1836x996 x264 FLACx2] | Complete | The Anime Title F91", 3)]
 	[InlineData("[SubsPlease] Anime Title - 01v2 (1080p) [CD04C72E].mkv", 2)]
 	[InlineData("[Erai-raws] Anime 3rd Season - 14 [v0][1080p][Multiple Subtitle].mkv", 0)]
+	[InlineData("Anime.Show.S01E01.2160p.v2.WEB.x265-GRP", 2)]
 	public void Parse_ShouldIncreaseRevisionVersion_WhenVersionExistsInRelease(string input, int expectedVersion)
 		=> AssertRevisionVersion(input, expectedVersion);
+
+	[Theory]
+	[InlineData("Movie.Title.2018.720p.HC.WEBRip.x264-GRP")]
+	[InlineData("Movie.Title.2017.HDRip.XviD.AC3.KORSUB-GRP")]
+	[InlineData("Movie.Title.2019.SUBBED.720p.WEBRip.x264-GRP")]
+	public void ParseHardcodedSubs_ShouldReturnTrue_WhenReleaseHasHardcodedSubs(string input)
+		=> Assert.True(QualityParserService.ParseHardcodedSubs(input));
+
+	[Theory]
+	[InlineData("[HorribleSubs] Anime Title - 32 [480p]")]
+	[InlineData("Movie.Title.2019.MULTISUBS.1080p.BluRay.x264-GRP")]
+	[InlineData("Series.Title.S01E01.1080p.WEB-DL.SOFTSUBS-GRP")]
+	public void ParseHardcodedSubs_ShouldReturnFalse_WhenReleaseHasSoftOrNoSubs(string input)
+		=> Assert.False(QualityParserService.ParseHardcodedSubs(input));
 
 	[Theory]
 	[InlineData("Sister What 1963 S10 1080p BluRay DTS 2.0 x264-OUIJA")]

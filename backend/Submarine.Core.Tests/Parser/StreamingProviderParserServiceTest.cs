@@ -44,6 +44,8 @@ public class StreamingProviderParserServiceTest
 	[InlineData("Show.Title.S03E13.Debut.1080p.HMAX.WEB-DL.DD2.0.H.264-FLUX")]
 	[InlineData("Title S01 1080p HMAX WEB-DL DD5 1 H 264-NTb")]
 	[InlineData("Movie Title 2021 1080 Hmax Webdl X264 Ac3 Will1869")]
+	[InlineData("Series.Title.S01E04.1080p.MAX.WEB-DL.DDP5.1.H.264-NTb")]
+	[InlineData("Movie.Title.2023.2160p.MAX.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX")]
 	public void Parse_ShouldReturnStreamingProviderHBOMax_WhenReleaseIsHBOMax(string input)
 		=> AssertStreamingProvider(input, StreamingProvider.HBO_MAX);
 
@@ -155,6 +157,18 @@ public class StreamingProviderParserServiceTest
 	[InlineData("The.Movie.Title..2023.2160p.MA.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX.mkv")]
 	public void Parse_ShouldReturnStreamingProviderMoviesAnywhere_WhenReleaseIsMoviesAnywhere(string input)
 		=> AssertStreamingProvider(input, StreamingProvider.MOVIES_ANYWHERE);
+
+	[Theory]
+	[InlineData("Series.Title.S01E01.1080p.STAN.WEB-DL.AAC2.0.H.264-NTb")]
+	[InlineData("Series Title S02 1080p STAN WEB-DL DDP5 1 H 264-NTb")]
+	public void Parse_ShouldReturnStreamingProviderStan_WhenReleaseIsStan(string input)
+		=> AssertStreamingProvider(input, StreamingProvider.STAN);
+
+	[Theory]
+	[InlineData("Series.Title.S01E05.1080p.ROKU.WEB-DL.DD5.1.H.264-NTb")]
+	[InlineData("Movie Title 2022 720p ROKU WEBRip x264-GRP")]
+	public void Parse_ShouldReturnStreamingProviderRoku_WhenReleaseIsRoku(string input)
+		=> AssertStreamingProvider(input, StreamingProvider.ROKU);
 
 	[Theory]
 	[InlineData("Movie 2021 1080p WEB-DL DD5 1 H 264-EVO")]

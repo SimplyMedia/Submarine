@@ -76,6 +76,8 @@ public class CustomFormatEvaluator
 				                                     && torrent.Flags.HasFlag(flag),
 			CustomFormatConditionType.PROTOCOL
 				=> TryParseEnum<Protocol>(condition, out var protocol) && release.Protocol == protocol,
+			CustomFormatConditionType.HARDCODED_SUBS
+				=> release.HardcodedSubs,
 			_ => throw new ArgumentOutOfRangeException(nameof(condition), condition.Type, "Unknown condition type")
 		};
 

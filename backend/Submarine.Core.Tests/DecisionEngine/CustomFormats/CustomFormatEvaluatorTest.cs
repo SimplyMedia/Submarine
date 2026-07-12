@@ -133,6 +133,17 @@ public class CustomFormatEvaluatorTest
 		Assert.Empty(_instance.Evaluate(CreateRelease(), new[] { format }));
 	}
 
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public void Evaluate_ShouldMatchHardcodedSubsCondition_WhenReleaseHasHardcodedSubs(bool hardcodedSubs)
+	{
+		var release = CreateRelease() with { HardcodedSubs = hardcodedSubs };
+		var format = CreateFormat(1, Condition(CustomFormatConditionType.HARDCODED_SUBS, ""));
+
+		Assert.Equal(hardcodedSubs, _instance.Evaluate(release, new[] { format }).Count == 1);
+	}
+
 	[Fact]
 	public void Evaluate_ShouldNotMatchFormat_WhenEnumValueIsUnparsable()
 	{
