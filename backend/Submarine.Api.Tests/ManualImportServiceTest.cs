@@ -23,7 +23,7 @@ public class ManualImportServiceTest : DatabaseTestBase
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(sourcePath);
 		var sourceFile = Path.Combine(sourcePath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv");
-		await File.WriteAllTextAsync(sourceFile, "video");
+		await File.WriteAllTextAsync(sourceFile, "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -34,7 +34,7 @@ public class ManualImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -44,7 +44,7 @@ public class ManualImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = BuildService();
 
@@ -58,16 +58,16 @@ public class ManualImportServiceTest : DatabaseTestBase
 						MediaVersionId = version.Id
 					}
 				}
-			});
+			}, TestContext.Current.CancellationToken);
 
 			var result = Assert.Single(response.Results);
 			Assert.True(result.Imported);
 
-			var episodeFile = await Context.EpisodeFiles.SingleAsync();
+			var episodeFile = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(version.Id, episodeFile.MediaVersionId);
 			Assert.True(File.Exists(Path.Combine(libraryPath, episodeFile.RelativePath)));
 
-			var storedEpisode = await Context.Episodes.Include(e => e.Files).SingleAsync();
+			var storedEpisode = await Context.Episodes.Include(e => e.Files).SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Contains(storedEpisode.Files, f => f.Id == episodeFile.Id);
 		}
 		finally
@@ -83,14 +83,14 @@ public class ManualImportServiceTest : DatabaseTestBase
 		var sourcePath = Path.Combine(root, "source");
 		Directory.CreateDirectory(sourcePath);
 		var sourceFile = Path.Combine(sourcePath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv");
-		await File.WriteAllTextAsync(sourceFile, "video");
+		await File.WriteAllTextAsync(sourceFile, "video", TestContext.Current.CancellationToken);
 
 		try
 		{
 			var seriesA = new Series { TvdbId = 1, Title = "A", Type = SeriesType.STANDARD };
 			var seriesB = new Series { TvdbId = 2, Title = "B", Type = SeriesType.STANDARD };
 			Context.Series.AddRange(seriesA, seriesB);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var versionB = new MediaVersion
 			{
@@ -100,7 +100,7 @@ public class ManualImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(versionB);
 			var episode = new Episode { SeriesId = seriesA.Id, SeasonNumber = 1, EpisodeNumber = 5 };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = BuildService();
 
@@ -114,9 +114,9 @@ public class ManualImportServiceTest : DatabaseTestBase
 						MediaVersionId = versionB.Id
 					}
 				}
-			}));
+			}, TestContext.Current.CancellationToken));
 
-			Assert.Empty(await Context.EpisodeFiles.ToListAsync());
+			Assert.Empty(await Context.EpisodeFiles.ToListAsync(TestContext.Current.CancellationToken));
 		}
 		finally
 		{

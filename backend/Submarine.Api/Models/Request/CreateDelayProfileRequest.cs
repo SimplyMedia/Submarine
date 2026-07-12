@@ -4,7 +4,7 @@ namespace Submarine.Api.Models.Request;
 
 public record CreateDelayProfileRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public Protocol PreferredProtocol { get; set; }
 

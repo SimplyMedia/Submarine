@@ -43,7 +43,7 @@ public class HistoryEvent : ICreatable
 	/// <summary>
 	///     Source title of the event, e.g. the release title or old file path
 	/// </summary>
-	public string SourceTitle { get; set; }
+	public string SourceTitle { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Quality involved in the event, if any

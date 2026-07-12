@@ -30,7 +30,7 @@ public class UTorrentClientTest
 	{
 		var (client, handler) = CreateClient((HttpStatusCode.OK, Token("TOKENABC")), (HttpStatusCode.OK, "{}"));
 
-		var id = await client.AddDownloadAsync(new ReleaseInfo { Title = "Ubuntu", Guid = "g", DownloadUrl = Magnet });
+		var id = await client.AddDownloadAsync(new ReleaseInfo { Title = "Ubuntu", Guid = "g", DownloadUrl = Magnet }, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("ABCDEF1234567890ABCDEF1234567890ABCDEF12", id);
 		Assert.EndsWith("/gui/token.html", handler.Requests[0].AbsolutePath);
@@ -43,7 +43,7 @@ public class UTorrentClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.OK, Token("T")), (HttpStatusCode.OK, ListResponse));
 
-		var item = Assert.Single(await client.GetItemsAsync());
+		var item = Assert.Single(await client.GetItemsAsync(TestContext.Current.CancellationToken));
 
 		Assert.Equal("HASHXYZ", item.DownloadId);
 		Assert.Equal("Ubuntu.iso", item.Title);
@@ -64,7 +64,7 @@ public class UTorrentClientTest
 			(HttpStatusCode.OK, Token("TOKTWO")),
 			(HttpStatusCode.OK, ListResponse));
 
-		await client.GetItemsAsync();
+		await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(4, handler.Requests.Count);
 		Assert.Contains("token=TOKTWO", handler.Requests[3].Query);
@@ -75,7 +75,7 @@ public class UTorrentClientTest
 	{
 		var (client, handler) = CreateClient((HttpStatusCode.OK, Token("T")), (HttpStatusCode.OK, "{}"));
 
-		await client.RemoveItemAsync("HASHXYZ", true);
+		await client.RemoveItemAsync("HASHXYZ", true, TestContext.Current.CancellationToken);
 
 		Assert.Contains("action=removedata", handler.Requests[1].Query);
 		Assert.Contains("hash=HASHXYZ", handler.Requests[1].Query);
@@ -86,7 +86,7 @@ public class UTorrentClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.OK, Token("T")), (HttpStatusCode.InternalServerError, "boom"));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private (UTorrentClient Client, StubHandler Handler) CreateClient(

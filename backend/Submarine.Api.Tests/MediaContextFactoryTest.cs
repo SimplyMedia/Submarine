@@ -21,7 +21,7 @@ public class MediaContextFactoryTest : DatabaseTestBase
 			DelayProfile("Anime Slow", order: 5, "anime"),
 			DelayProfile("Anime Fast", order: 1, "anime"),
 			DelayProfile("HD", order: 0, "hd"));
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var context = await BuildAsync(Movie("anime"));
 
@@ -36,7 +36,7 @@ public class MediaContextFactoryTest : DatabaseTestBase
 		Context.DelayProfiles.AddRange(
 			DelayProfile("Default", order: int.MaxValue),
 			DelayProfile("Anime", order: 1, "anime"));
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var context = await BuildAsync(Movie("other"));
 
@@ -53,7 +53,7 @@ public class MediaContextFactoryTest : DatabaseTestBase
 			ReleaseProfile("Anime", "anime"),
 			ReleaseProfile("HD", "hd"),
 			ReleaseProfile("Disabled", enabled: false));
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var context = await BuildAsync(Movie("anime"));
 
@@ -67,7 +67,7 @@ public class MediaContextFactoryTest : DatabaseTestBase
 		{
 			Id = 1, Name = "English", Languages = new List<Language> { Language.ENGLISH }, Cutoff = Language.ENGLISH
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 	}
 
 	private Task<Submarine.Core.DecisionEngine.MediaContext> BuildAsync(Movie movie)

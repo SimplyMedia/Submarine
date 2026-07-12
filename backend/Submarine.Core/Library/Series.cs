@@ -31,7 +31,7 @@ public class Series : ICreatable, IUpdatable
 	/// <summary>
 	///     Title of the series
 	/// </summary>
-	public string Title { get; set; }
+	public string Title { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Title used for sorting this series

@@ -32,7 +32,7 @@ public class CollectionServiceTest : DatabaseTestBase
 				Versions = new List<MediaVersion>
 					{ new() { Name = "Default", Path = "/lib/m3", QualityProfileId = 1, LanguageProfileId = 1 } }
 			});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var service = BuildService(new FakeMetadataClient());
@@ -56,7 +56,7 @@ public class CollectionServiceTest : DatabaseTestBase
 			Versions = new List<MediaVersion>
 				{ new() { Name = "Default", Path = "/lib/existing", QualityProfileId = 1, LanguageProfileId = 1 } }
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var newMovieResource = new MovieResource(2, null, "New Movie", null, null, null, 2021, 110,
@@ -78,13 +78,13 @@ public class CollectionServiceTest : DatabaseTestBase
 		var result = await service.AddMissingAsync(10, new AddCollectionMoviesRequest
 		{
 			QualityProfileId = 1, LanguageProfileId = 1, RootFolderId = 1
-		});
+		}, TestContext.Current.CancellationToken);
 
 		var added = Assert.Single(result.Added);
 		Assert.Equal(2, added.TmdbId);
 		Assert.Empty(result.Failed);
 
-		var moviesInDb = await Context.Movies.AsNoTracking().ToListAsync();
+		var moviesInDb = await Context.Movies.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(2, moviesInDb.Count);
 	}
 

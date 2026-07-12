@@ -42,7 +42,7 @@ public class LibraryImportServiceTest : DatabaseTestBase
 		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 		var folder = Path.Combine(root, "Show Name (2020)");
 		Directory.CreateDirectory(folder);
-		await File.WriteAllTextAsync(Path.Combine(folder, "Show.Name.S01E01.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(folder, "Show.Name.S01E01.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -54,7 +54,7 @@ public class LibraryImportServiceTest : DatabaseTestBase
 			var proposals = await service.ScanAsync(new LibraryImportScanRequest
 			{
 				Path = root, MediaKind = MediaKind.SERIES
-			});
+			}, TestContext.Current.CancellationToken);
 
 			var proposal = Assert.Single(proposals);
 			Assert.Equal(42, proposal.SuggestedTvdbId);
@@ -78,7 +78,7 @@ public class LibraryImportServiceTest : DatabaseTestBase
 		Directory.CreateDirectory(folder);
 		var fileName = "Show.S01E01.1080p.WEB-DL.x264-GROUP.mkv";
 		var filePath = Path.Combine(folder, fileName);
-		await File.WriteAllTextAsync(filePath, "video");
+		await File.WriteAllTextAsync(filePath, "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -95,7 +95,7 @@ public class LibraryImportServiceTest : DatabaseTestBase
 						Folder = folder, TvdbId = 42, QualityProfileId = 1, LanguageProfileId = 1
 					}
 				}
-			});
+			}, TestContext.Current.CancellationToken);
 
 			var result = Assert.Single(response.Results);
 			Assert.True(result.Success);
@@ -103,13 +103,13 @@ public class LibraryImportServiceTest : DatabaseTestBase
 			// file must not have moved
 			Assert.True(File.Exists(filePath));
 
-			var episodeFile = await Context.EpisodeFiles.SingleAsync();
+			var episodeFile = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(fileName, episodeFile.RelativePath);
 
-			var episode = await Context.Episodes.Include(e => e.Files).SingleAsync();
+			var episode = await Context.Episodes.Include(e => e.Files).SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Contains(episode.Files, f => f.Id == episodeFile.Id);
 
-			var version = await Context.Versions.SingleAsync();
+			var version = await Context.Versions.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(folder, version.Path);
 		}
 		finally
@@ -124,18 +124,18 @@ public class LibraryImportServiceTest : DatabaseTestBase
 		var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 		var folder = Path.Combine(root, "Show");
 		Directory.CreateDirectory(folder);
-		await File.WriteAllTextAsync(Path.Combine(folder, "Show.S01E01.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(folder, "Show.S01E01.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
 			var existing = new Series { TvdbId = 99, Title = "Existing", Type = SeriesType.STANDARD };
 			Context.Series.Add(existing);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 			Context.Versions.Add(new MediaVersion
 			{
 				SeriesId = existing.Id, Name = "Default", Path = folder, QualityProfileId = 1, LanguageProfileId = 1
 			});
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var metadata = new FakeMetadataClient { Series = SeriesResource(42, "Show") };
 			var service = BuildService(metadata);
@@ -147,7 +147,7 @@ public class LibraryImportServiceTest : DatabaseTestBase
 				{
 					new() { Folder = folder, TvdbId = 42, QualityProfileId = 1, LanguageProfileId = 1 }
 				}
-			});
+			}, TestContext.Current.CancellationToken);
 
 			var result = Assert.Single(response.Results);
 			Assert.False(result.Success);

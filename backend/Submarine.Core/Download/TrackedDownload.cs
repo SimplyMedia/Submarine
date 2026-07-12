@@ -29,12 +29,12 @@ public class TrackedDownload : ICreatable, IUpdatable
 	/// <summary>
 	///     Client-side identifier of the download (e.g. torrent hash or nzo id)
 	/// </summary>
-	public string DownloadId { get; set; }
+	public string DownloadId { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Title of the download as reported by the client
 	/// </summary>
-	public string Title { get; set; }
+	public string Title { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Protocol this download was grabbed over
@@ -49,12 +49,12 @@ public class TrackedDownload : ICreatable, IUpdatable
 	/// <summary>
 	///     Title of the grabbed release
 	/// </summary>
-	public string ReleaseTitle { get; set; }
+	public string ReleaseTitle { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Quality of the grabbed release
 	/// </summary>
-	public QualityModel Quality { get; set; }
+	public QualityModel Quality { get; set; } = new(new(), new());
 
 	/// <summary>
 	///     Languages of the grabbed release

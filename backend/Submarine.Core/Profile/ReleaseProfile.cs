@@ -21,7 +21,7 @@ public class ReleaseProfile : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the release profile
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Whether this profile is applied

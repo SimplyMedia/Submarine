@@ -46,7 +46,7 @@ public class NzbGetClientTest
 			Title = "Show S01E01", Guid = "guid-1", DownloadUrl = "https://indexer.example/1.nzb", Protocol = Protocol.USENET
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("55", id);
 		var authHeader = handler.Calls.Single().Request.Headers.Authorization;
@@ -65,7 +65,7 @@ public class NzbGetClientTest
 		});
 		var client = CreateClient(handler);
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(4, items.Count);
 
@@ -101,7 +101,7 @@ public class NzbGetClientTest
 		});
 		var client = CreateClient(handler);
 
-		await client.RemoveItemAsync("101", true);
+		await client.RemoveItemAsync("101", true, TestContext.Current.CancellationToken);
 
 		Assert.Single(handler.Calls);
 	}
@@ -117,7 +117,7 @@ public class NzbGetClientTest
 		});
 		var client = CreateClient(handler);
 
-		await client.RemoveItemAsync("103", true);
+		await client.RemoveItemAsync("103", true, TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, handler.Calls.Count);
 	}
@@ -128,7 +128,7 @@ public class NzbGetClientTest
 		var handler = new StubHandler((_, _) => JsonResponse("""{ "error": { "code": 1, "message": "Access denied" } }"""));
 		var client = CreateClient(handler);
 
-		var ex = await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		var ex = await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 		Assert.Contains("Access denied", ex.Message);
 	}
 

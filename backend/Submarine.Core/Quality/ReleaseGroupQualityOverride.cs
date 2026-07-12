@@ -20,7 +20,7 @@ public class ReleaseGroupQualityOverride : ICreatable, IUpdatable
 	/// <summary>
 	///     Release group this override applies to, unique (case-insensitive)
 	/// </summary>
-	public string ReleaseGroup { get; set; }
+	public string ReleaseGroup { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Quality Source to assume for releases of this group without an explicit quality

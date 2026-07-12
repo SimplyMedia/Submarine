@@ -36,7 +36,7 @@ public class Aria2ClientTest
 		var id = await client.AddDownloadAsync(new ReleaseInfo
 		{
 			Title = "Ubuntu", Guid = "g", DownloadUrl = "https://tracker/ubuntu.torrent"
-		});
+		}, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("gid123", id);
 		Assert.Contains("aria2.addUri", handler.Bodies[0]);
@@ -51,7 +51,7 @@ public class Aria2ClientTest
 			(HttpStatusCode.OK, EmptyResponse),
 			(HttpStatusCode.OK, StoppedResponse));
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, items.Count);
 
@@ -73,7 +73,7 @@ public class Aria2ClientTest
 			(HttpStatusCode.OK, """{"id":"x","jsonrpc":"2.0","result":"OK"}"""),
 			(HttpStatusCode.OK, """{"id":"x","jsonrpc":"2.0","result":"OK"}"""));
 
-		await client.RemoveItemAsync("gid123", false);
+		await client.RemoveItemAsync("gid123", false, TestContext.Current.CancellationToken);
 
 		Assert.Contains("aria2.remove", handler.Bodies[0]);
 		Assert.Contains("gid123", handler.Bodies[0]);
@@ -86,7 +86,7 @@ public class Aria2ClientTest
 		var (client, _) = CreateClient(
 			(HttpStatusCode.OK, """{"id":"x","jsonrpc":"2.0","error":{"code":1,"message":"Unauthorized"}}"""));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private (Aria2Client Client, StubHandler Handler) CreateClient(

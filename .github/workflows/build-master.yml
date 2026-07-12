@@ -59,7 +59,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/simplymedia/${{ matrix.image }}:${{ steps.sha_short.outputs.sha_short }}
-            ghcr.io/project-nzb/${{ matrix.image }}:latest
+            ghcr.io/simplymedia/${{ matrix.image }}:latest
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

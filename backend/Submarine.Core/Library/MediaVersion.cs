@@ -22,7 +22,7 @@ public class MediaVersion : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of this version, e.g. "1080p" or "4K"
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Id of the Series this version belongs to, if any
@@ -47,7 +47,7 @@ public class MediaVersion : ICreatable, IUpdatable
 	/// <summary>
 	///     Full folder path this version's files are stored under
 	/// </summary>
-	public string Path { get; set; }
+	public string Path { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Whether this version is monitored for new files

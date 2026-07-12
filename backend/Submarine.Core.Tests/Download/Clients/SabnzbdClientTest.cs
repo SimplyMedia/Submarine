@@ -49,7 +49,7 @@ public class SabnzbdClientTest
 			Title = "Show S01E01", Guid = "guid-1", DownloadUrl = "https://indexer.example/1.nzb", Protocol = Protocol.USENET
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("SABnzbd_nzo_abc123", id);
 		Assert.Contains("cat=movies", handler.Requests.Single().RequestUri!.Query);
@@ -67,7 +67,7 @@ public class SabnzbdClientTest
 			Title = "Show S01E01", Guid = "guid-1", DownloadUrl = "https://indexer.example/1.nzb", Protocol = Protocol.USENET
 		};
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.AddDownloadAsync(release));
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -81,7 +81,7 @@ public class SabnzbdClientTest
 		});
 		var client = CreateClient(handler);
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(4, items.Count);
 
@@ -114,7 +114,7 @@ public class SabnzbdClientTest
 		});
 		var client = CreateClient(handler);
 
-		await client.RemoveItemAsync("nzo3", true);
+		await client.RemoveItemAsync("nzo3", true, TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, handler.Requests.Count);
 		Assert.Contains("mode=history", handler.Requests[1].RequestUri!.Query);
@@ -128,7 +128,7 @@ public class SabnzbdClientTest
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
 		var client = CreateClient(handler);
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private static bool ModeIs(HttpRequestMessage request, string mode)

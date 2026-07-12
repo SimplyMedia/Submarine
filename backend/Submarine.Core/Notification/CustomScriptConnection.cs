@@ -8,7 +8,7 @@ public class CustomScriptConnection : Connection
 	/// <summary>
 	///     Path to the script executed on media events
 	/// </summary>
-	public string ScriptPath { get; set; }
+	public string ScriptPath { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Creates a new instance of <see cref="CustomScriptConnection" />

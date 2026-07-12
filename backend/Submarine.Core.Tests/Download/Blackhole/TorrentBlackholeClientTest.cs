@@ -37,12 +37,12 @@ public class TorrentBlackholeClientTest : IDisposable
 			Title = "Movie 1", Guid = "guid-1", DownloadUrl = "https://indexer.example/1.torrent", Protocol = Protocol.BITTORRENT
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("Movie 1", id);
 		var filePath = Path.Combine(_torrentFolder, $"{id}.torrent");
 		Assert.True(File.Exists(filePath));
-		Assert.Equal(bytes, await File.ReadAllBytesAsync(filePath));
+		Assert.Equal(bytes, await File.ReadAllBytesAsync(filePath, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -54,12 +54,12 @@ public class TorrentBlackholeClientTest : IDisposable
 			Title = "Movie 1", Guid = "guid-1", DownloadUrl = "magnet:?xt=urn:btih:ABCDEF1234567890", Protocol = Protocol.BITTORRENT
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("Movie 1", id);
 		var filePath = Path.Combine(_torrentFolder, $"{id}.magnet");
 		Assert.True(File.Exists(filePath));
-		Assert.Equal(release.DownloadUrl, await File.ReadAllTextAsync(filePath));
+		Assert.Equal(release.DownloadUrl, await File.ReadAllTextAsync(filePath, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -67,12 +67,12 @@ public class TorrentBlackholeClientTest : IDisposable
 	{
 		var movieDirectory = Path.Combine(_watchFolder, "Movie.1");
 		Directory.CreateDirectory(movieDirectory);
-		await File.WriteAllBytesAsync(Path.Combine(movieDirectory, "movie.mkv"), new byte[1000]);
-		await File.WriteAllBytesAsync(Path.Combine(_watchFolder, "Movie.2.torrent"), new byte[500]);
+		await File.WriteAllBytesAsync(Path.Combine(movieDirectory, "movie.mkv"), new byte[1000], TestContext.Current.CancellationToken);
+		await File.WriteAllBytesAsync(Path.Combine(_watchFolder, "Movie.2.torrent"), new byte[500], TestContext.Current.CancellationToken);
 
 		var client = CreateClient();
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, items.Count);
 
@@ -91,11 +91,11 @@ public class TorrentBlackholeClientTest : IDisposable
 	{
 		var movieDirectory = Path.Combine(_watchFolder, "Movie.1");
 		Directory.CreateDirectory(movieDirectory);
-		await File.WriteAllTextAsync(Path.Combine(movieDirectory, "movie.mkv"), "data");
+		await File.WriteAllTextAsync(Path.Combine(movieDirectory, "movie.mkv"), "data", TestContext.Current.CancellationToken);
 
 		var client = CreateClient();
 
-		await client.RemoveItemAsync("Movie.1", true);
+		await client.RemoveItemAsync("Movie.1", true, TestContext.Current.CancellationToken);
 
 		Assert.False(Directory.Exists(movieDirectory));
 	}
@@ -105,7 +105,7 @@ public class TorrentBlackholeClientTest : IDisposable
 	{
 		var client = CreateClient();
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.RemoveItemAsync("missing", true));
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.RemoveItemAsync("missing", true, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -113,7 +113,7 @@ public class TorrentBlackholeClientTest : IDisposable
 	{
 		var client = CreateClient();
 
-		await client.TestAsync();
+		await client.TestAsync(TestContext.Current.CancellationToken);
 	}
 
 	[Fact]
@@ -126,7 +126,7 @@ public class TorrentBlackholeClientTest : IDisposable
 		var client = new TorrentBlackholeClient(settings, new HttpClient(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK))),
 			new XunitLogger<TorrentBlackholeClient>(_output));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private static string CreateTempDirectory()

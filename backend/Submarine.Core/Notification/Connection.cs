@@ -24,7 +24,7 @@ public class Connection : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the connection
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Type of media server this connection talks to

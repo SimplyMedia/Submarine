@@ -52,7 +52,7 @@ public class CalendarControllerTest : DatabaseTestBase
 			TvdbId = 1, Title = "Show, Inc.", Monitored = true, Type = SeriesType.STANDARD
 		};
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var episode = new Episode
 		{
@@ -60,7 +60,7 @@ public class CalendarControllerTest : DatabaseTestBase
 			AirDate = DateTimeOffset.UtcNow, Monitored = true
 		};
 		Context.Episodes.Add(episode);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var controller = CreateController();
 

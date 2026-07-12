@@ -4,7 +4,7 @@ namespace Submarine.Api.Models.Request;
 
 public record CreateDownloadClientRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public DownloadClientType Type { get; set; }
 
@@ -12,7 +12,7 @@ public record CreateDownloadClientRequest
 
 	public int Priority { get; set; } = 1;
 
-	public string SettingsJson { get; set; }
+	public string SettingsJson { get; set; } = null!;
 
 	public List<string> Tags { get; set; } = new();
 }

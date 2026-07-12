@@ -23,7 +23,7 @@ public class QualityProfile : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the quality profile
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Whether Releases of this profile should be upgraded to a better Quality once a lower Quality was already

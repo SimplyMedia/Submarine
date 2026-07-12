@@ -20,7 +20,7 @@ public class Tag : ICreatable
 	/// <summary>
 	///     Label of the tag, must be unique
 	/// </summary>
-	public string Label { get; set; }
+	public string Label { get; set; } = string.Empty;
 
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }

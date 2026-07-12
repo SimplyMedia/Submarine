@@ -8,12 +8,12 @@ public class PushoverConnection : Connection
 	/// <summary>
 	///     Pushover application token used to send messages
 	/// </summary>
-	public string AppToken { get; set; }
+	public string AppToken { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Pushover user or group key to send messages to
 	/// </summary>
-	public string UserKey { get; set; }
+	public string UserKey { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Creates a new instance of <see cref="PushoverConnection" />

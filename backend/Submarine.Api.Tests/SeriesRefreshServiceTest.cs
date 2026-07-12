@@ -22,7 +22,7 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 		var service = new SeriesRefreshService(Context, metadata, publisher,
 			NullLogger<SeriesRefreshService>.Instance);
 
-		await service.RefreshSeriesAsync(series);
+		await service.RefreshSeriesAsync(series, TestContext.Current.CancellationToken);
 
 		var published = Assert.Single(publisher.Published);
 		var @event = Assert.IsType<EpisodeTitleChangedEvent>(published);
@@ -40,7 +40,7 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 		var service = new SeriesRefreshService(Context, metadata, publisher,
 			NullLogger<SeriesRefreshService>.Instance);
 
-		await service.RefreshSeriesAsync(series);
+		await service.RefreshSeriesAsync(series, TestContext.Current.CancellationToken);
 
 		Assert.Empty(publisher.Published);
 	}
@@ -50,7 +50,7 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 	{
 		var series = new Series { TvdbId = 100, Title = "Show", Monitored = true, Numbering = EpisodeNumbering.DVD };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var metadata = new FakeMetadataClient
 		{
@@ -64,9 +64,9 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 		var service = new SeriesRefreshService(Context, metadata, new FakeEventPublisher(),
 			NullLogger<SeriesRefreshService>.Instance);
 
-		await service.RefreshSeriesAsync(series);
+		await service.RefreshSeriesAsync(series, TestContext.Current.CancellationToken);
 
-		var episode = await Context.Episodes.SingleAsync(e => e.SeriesId == series.Id);
+		var episode = await Context.Episodes.SingleAsync(e => e.SeriesId == series.Id, TestContext.Current.CancellationToken);
 		Assert.Equal(2, episode.SeasonNumber);
 		Assert.Equal(1, episode.EpisodeNumber);
 	}
@@ -76,7 +76,7 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 	{
 		var series = new Series { TvdbId = 100, Title = "Show", Monitored = true, Numbering = EpisodeNumbering.DVD };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var metadata = new FakeMetadataClient
 		{
@@ -89,9 +89,9 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 		var service = new SeriesRefreshService(Context, metadata, new FakeEventPublisher(),
 			NullLogger<SeriesRefreshService>.Instance);
 
-		await service.RefreshSeriesAsync(series);
+		await service.RefreshSeriesAsync(series, TestContext.Current.CancellationToken);
 
-		var episode = await Context.Episodes.SingleAsync(e => e.SeriesId == series.Id);
+		var episode = await Context.Episodes.SingleAsync(e => e.SeriesId == series.Id, TestContext.Current.CancellationToken);
 		Assert.Equal(1, episode.SeasonNumber);
 		Assert.Equal(3, episode.EpisodeNumber);
 	}
@@ -114,9 +114,9 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 		var service = new SeriesRefreshService(Context, metadata, new FakeEventPublisher(),
 			NullLogger<SeriesRefreshService>.Instance);
 
-		await service.RefreshSeriesAsync(series);
+		await service.RefreshSeriesAsync(series, TestContext.Current.CancellationToken);
 
-		var episode = await Context.Episodes.Include(e => e.Files).SingleAsync(e => e.SeriesId == series.Id);
+		var episode = await Context.Episodes.Include(e => e.Files).SingleAsync(e => e.SeriesId == series.Id, TestContext.Current.CancellationToken);
 		Assert.Equal(2, episode.SeasonNumber);
 		Assert.Equal(5, episode.EpisodeNumber);
 		Assert.Single(episode.Files);
@@ -130,14 +130,14 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 			TvdbId = 100, TmdbId = 900, Title = "Show", Monitored = true, MetadataProvider = MetadataProvider.TMDB
 		};
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var metadata = new FakeMetadataClient { TmdbSeries = BuildResource("Ep") };
 
 		var service = new SeriesRefreshService(Context, metadata, new FakeEventPublisher(),
 			NullLogger<SeriesRefreshService>.Instance);
 
-		await service.RefreshSeriesAsync(series);
+		await service.RefreshSeriesAsync(series, TestContext.Current.CancellationToken);
 
 		Assert.Equal(1, metadata.TmdbSeriesCalls);
 		Assert.Equal(0, metadata.TvdbSeriesCalls);
@@ -147,7 +147,7 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 	{
 		var series = new Series { TvdbId = 100, Title = "Show", Monitored = true };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var version = new MediaVersion
 		{
@@ -155,7 +155,7 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 			QualityProfileId = 1, LanguageProfileId = 1, Monitored = true
 		};
 		Context.Versions.Add(version);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var file = new EpisodeFile
 		{
@@ -166,14 +166,14 @@ public class SeriesRefreshServiceTest : DatabaseTestBase
 				new Revision())
 		};
 		Context.EpisodeFiles.Add(file);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		Context.Episodes.Add(new Episode
 		{
 			SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 1, TvdbId = episodeTvdbId, Title = storedTitle,
 			Files = new List<EpisodeFile> { file }
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		return series;
 	}

@@ -21,7 +21,7 @@ public class BlocklistItem : ICreatable
 	/// <summary>
 	///     Title of the blocked release
 	/// </summary>
-	public string ReleaseTitle { get; set; }
+	public string ReleaseTitle { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Indexer-side identifier of the blocked release, if any
@@ -51,7 +51,7 @@ public class BlocklistItem : ICreatable
 	/// <summary>
 	///     Why this release was blocked
 	/// </summary>
-	public string Reason { get; set; }
+	public string Reason { get; set; } = string.Empty;
 
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }

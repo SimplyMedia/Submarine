@@ -25,12 +25,12 @@ public class SecurityConfig : IUpdatable
 	/// <summary>
 	///     API key required when <see cref="Method" /> is <see cref="AuthenticationMethod.API_KEY" />
 	/// </summary>
-	public string ApiKey { get; set; }
+	public string ApiKey { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Token used to authenticate calendar/RSS feed URLs without requiring the API key
 	/// </summary>
-	public string FeedToken { get; set; }
+	public string FeedToken { get; set; } = string.Empty;
 
 	/// <inheritdoc />
 	public DateTimeOffset UpdatedAt { get; set; }

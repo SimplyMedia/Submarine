@@ -39,7 +39,7 @@ public class ImportListSyncJobTest : DatabaseTestBase
 			MediaKind = MediaKind.MOVIES, QualityProfileId = 1, LanguageProfileId = 1, RootFolderId = 1,
 			Monitored = true, Tags = new List<string> { "from-list" }
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var fetcher = new FakeImportListFetcher
 		{
@@ -56,9 +56,9 @@ public class ImportListSyncJobTest : DatabaseTestBase
 				null, null, Array.Empty<string>())
 		};
 
-		await new ImportListSyncJob().ExecuteAsync(BuildProvider(fetcher, metadata), CancellationToken.None);
+		await new ImportListSyncJob().ExecuteAsync(BuildProvider(fetcher, metadata), TestContext.Current.CancellationToken);
 
-		var movies = await Context.Movies.AsNoTracking().OrderBy(m => m.TmdbId).ToListAsync();
+		var movies = await Context.Movies.AsNoTracking().OrderBy(m => m.TmdbId).ToListAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(2, movies.Count);
 
 		var added = movies.Single(m => m.TmdbId == 200);
@@ -66,7 +66,7 @@ public class ImportListSyncJobTest : DatabaseTestBase
 		Assert.True(added.Monitored);
 		Assert.Contains("from-list", added.Tags);
 
-		var version = await Context.Versions.AsNoTracking().SingleAsync(v => v.MovieId == added.Id);
+		var version = await Context.Versions.AsNoTracking().SingleAsync(v => v.MovieId == added.Id, TestContext.Current.CancellationToken);
 		Assert.Equal("Default", version.Name);
 		Assert.Equal(1, version.QualityProfileId);
 		Assert.Equal(1, version.LanguageProfileId);
@@ -80,7 +80,7 @@ public class ImportListSyncJobTest : DatabaseTestBase
 			Name = "disabled", Type = ImportListType.TMDB_POPULAR, Enable = false, SettingsJson = "{}",
 			MediaKind = MediaKind.MOVIES, QualityProfileId = 1, LanguageProfileId = 1, RootFolderId = 1
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var fetcher = new FakeImportListFetcher
 		{
@@ -88,9 +88,9 @@ public class ImportListSyncJobTest : DatabaseTestBase
 		};
 
 		await new ImportListSyncJob().ExecuteAsync(BuildProvider(fetcher, new FakeMetadataClient()),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.Movies.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.Movies.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	private IServiceProvider BuildProvider(IImportListFetcher fetcher, IMetadataClient metadata)

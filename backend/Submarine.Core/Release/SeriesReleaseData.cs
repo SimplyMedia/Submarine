@@ -15,15 +15,15 @@ public record SeriesReleaseData
 	/// <summary>
 	///     The Season(s) included in the Release Title, if any
 	/// </summary>
-	public IReadOnlyList<int> Seasons { get; init; }
+	public IReadOnlyList<int> Seasons { get; init; } = [];
 
 	/// <summary>
 	///     The Episode(s) included in the Release Title, if any
 	/// </summary>
-	public IReadOnlyList<int> Episodes { get; init; }
+	public IReadOnlyList<int> Episodes { get; init; } = [];
 
 	/// <summary>
 	///     The Absolute Episode(s) included in the Release Title, if any
 	/// </summary>
-	public IReadOnlyList<int> AbsoluteEpisodes { get; init; }
+	public IReadOnlyList<int> AbsoluteEpisodes { get; init; } = [];
 }

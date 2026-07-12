@@ -35,7 +35,7 @@ public class SearchServiceTest : DatabaseTestBase
 
 		var service = BuildService(torznab, mappings);
 
-		await service.SearchEpisodeAsync(series.Id, 1, 5);
+		await service.SearchEpisodeAsync(series.Id, 1, 5, TestContext.Current.CancellationToken);
 
 		Assert.Contains(torznab.TvSearches, s => s is { Season: 1, Episode: 5, Query: null });
 		Assert.Contains(torznab.TvSearches, s => s is { Season: 1, Episode: 105, Query: "Scene Title" });
@@ -51,7 +51,7 @@ public class SearchServiceTest : DatabaseTestBase
 
 		var service = BuildService(torznab, mappings);
 
-		var result = await service.SearchEpisodeAsync(series.Id, 1, 5);
+		var result = await service.SearchEpisodeAsync(series.Id, 1, 5, TestContext.Current.CancellationToken);
 
 		Assert.Empty(result);
 		Assert.Contains(torznab.TvSearches, s => s is { Season: 1, Episode: 5, Query: null });
@@ -76,7 +76,7 @@ public class SearchServiceTest : DatabaseTestBase
 
 		var series = new Series { TvdbId = 42, Title = "Show", Monitored = true, Type = SeriesType.STANDARD };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var versionA = new MediaVersion
 		{
@@ -91,7 +91,7 @@ public class SearchServiceTest : DatabaseTestBase
 		Context.Versions.AddRange(versionA, versionB);
 		var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5 };
 		Context.Episodes.Add(episode);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		// Version A already holds a 1080p file; version B holds nothing.
 		Context.EpisodeFiles.Add(new EpisodeFile
@@ -101,7 +101,7 @@ public class SearchServiceTest : DatabaseTestBase
 				new Revision()),
 			Languages = new List<Language> { Language.ENGLISH }, Episodes = new List<Episode> { episode }
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var torznab = new FakeTorznabSearchClient
 		{
@@ -117,7 +117,7 @@ public class SearchServiceTest : DatabaseTestBase
 
 		var service = BuildService(torznab, new FakeMappingsClient());
 
-		var decisions = await service.SearchEpisodeAsync(series.Id, 1, 5);
+		var decisions = await service.SearchEpisodeAsync(series.Id, 1, 5, TestContext.Current.CancellationToken);
 
 		Assert.Equal(new[] { versionA.Id, versionB.Id }.OrderBy(id => id),
 			decisions.Select(d => d.VersionId!.Value).Distinct().OrderBy(id => id));
@@ -158,7 +158,7 @@ public class SearchServiceTest : DatabaseTestBase
 
 		var series = new Series { TvdbId = 42, Title = "Show", Monitored = true, Type = type };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		Context.Versions.Add(new MediaVersion
 		{
@@ -167,7 +167,7 @@ public class SearchServiceTest : DatabaseTestBase
 		});
 		var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5 };
 		Context.Episodes.Add(episode);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		return (series, episode);
 	}

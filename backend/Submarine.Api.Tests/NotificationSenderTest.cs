@@ -19,7 +19,7 @@ public class NotificationSenderTest
 		var sender = new SlackNotificationSender(client,
 			new SlackConnection { WebhookUrl = "https://hooks.slack.com/services/x" });
 
-		await sender.SendAsync(ImportMessage);
+		await sender.SendAsync(ImportMessage, TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal("https://hooks.slack.com/services/x", request.RequestUri!.ToString());
@@ -33,7 +33,7 @@ public class NotificationSenderTest
 		var sender = new PushoverNotificationSender(client,
 			new PushoverConnection { AppToken = "app-token", UserKey = "user-key" });
 
-		await sender.SendAsync(ImportMessage);
+		await sender.SendAsync(ImportMessage, TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal("https://api.pushover.net/1/messages.json", request.RequestUri!.ToString());
@@ -51,7 +51,7 @@ public class NotificationSenderTest
 		var sender = new PushbulletNotificationSender(client,
 			new PushbulletConnection { AccessToken = "access-token" });
 
-		await sender.SendAsync(ImportMessage);
+		await sender.SendAsync(ImportMessage, TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal("https://api.pushbullet.com/v2/pushes", request.RequestUri!.ToString());
@@ -69,7 +69,7 @@ public class NotificationSenderTest
 		var sender = new GotifyNotificationSender(client,
 			new GotifyConnection { ServerUrl = "https://gotify.example/", AppToken = "app-token" });
 
-		await sender.SendAsync(ImportMessage);
+		await sender.SendAsync(ImportMessage, TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal("https://gotify.example/message?token=app-token", request.RequestUri!.ToString());
@@ -88,7 +88,7 @@ public class NotificationSenderTest
 			Host = "kodi.local", Port = 8080, Username = "user", Password = "pass"
 		});
 
-		await sender.SendAsync(ImportMessage);
+		await sender.SendAsync(ImportMessage, TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, stub.Requests.Count);
 		Assert.All(stub.Requests, r => Assert.Equal("http://kodi.local:8080/jsonrpc", r.RequestUri!.ToString()));
@@ -103,7 +103,7 @@ public class NotificationSenderTest
 		var (client, stub) = NewClient();
 		var sender = new KodiNotificationSender(client, new KodiConnection { Host = "kodi.local", Port = 8080 });
 
-		await sender.SendAsync(new NotificationMessage("grab", "Movie Title", null, null, DateTimeOffset.UtcNow));
+		await sender.SendAsync(new NotificationMessage("grab", "Movie Title", null, null, DateTimeOffset.UtcNow), TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Null(request.Headers.Authorization);
@@ -141,7 +141,7 @@ public class NotificationSenderTest
 		await sender.RunAsync(new ProcessStartInfo("cmd.exe", "/c exit 0")
 		{
 			UseShellExecute = false, CreateNoWindow = true
-		}, CancellationToken.None);
+		}, TestContext.Current.CancellationToken);
 	}
 
 	private static (HttpClient Client, StubHttpMessageHandler Stub) NewClient()

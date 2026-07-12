@@ -4,7 +4,7 @@ namespace Submarine.Api.Models.Request;
 
 public record CreateQualityOverrideRequest
 {
-	public string ReleaseGroup { get; set; }
+	public string ReleaseGroup { get; set; } = null!;
 
 	public QualitySource Source { get; set; }
 }

@@ -33,7 +33,7 @@ public class MovieFile : ICreatable
 	/// <summary>
 	///     Path of this file, relative to its version's path
 	/// </summary>
-	public string RelativePath { get; set; }
+	public string RelativePath { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Size of this file in bytes
@@ -48,7 +48,7 @@ public class MovieFile : ICreatable
 	/// <summary>
 	///     Quality of this file
 	/// </summary>
-	public QualityModel Quality { get; set; }
+	public QualityModel Quality { get; set; } = new(new(), new());
 
 	/// <summary>
 	///     Languages of this file

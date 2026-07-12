@@ -22,7 +22,7 @@ public class ImportList : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the import list
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Source type of the import list
@@ -37,7 +37,7 @@ public class ImportList : ICreatable, IUpdatable
 	/// <summary>
 	///     The type specific settings of this import list (list id, username, season parameters), serialized as JSON
 	/// </summary>
-	public string SettingsJson { get; set; }
+	public string SettingsJson { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Kind of media this import list adds

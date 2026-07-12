@@ -58,7 +58,7 @@ public class BackupServiceTest : IDisposable
 	{
 		var service = CreateService();
 
-		var entry = await service.CreateAsync();
+		var entry = await service.CreateAsync(TestContext.Current.CancellationToken);
 
 		var path = Path.Combine(_backupDir, entry.Name);
 		Assert.True(File.Exists(path));
@@ -73,7 +73,7 @@ public class BackupServiceTest : IDisposable
 	{
 		var service = CreateService(provider: "Postgres");
 
-		var entry = await service.CreateAsync();
+		var entry = await service.CreateAsync(TestContext.Current.CancellationToken);
 
 		using var archive = ZipFile.OpenRead(Path.Combine(_backupDir, entry.Name));
 		Assert.Contains(archive.Entries, e => e.Name == "README.txt");
@@ -85,7 +85,7 @@ public class BackupServiceTest : IDisposable
 	{
 		var service = CreateService();
 
-		var entry = await service.CreateAsync();
+		var entry = await service.CreateAsync(TestContext.Current.CancellationToken);
 		var list = service.List();
 
 		Assert.Single(list);
@@ -106,7 +106,7 @@ public class BackupServiceTest : IDisposable
 			File.SetCreationTimeUtc(path, timestamp.UtcDateTime);
 		}
 
-		await service.CreateAsync();
+		await service.CreateAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(3, service.List().Count);
 	}

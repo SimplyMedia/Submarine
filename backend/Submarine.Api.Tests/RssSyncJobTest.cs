@@ -32,9 +32,9 @@ public class RssSyncJobTest : DatabaseTestBase
 		var (series, episode, version) = await SeedSeriesAsync();
 		var torznab = FeedWith(Release());
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync();
+		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal("Show S01E05 1080p WEB-DL x264-GROUP", tracked.ReleaseTitle);
 		Assert.Equal(series.Id, tracked.SeriesId);
 		Assert.Equal(version.Id, tracked.MediaVersionId);
@@ -46,13 +46,13 @@ public class RssSyncJobTest : DatabaseTestBase
 	{
 		await SeedSeriesAsync();
 		Context.Blocklist.Add(new BlocklistItem { Guid = "guid-1", ReleaseTitle = "blocked", Reason = "test" });
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var torznab = FeedWith(Release());
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -63,9 +63,9 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var torznab = FeedWith(Release(Protocol.USENET) with { PublishDate = DateTimeOffset.UtcNow });
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -76,9 +76,9 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var torznab = FeedWith(Release() with { PublishDate = DateTimeOffset.UtcNow.AddDays(-10) });
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -89,9 +89,9 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var torznab = FeedWith(Release() with { Size = 5L * 1024 * 1024 * 1024 });
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -102,9 +102,9 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var torznab = FeedWith(Release());
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -112,13 +112,13 @@ public class RssSyncJobTest : DatabaseTestBase
 	{
 		var (series, _, _) = await SeedSeriesAsync();
 		series.Monitored = false;
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var torznab = FeedWith(Release());
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -128,9 +128,9 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var torznab = FeedWith(ReleaseWith("Show S01E01E02 1080p WEB-DL x264-GROUP"));
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync();
+		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(2, tracked.EpisodeIds.Count);
 		Assert.Contains(episodes[0].Id, tracked.EpisodeIds);
 		Assert.Contains(episodes[1].Id, tracked.EpisodeIds);
@@ -146,9 +146,9 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var torznab = FeedWith(ReleaseWith("Show S01 1080p WEB-DL x264-GROUP"));
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -159,9 +159,9 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var torznab = FeedWith(ReleaseWith("Show S01 1080p WEB-DL x264-GROUP"));
 
-		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), CancellationToken.None);
+		await new RssSyncJob().ExecuteAsync(BuildProvider(torznab, out _), TestContext.Current.CancellationToken);
 
-		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync();
+		var tracked = await Context.TrackedDownloads.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(2, tracked.EpisodeIds.Count);
 	}
 
@@ -211,7 +211,7 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var series = new Series { TvdbId = 42, Title = "Show", Monitored = true, Type = SeriesType.STANDARD };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var version = new MediaVersion
 		{
@@ -224,7 +224,7 @@ public class RssSyncJobTest : DatabaseTestBase
 			.Select(n => new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = n, Monitored = true })
 			.ToList();
 		Context.Episodes.AddRange(episodes);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		return (series, version, episodes);
 	}
@@ -243,7 +243,7 @@ public class RssSyncJobTest : DatabaseTestBase
 			Languages = new List<Language> { Language.ENGLISH },
 			Episodes = new List<Episode> { episode }
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 	}
 
 	private async Task<(Series Series, Episode Episode, MediaVersion Version)> SeedSeriesAsync(bool usenet = false)
@@ -285,7 +285,7 @@ public class RssSyncJobTest : DatabaseTestBase
 
 		var series = new Series { TvdbId = 42, Title = "Show", Monitored = true, Type = SeriesType.STANDARD };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var version = new MediaVersion
 		{
@@ -295,7 +295,7 @@ public class RssSyncJobTest : DatabaseTestBase
 		Context.Versions.Add(version);
 		var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Monitored = true };
 		Context.Episodes.Add(episode);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		return (series, episode, version);
 	}
@@ -303,7 +303,7 @@ public class RssSyncJobTest : DatabaseTestBase
 	private async Task SetConfigAsync(IndexerConfig config)
 	{
 		Context.IndexerConfigs.Add(config);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 	}
 
 	private IServiceProvider BuildProvider(FakeTorznabSearchClient torznab, out FakeDownloadClient client)

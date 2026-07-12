@@ -44,7 +44,7 @@ public class QBittorrentClientTest
 			Protocol = Protocol.BITTORRENT
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("abcdef1234567890abcdef1234567890abcdef12", id);
 		var addCall = handler.Calls.Single(call => call.Request.RequestUri!.AbsolutePath.EndsWith("torrents/add"));
@@ -71,7 +71,7 @@ public class QBittorrentClientTest
 			Protocol = Protocol.BITTORRENT
 		};
 
-		await client.AddDownloadAsync(release, new SeedCriteria(1.5, 10080, null));
+		await client.AddDownloadAsync(release, new SeedCriteria(1.5, 10080, null), TestContext.Current.CancellationToken);
 
 		var addCall = handler.Calls.Single(call => call.Request.RequestUri!.AbsolutePath.EndsWith("torrents/add"));
 		Assert.Contains("ratioLimit=1.5", addCall.Body);
@@ -102,7 +102,7 @@ public class QBittorrentClientTest
 			Protocol = Protocol.BITTORRENT
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal(expected, id);
 		Assert.Contains(handler.Calls, call => call.Request.RequestUri!.AbsolutePath.EndsWith("torrents/add"));
@@ -120,7 +120,7 @@ public class QBittorrentClientTest
 		});
 		var client = CreateClient(handler);
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(4, items.Count);
 
@@ -163,7 +163,7 @@ public class QBittorrentClientTest
 		});
 		var client = CreateClient(handler);
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, loginCalls);
 		Assert.Equal(2, infoCalls);
@@ -182,7 +182,7 @@ public class QBittorrentClientTest
 		});
 		var client = CreateClient(handler);
 
-		await client.RemoveItemAsync("abc123", true);
+		await client.RemoveItemAsync("abc123", true, TestContext.Current.CancellationToken);
 
 		var deleteCall = handler.Calls.Single(call => call.Request.RequestUri!.AbsolutePath.EndsWith("torrents/delete"));
 		Assert.Contains("hashes=abc123", deleteCall.Body);
@@ -200,7 +200,7 @@ public class QBittorrentClientTest
 		});
 		var client = CreateClient(handler);
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private static HttpResponseMessage LoginSuccessResponse()

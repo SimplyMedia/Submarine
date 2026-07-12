@@ -15,12 +15,12 @@ public record BaseRelease
 	/// <summary>
 	///     The Full Title of the Release
 	/// </summary>
-	public string FullTitle { get; init; }
+	public string FullTitle { get; init; } = string.Empty;
 
 	/// <summary>
 	///     The parsed Title of the Release
 	/// </summary>
-	public string Title { get; init; }
+	public string Title { get; init; } = string.Empty;
 
 	/// <summary>
 	///     The Year included in the Release Title, if any
@@ -30,12 +30,12 @@ public record BaseRelease
 	/// <summary>
 	///     Aliases for the Release, if any
 	/// </summary>
-	public IReadOnlyList<string> Aliases { get; init; }
+	public IReadOnlyList<string> Aliases { get; init; } = [];
 
 	/// <summary>
 	///     Languages included in the Release Title, if any
 	/// </summary>
-	public IReadOnlyList<Language> Languages { get; init; }
+	public IReadOnlyList<Language> Languages { get; init; } = [];
 
 	/// <summary>
 	///     Streaming Provider of this Release, if any
@@ -60,7 +60,7 @@ public record BaseRelease
 	/// <summary>
 	///     The Quality of the Release
 	/// </summary>
-	public QualityModel Quality { get; init; }
+	public QualityModel Quality { get; init; } = new(new(), new());
 
 	/// <summary>
 	///     The Protocol of the Release

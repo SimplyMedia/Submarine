@@ -26,7 +26,7 @@ public class FloodClientTest
 	{
 		var (client, handler) = CreateClient((HttpStatusCode.OK, "{}"), (HttpStatusCode.OK, "{}"));
 
-		var id = await client.AddDownloadAsync(new ReleaseInfo { Title = "Ubuntu", Guid = "g", DownloadUrl = Magnet });
+		var id = await client.AddDownloadAsync(new ReleaseInfo { Title = "Ubuntu", Guid = "g", DownloadUrl = Magnet }, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("ABCDEF1234567890ABCDEF1234567890ABCDEF12", id);
 		Assert.EndsWith("/api/auth/authenticate", handler.Requests[0].AbsolutePath);
@@ -40,7 +40,7 @@ public class FloodClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.OK, "{}"), (HttpStatusCode.OK, TorrentsResponse));
 
-		var item = Assert.Single(await client.GetItemsAsync());
+		var item = Assert.Single(await client.GetItemsAsync(TestContext.Current.CancellationToken));
 
 		Assert.Equal("HASH1", item.DownloadId);
 		Assert.Equal("Ubuntu", item.Title);
@@ -61,7 +61,7 @@ public class FloodClientTest
 			(HttpStatusCode.OK, "{}"),
 			(HttpStatusCode.OK, TorrentsResponse));
 
-		await client.GetItemsAsync();
+		await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(4, handler.Requests.Count);
 		Assert.EndsWith("/api/auth/authenticate", handler.Requests[2].AbsolutePath);
@@ -72,7 +72,7 @@ public class FloodClientTest
 	{
 		var (client, handler) = CreateClient((HttpStatusCode.OK, "{}"), (HttpStatusCode.OK, "{}"));
 
-		await client.RemoveItemAsync("HASH1", true);
+		await client.RemoveItemAsync("HASH1", true, TestContext.Current.CancellationToken);
 
 		Assert.EndsWith("/api/torrents/delete", handler.Requests[1].AbsolutePath);
 		Assert.Contains("HASH1", handler.Bodies[1]);
@@ -84,7 +84,7 @@ public class FloodClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.Unauthorized, "{}"));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private (FloodClient Client, StubHandler Handler) CreateClient(

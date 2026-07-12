@@ -50,7 +50,7 @@ public class TransmissionClientTest
 			Protocol = Protocol.BITTORRENT
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("abcdef0123456789", id);
 	}
@@ -83,7 +83,7 @@ public class TransmissionClientTest
 			Protocol = Protocol.BITTORRENT
 		};
 
-		var id = await client.AddDownloadAsync(release, new SeedCriteria(2.0, 4320, null));
+		var id = await client.AddDownloadAsync(release, new SeedCriteria(2.0, 4320, null), TestContext.Current.CancellationToken);
 
 		Assert.Equal("abcdef0123456789", id);
 		Assert.NotNull(torrentSetBody);
@@ -104,7 +104,7 @@ public class TransmissionClientTest
 			method => method == "torrent-get" ? JsonResponse(TorrentGetJson) : new HttpResponseMessage(HttpStatusCode.NotFound)));
 		var client = CreateClient(handler);
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(5, items.Count);
 
@@ -142,7 +142,7 @@ public class TransmissionClientTest
 		});
 		var client = CreateClient(handler);
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(1, conflictResponses);
 		Assert.Equal(5, items.Count);
@@ -164,7 +164,7 @@ public class TransmissionClientTest
 		}));
 		var client = CreateClient(handler);
 
-		await client.RemoveItemAsync("hash1", true);
+		await client.RemoveItemAsync("hash1", true, TestContext.Current.CancellationToken);
 	}
 
 	[Fact]
@@ -175,7 +175,7 @@ public class TransmissionClientTest
 			: new HttpResponseMessage(HttpStatusCode.NotFound)));
 		var client = CreateClient(handler);
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private static HttpResponseMessage RouteRequest(HttpRequestMessage request, string body,

@@ -77,7 +77,7 @@ public record TorznabCategory
 	/// <summary>
 	///     The name of the category
 	/// </summary>
-	public string Name { get; init; }
+	public string Name { get; init; } = string.Empty;
 
 	/// <summary>
 	///     The subcategories of the category

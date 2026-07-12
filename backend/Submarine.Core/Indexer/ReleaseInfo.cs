@@ -12,12 +12,12 @@ public record ReleaseInfo
 	/// <summary>
 	///     The Title of the Release
 	/// </summary>
-	public string Title { get; init; }
+	public string Title { get; init; } = string.Empty;
 
 	/// <summary>
 	///     The unique identifier of the Release on the indexer
 	/// </summary>
-	public string Guid { get; init; }
+	public string Guid { get; init; } = string.Empty;
 
 	/// <summary>
 	///     The url to download the Release from, if any

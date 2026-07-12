@@ -7,7 +7,7 @@ namespace Submarine.Core.Validator;
 public interface IValidator<in T>
 {
 	/// <summary>
-	///     Validate that <see cref="input" /> is valid
+	///     Validate that <paramref name="input" /> is valid
 	/// </summary>
 	/// <param name="input">the input to validate</param>
 	void Validate(T input);

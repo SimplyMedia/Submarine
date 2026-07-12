@@ -34,7 +34,7 @@ public class DownloadStationClientTest
 		var id = await client.AddDownloadAsync(new ReleaseInfo
 		{
 			Title = "Ubuntu", Guid = "g", DownloadUrl = "magnet:?xt=urn:btih:abc"
-		});
+		}, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("dbid_1", id);
 		Assert.Contains("method=create", handler.Requests[1].Query);
@@ -46,7 +46,7 @@ public class DownloadStationClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.OK, Login("SID123")), (HttpStatusCode.OK, ListResponse));
 
-		var item = Assert.Single(await client.GetItemsAsync());
+		var item = Assert.Single(await client.GetItemsAsync(TestContext.Current.CancellationToken));
 
 		Assert.Equal("dbid_1", item.DownloadId);
 		Assert.Equal("Ubuntu", item.Title);
@@ -65,7 +65,7 @@ public class DownloadStationClientTest
 			(HttpStatusCode.OK, Login("SID2")),
 			(HttpStatusCode.OK, ListResponse));
 
-		await client.GetItemsAsync();
+		await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(4, handler.Requests.Count);
 		Assert.Contains("method=login", handler.Requests[2].Query);
@@ -79,7 +79,7 @@ public class DownloadStationClientTest
 			(HttpStatusCode.OK, Login("SID123")),
 			(HttpStatusCode.OK, """{"success":true}"""));
 
-		await client.RemoveItemAsync("dbid_1", false);
+		await client.RemoveItemAsync("dbid_1", false, TestContext.Current.CancellationToken);
 
 		Assert.Contains("method=delete", handler.Requests[1].Query);
 		Assert.Contains("id=dbid_1", handler.Requests[1].Query);
@@ -91,7 +91,7 @@ public class DownloadStationClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.OK, """{"success":false,"error":{"code":100}}"""));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private (DownloadStationClient Client, StubHandler Handler) CreateClient(

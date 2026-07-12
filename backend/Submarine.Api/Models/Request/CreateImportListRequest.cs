@@ -5,13 +5,13 @@ namespace Submarine.Api.Models.Request;
 
 public record CreateImportListRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public ImportListType Type { get; set; }
 
 	public bool Enable { get; set; }
 
-	public string SettingsJson { get; set; }
+	public string SettingsJson { get; set; } = null!;
 
 	public MediaKind MediaKind { get; set; }
 

@@ -28,7 +28,7 @@ public class MonitorAndSearchOnAddTest : DatabaseTestBase
 			TvdbId = 42, RootFolderId = 1, QualityProfileId = 1, LanguageProfileId = 1, Monitor = option
 		});
 
-		var monitored = (await Context.Episodes.AsNoTracking().Where(e => e.SeriesId == series.Id).ToListAsync())
+		var monitored = (await Context.Episodes.AsNoTracking().Where(e => e.SeriesId == series.Id).ToListAsync(TestContext.Current.CancellationToken))
 			.Where(e => e.Monitored)
 			.Select(e => e.SeasonNumber * 100 + e.EpisodeNumber)
 			.OrderBy(k => k)
@@ -103,7 +103,7 @@ public class MonitorAndSearchOnAddTest : DatabaseTestBase
 	{
 		Context.RootFolders.Add(new RootFolder { Path = Path.Combine("root", "series"), MediaKind = MediaKind.SERIES });
 		Context.RootFolders.Add(new RootFolder { Path = Path.Combine("root", "movies"), MediaKind = MediaKind.MOVIES });
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 	}
 
 	private SeriesService BuildSeriesService(out FakeBackgroundTaskQueue queue)

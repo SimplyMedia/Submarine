@@ -6,17 +6,17 @@ public record UpdateNamingConfigRequest
 {
 	public bool RenameEpisodes { get; set; }
 
-	public string StandardEpisodeFormat { get; set; }
+	public string StandardEpisodeFormat { get; set; } = null!;
 
-	public string AnimeEpisodeFormat { get; set; }
+	public string AnimeEpisodeFormat { get; set; } = null!;
 
-	public string MovieFormat { get; set; }
+	public string MovieFormat { get; set; } = null!;
 
-	public string SeriesFolderFormat { get; set; }
+	public string SeriesFolderFormat { get; set; } = null!;
 
-	public string SeasonFolderFormat { get; set; }
+	public string SeasonFolderFormat { get; set; } = null!;
 
-	public string MovieFolderFormat { get; set; }
+	public string MovieFolderFormat { get; set; } = null!;
 
 	public MultiEpisodeStyle MultiEpisodeStyle { get; set; }
 }

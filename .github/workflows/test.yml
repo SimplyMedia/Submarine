@@ -18,10 +18,5 @@ jobs:
         run: dotnet build --no-restore /p:ContinuousIntegrationBuild=true
         working-directory: backend
       - name: Run Test
-        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+        run: dotnet test --no-build --verbosity normal
         working-directory: backend
-      - name: Upload Coverage
-        uses: codacy/codacy-coverage-reporter-action@v1
-        with:
-          api-token: ${{ secrets.CODACY_API_TOKEN }}
-          coverage-reports: backend/Submarine.Core.Tests/coverage.opencover.xml

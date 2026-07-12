@@ -39,7 +39,7 @@ public class MappingResolverTest : IDisposable
 		{
 			TvdbId = 1, Title = "Show", SeasonNumber = 1, SceneSeasonNumber = 1, EpisodeOffset = 1
 		});
-		await _context.SaveChangesAsync();
+		await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var (season, episode) = await _resolver.ResolveSceneAsync(1, 1, 5);
 
@@ -58,7 +58,7 @@ public class MappingResolverTest : IDisposable
 		{
 			TvdbId = 1, SeasonNumber = 1, EpisodeNumber = 5, SceneSeasonNumber = 2, SceneEpisodeNumber = 99
 		});
-		await _context.SaveChangesAsync();
+		await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var (season, episode) = await _resolver.ResolveSceneAsync(1, 1, 5);
 
@@ -82,7 +82,7 @@ public class MappingResolverTest : IDisposable
 		{
 			TvdbId = 1, Title = "Show", SeasonNumber = 1, SceneSeasonNumber = 1, EpisodeOffset = 1
 		});
-		await _context.SaveChangesAsync();
+		await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var (sceneSeason, sceneEpisode) = await _resolver.ResolveSceneAsync(1, 1, 5);
 		var (season, episode) = await _resolver.ResolveTvdbAsync(1, sceneSeason, sceneEpisode);
@@ -98,7 +98,7 @@ public class MappingResolverTest : IDisposable
 		{
 			TvdbId = 1, SeasonNumber = 1, EpisodeNumber = 5, SceneSeasonNumber = 2, SceneEpisodeNumber = 99
 		});
-		await _context.SaveChangesAsync();
+		await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var (sceneSeason, sceneEpisode) = await _resolver.ResolveSceneAsync(1, 1, 5);
 		var (season, episode) = await _resolver.ResolveTvdbAsync(1, sceneSeason, sceneEpisode);

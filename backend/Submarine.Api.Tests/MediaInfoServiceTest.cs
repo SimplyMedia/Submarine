@@ -26,7 +26,7 @@ public class MediaInfoServiceTest
 	{
 		var service = new FakeMediaInfoService(FfprobeJson);
 
-		var info = await service.ProbeAsync("video.mkv");
+		var info = await service.ProbeAsync("video.mkv", TestContext.Current.CancellationToken);
 
 		Assert.NotNull(info);
 		Assert.Equal("hevc", info.VideoCodec);
@@ -51,7 +51,7 @@ public class MediaInfoServiceTest
 		var json = $"{{ \"streams\": [ {{ \"codec_type\": \"video\", \"codec_name\": \"h264\"{transfer} }} ] }}";
 		var service = new FakeMediaInfoService(json);
 
-		var info = await service.ProbeAsync("video.mkv");
+		var info = await service.ProbeAsync("video.mkv", TestContext.Current.CancellationToken);
 
 		Assert.NotNull(info);
 		Assert.Equal(expected, info.VideoDynamicRange);
@@ -69,6 +69,6 @@ public class MediaInfoServiceTest
 
 		var service = new MediaInfoService(configuration, NullLogger<MediaInfoService>.Instance);
 
-		Assert.Null(await service.ProbeAsync("video.mkv"));
+		Assert.Null(await service.ProbeAsync("video.mkv", TestContext.Current.CancellationToken));
 	}
 }

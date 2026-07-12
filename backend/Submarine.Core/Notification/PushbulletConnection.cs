@@ -8,7 +8,7 @@ public class PushbulletConnection : Connection
 	/// <summary>
 	///     Pushbullet access token used to send messages
 	/// </summary>
-	public string AccessToken { get; set; }
+	public string AccessToken { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Creates a new instance of <see cref="PushbulletConnection" />

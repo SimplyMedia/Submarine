@@ -21,7 +21,7 @@ public class DownloadClientConfig : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the download client
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Type of the download client
@@ -41,7 +41,7 @@ public class DownloadClientConfig : ICreatable, IUpdatable
 	/// <summary>
 	///     The type specific settings record of this download client, serialized as JSON
 	/// </summary>
-	public string SettingsJson { get; set; }
+	public string SettingsJson { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Tags of this download client

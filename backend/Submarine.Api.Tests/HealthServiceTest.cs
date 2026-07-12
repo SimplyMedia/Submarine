@@ -13,7 +13,7 @@ public class HealthServiceTest : DatabaseTestBase
 		var service = new HealthService(Context, Settings(), new FakeMetadataClient(), new FakeMappingsClient(),
 			NullLogger<HealthService>.Instance);
 
-		var issues = await service.CheckAsync();
+		var issues = await service.CheckAsync(TestContext.Current.CancellationToken);
 
 		Assert.Contains(issues, i => i.Type == "warning" && i.Source == "indexers");
 		Assert.Contains(issues, i => i.Type == "warning" && i.Source == "downloadClients");
@@ -26,12 +26,12 @@ public class HealthServiceTest : DatabaseTestBase
 		var missingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		Context.RootFolders.Add(new RootFolder { Path = missingPath, MediaKind = MediaKind.SERIES });
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var service = new HealthService(Context, Settings(), new FakeMetadataClient(), new FakeMappingsClient(),
 			NullLogger<HealthService>.Instance);
 
-		var issues = await service.CheckAsync();
+		var issues = await service.CheckAsync(TestContext.Current.CancellationToken);
 
 		Assert.Contains(issues, i => i.Type == "error" && i.Source == "rootFolders" && i.Message.Contains(missingPath));
 	}

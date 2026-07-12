@@ -22,7 +22,7 @@ public class LanguageProfile : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the language profile
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Wanted Languages of this profile

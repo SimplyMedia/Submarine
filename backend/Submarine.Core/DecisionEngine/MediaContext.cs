@@ -14,12 +14,12 @@ public record MediaContext
 	/// <summary>
 	///     The Quality Profile deciding which Qualities are wanted and in which order
 	/// </summary>
-	public QualityProfile QualityProfile { get; init; }
+	public QualityProfile QualityProfile { get; init; } = new();
 
 	/// <summary>
 	///     The Language Profile deciding which Languages are wanted
 	/// </summary>
-	public LanguageProfile LanguageProfile { get; init; }
+	public LanguageProfile LanguageProfile { get; init; } = new();
 
 	/// <summary>
 	///     The Filters applied to candidate Releases

@@ -25,7 +25,7 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -36,7 +36,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -46,7 +46,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = null };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -65,27 +65,27 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.True(file.NamedFromPlaceholder);
 			Assert.Equal(version.Id, file.MediaVersionId);
 			Assert.Equal(Path.Combine("Season 01", "Show - S01E05 - Episode 5.mkv"), file.RelativePath);
 			Assert.True(File.Exists(Path.Combine(libraryPath, file.RelativePath)));
 
-			var storedEpisode = await Context.Episodes.Include(e => e.Files).SingleAsync();
+			var storedEpisode = await Context.Episodes.Include(e => e.Files).SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Contains(storedEpisode.Files, f => f.Id == file.Id);
 
-			var storedTracked = await Context.TrackedDownloads.SingleAsync();
+			var storedTracked = await Context.TrackedDownloads.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.True(storedTracked.Imported);
 
-			var history = await Context.History.SingleAsync();
+			var history = await Context.History.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(HistoryEventType.IMPORTED, history.Type);
 		}
 		finally
@@ -102,9 +102,9 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(Path.Combine(libraryPath, "Season 01"));
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.2160p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.2160p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 		var oldRelative = Path.Combine("Season 01", "Show - S01E05 - OldName.mkv");
-		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "old");
+		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "old", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -115,7 +115,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -125,7 +125,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			Context.EpisodeFiles.Add(new EpisodeFile
 			{
@@ -134,7 +134,7 @@ public class ImportServiceTest : DatabaseTestBase
 					new Revision()),
 				Languages = new List<Language> { Language.ENGLISH }, Episodes = new List<Episode> { episode }
 			});
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -153,17 +153,17 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(QualityResolution.R2160_P, file.Quality.Resolution.Resolution);
-			Assert.Equal("video", await File.ReadAllTextAsync(Path.Combine(libraryPath, file.RelativePath)));
+			Assert.Equal("video", await File.ReadAllTextAsync(Path.Combine(libraryPath, file.RelativePath), TestContext.Current.CancellationToken));
 			Assert.False(File.Exists(Path.Combine(libraryPath, oldRelative)));
 		}
 		finally
@@ -179,7 +179,7 @@ public class ImportServiceTest : DatabaseTestBase
 
 		var series = new Series { TvdbId = 1, Title = "Show", Monitored = true, Type = SeriesType.STANDARD };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var tracked = new TrackedDownload
 		{
@@ -198,16 +198,16 @@ public class ImportServiceTest : DatabaseTestBase
 			Imported = true
 		};
 		Context.TrackedDownloads.Add(tracked);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var publisher = new FakeEventPublisher();
 		var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 			new HistoryService(Context), publisher, new FakeMappingsClient(), new FakeMediaInfoService(),
 			NullLogger<ImportService>.Instance);
 
-		await service.ImportTrackedDownloadAsync(tracked.Id);
+		await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.EpisodeFiles.ToListAsync());
+		Assert.Empty(await Context.EpisodeFiles.ToListAsync(TestContext.Current.CancellationToken));
 		Assert.Empty(publisher.Published);
 	}
 
@@ -219,7 +219,7 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "[HatSubs] Anime Title 25 [E63F2984].mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "[HatSubs] Anime Title 25 [E63F2984].mkv"), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -230,7 +230,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 100, Title = "Anime", Monitored = true, SeasonFolder = true, Type = SeriesType.ANIME
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -246,7 +246,7 @@ public class ImportServiceTest : DatabaseTestBase
 				SeriesId = series.Id, SeasonNumber = 2, EpisodeNumber = 12, Title = "Twelfth"
 			};
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -265,7 +265,7 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var mappings = new FakeMappingsClient
 			{
@@ -280,10 +280,10 @@ public class ImportServiceTest : DatabaseTestBase
 				new HistoryService(Context), new FakeEventPublisher(), mappings, new FakeMediaInfoService(),
 					NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
-			var storedEpisode = await Context.Episodes.Include(e => e.Files).SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
+			var storedEpisode = await Context.Episodes.Include(e => e.Files).SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Contains(storedEpisode.Files, f => f.Id == file.Id);
 			Assert.True(File.Exists(Path.Combine(libraryPath, file.RelativePath)));
 		}
@@ -303,9 +303,9 @@ public class ImportServiceTest : DatabaseTestBase
 		Directory.CreateDirectory(pathA);
 		Directory.CreateDirectory(Path.Combine(pathB, "Season 01"));
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 		var existingBRelative = Path.Combine("Season 01", "Show - S01E05.mkv");
-		await File.WriteAllTextAsync(Path.Combine(pathB, existingBRelative), "keep");
+		await File.WriteAllTextAsync(Path.Combine(pathB, existingBRelative), "keep", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -316,7 +316,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var versionA = new MediaVersion
 			{
@@ -331,7 +331,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.AddRange(versionA, versionB);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			Context.EpisodeFiles.Add(new EpisodeFile
 			{
@@ -340,7 +340,7 @@ public class ImportServiceTest : DatabaseTestBase
 					new Revision()),
 				Languages = new List<Language> { Language.ENGLISH }, Episodes = new List<Episode> { episode }
 			});
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -359,15 +359,15 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var files = await Context.EpisodeFiles.OrderBy(f => f.MediaVersionId).ToListAsync();
+			var files = await Context.EpisodeFiles.OrderBy(f => f.MediaVersionId).ToListAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(2, files.Count);
 
 			var importedIntoA = files.Single(f => f.MediaVersionId == versionA.Id);
@@ -391,9 +391,9 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.srt"), "sub");
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.en.srt"), "sub-en");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.srt"), "sub", TestContext.Current.CancellationToken);
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.en.srt"), "sub-en", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -407,7 +407,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -417,7 +417,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -436,7 +436,7 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			const string probeJson =
 				"{ \"streams\": [ { \"codec_type\": \"video\", \"codec_name\": \"h264\", \"width\": 1920, \"height\": 1080 } ] }";
@@ -445,9 +445,9 @@ public class ImportServiceTest : DatabaseTestBase
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(probeJson), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.NotNull(file.MediaInfo);
 			Assert.Equal("h264", file.MediaInfo.VideoCodec);
 			Assert.Equal(1920, file.MediaInfo.Width);
@@ -474,7 +474,7 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -490,7 +490,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -500,7 +500,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -519,7 +519,7 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			const string probeJson =
 				"{ \"streams\": [ { \"codec_type\": \"video\", \"codec_name\": \"h264\" } ] }";
@@ -528,9 +528,9 @@ public class ImportServiceTest : DatabaseTestBase
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(probeJson), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(Path.Combine("Season 01", "Show - S01E05 - Real h264.mkv"), file.RelativePath);
 		}
 		finally
@@ -547,8 +547,8 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.srt"), "sub");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.srt"), "sub", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -559,7 +559,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -569,7 +569,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -588,15 +588,15 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Null(file.MediaInfo);
 			Assert.False(File.Exists(Path.Combine(libraryPath, "Season 01", "Show - S01E05 - Real.srt")));
 		}
@@ -614,7 +614,7 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -625,7 +625,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -635,7 +635,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -654,19 +654,19 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			var episodeNfoPath = Path.ChangeExtension(Path.Combine(libraryPath, file.RelativePath), ".nfo");
 			Assert.True(File.Exists(episodeNfoPath));
 
-			var doc = System.Xml.Linq.XDocument.Parse(await File.ReadAllTextAsync(episodeNfoPath));
+			var doc = System.Xml.Linq.XDocument.Parse(await File.ReadAllTextAsync(episodeNfoPath, TestContext.Current.CancellationToken));
 			Assert.Equal("Real", doc.Root!.Element("title")!.Value);
 			Assert.Equal("1", doc.Root.Element("season")!.Value);
 			Assert.Equal("5", doc.Root.Element("episode")!.Value);
@@ -687,7 +687,7 @@ public class ImportServiceTest : DatabaseTestBase
 		var downloadPath = Path.Combine(root, "download");
 		Directory.CreateDirectory(libraryPath);
 		Directory.CreateDirectory(downloadPath);
-		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video");
+		await File.WriteAllTextAsync(Path.Combine(downloadPath, "Show.S01E05.1080p.WEB-DL.x264-GROUP.mkv"), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -698,7 +698,7 @@ public class ImportServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", Monitored = true, SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -708,7 +708,7 @@ public class ImportServiceTest : DatabaseTestBase
 			Context.Versions.Add(version);
 			var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real" };
 			Context.Episodes.Add(episode);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var tracked = new TrackedDownload
 			{
@@ -727,15 +727,15 @@ public class ImportServiceTest : DatabaseTestBase
 				OutputPath = downloadPath
 			};
 			Context.TrackedDownloads.Add(tracked);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new ImportService(Context, Settings(), ReleaseParser(), NamingService(),
 				new HistoryService(Context), new FakeEventPublisher(), new FakeMappingsClient(),
 				new FakeMediaInfoService(), NullLogger<ImportService>.Instance);
 
-			await service.ImportTrackedDownloadAsync(tracked.Id);
+			await service.ImportTrackedDownloadAsync(tracked.Id, TestContext.Current.CancellationToken);
 
-			var file = await Context.EpisodeFiles.SingleAsync();
+			var file = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			var episodeNfoPath = Path.ChangeExtension(Path.Combine(libraryPath, file.RelativePath), ".nfo");
 			Assert.False(File.Exists(episodeNfoPath));
 			Assert.False(File.Exists(Path.Combine(libraryPath, "tvshow.nfo")));

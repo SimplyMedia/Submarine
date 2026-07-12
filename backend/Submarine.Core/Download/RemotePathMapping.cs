@@ -21,17 +21,17 @@ public class RemotePathMapping : ICreatable, IUpdatable
 	/// <summary>
 	///     Host of the Download Client this mapping applies to
 	/// </summary>
-	public string Host { get; set; }
+	public string Host { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Path as reported by the remote Download Client
 	/// </summary>
-	public string RemotePath { get; set; }
+	public string RemotePath { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Local path the remote path is mapped to
 	/// </summary>
-	public string LocalPath { get; set; }
+	public string LocalPath { get; set; } = string.Empty;
 
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }

@@ -45,7 +45,7 @@ public class AniListMappingServiceTest : IDisposable
 			AniListId = 101, TvdbId = 1, Title = "Part 2", TvdbSeason = 4, EpisodeStart = 17, EpisodeCount = 12,
 			AbsoluteOffset = 75
 		});
-		await _context.SaveChangesAsync();
+		await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 	}
 
 	[Fact]
@@ -99,7 +99,7 @@ public class AniListMappingServiceTest : IDisposable
 			AniListId = 200, TvdbId = 2, Title = "Ongoing", TvdbSeason = 1, EpisodeStart = 1, EpisodeCount = null,
 			AbsoluteOffset = 0
 		});
-		await _context.SaveChangesAsync();
+		await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var resolution = await _service.ResolveTvdbAsync(200, 500);
 
@@ -160,7 +160,7 @@ public class AniListMappingServiceTest : IDisposable
 			AniListId = 200, TvdbId = 2, Title = "Ongoing", TvdbSeason = 1, EpisodeStart = 1, EpisodeCount = null,
 			AbsoluteOffset = 0
 		});
-		await _context.SaveChangesAsync();
+		await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var resolution = await _service.ResolveAniListAsync(2, 1, 500);
 

@@ -50,7 +50,7 @@ public class RegexReplace
 	/// </summary>
 	/// <param name="input">The input to replace</param>
 	/// <param name="replaced">Replaced string</param>
-	/// <returns>If anything was replaced in <see cref="input" /></returns>
+	/// <returns>If anything was replaced in <paramref name="input" /></returns>
 	public bool TryReplace(string input, out string replaced)
 	{
 		var result = _regex.IsMatch(input);

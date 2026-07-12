@@ -40,7 +40,7 @@ public class RTorrentClientTest
 	{
 		var (client, handler) = CreateClient("movies", (HttpStatusCode.OK, AddResponse));
 
-		var id = await client.AddDownloadAsync(new ReleaseInfo { Title = "Ubuntu", Guid = "g", DownloadUrl = Magnet });
+		var id = await client.AddDownloadAsync(new ReleaseInfo { Title = "Ubuntu", Guid = "g", DownloadUrl = Magnet }, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("ABCDEF1234567890ABCDEF1234567890ABCDEF12", id);
 		Assert.Contains("<methodName>load.start</methodName>", handler.Bodies[0]);
@@ -52,7 +52,7 @@ public class RTorrentClientTest
 	{
 		var (client, _) = CreateClient(null, (HttpStatusCode.OK, MultiCallResponse));
 
-		var item = Assert.Single(await client.GetItemsAsync());
+		var item = Assert.Single(await client.GetItemsAsync(TestContext.Current.CancellationToken));
 
 		Assert.Equal("ABCD", item.DownloadId);
 		Assert.Equal("Ubuntu.iso", item.Title);
@@ -70,7 +70,7 @@ public class RTorrentClientTest
 			(HttpStatusCode.OK,
 				"<methodResponse><params><param><value><i4>0</i4></value></param></params></methodResponse>"));
 
-		await client.RemoveItemAsync("ABCD", true);
+		await client.RemoveItemAsync("ABCD", true, TestContext.Current.CancellationToken);
 
 		Assert.Contains("<methodName>d.erase</methodName>", handler.Bodies[0]);
 		Assert.Contains("ABCD", handler.Bodies[0]);
@@ -81,7 +81,7 @@ public class RTorrentClientTest
 	{
 		var (client, _) = CreateClient(null, (HttpStatusCode.InternalServerError, "boom"));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private (RTorrentClient Client, StubHandler Handler) CreateClient(string? category,

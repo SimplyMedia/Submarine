@@ -15,7 +15,7 @@ public class MovieServiceTest : DatabaseTestBase
 	public async Task AddAsync_ShouldPopulateCollectionFields_WhenResourceBelongsToCollection()
 	{
 		Context.RootFolders.Add(new RootFolder { Path = Path.Combine("root", "movies"), MediaKind = MediaKind.MOVIES });
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var metadataClient = new FakeMetadataClient
 		{
@@ -52,7 +52,7 @@ public class MovieServiceTest : DatabaseTestBase
 				{ new() { Name = "Default", Path = "/lib/m2", QualityProfileId = 1, LanguageProfileId = 1 } }
 		};
 		Context.Movies.AddRange(movie1, movie2);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var service = BuildService();
@@ -65,7 +65,7 @@ public class MovieServiceTest : DatabaseTestBase
 
 		Assert.Equal(2, updated);
 
-		var movies = await Context.Movies.AsNoTracking().ToListAsync();
+		var movies = await Context.Movies.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken);
 		Assert.All(movies, m => Assert.Equal(MinimumAvailability.RELEASED, m.MinimumAvailability));
 	}
 
@@ -79,7 +79,7 @@ public class MovieServiceTest : DatabaseTestBase
 				{ new() { Name = "Default", Path = "/lib/m1", QualityProfileId = 1, LanguageProfileId = 1 } }
 		};
 		Context.Movies.Add(movie);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var service = BuildService();

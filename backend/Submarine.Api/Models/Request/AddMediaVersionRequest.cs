@@ -5,7 +5,7 @@ namespace Submarine.Api.Models.Request;
 /// </summary>
 public record AddMediaVersionRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public int QualityProfileId { get; set; }
 

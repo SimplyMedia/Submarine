@@ -29,7 +29,7 @@ public class ConnectionServiceTest : DatabaseTestBase
 		{
 			Name = "discord", Enable = true, WebhookUrl = "https://discord.example/webhook", Tags = new List<string>()
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var service = BuildService();

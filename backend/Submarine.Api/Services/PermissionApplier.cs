@@ -70,7 +70,8 @@ public static class PermissionApplier
 			return;
 		}
 
-		File.SetUnixFileMode(path, mode);
+		if (!OperatingSystem.IsWindows())
+			File.SetUnixFileMode(path, mode);
 	}
 
 	private static void WarnInvalidMode(string octal, ILogger logger)

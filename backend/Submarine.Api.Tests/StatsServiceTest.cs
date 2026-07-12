@@ -21,7 +21,7 @@ public class StatsServiceTest : DatabaseTestBase
 		Context.Series.AddRange(continuing, ended);
 		var movie = new Movie { TmdbId = 1, Title = "Movie" };
 		Context.Movies.Add(movie);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var version = new MediaVersion
 		{
@@ -37,7 +37,7 @@ public class StatsServiceTest : DatabaseTestBase
 		var episode1 = new Episode { SeriesId = continuing.Id, SeasonNumber = 1, EpisodeNumber = 1 };
 		var episode2 = new Episode { SeriesId = continuing.Id, SeasonNumber = 1, EpisodeNumber = 2 };
 		Context.Episodes.AddRange(episode1, episode2);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var quality = new QualityModel(new QualityResolutionModel(QualitySource.TV, QualityResolution.R1080_P),
 			new Revision());
@@ -62,16 +62,16 @@ public class StatsServiceTest : DatabaseTestBase
 			new HistoryEvent { Type = HistoryEventType.IMPORTED, SourceTitle = "c" },
 			new HistoryEvent { Type = HistoryEventType.FAILED, SourceTitle = "d" },
 			oldEvent);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		// CreatedAt is stamped to "now" on insert regardless of the value set above, back-date it with a second
 		// save so it falls outside the 30 day window
 		oldEvent.CreatedAt = DateTimeOffset.UtcNow.AddDays(-31);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var service = new StatsService(Context);
 
-		var stats = await service.GetStatsAsync();
+		var stats = await service.GetStatsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, stats.SeriesCount);
 		Assert.Equal(1, stats.EndedSeriesCount);

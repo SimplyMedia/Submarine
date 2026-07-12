@@ -2,7 +2,7 @@ namespace Submarine.Api.Models.Request;
 
 public record UpdateReleaseProfileRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public bool Enabled { get; set; } = true;
 

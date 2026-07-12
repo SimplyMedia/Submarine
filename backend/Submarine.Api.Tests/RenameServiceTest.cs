@@ -19,7 +19,7 @@ public class RenameServiceTest : DatabaseTestBase
 		var libraryPath = Path.Combine(root, "Show");
 		var oldRelative = Path.Combine("Season 01", "Show - S01E05 - Episode 5.mkv");
 		Directory.CreateDirectory(Path.Combine(libraryPath, "Season 01"));
-		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "video");
+		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "video", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -28,7 +28,7 @@ public class RenameServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -36,7 +36,7 @@ public class RenameServiceTest : DatabaseTestBase
 				LanguageProfileId = 1, Monitored = true
 			};
 			Context.Versions.Add(version);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var file = new EpisodeFile
 			{
@@ -48,30 +48,30 @@ public class RenameServiceTest : DatabaseTestBase
 					new Revision())
 			};
 			Context.EpisodeFiles.Add(file);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			Context.Episodes.Add(new Episode
 			{
 				SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real Title",
 				Files = new List<EpisodeFile> { file }
 			});
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new RenameService(Context, Settings(), NamingService(),
 				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher(),
 				NullLogger<RenameService>.Instance);
 
-			await service.RenameEpisodeFileAsync(file.Id);
+		await service.RenameEpisodeFileAsync(file.Id, TestContext.Current.CancellationToken);
 
 			var newRelative = Path.Combine("Season 01", "Show - S01E05 - Real Title.mkv");
 
-			var stored = await Context.EpisodeFiles.SingleAsync();
+			var stored = await Context.EpisodeFiles.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(newRelative, stored.RelativePath);
 			Assert.False(stored.NamedFromPlaceholder);
 			Assert.True(File.Exists(Path.Combine(libraryPath, newRelative)));
 			Assert.False(File.Exists(Path.Combine(libraryPath, oldRelative)));
 
-			var history = await Context.History.SingleAsync();
+			var history = await Context.History.SingleAsync(TestContext.Current.CancellationToken);
 			Assert.Equal(HistoryEventType.RENAMED, history.Type);
 			Assert.Equal(oldRelative, history.SourceTitle);
 		}
@@ -89,9 +89,9 @@ public class RenameServiceTest : DatabaseTestBase
 		var seasonPath = Path.Combine(libraryPath, "Season 01");
 		var oldRelative = Path.Combine("Season 01", "Show - S01E05 - Episode 5.mkv");
 		Directory.CreateDirectory(seasonPath);
-		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "video");
-		await File.WriteAllTextAsync(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.srt"), "sub");
-		await File.WriteAllTextAsync(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.en.forced.srt"), "sub-en");
+		await File.WriteAllTextAsync(Path.Combine(libraryPath, oldRelative), "video", TestContext.Current.CancellationToken);
+		await File.WriteAllTextAsync(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.srt"), "sub", TestContext.Current.CancellationToken);
+		await File.WriteAllTextAsync(Path.Combine(seasonPath, "Show - S01E05 - Episode 5.en.forced.srt"), "sub-en", TestContext.Current.CancellationToken);
 
 		try
 		{
@@ -100,7 +100,7 @@ public class RenameServiceTest : DatabaseTestBase
 				TvdbId = 1, Title = "Show", SeasonFolder = true, Type = SeriesType.STANDARD
 			};
 			Context.Series.Add(series);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var version = new MediaVersion
 			{
@@ -108,7 +108,7 @@ public class RenameServiceTest : DatabaseTestBase
 				LanguageProfileId = 1, Monitored = true
 			};
 			Context.Versions.Add(version);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var file = new EpisodeFile
 			{
@@ -120,20 +120,20 @@ public class RenameServiceTest : DatabaseTestBase
 					new Revision())
 			};
 			Context.EpisodeFiles.Add(file);
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			Context.Episodes.Add(new Episode
 			{
 				SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Title = "Real Title",
 				Files = new List<EpisodeFile> { file }
 			});
-			await Context.SaveChangesAsync();
+			await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 			var service = new RenameService(Context, Settings(), NamingService(),
 				new HistoryService(Context), new ChannelBackgroundTaskQueue(), new FakeEventPublisher(),
 				NullLogger<RenameService>.Instance);
 
-			await service.RenameEpisodeFileAsync(file.Id);
+		await service.RenameEpisodeFileAsync(file.Id, TestContext.Current.CancellationToken);
 
 			Assert.True(File.Exists(Path.Combine(seasonPath, "Show - S01E05 - Real Title.srt")));
 			Assert.True(File.Exists(Path.Combine(seasonPath, "Show - S01E05 - Real Title.en.forced.srt")));

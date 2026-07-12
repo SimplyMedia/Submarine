@@ -97,14 +97,14 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			NewConnection("notified", enable: true, onImport: true),
 			NewConnection("disabled", enable: false, onImport: true),
 			NewConnection("toggled-off", enable: true, onImport: false));
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var factory = new FakeMediaServerClientFactory();
 		var handler = new ConnectionEventHandler(Context, factory, NewNotificationSenderFactory(out _),
 			NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaImportedEvent(null, null, "/library/show", "Show"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var notified = Assert.Single(factory.Notified);
 		Assert.Equal(("notified", "/library/show"), notified);
@@ -121,14 +121,14 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			NewConnection("matching-tag", enable: true, onImport: true, tags: new List<string> { "anime" }),
 			NewConnection("other-tag", enable: true, onImport: true, tags: new List<string> { "kids" }),
 			NewConnection("untagged", enable: true, onImport: true));
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var factory = new FakeMediaServerClientFactory();
 		var handler = new ConnectionEventHandler(Context, factory, NewNotificationSenderFactory(out _),
 			NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaImportedEvent(null, 1, "/movies/movie", "Movie"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		Assert.Equal(new[] { "matching-tag", "untagged" },
 			factory.Notified.Select(n => n.Connection).OrderBy(n => n).ToArray());
@@ -142,18 +142,18 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			Name = "discord", Enable = true, OnImport = true, WebhookUrl = "https://discord.example/webhook",
 			Tags = new List<string>()
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
 			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaImportedEvent(null, null, "/movies/movie", "Movie Title"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal("https://discord.example/webhook", request.RequestUri!.ToString());
 
-		var body = await request.Content!.ReadAsStringAsync();
+		var body = await request.Content!.ReadAsStringAsync(TestContext.Current.CancellationToken);
 		Assert.Contains("\"title\":\"Imported: Movie Title\"", body);
 	}
 
@@ -165,18 +165,18 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			Name = "telegram", Enable = true, OnGrab = true, BotToken = "token123", ChatId = "chat-1",
 			Tags = new List<string>()
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
 			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaGrabbedEvent(null, null, "/movies/movie", "Movie Title"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal("https://api.telegram.org/bottoken123/sendMessage", request.RequestUri!.ToString());
 
-		var body = await request.Content!.ReadAsStringAsync();
+		var body = await request.Content!.ReadAsStringAsync(TestContext.Current.CancellationToken);
 		Assert.Contains("\"chat_id\":\"chat-1\"", body);
 		Assert.Contains("\"text\":\"Grabbed: Movie Title\"", body);
 	}
@@ -189,13 +189,13 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			Name = "webhook", Enable = true, OnRename = true, Url = "https://hooks.example/notify", Method = "PUT",
 			Username = "user", Password = "pass", Tags = new List<string>()
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
 			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaRenamedEvent(null, null, "/movies/movie", "Movie Title"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal(HttpMethod.Put, request.Method);
@@ -222,13 +222,13 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 				Name = "other", Enable = true, OnImport = true, WebhookUrl = "https://discord.example/b",
 				Tags = new List<string> { "kids" }
 			});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
 			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaImportedEvent(null, 1, "/movies/movie", "Movie"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Equal("https://discord.example/a", request.RequestUri!.ToString());
@@ -242,16 +242,16 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			Name = "upgrade-only", Enable = true, OnUpgrade = true, WebhookUrl = "https://discord.example/webhook",
 			Tags = new List<string>()
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
 			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaImportedEvent(null, null, "/movies/movie", "Movie Title", IsUpgrade: true),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
-		Assert.Contains("\"title\":\"Upgraded: Movie Title\"", await request.Content!.ReadAsStringAsync());
+		Assert.Contains("\"title\":\"Upgraded: Movie Title\"", await request.Content!.ReadAsStringAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -262,13 +262,13 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			Name = "upgrade-only", Enable = true, OnUpgrade = true, WebhookUrl = "https://discord.example/webhook",
 			Tags = new List<string>()
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
 			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaImportedEvent(null, null, "/movies/movie", "Movie Title"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		Assert.Empty(stub.Requests);
 	}
@@ -287,17 +287,17 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 				Name = "jellyfin", Type = ConnectionType.JELLYFIN, Enable = true, OnDelete = true, Host = "localhost",
 				Port = 8096, ApiKey = "key", Tags = new List<string>()
 			});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var factory = new FakeMediaServerClientFactory();
 		var handler = new ConnectionEventHandler(Context, factory, NewNotificationSenderFactory(out var stub),
 			NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new MediaDeletedEvent(null, null, "Movie Title", "/movies/movie"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
-		Assert.Contains("\"title\":\"Deleted: Movie Title\"", await request.Content!.ReadAsStringAsync());
+		Assert.Contains("\"title\":\"Deleted: Movie Title\"", await request.Content!.ReadAsStringAsync(TestContext.Current.CancellationToken));
 		Assert.Empty(factory.Notified);
 	}
 
@@ -309,17 +309,17 @@ public class ConnectionEventHandlerTest : DatabaseTestBase
 			Name = "discord", Enable = true, OnHealthIssue = true, WebhookUrl = "https://discord.example/webhook",
 			Tags = new List<string>()
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var handler = new ConnectionEventHandler(Context, new FakeMediaServerClientFactory(),
 			NewNotificationSenderFactory(out var stub), NullLogger<ConnectionEventHandler>.Instance);
 
 		await handler.HandleAsync(new HealthIssueEvent("warning", "indexers", "No indexers are enabled"),
-			CancellationToken.None);
+			TestContext.Current.CancellationToken);
 
 		var request = Assert.Single(stub.Requests);
 		Assert.Contains("\"title\":\"Health issue: indexers: No indexers are enabled\"",
-			await request.Content!.ReadAsStringAsync());
+			await request.Content!.ReadAsStringAsync(TestContext.Current.CancellationToken));
 	}
 
 	private static INotificationSenderFactory NewNotificationSenderFactory(out StubHttpMessageHandler stub)

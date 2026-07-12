@@ -22,7 +22,7 @@ public class DelayProfile : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the delay profile
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Protocol preferred by this profile when a Release is available on both Protocols

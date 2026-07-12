@@ -13,20 +13,20 @@ public class VersionServiceTest : DatabaseTestBase
 	{
 		var series = new Series { TvdbId = 1, Title = "Show", Monitored = true };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var version = new MediaVersion
 		{
 			SeriesId = series.Id, Name = "Default", Path = "/lib/Show", QualityProfileId = 1, LanguageProfileId = 1
 		};
 		Context.Versions.Add(version);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var service = new VersionService(Context);
 
 		await Assert.ThrowsAsync<BadRequestException>(() => service.DeleteAsync(version.Id, deleteFiles: false));
 
-		Assert.Equal(1, await Context.Versions.CountAsync());
+		Assert.Equal(1, await Context.Versions.CountAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -34,7 +34,7 @@ public class VersionServiceTest : DatabaseTestBase
 	{
 		var series = new Series { TvdbId = 1, Title = "Show", Monitored = true };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var keep = new MediaVersion
 		{
@@ -45,13 +45,13 @@ public class VersionServiceTest : DatabaseTestBase
 			SeriesId = series.Id, Name = "4K", Path = "/lib/4K/Show", QualityProfileId = 1, LanguageProfileId = 1
 		};
 		Context.Versions.AddRange(keep, remove);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var service = new VersionService(Context);
 
 		await service.DeleteAsync(remove.Id, deleteFiles: false);
 
-		var remaining = await Context.Versions.AsNoTracking().SingleAsync();
+		var remaining = await Context.Versions.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(keep.Id, remaining.Id);
 	}
 }

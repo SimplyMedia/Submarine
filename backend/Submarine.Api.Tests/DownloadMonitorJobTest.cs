@@ -29,9 +29,9 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 
 		var client = ClientWithFailedItem(tracked.DownloadId, "disk full");
 
-		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out _), CancellationToken.None);
+		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out _), TestContext.Current.CancellationToken);
 
-		var history = await Context.History.AsNoTracking().SingleAsync();
+		var history = await Context.History.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(HistoryEventType.FAILED, history.Type);
 		Assert.Equal(tracked.ReleaseTitle, history.SourceTitle);
 		Assert.Equal(tracked.SeriesId, history.SeriesId);
@@ -39,13 +39,13 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		Assert.Equal("Indexer", history.Data["indexer"]);
 		Assert.Equal("disk full", history.Data["reason"]);
 
-		var blocked = await Context.Blocklist.AsNoTracking().SingleAsync();
+		var blocked = await Context.Blocklist.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(tracked.ReleaseTitle, blocked.ReleaseTitle);
 		Assert.Equal("disk full", blocked.Reason);
 		Assert.Equal(tracked.SeriesId, blocked.SeriesId);
 
 		Assert.Equal((tracked.DownloadId, true), Assert.Single(client.Removed));
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -58,11 +58,11 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 
 		var client = ClientWithFailedItem(tracked.DownloadId, "disk full");
 
-		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out _), CancellationToken.None);
+		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out _), TestContext.Current.CancellationToken);
 
 		Assert.Empty(client.Removed);
-		Assert.Single(await Context.History.AsNoTracking().ToListAsync());
-		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync());
+		Assert.Single(await Context.History.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
+		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -75,7 +75,7 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 
 		var client = ClientWithFailedItem(tracked.DownloadId, "disk full");
 
-		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out var queue), CancellationToken.None);
+		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out var queue), TestContext.Current.CancellationToken);
 
 		Assert.Single(queue.Items);
 	}
@@ -90,13 +90,13 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 
 		var client = ClientWithFailedItem(tracked.DownloadId, "disk full");
 
-		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out var queue), CancellationToken.None);
+		await new DownloadMonitorJob().ExecuteAsync(BuildProvider(client, out var queue), TestContext.Current.CancellationToken);
 
-		Assert.Empty(await Context.History.AsNoTracking().ToListAsync());
-		Assert.Empty(await Context.Blocklist.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.History.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
+		Assert.Empty(await Context.Blocklist.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 		Assert.Empty(queue.Items);
 		Assert.Empty(client.Removed);
-		Assert.Single(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Single(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -110,11 +110,11 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		var client = ClientWithFailedItem(tracked.DownloadId, "disk full");
 		var provider = BuildProvider(client, out _);
 
-		await new DownloadMonitorJob().ExecuteAsync(provider, CancellationToken.None);
-		await new DownloadMonitorJob().ExecuteAsync(provider, CancellationToken.None);
+		await new DownloadMonitorJob().ExecuteAsync(provider, TestContext.Current.CancellationToken);
+		await new DownloadMonitorJob().ExecuteAsync(provider, TestContext.Current.CancellationToken);
 
-		Assert.Single(await Context.History.AsNoTracking().ToListAsync());
-		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync());
+		Assert.Single(await Context.History.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
+		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -128,16 +128,16 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		var client = ClientWithFailedItem(tracked.DownloadId, "disk full");
 		var provider = BuildProvider(client, out _, new ThrowOnceHistoryService(Context));
 
-		await new DownloadMonitorJob().ExecuteAsync(provider, CancellationToken.None);
+		await new DownloadMonitorJob().ExecuteAsync(provider, TestContext.Current.CancellationToken);
 
 		// first poll threw mid-handling: nothing persisted, status unchanged so the failure is retried
-		Assert.Empty(await Context.Blocklist.AsNoTracking().ToListAsync());
-		Assert.Single(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Empty(await Context.Blocklist.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
+		Assert.Single(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 
-		await new DownloadMonitorJob().ExecuteAsync(provider, CancellationToken.None);
+		await new DownloadMonitorJob().ExecuteAsync(provider, TestContext.Current.CancellationToken);
 
-		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync());
-		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync());
+		Assert.Single(await Context.Blocklist.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
+		Assert.Empty(await Context.TrackedDownloads.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -150,7 +150,7 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 			Name = "client", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1, SettingsJson = "{}"
 		};
 		Context.DownloadClients.Add(config);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var tracked = new TrackedDownload
 		{
@@ -162,7 +162,7 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 			Languages = new List<Language> { Language.ENGLISH }, Indexer = "Indexer", EpisodeIds = new List<int>()
 		};
 		Context.TrackedDownloads.Add(tracked);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var client = new FakeDownloadClient
 		{
@@ -177,11 +177,11 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 		var provider = BuildProvider(client, out var queue);
 		var job = new DownloadMonitorJob();
 
-		await job.ExecuteAsync(provider, CancellationToken.None);
+		await job.ExecuteAsync(provider, TestContext.Current.CancellationToken);
 		Assert.Single(queue.Items);
 
 		// same instance within the re-enqueue window must not enqueue again
-		await job.ExecuteAsync(provider, CancellationToken.None);
+		await job.ExecuteAsync(provider, TestContext.Current.CancellationToken);
 		Assert.Single(queue.Items);
 	}
 
@@ -225,12 +225,12 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 
 		var series = new Series { TvdbId = 42, Title = "Show", Monitored = true, Type = SeriesType.STANDARD };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var episode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 5, Monitored = true };
 		var otherEpisode = new Episode { SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 6, Monitored = true };
 		Context.Episodes.AddRange(episode, otherEpisode);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var tracked = new TrackedDownload
 		{
@@ -248,7 +248,7 @@ public class DownloadMonitorJobTest : DatabaseTestBase
 			EpisodeIds = new List<int> { episode.Id }
 		};
 		Context.TrackedDownloads.Add(tracked);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		return (config, tracked, episode);
 	}

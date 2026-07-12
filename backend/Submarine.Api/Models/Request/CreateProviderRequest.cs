@@ -4,19 +4,19 @@ namespace Submarine.Api.Models.Request;
 
 public record CreateProviderRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public ProviderType Type { get; set; }
 
 	public ProviderMode Mode { get; set; }
 
-	public string Url { get; set; }
+	public string Url { get; set; } = null!;
 
-	public string ApiKey { get; set; }
+	public string ApiKey { get; set; } = null!;
 
 	public short Priority { get; set; }
 
-	public List<string> Tags { get; set; }
+	public List<string> Tags { get; set; } = null!;
 
 	public List<int>? Categories { get; set; }
 

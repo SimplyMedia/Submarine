@@ -4,7 +4,7 @@ namespace Submarine.Api.Models.Request;
 
 public record UpdateLanguageProfileRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public List<Language> Languages { get; set; } = new();
 

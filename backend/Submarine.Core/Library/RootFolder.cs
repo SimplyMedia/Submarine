@@ -20,7 +20,7 @@ public class RootFolder : ICreatable
 	/// <summary>
 	///     Path of this root folder on disk, must be unique
 	/// </summary>
-	public string Path { get; set; }
+	public string Path { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Kind of media stored under this root folder

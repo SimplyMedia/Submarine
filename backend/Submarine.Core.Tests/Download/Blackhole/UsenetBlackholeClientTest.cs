@@ -37,12 +37,12 @@ public class UsenetBlackholeClientTest : IDisposable
 			Title = "Show S01E01", Guid = "guid-1", DownloadUrl = "https://indexer.example/1.nzb", Protocol = Protocol.USENET
 		};
 
-		var id = await client.AddDownloadAsync(release);
+		var id = await client.AddDownloadAsync(release, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("Show S01E01", id);
 		var filePath = Path.Combine(_nzbFolder, $"{id}.nzb");
 		Assert.True(File.Exists(filePath));
-		Assert.Equal(bytes, await File.ReadAllBytesAsync(filePath));
+		Assert.Equal(bytes, await File.ReadAllBytesAsync(filePath, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -50,12 +50,12 @@ public class UsenetBlackholeClientTest : IDisposable
 	{
 		var showDirectory = Path.Combine(_watchFolder, "Show.S01E01");
 		Directory.CreateDirectory(showDirectory);
-		await File.WriteAllBytesAsync(Path.Combine(showDirectory, "episode.mkv"), new byte[2000]);
-		await File.WriteAllBytesAsync(Path.Combine(_watchFolder, "Show.S01E02.nzb"), new byte[300]);
+		await File.WriteAllBytesAsync(Path.Combine(showDirectory, "episode.mkv"), new byte[2000], TestContext.Current.CancellationToken);
+		await File.WriteAllBytesAsync(Path.Combine(_watchFolder, "Show.S01E02.nzb"), new byte[300], TestContext.Current.CancellationToken);
 
 		var client = CreateClient();
 
-		var items = await client.GetItemsAsync();
+		var items = await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, items.Count);
 
@@ -74,11 +74,11 @@ public class UsenetBlackholeClientTest : IDisposable
 	{
 		var showDirectory = Path.Combine(_watchFolder, "Show.S01E01");
 		Directory.CreateDirectory(showDirectory);
-		await File.WriteAllTextAsync(Path.Combine(showDirectory, "episode.mkv"), "data");
+		await File.WriteAllTextAsync(Path.Combine(showDirectory, "episode.mkv"), "data", TestContext.Current.CancellationToken);
 
 		var client = CreateClient();
 
-		await client.RemoveItemAsync("Show.S01E01", true);
+		await client.RemoveItemAsync("Show.S01E01", true, TestContext.Current.CancellationToken);
 
 		Assert.False(Directory.Exists(showDirectory));
 	}
@@ -88,7 +88,7 @@ public class UsenetBlackholeClientTest : IDisposable
 	{
 		var client = CreateClient();
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.RemoveItemAsync("missing", true));
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.RemoveItemAsync("missing", true, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -96,7 +96,7 @@ public class UsenetBlackholeClientTest : IDisposable
 	{
 		var client = CreateClient();
 
-		await client.TestAsync();
+		await client.TestAsync(TestContext.Current.CancellationToken);
 	}
 
 	[Fact]
@@ -106,7 +106,7 @@ public class UsenetBlackholeClientTest : IDisposable
 		var client = new UsenetBlackholeClient(settings, new HttpClient(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK))),
 			new XunitLogger<UsenetBlackholeClient>(_output));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private static string CreateTempDirectory()

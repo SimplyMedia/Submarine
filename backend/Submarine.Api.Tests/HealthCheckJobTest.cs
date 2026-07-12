@@ -17,14 +17,14 @@ public class HealthCheckJobTest : DatabaseTestBase
 		var provider = BuildProvider(publisher);
 		var job = new HealthCheckJob();
 
-		await job.ExecuteAsync(provider, CancellationToken.None);
+		await job.ExecuteAsync(provider, TestContext.Current.CancellationToken);
 
 		Assert.NotEmpty(publisher.Published);
 		Assert.All(publisher.Published, e => Assert.IsType<HealthIssueEvent>(e));
 
 		publisher.Published.Clear();
 
-		await job.ExecuteAsync(provider, CancellationToken.None);
+		await job.ExecuteAsync(provider, TestContext.Current.CancellationToken);
 
 		Assert.Empty(publisher.Published);
 	}

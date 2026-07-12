@@ -18,7 +18,7 @@ public class SeriesServiceTest : DatabaseTestBase
 	{
 		Context.RootFolders.Add(new RootFolder { Path = Path.Combine("root", "hd"), MediaKind = MediaKind.SERIES });
 		Context.RootFolders.Add(new RootFolder { Path = Path.Combine("root", "uhd"), MediaKind = MediaKind.SERIES });
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var service = BuildService(new FakeMetadataClient { Series = Resource() });
 
@@ -35,7 +35,7 @@ public class SeriesServiceTest : DatabaseTestBase
 		});
 
 		var versions = await Context.Versions.AsNoTracking().Where(v => v.SeriesId == series.Id)
-			.OrderBy(v => v.Id).ToListAsync();
+			.OrderBy(v => v.Id).ToListAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(2, versions.Count);
 		Assert.Equal(new[] { "Default", "4K" }, versions.Select(v => v.Name));
@@ -46,7 +46,7 @@ public class SeriesServiceTest : DatabaseTestBase
 	public async Task AddAsync_ShouldThrow_WhenTwoVersionsResolveToSamePath()
 	{
 		Context.RootFolders.Add(new RootFolder { Path = Path.Combine("root", "hd"), MediaKind = MediaKind.SERIES });
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var service = BuildService(new FakeMetadataClient { Series = Resource() });
 
@@ -70,7 +70,7 @@ public class SeriesServiceTest : DatabaseTestBase
 		{
 			TvdbId = 7, Title = "Show", MetadataProvider = MetadataProvider.TVDB, Numbering = EpisodeNumbering.AIRED
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var queue = new FakeBackgroundTaskQueue();
@@ -80,14 +80,14 @@ public class SeriesServiceTest : DatabaseTestBase
 
 		Assert.Single(queue.Items);
 		Assert.Equal(EpisodeNumbering.DVD,
-			(await Context.Series.AsNoTracking().FirstAsync(s => s.Id == 1)).Numbering);
+			(await Context.Series.AsNoTracking().FirstAsync(s => s.Id == 1, TestContext.Current.CancellationToken)).Numbering);
 	}
 
 	[Fact]
 	public async Task UpdateAsync_ShouldNotEnqueueRefresh_WhenNumberingUnchanged()
 	{
 		Context.Series.Add(new Series { TvdbId = 7, Title = "Show", Numbering = EpisodeNumbering.AIRED });
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var queue = new FakeBackgroundTaskQueue();
@@ -103,7 +103,7 @@ public class SeriesServiceTest : DatabaseTestBase
 	{
 		var series = new Series { TvdbId = 1, Title = "Show" };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		Context.Seasons.Add(new Season { SeriesId = series.Id, SeasonNumber = 1, Monitored = false });
 		var seasonTwoEpisode = new Episode
@@ -113,17 +113,17 @@ public class SeriesServiceTest : DatabaseTestBase
 		var seasonOneEpisode2 = new Episode
 			{ SeriesId = series.Id, SeasonNumber = 1, EpisodeNumber = 2, Monitored = false };
 		Context.Episodes.AddRange(seasonOneEpisode1, seasonOneEpisode2, seasonTwoEpisode);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var service = BuildService(new FakeMetadataClient());
 
 		await service.SetSeasonMonitoredAsync(series.Id, seasonNumber: 1, monitored: true);
 
-		var season = await Context.Seasons.AsNoTracking().SingleAsync(s => s.SeasonNumber == 1);
+		var season = await Context.Seasons.AsNoTracking().SingleAsync(s => s.SeasonNumber == 1, TestContext.Current.CancellationToken);
 		Assert.True(season.Monitored);
 
-		var episodes = await Context.Episodes.AsNoTracking().ToListAsync();
+		var episodes = await Context.Episodes.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken);
 		Assert.True(episodes.Single(e => e.Id == seasonOneEpisode1.Id).Monitored);
 		Assert.True(episodes.Single(e => e.Id == seasonOneEpisode2.Id).Monitored);
 		Assert.True(episodes.Single(e => e.Id == seasonTwoEpisode.Id).Monitored);
@@ -134,7 +134,7 @@ public class SeriesServiceTest : DatabaseTestBase
 	{
 		var series = new Series { TvdbId = 1, Title = "Show", Tags = new List<string> { "keep", "drop" } };
 		Context.Series.Add(series);
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var defaultVersion = new MediaVersion
 		{
@@ -151,7 +151,7 @@ public class SeriesServiceTest : DatabaseTestBase
 			Id = 2, Name = "French", Languages = new List<Language> { Language.FRENCH }, Cutoff = Language.FRENCH,
 			UpgradeAllowed = false
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 		Context.ChangeTracker.Clear();
 
 		var service = BuildService(new FakeMetadataClient());
@@ -167,13 +167,13 @@ public class SeriesServiceTest : DatabaseTestBase
 
 		Assert.Equal(1, updated);
 
-		var versions = await Context.Versions.AsNoTracking().OrderBy(v => v.Id).ToListAsync();
+		var versions = await Context.Versions.AsNoTracking().OrderBy(v => v.Id).ToListAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(2, versions[0].QualityProfileId);
 		Assert.Equal(2, versions[0].LanguageProfileId);
 		Assert.Equal(1, versions[1].QualityProfileId);
 		Assert.Equal(1, versions[1].LanguageProfileId);
 
-		var updatedSeries = await Context.Series.AsNoTracking().SingleAsync(s => s.Id == series.Id);
+		var updatedSeries = await Context.Series.AsNoTracking().SingleAsync(s => s.Id == series.Id, TestContext.Current.CancellationToken);
 		Assert.Equal(new List<string> { "keep", "new" }, updatedSeries.Tags);
 	}
 

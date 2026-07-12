@@ -5,19 +5,19 @@ namespace Submarine.Api.Models.Request;
 
 public record CreateConnectionRequest
 {
-	public string Name { get; set; }
+	public string Name { get; set; } = null!;
 
 	public ConnectionType Type { get; set; }
 
 	public bool Enable { get; set; }
 
-	public string Host { get; set; }
+	public string Host { get; set; } = null!;
 
 	public int Port { get; set; }
 
 	public bool UseSsl { get; set; }
 
-	public string ApiKey { get; set; }
+	public string ApiKey { get; set; } = null!;
 
 	public bool OnGrab { get; set; }
 

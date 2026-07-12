@@ -18,7 +18,7 @@ public class GrabServiceTest : DatabaseTestBase
 		{
 			Name = "qbit", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1, SettingsJson = "{}"
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var client = new FakeDownloadClient { Protocol = Protocol.BITTORRENT, DownloadId = "hash123" };
 		var service = new GrabService(Context, new FakeDownloadClientFactory(client), ReleaseParser(),
@@ -27,17 +27,17 @@ public class GrabServiceTest : DatabaseTestBase
 		var request = new GrabReleaseRequest("The Show S01E01 1080p WEB-DL x264-GROUP", "guid-1",
 			"http://indexer/download", "MyIndexer", Protocol.BITTORRENT, 1234, null, null, null);
 
-		var tracked = await service.GrabAsync(request);
+		var tracked = await service.GrabAsync(request, TestContext.Current.CancellationToken);
 
 		Assert.Equal("hash123", tracked.DownloadId);
 
-		var stored = await Context.TrackedDownloads.SingleAsync();
+		var stored = await Context.TrackedDownloads.SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal("hash123", stored.DownloadId);
 		Assert.Equal(DownloadItemStatus.QUEUED, stored.Status);
 		Assert.Equal("MyIndexer", stored.Indexer);
 		Assert.Equal("guid-1", client.LastAdded!.Guid);
 
-		var history = await Context.History.SingleAsync();
+		var history = await Context.History.SingleAsync(TestContext.Current.CancellationToken);
 		Assert.Equal(HistoryEventType.GRABBED, history.Type);
 		Assert.Equal("qbit", history.Data["downloadClient"]);
 	}
@@ -53,11 +53,11 @@ public class GrabServiceTest : DatabaseTestBase
 		{
 			Name = "sab", Type = DownloadClientType.SABNZBD, Enable = false, Priority = 1, SettingsJson = "{}"
 		});
-		await Context.SaveChangesAsync();
+		await Context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var request = new GrabReleaseRequest("The Show S01E01 1080p WEB-DL x264-GROUP", "guid-1", null, null,
 			Protocol.BITTORRENT, null, null, null, null);
 
-		await Assert.ThrowsAsync<Exceptions.BadRequestException>(() => service.GrabAsync(request));
+		await Assert.ThrowsAsync<Exceptions.BadRequestException>(() => service.GrabAsync(request, TestContext.Current.CancellationToken));
 	}
 }

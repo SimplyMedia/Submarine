@@ -8,7 +8,7 @@ public class WebhookConnection : Connection
 	/// <summary>
 	///     Url to send the webhook payload to
 	/// </summary>
-	public string Url { get; set; }
+	public string Url { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Http method used to send the webhook payload

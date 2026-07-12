@@ -21,7 +21,7 @@ public abstract class Provider : ICreatable, IUpdatable
 	/// <summary>
 	///     Name of the provider
 	/// </summary>
-	public string Name { get; set; }
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Protocol which the provider uses
@@ -36,12 +36,12 @@ public abstract class Provider : ICreatable, IUpdatable
 	/// <summary>
 	///     Url of this provider
 	/// </summary>
-	public string Url { get; set; }
+	public string Url { get; set; } = string.Empty;
 
 	/// <summary>
 	///     ApiKey of this provider
 	/// </summary>
-	public string ApiKey { get; set; }
+	public string ApiKey { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Priority of this provider
@@ -51,7 +51,7 @@ public abstract class Provider : ICreatable, IUpdatable
 	/// <summary>
 	///     Tags of this provider
 	/// </summary>
-	public List<string> Tags { get; set; }
+	public List<string> Tags { get; set; } = [];
 
 	/// <inheritdoc />
 	public DateTimeOffset CreatedAt { get; set; }

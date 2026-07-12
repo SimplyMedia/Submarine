@@ -10,7 +10,7 @@ public record QualityProfileItem
 	/// <summary>
 	///     The Quality this item represents
 	/// </summary>
-	public QualityResolutionModel Quality { get; init; }
+	public QualityResolutionModel Quality { get; init; } = new();
 
 	/// <summary>
 	///     Whether this Quality is allowed to be downloaded

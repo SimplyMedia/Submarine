@@ -8,7 +8,7 @@ public class DiscordConnection : Connection
 	/// <summary>
 	///     Discord incoming webhook url to post messages to
 	/// </summary>
-	public string WebhookUrl { get; set; }
+	public string WebhookUrl { get; set; } = string.Empty;
 
 	/// <summary>
 	///     Creates a new instance of <see cref="DiscordConnection" />

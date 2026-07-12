@@ -9,7 +9,7 @@ public class SceneMapping
 
 	public int TvdbId { get; set; }
 
-	public string Title { get; set; }
+	public string Title { get; set; } = "";
 
 	public int? SeasonNumber { get; set; }
 

@@ -33,7 +33,7 @@ public class DelugeClientTest
 		var id = await client.AddDownloadAsync(new ReleaseInfo
 		{
 			Title = "Ubuntu", Guid = "g", DownloadUrl = "magnet:?xt=urn:btih:hashaaa"
-		});
+		}, cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("hashaaa", id);
 		Assert.Contains("core.add_torrent_magnet", handler.Bodies[1]);
@@ -44,7 +44,7 @@ public class DelugeClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.OK, LoginOk), (HttpStatusCode.OK, UpdateUi));
 
-		var item = Assert.Single(await client.GetItemsAsync());
+		var item = Assert.Single(await client.GetItemsAsync(TestContext.Current.CancellationToken));
 
 		Assert.Equal("hashaaa", item.DownloadId);
 		Assert.Equal("Ubuntu", item.Title);
@@ -65,7 +65,7 @@ public class DelugeClientTest
 			(HttpStatusCode.OK, LoginOk),
 			(HttpStatusCode.OK, UpdateUi));
 
-		await client.GetItemsAsync();
+		await client.GetItemsAsync(TestContext.Current.CancellationToken);
 
 		Assert.Equal(4, handler.Bodies.Count);
 		Assert.Contains("auth.login", handler.Bodies[2]);
@@ -78,7 +78,7 @@ public class DelugeClientTest
 			(HttpStatusCode.OK, LoginOk),
 			(HttpStatusCode.OK, """{"id":1,"result":true,"error":null}"""));
 
-		await client.RemoveItemAsync("hashaaa", true);
+		await client.RemoveItemAsync("hashaaa", true, TestContext.Current.CancellationToken);
 
 		Assert.Contains("core.remove_torrent", handler.Bodies[1]);
 		Assert.Contains("true", handler.Bodies[1]);
@@ -89,7 +89,7 @@ public class DelugeClientTest
 	{
 		var (client, _) = CreateClient((HttpStatusCode.OK, """{"id":1,"result":false,"error":null}"""));
 
-		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync());
+		await Assert.ThrowsAsync<DownloadClientException>(() => client.TestAsync(TestContext.Current.CancellationToken));
 	}
 
 	private (DelugeClient Client, StubHandler Handler) CreateClient(

@@ -752,7 +752,6 @@ public class ReleaseParserService : IParser<BaseRelease>
 				var specialAbsoluteEpisodes = new List<decimal>();
 				string? group = null;
 				string? hash = null;
-				var special = false;
 
 				var seasonCaptures = matched.Groups["season"].Captures.ToList();
 				var episodeCaptures = matched.Groups["episode"].Captures.ToList();
@@ -789,14 +788,12 @@ public class ReleaseParserService : IParser<BaseRelease>
 							throw new InvalidReleaseException("Multiple matches not allowed for specials");
 
 						specialAbsoluteEpisodes.Add(first);
-						special = true;
 					}
 					else
 					{
 						var count = last - first + 1;
 						absoluteEpisodes.AddRange(Enumerable.Range((int)first, (int)count).ToArray());
 
-						if (matched.Groups["special"].Success) special = true;
 					}
 				}
 
