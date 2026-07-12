@@ -51,6 +51,14 @@ public interface IMetadataClient
 	Task<MovieResource?> GetMovieAsync(int tmdbId, CancellationToken cancellationToken = default);
 
 	/// <summary>
+	///     Gets a single movie collection by its TMDB identifier
+	/// </summary>
+	/// <param name="tmdbCollectionId">TheMovieDB identifier of the collection</param>
+	/// <param name="cancellationToken">cancellation token</param>
+	/// <returns>collection if found, otherwise null</returns>
+	Task<CollectionResource?> GetCollectionAsync(int tmdbCollectionId, CancellationToken cancellationToken = default);
+
+	/// <summary>
 	///     Checks whether the Metadata service is reachable
 	/// </summary>
 	/// <param name="cancellationToken">cancellation token</param>

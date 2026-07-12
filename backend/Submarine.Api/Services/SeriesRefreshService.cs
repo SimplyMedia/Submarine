@@ -161,6 +161,8 @@ public class SeriesRefreshService
 		movie.Runtime = resource.Runtime;
 		movie.Studio = resource.Studio;
 		movie.Year = resource.Year;
+		movie.TmdbCollectionId = resource.TmdbCollectionId;
+		movie.CollectionTitle = resource.CollectionTitle;
 		movie.ReleaseDate = resource.ReleaseDate == null
 			? null
 			: new DateTimeOffset(resource.ReleaseDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);

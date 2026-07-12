@@ -4,12 +4,38 @@ using Submarine.Api.Models.Request;
 using Submarine.Api.Repository;
 using Submarine.Api.Services;
 using Submarine.Core.Library;
+using Submarine.Metadata.Contracts;
 using Xunit;
 
 namespace Submarine.Api.Tests;
 
 public class MovieServiceTest : DatabaseTestBase
 {
+	[Fact]
+	public async Task AddAsync_ShouldPopulateCollectionFields_WhenResourceBelongsToCollection()
+	{
+		Context.RootFolders.Add(new RootFolder { Path = Path.Combine("root", "movies"), MediaKind = MediaKind.MOVIES });
+		await Context.SaveChangesAsync();
+
+		var metadataClient = new FakeMetadataClient
+		{
+			Movie = new MovieResource(5, null, "Film", null, null, null, 2021, 120, Array.Empty<string>(), null, null,
+				Array.Empty<string>(), 10, "Collection A")
+		};
+
+		var service = new MovieService(new MovieRepository(Context), new RootFolderRepository(Context),
+			new QualityProfileRepository(Context), new LanguageProfileRepository(Context),
+			metadataClient, new FakeBackgroundTaskQueue(), new VersionService(Context));
+
+		var movie = await service.AddAsync(new AddMovieRequest
+		{
+			TmdbId = 5, RootFolderId = 1, QualityProfileId = 1, LanguageProfileId = 1
+		});
+
+		Assert.Equal(10, movie.TmdbCollectionId);
+		Assert.Equal("Collection A", movie.CollectionTitle);
+	}
+
 	[Fact]
 	public async Task EditorAsync_ShouldApplyMinimumAvailabilityToAllGivenMovies()
 	{

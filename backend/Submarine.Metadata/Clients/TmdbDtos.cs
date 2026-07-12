@@ -11,6 +11,24 @@ internal record TmdbMovie(
 	[property: JsonPropertyName("runtime")] int? Runtime,
 	[property: JsonPropertyName("genres")] IReadOnlyList<TmdbGenre>? Genres,
 	[property: JsonPropertyName("production_companies")] IReadOnlyList<TmdbProductionCompany>? ProductionCompanies,
+	[property: JsonPropertyName("poster_path")] string? PosterPath,
+	[property: JsonPropertyName("belongs_to_collection")] TmdbBelongsToCollection? BelongsToCollection);
+
+internal record TmdbBelongsToCollection(
+	[property: JsonPropertyName("id")] int Id,
+	[property: JsonPropertyName("name")] string Name);
+
+internal record TmdbCollection(
+	[property: JsonPropertyName("id")] int Id,
+	[property: JsonPropertyName("name")] string Name,
+	[property: JsonPropertyName("overview")] string? Overview,
+	[property: JsonPropertyName("parts")] IReadOnlyList<TmdbCollectionPart>? Parts);
+
+internal record TmdbCollectionPart(
+	[property: JsonPropertyName("id")] int Id,
+	[property: JsonPropertyName("title")] string Title,
+	[property: JsonPropertyName("overview")] string? Overview,
+	[property: JsonPropertyName("release_date")] string? ReleaseDate,
 	[property: JsonPropertyName("poster_path")] string? PosterPath);
 
 internal record TmdbGenre([property: JsonPropertyName("name")] string Name);

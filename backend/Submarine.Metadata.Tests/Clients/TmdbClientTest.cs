@@ -67,6 +67,85 @@ public class TmdbClientTest
 	}
 
 	[Fact]
+	public async Task GetMovieAsync_ShouldCarryCollectionFields_WhenTmdbReturnsBelongsToCollection()
+	{
+		const string json = """
+			{
+				"id": 603,
+				"title": "The Matrix",
+				"belongs_to_collection": { "id": 2344, "name": "The Matrix Collection" }
+			}
+			""";
+
+		var client = CreateClient(json);
+
+		var movie = await client.GetMovieAsync(603);
+
+		Assert.NotNull(movie);
+		Assert.Equal(2344, movie.TmdbCollectionId);
+		Assert.Equal("The Matrix Collection", movie.CollectionTitle);
+	}
+
+	[Fact]
+	public async Task GetCollectionAsync_ShouldNormalizeCollection_WhenTmdbReturnsParts()
+	{
+		const string json = """
+			{
+				"id": 2344,
+				"name": "The Matrix Collection",
+				"overview": "Movies about the Matrix",
+				"parts": [
+					{
+						"id": 603,
+						"title": "The Matrix",
+						"overview": "A hacker learns the truth.",
+						"release_date": "1999-03-30",
+						"poster_path": "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+					},
+					{
+						"id": 604,
+						"title": "The Matrix Reloaded",
+						"release_date": "2003-05-15"
+					}
+				]
+			}
+			""";
+
+		var client = CreateClient(json);
+
+		var collection = await client.GetCollectionAsync(2344);
+
+		Assert.NotNull(collection);
+		Assert.Equal(2344, collection.TmdbCollectionId);
+		Assert.Equal("The Matrix Collection", collection.Title);
+		Assert.Equal("Movies about the Matrix", collection.Overview);
+		Assert.Equal(2, collection.Movies.Count);
+
+		var matrix = collection.Movies[0];
+		Assert.Equal(603, matrix.TmdbId);
+		Assert.Equal("The Matrix", matrix.Title);
+		Assert.Equal(new DateOnly(1999, 3, 30), matrix.ReleaseDate);
+		Assert.Equal("https://image.tmdb.org/t/p/original/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", matrix.ImageUrl);
+		Assert.Equal(2344, matrix.TmdbCollectionId);
+		Assert.Equal("The Matrix Collection", matrix.CollectionTitle);
+
+		var reloaded = collection.Movies[1];
+		Assert.Equal(604, reloaded.TmdbId);
+		Assert.Null(reloaded.ImageUrl);
+		Assert.Equal(2344, reloaded.TmdbCollectionId);
+	}
+
+	[Fact]
+	public async Task GetCollectionAsync_ShouldReturnNull_WhenTmdbReturnsNull()
+	{
+		var client = CreateClient("null");
+
+		var collection = await client.GetCollectionAsync(9999);
+
+		Assert.Null(collection);
+	}
+
+	[Fact]
 	public async Task SearchMoviesAsync_ShouldReturnNormalizedResults_WhenTmdbReturnsSearchPayload()
 	{
 		const string json = """

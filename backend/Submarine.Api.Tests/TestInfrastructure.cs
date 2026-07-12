@@ -98,6 +98,8 @@ public sealed class FakeMetadataClient : IMetadataClient
 
 	public MovieResource? Movie { get; set; }
 
+	public CollectionResource? Collection { get; set; }
+
 	public int TvdbSeriesCalls { get; private set; }
 
 	public int TmdbSeriesCalls { get; private set; }
@@ -126,6 +128,10 @@ public sealed class FakeMetadataClient : IMetadataClient
 
 	public Task<MovieResource?> GetMovieAsync(int tmdbId, CancellationToken cancellationToken = default)
 		=> Task.FromResult(Movie);
+
+	public Task<CollectionResource?> GetCollectionAsync(int tmdbCollectionId,
+		CancellationToken cancellationToken = default)
+		=> Task.FromResult(Collection);
 
 	public Task<IReadOnlyList<SeriesResource>> SearchSeriesAsync(string term,
 		MetadataProvider provider = MetadataProvider.TVDB, CancellationToken cancellationToken = default)

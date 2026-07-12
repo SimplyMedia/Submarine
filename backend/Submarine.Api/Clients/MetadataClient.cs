@@ -85,6 +85,20 @@ public class MetadataClient : IMetadataClient
 	}
 
 	/// <inheritdoc />
+	public async Task<CollectionResource?> GetCollectionAsync(int tmdbCollectionId,
+		CancellationToken cancellationToken = default)
+	{
+		using var response = await _httpClient.GetAsync($"api/v1/collection/{tmdbCollectionId}", cancellationToken);
+
+		if (response.StatusCode == HttpStatusCode.NotFound)
+			return null;
+
+		response.EnsureSuccessStatusCode();
+
+		return await response.Content.ReadFromJsonAsync<CollectionResource>(JsonOptions, cancellationToken);
+	}
+
+	/// <inheritdoc />
 	public async Task<bool> PingAsync(CancellationToken cancellationToken = default)
 	{
 		try

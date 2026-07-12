@@ -54,6 +54,26 @@ public class TmdbClient
 	}
 
 	/// <summary>
+	///     Gets a single movie collection from TMDB by its identifier
+	/// </summary>
+	/// <param name="collectionId">TheMovieDB identifier of the collection</param>
+	/// <returns>normalized collection, or null if it could not be found</returns>
+	public async Task<CollectionResource?> GetCollectionAsync(int collectionId)
+	{
+		var collection = await _httpClient.GetFromJsonAsync<TmdbCollection>(
+			$"collection/{collectionId}?api_key={_apiKey}", JsonOptions);
+
+		if (collection == null)
+			return null;
+
+		var movies = (collection.Parts ?? [])
+			.Select(p => MapCollectionPart(p, collection.Id, collection.Name))
+			.ToList();
+
+		return new CollectionResource(collection.Id, collection.Name, collection.Overview, movies);
+	}
+
+	/// <summary>
 	///     Searches TMDB for series matching the given search term
 	/// </summary>
 	/// <param name="term">search term</param>
@@ -179,7 +199,30 @@ public class TmdbClient
 			movie.Genres?.Select(g => g.Name).ToList() ?? [],
 			movie.ProductionCompanies?.FirstOrDefault()?.Name,
 			movie.PosterPath == null ? null : ImageBaseUrl + movie.PosterPath,
-			[]);
+			[],
+			movie.BelongsToCollection?.Id,
+			movie.BelongsToCollection?.Name);
+	}
+
+	private static MovieResource MapCollectionPart(TmdbCollectionPart part, int collectionId, string collectionTitle)
+	{
+		var releaseDate = ParseDate(part.ReleaseDate);
+
+		return new MovieResource(
+			part.Id,
+			null,
+			part.Title,
+			null,
+			part.Overview,
+			releaseDate,
+			releaseDate?.Year,
+			null,
+			[],
+			null,
+			part.PosterPath == null ? null : ImageBaseUrl + part.PosterPath,
+			[],
+			collectionId,
+			collectionTitle);
 	}
 
 	private static DateOnly? ParseDate(string? date)

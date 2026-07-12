@@ -89,6 +89,8 @@ public class MovieService
 			Year = resource.Year,
 			Runtime = resource.Runtime,
 			Studio = resource.Studio,
+			TmdbCollectionId = resource.TmdbCollectionId,
+			CollectionTitle = resource.CollectionTitle,
 			ReleaseDate = resource.ReleaseDate == null
 				? null
 				: new DateTimeOffset(resource.ReleaseDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
