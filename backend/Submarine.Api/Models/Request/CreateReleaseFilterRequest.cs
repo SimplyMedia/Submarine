@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Submarine.Core.DecisionEngine.Filter;
 
 namespace Submarine.Api.Models.Request;
@@ -10,5 +11,6 @@ public record CreateReleaseFilterRequest
 
 	public FilterMode Mode { get; set; }
 
+	[Range(0, 9)]
 	public int Tier { get; set; }
 }

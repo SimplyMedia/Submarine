@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Submarine.Core.DecisionEngine.CustomFormats;
 using Submarine.Core.DecisionEngine.Filter;
+using Submarine.Core.Languages;
+using Submarine.Core.Profile;
 using Submarine.Core.Release;
 
 namespace Submarine.Core.DecisionEngine;
@@ -60,13 +62,43 @@ public class DownloadDecisionService
 		if (!release.Languages.Any(l => ctx.LanguageProfile.Languages.Contains(l)))
 			rejections.Add(new RejectionReason("no wanted language present", RejectionType.PERMANENT));
 
-		if (ctx.ExistingFileQuality is not null)
+		var qualityUpgrade = false;
+		var qualityNotWorse = true;
+
+		if (ctx.ExistingFileQuality is { } existingQuality)
 		{
-			if (ctx.QualityProfile.MeetsCutoff(ctx.ExistingFileQuality))
+			var existingIndex = items.FindIndex(i =>
+				i.Quality.Source == existingQuality.Resolution.Source
+				&& i.Quality.Resolution == existingQuality.Resolution.Resolution);
+
+			// a proper/repack at the same quality tier is a valid upgrade even once the cutoff is met
+			var revisionUpgradeAtSameQuality = existingIndex == qualityIndex
+			                                   && release.Quality.Revision > existingQuality.Revision;
+
+			qualityUpgrade = revisionUpgradeAtSameQuality
+			                 || (!ctx.QualityProfile.MeetsCutoff(existingQuality)
+			                     && ctx.QualityProfile.IsUpgrade(existingQuality, release.Quality));
+
+			qualityNotWorse = qualityIndex >= existingIndex;
+		}
+
+		// an upgrade in either dimension is enough, but a quality downgrade is never traded for a language gain
+		var languageUpgrade = ctx.ExistingFileLanguages is { } existingLanguages
+		                      && !existingLanguages.Contains(ctx.LanguageProfile.Cutoff)
+		                      && AddsLanguageImprovement(ctx.LanguageProfile, existingLanguages, release.Languages)
+		                      && qualityNotWorse;
+
+		if ((ctx.ExistingFileQuality is not null || ctx.ExistingFileLanguages is not null)
+		    && !qualityUpgrade && !languageUpgrade)
+		{
+			if (ctx.ExistingFileQuality is { } existing && ctx.QualityProfile.MeetsCutoff(existing))
 				rejections.Add(new RejectionReason("existing file already meets the quality cutoff",
 					RejectionType.PERMANENT));
-			else if (!ctx.QualityProfile.IsUpgrade(ctx.ExistingFileQuality, release.Quality))
+			else if (ctx.ExistingFileQuality is not null)
 				rejections.Add(new RejectionReason("not an upgrade over the existing file",
+					RejectionType.PERMANENT));
+			else
+				rejections.Add(new RejectionReason("existing file already meets the language cutoff",
 					RejectionType.PERMANENT));
 		}
 
@@ -102,6 +134,34 @@ public class DownloadDecisionService
 			.OrderByDescending(decision => decision.Approved)
 			.ThenByDescending(decision => decision.Score)
 			.ToList();
+
+	// candidate improves language when it holds a profile-allowed language ranked better than the best existing one
+	private static bool AddsLanguageImprovement(LanguageProfile profile, IReadOnlyList<Language> existing,
+		IReadOnlyList<Language> candidate)
+	{
+		if (!profile.UpgradeAllowed)
+			return false;
+
+		var existingRank = BestLanguageRank(profile, existing);
+		var candidateRank = BestLanguageRank(profile, candidate);
+
+		return candidateRank >= 0 && (existingRank < 0 || candidateRank < existingRank);
+	}
+
+	private static int BestLanguageRank(LanguageProfile profile, IReadOnlyList<Language> languages)
+	{
+		var best = -1;
+
+		foreach (var language in languages)
+		{
+			var rank = profile.Languages.IndexOf(language);
+
+			if (rank >= 0 && (best < 0 || rank < best))
+				best = rank;
+		}
+
+		return best;
+	}
 
 	private static int Score(ReleaseCandidate candidate, MediaContext ctx, int qualityIndex, int filterScore,
 		IReadOnlyList<CustomFormat> matchedFormats)

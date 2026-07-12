@@ -87,6 +87,39 @@ public class DownloadDecisionServiceTest
 	}
 
 	[Fact]
+	public void Decide_ShouldApprove_WhenCandidateIsProperAtTheQualityCutoff()
+	{
+		var decision = _instance.Decide(
+			Candidate(Release(QualityResolution.R1080_P, revision: new Revision(2, IsProper: true))),
+			Context(profile: Profile(cutoff: 1), existing: Quality(QualityResolution.R1080_P)));
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
+	public void Decide_ShouldReject_WhenExistingMeetsLanguageCutoffAndCandidateAddsNoImprovement()
+	{
+		var decision = _instance.Decide(
+			Candidate(Release(languages: new[] { Language.ENGLISH })),
+			Context(languageProfile: LanguageProfile(Language.ENGLISH, upgradeAllowed: true, Language.ENGLISH, Language.GERMAN),
+				existingLanguages: new[] { Language.ENGLISH }));
+
+		Assert.False(decision.Approved);
+		Assert.Contains(decision.Rejections, r => r.Reason.Contains("language cutoff"));
+	}
+
+	[Fact]
+	public void Decide_ShouldApprove_WhenCandidateAddsABetterRankedLanguage()
+	{
+		var decision = _instance.Decide(
+			Candidate(Release(languages: new[] { Language.ENGLISH })),
+			Context(languageProfile: LanguageProfile(Language.ENGLISH, upgradeAllowed: true, Language.ENGLISH, Language.GERMAN),
+				existingLanguages: new[] { Language.GERMAN }));
+
+		Assert.True(decision.Approved);
+	}
+
+	[Fact]
 	public void Decide_ShouldReject_WhenBlockFilterMatches()
 	{
 		var filters = new[] { new ReleaseFilter(1, FilterField.RELEASE_GROUP, new[] { "EVO" }, FilterMode.BLOCK) };
@@ -198,6 +231,7 @@ public class DownloadDecisionServiceTest
 		IReadOnlyCollection<CustomFormat>? customFormats = null,
 		IReadOnlyDictionary<int, int>? customFormatScores = null,
 		QualityModel? existing = null,
+		IReadOnlyList<Language>? existingLanguages = null,
 		string? seasonReleaseGroup = null)
 		=> new()
 		{
@@ -207,6 +241,7 @@ public class DownloadDecisionServiceTest
 			CustomFormats = customFormats ?? Array.Empty<CustomFormat>(),
 			CustomFormatScores = customFormatScores ?? new Dictionary<int, int>(),
 			ExistingFileQuality = existing,
+			ExistingFileLanguages = existingLanguages,
 			SeasonReleaseGroup = seasonReleaseGroup
 		};
 
@@ -229,6 +264,9 @@ public class DownloadDecisionServiceTest
 
 	private static LanguageProfile Languages(params Language[] languages)
 		=> new() { Name = "Test", Languages = languages.ToList() };
+
+	private static LanguageProfile LanguageProfile(Language cutoff, bool upgradeAllowed, params Language[] languages)
+		=> new() { Name = "Test", Languages = languages.ToList(), Cutoff = cutoff, UpgradeAllowed = upgradeAllowed };
 
 	private static QualityModel Quality(QualityResolution resolution)
 		=> new(new QualityResolutionModel(QualitySource.WEB_DL, resolution), new Revision());

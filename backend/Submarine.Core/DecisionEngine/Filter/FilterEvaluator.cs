@@ -23,7 +23,9 @@ public class FilterEvaluator
 	public const int TierWeight = 100;
 
 	/// <summary>
-	///     Evaluates the given Filters against a candidate's Field values
+	///     Evaluates the given Filters against a candidate's Field values.
+	///     An <see cref="FilterMode.ALLOW" /> filter on a Field the Release does not populate (e.g. a null release group
+	///     or source) never matches, so the Release is rejected for that Field.
 	/// </summary>
 	/// <param name="ctx">The candidate's Field values</param>
 	/// <param name="filters">The Filters to evaluate</param>

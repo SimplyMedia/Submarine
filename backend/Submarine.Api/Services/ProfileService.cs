@@ -70,6 +70,8 @@ public class ProfileService
 
 	public async Task<QualityProfile> CreateQualityProfileAsync(CreateQualityProfileRequest request)
 	{
+		ValidateCutoff(request.Cutoff, request.Items.Count);
+
 		var profile = new QualityProfile
 		{
 			Name = request.Name,
@@ -86,6 +88,8 @@ public class ProfileService
 
 	public async Task<QualityProfile> UpdateQualityProfileAsync(int id, UpdateQualityProfileRequest request)
 	{
+		ValidateCutoff(request.Cutoff, request.Items.Count);
+
 		var profile = await GetQualityProfileAsync(id);
 
 		profile.Name = request.Name;
@@ -97,6 +101,12 @@ public class ProfileService
 		await _qualityProfileRepository.UpdateAsync(profile);
 
 		return profile;
+	}
+
+	private static void ValidateCutoff(int cutoff, int itemCount)
+	{
+		if (cutoff < 0 || cutoff >= itemCount)
+			throw new BadRequestException("Cutoff must reference an item within the quality profile");
 	}
 
 	public async Task<QualityProfile> DeleteQualityProfileAsync(int id)

@@ -1,5 +1,6 @@
 using Submarine.Core.DecisionEngine.CustomFormats;
 using Submarine.Core.DecisionEngine.Filter;
+using Submarine.Core.Languages;
 using Submarine.Core.Profile;
 using Submarine.Core.Quality;
 
@@ -39,6 +40,11 @@ public record MediaContext
 	///     The Quality of the currently held file, if any
 	/// </summary>
 	public QualityModel? ExistingFileQuality { get; init; }
+
+	/// <summary>
+	///     The Languages of the currently held file, if any
+	/// </summary>
+	public IReadOnlyList<Language>? ExistingFileLanguages { get; init; }
 
 	/// <summary>
 	///     The Release Group already imported for the season, used for a consistency bonus, if any

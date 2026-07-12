@@ -34,6 +34,8 @@ public class DecisionConfigService
 
 	public async Task<ReleaseFilterConfig> CreateFilterAsync(CreateReleaseFilterRequest request)
 	{
+		ValidateFilter(request.Values, request.Tier);
+
 		var filter = new ReleaseFilterConfig
 		{
 			Field = request.Field,
@@ -49,6 +51,8 @@ public class DecisionConfigService
 
 	public async Task<ReleaseFilterConfig> UpdateFilterAsync(int id, UpdateReleaseFilterRequest request)
 	{
+		ValidateFilter(request.Values, request.Tier);
+
 		var filter = await GetFilterAsync(id);
 
 		filter.Field = request.Field;
@@ -59,6 +63,15 @@ public class DecisionConfigService
 		await _filterRepository.UpdateAsync(filter);
 
 		return filter;
+	}
+
+	private static void ValidateFilter(List<string> values, int tier)
+	{
+		if (values.Count == 0)
+			throw new BadRequestException("A filter must have at least one value");
+
+		if (tier is < 0 or > 9)
+			throw new BadRequestException("Tier must be between 0 and 9");
 	}
 
 	public async Task<ReleaseFilterConfig> DeleteFilterAsync(int id)
