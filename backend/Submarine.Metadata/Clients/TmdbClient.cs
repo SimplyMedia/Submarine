@@ -5,7 +5,8 @@ using Submarine.Metadata.Contracts;
 namespace Submarine.Metadata.Clients;
 
 /// <summary>
-///     Typed client for the TMDB API, normalizing responses into <see cref="MovieResource" />
+///     Typed client for the TMDB API, normalizing responses into <see cref="MovieResource" /> and
+///     <see cref="SeriesResource" />
 /// </summary>
 public class TmdbClient
 {
@@ -51,6 +52,116 @@ public class TmdbClient
 
 		return movie == null ? null : MapMovie(movie);
 	}
+
+	/// <summary>
+	///     Searches TMDB for series matching the given search term
+	/// </summary>
+	/// <param name="term">search term</param>
+	/// <returns>normalized search results, without seasons or episodes</returns>
+	public async Task<IReadOnlyList<SeriesResource>> SearchSeriesAsync(string term)
+	{
+		var response = await _httpClient.GetFromJsonAsync<TmdbTvSearchResponse>(
+			$"search/tv?api_key={_apiKey}&query={Uri.EscapeDataString(term)}", JsonOptions);
+
+		return response?.Results.Select(MapSearchResult).ToList() ?? [];
+	}
+
+	/// <summary>
+	///     Gets a single series from TMDB by its identifier, fanning out per-season episode fetches (specials included as
+	///     season 0). TMDB only exposes aired ordering, so every episode carries a single aired <see cref="EpisodeNumber" />.
+	/// </summary>
+	/// <param name="tmdbId">TheMovieDB identifier of the series</param>
+	/// <returns>normalized series, or null if it could not be found</returns>
+	public async Task<SeriesResource?> GetSeriesAsync(int tmdbId)
+	{
+		var series = await _httpClient.GetFromJsonAsync<TmdbSeries>(
+			$"tv/{tmdbId}?api_key={_apiKey}&append_to_response=external_ids", JsonOptions);
+
+		if (series == null)
+			return null;
+
+		var seasonDetails = await Task.WhenAll((series.Seasons ?? [])
+			.Select(s => GetSeasonAsync(tmdbId, s.SeasonNumber)));
+
+		var episodes = seasonDetails
+			.SelectMany(d => d?.Episodes ?? [])
+			.Select(MapEpisode)
+			.ToList();
+
+		return MapSeries(series, episodes);
+	}
+
+	private Task<TmdbSeasonDetail?> GetSeasonAsync(int tmdbId, int seasonNumber)
+		=> _httpClient.GetFromJsonAsync<TmdbSeasonDetail>(
+			$"tv/{tmdbId}/season/{seasonNumber}?api_key={_apiKey}", JsonOptions);
+
+	private static SeriesResource MapSeries(TmdbSeries series, IReadOnlyList<EpisodeResource> episodes)
+	{
+		var firstAired = ParseDate(series.FirstAirDate);
+
+		var seasons = (series.Seasons ?? [])
+			.OrderBy(s => s.SeasonNumber)
+			.Select(s => new SeasonResource(s.SeasonNumber, s.Name, s.EpisodeCount))
+			.ToList();
+
+		int? runtime = series.EpisodeRunTime is { Count: > 0 } runtimes ? runtimes[0] : null;
+
+		return new SeriesResource(
+			series.ExternalIds?.TvdbId ?? 0,
+			series.Id,
+			series.Name,
+			null,
+			series.Overview,
+			firstAired,
+			MapStatus(series.Status),
+			runtime,
+			series.Networks?.FirstOrDefault()?.Name,
+			series.Genres?.Select(g => g.Name).ToList() ?? [],
+			seasons,
+			episodes,
+			series.PosterPath == null ? null : ImageBaseUrl + series.PosterPath,
+			firstAired?.Year);
+	}
+
+	private static SeriesResource MapSearchResult(TmdbTvSearchResult result)
+	{
+		var firstAired = ParseDate(result.FirstAirDate);
+
+		return new SeriesResource(
+			0,
+			result.Id,
+			result.Name,
+			null,
+			result.Overview,
+			firstAired,
+			SeriesStatus.Unknown,
+			null,
+			null,
+			[],
+			[],
+			[],
+			result.PosterPath == null ? null : ImageBaseUrl + result.PosterPath,
+			firstAired?.Year);
+	}
+
+	private static EpisodeResource MapEpisode(TmdbEpisode episode)
+		=> new(
+			null,
+			episode.Id,
+			episode.Name,
+			episode.Overview,
+			ParseDate(episode.AirDate),
+			episode.Runtime,
+			[new EpisodeNumber(EpisodeOrdering.Aired, episode.SeasonNumber, episode.EpisodeNumber, null)]);
+
+	private static SeriesStatus MapStatus(string? status)
+		=> status switch
+		{
+			"Returning Series" => SeriesStatus.Continuing,
+			"Ended" or "Canceled" => SeriesStatus.Ended,
+			"Planned" or "In Production" or "Pilot" => SeriesStatus.Upcoming,
+			_ => SeriesStatus.Unknown
+		};
 
 	private static MovieResource MapMovie(TmdbMovie movie)
 	{
