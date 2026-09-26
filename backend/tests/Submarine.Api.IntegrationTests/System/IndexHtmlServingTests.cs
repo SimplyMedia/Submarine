@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Hosting;
 using Shouldly;
@@ -14,7 +13,7 @@ namespace Submarine.Api.IntegrationTests;
 /// </summary>
 public sealed class IndexHtmlServingTests
 {
-	private static readonly string FixtureWebRoot = Path.Combine(Path.GetDirectoryName(SourceFilePath())!, "Fixtures", "wwwroot");
+	private static readonly string FixtureWebRoot = Path.Combine(AppContext.BaseDirectory, "System", "Fixtures", "wwwroot");
 
 	[Fact]
 	public async Task UrlBase_ShouldRewriteIndexHtml_AndServeApiUnderIt_AndNotFallBackForUnknownApiRoutes()
@@ -46,7 +45,6 @@ public sealed class IndexHtmlServingTests
 		unknown.Content.Headers.ContentType?.MediaType.ShouldNotBe("text/html");
 	}
 
-	private static string SourceFilePath([CallerFilePath] string path = "") => path;
 
 	private sealed record SetupStatusDto(bool NeedsSetup);
 
