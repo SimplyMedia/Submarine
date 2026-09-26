@@ -79,3 +79,55 @@ public record MovieSearchRequest(
 	int? Limit = null,
 	int? Offset = null,
 	bool IsRss = false) : SearchRequest(Query, Categories ?? [], Limit, Offset, IsRss);
+
+/// <summary>
+///     A music search
+/// </summary>
+/// <param name="Query">The free text query, if any</param>
+/// <param name="Artist">The artist name, if any</param>
+/// <param name="Album">The album name, if any</param>
+/// <param name="Label">The record label, if any</param>
+/// <param name="Track">The track name, if any</param>
+/// <param name="Genre">The genre, if any</param>
+/// <param name="Year">The release year, if any</param>
+/// <param name="Categories">The standard category ids to search in, if any</param>
+/// <param name="Limit">The maximum amount of results, if any</param>
+/// <param name="Offset">The offset into the results, if any</param>
+/// <param name="IsRss">Whether this is an RSS sync fetch rather than a user search</param>
+public record MusicSearchRequest(
+	string? Query = null,
+	string? Artist = null,
+	string? Album = null,
+	string? Label = null,
+	string? Track = null,
+	string? Genre = null,
+	int? Year = null,
+	IReadOnlyList<int>? Categories = null,
+	int? Limit = null,
+	int? Offset = null,
+	bool IsRss = false) : SearchRequest(Query, Categories ?? [], Limit, Offset, IsRss);
+
+/// <summary>
+///     A book search
+/// </summary>
+/// <param name="Query">The free text query, if any</param>
+/// <param name="Author">The author name, if any</param>
+/// <param name="Title">The book title, if any</param>
+/// <param name="Publisher">The publisher, if any</param>
+/// <param name="Genre">The genre, if any</param>
+/// <param name="Year">The release year, if any</param>
+/// <param name="Categories">The standard category ids to search in, if any</param>
+/// <param name="Limit">The maximum amount of results, if any</param>
+/// <param name="Offset">The offset into the results, if any</param>
+/// <param name="IsRss">Whether this is an RSS sync fetch rather than a user search</param>
+public record BookSearchRequest(
+	string? Query = null,
+	string? Author = null,
+	string? Title = null,
+	string? Publisher = null,
+	string? Genre = null,
+	int? Year = null,
+	IReadOnlyList<int>? Categories = null,
+	int? Limit = null,
+	int? Offset = null,
+	bool IsRss = false) : SearchRequest(Query, Categories ?? [], Limit, Offset, IsRss);

@@ -16,6 +16,7 @@ internal sealed class IndexerConfiguration : EntityConfiguration<Indexer>
 		builder.Property(x => x.BaseUrl).HasMaxLength(1024);
 		builder.Property(x => x.Categories).HasConversion(JsonValueConverter<List<int>>.Instance);
 		builder.Property(x => x.AnimeCategories).HasConversion(JsonValueConverter<List<int>>.Instance);
+		builder.Property(x => x.RequiredFlags).HasConversion(JsonValueConverter<List<Submarine.Core.Indexers.IndexerFlag>>.Instance);
 		builder.HasOne(x => x.DownloadClient).WithMany().HasForeignKey(x => x.DownloadClientId).OnDelete(DeleteBehavior.SetNull);
 		builder.HasOne(x => x.Proxy).WithMany().HasForeignKey(x => x.ProxyId).OnDelete(DeleteBehavior.SetNull);
 		builder.HasMany(x => x.Tags).WithMany();

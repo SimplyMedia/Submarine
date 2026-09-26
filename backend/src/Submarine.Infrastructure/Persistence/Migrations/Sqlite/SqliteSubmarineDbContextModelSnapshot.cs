@@ -922,7 +922,13 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<bool>("EnableRss")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("GrabLimit")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Implementation")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LimitsUnit")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("MinimumSeeders")
@@ -942,7 +948,20 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<int?>("ProxyId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("QueryLimit")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Redirect")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RequiredFlags")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("SeasonPackSeedTimeMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SeasonSearchMaximumSingleEpisodeAge")
                         .HasColumnType("INTEGER");
 
                     b.Property<double?>("SeedRatio")
@@ -956,6 +975,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VipExpiration")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
