@@ -2,6 +2,7 @@
 //   node e2e/stack.mjs start   (SUBMARINE_API_DIR = folder with Submarine.Api.dll, default /tmp/submarine-api)
 //   node e2e/stack.mjs stop
 // The API listens on http://localhost:8989 (E2E_API_PORT) with a fresh SQLite database under .e2e/.
+import { createServer } from 'node:net'
 import { spawn } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, openSync } from 'node:fs'
 import path from 'node:path'
@@ -32,6 +33,17 @@ async function waitFor(url, attempts = 60) {
 	throw new Error(`Timed out waiting for ${url}`)
 }
 
+async function assertPortAvailable(port) {
+	await new Promise((resolve, reject) => {
+		const server = createServer()
+		server.once('error', reject)
+		server.listen(port, '127.0.0.1', () => {
+			server.close(error => error ? reject(error) : resolve())
+		})
+	})
+}
+
+
 function detach(name, command, args, options) {
 	const log = openSync(path.join(stateDir, `${name}.log`), 'a')
 	const child = spawn(command, args, { ...options, detached: true, stdio: ['ignore', log, log] })
@@ -40,6 +52,15 @@ function detach(name, command, args, options) {
 }
 
 async function start() {
+	for (const port of [apiPort, metadataPort, mappingsPort, ...(existsSync(path.join(root, 'e2e', 'mock-torznab.mjs')) ? [torznabPort] : [])]) {
+		try {
+			await assertPortAvailable(port)
+		}
+		catch (error) {
+			if (error?.code !== 'EADDRINUSE') throw error
+			throw new Error(`E2E port ${port} is already in use; select a free E2E_API_PORT/E2E_MOCK_PORT_BASE`)
+		}
+	}
 	rmSync(stateDir, { recursive: true, force: true })
 	mkdirSync(path.join(stateDir, 'data'), { recursive: true })
 	mkdirSync(path.join(stateDir, 'media', 'tv'), { recursive: true })

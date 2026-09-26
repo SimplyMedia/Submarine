@@ -23,6 +23,10 @@ async function deleteIndexerByName(request: APIRequestContext, name: string) {
 	}
 }
 
+test.afterEach(async ({ page }) => {
+	await deleteIndexerByName(page.request, LIMITS_TRACKER_NAME)
+})
+
 test('indexers: add a Torznab tracker, test it, then search and grab a release', async ({ page }) => {
 	await signIn(page)
 	await ensureLibrary(page.request)

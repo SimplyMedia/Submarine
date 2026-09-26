@@ -3,6 +3,33 @@ import { ensureLibrary, ensureStubTrackerIndexer, signIn, STUB_TRACKER_NAME } fr
 
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
 const metadataPort = process.env.E2E_MOCK_PORT_BASE ? Number(process.env.E2E_MOCK_PORT_BASE) : 5100
+let originalQualityDefinition: { id: number, minSizeMbPerMinute: number | null, maxSizeMbPerMinute: number | null, preferredSizeMbPerMinute: number | null } | undefined
+
+test.afterEach(async ({ page }) => {
+	for (const [endpoint, name] of [
+		['/api/v1/language-profiles', 'E2E language profile'],
+		['/api/v1/delay-profiles', 'E2E delay profile'],
+		['/api/v1/release-profiles', 'E2E release profile'],
+		['/api/v1/indexer-proxies', 'E2E FlareSolverr proxy'],
+	] as const) {
+		const response = await page.request.get(endpoint, { params: { PageSize: 200 } })
+		if (!response.ok()) continue
+		const body = await response.json() as { id: number, name: string }[] | { items: { id: number, name: string }[] }
+		const profiles = Array.isArray(body) ? body : body.items
+		for (const profile of profiles.filter(item => item.name === name)) {
+			const deleted = await page.request.delete(`${endpoint}/${profile.id}`)
+			expect(deleted.ok(), await deleted.text()).toBe(true)
+		}
+	}
+	if (originalQualityDefinition) {
+		const restored = await page.request.put('/api/v1/quality-definitions', {
+			data: [originalQualityDefinition],
+		})
+		expect(restored.ok(), await restored.text()).toBe(true)
+		originalQualityDefinition = undefined
+	}
+})
+
 
 test('profiles: create language, delay with protocol switches, and release profiles', async ({ page }) => {
 	await signIn(page)
@@ -63,6 +90,17 @@ test('profiles: create language, delay with protocol switches, and release profi
 
 test('quality definitions: edit a size and import TRaSH quality sizes', async ({ page }) => {
 	await signIn(page)
+	const definitions = await page.request.get('/api/v1/quality-definitions')
+	expect(definitions.ok(), await definitions.text()).toBe(true)
+	const rows = await definitions.json() as { id: number, title: string, minSizeMbPerMinute: number | null, maxSizeMbPerMinute: number | null, preferredSizeMbPerMinute: number | null }[]
+	const web1080Definition = rows.find(item => item.title === 'WebDL-1080p')
+	expect(web1080Definition).toBeDefined()
+	originalQualityDefinition = {
+		id: web1080Definition!.id,
+		minSizeMbPerMinute: web1080Definition!.minSizeMbPerMinute,
+		maxSizeMbPerMinute: web1080Definition!.maxSizeMbPerMinute,
+		preferredSizeMbPerMinute: web1080Definition!.preferredSizeMbPerMinute,
+	}
 	await page.goto('/settings/quality')
 	const web1080 = page.getByRole('row').filter({ hasText: 'WebDL-1080p' }).first()
 	await expect(web1080).toBeVisible()

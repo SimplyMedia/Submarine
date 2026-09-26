@@ -4,6 +4,30 @@ import { signIn } from './setup'
 
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
 const metadataPort = process.env.E2E_MOCK_PORT_BASE ? Number(process.env.E2E_MOCK_PORT_BASE) : 5100
+let originalImportListConfig: { cleanLibraryLevel: string } | undefined
+
+test.afterEach(async ({ page }) => {
+	for (const [endpoint, name] of [
+		['/api/v1/notifications', 'E2E webhook connection'],
+		['/api/v1/download-clients', 'E2E blackhole client'],
+		['/api/v1/import-lists', 'E2E custom JSON list'],
+	] as const) {
+		const response = await page.request.get(endpoint, { params: { PageSize: 200 } })
+		if (!response.ok()) continue
+		const body = await response.json() as { id: number, name: string }[] | { items: { id: number, name: string }[] }
+		const entries = Array.isArray(body) ? body : body.items
+		for (const entry of entries.filter(item => item.name === name)) {
+			const deleted = await page.request.delete(`${endpoint}/${entry.id}`)
+			expect(deleted.ok(), await deleted.text()).toBe(true)
+		}
+	}
+	if (originalImportListConfig) {
+		const restored = await page.request.put('/api/v1/config/import-list', { data: originalImportListConfig })
+		expect(restored.ok(), await restored.text()).toBe(true)
+		originalImportListConfig = undefined
+	}
+})
+
 
 test('connect: add and test a webhook, then preserve its enabled event selections', async ({ page }) => {
 	await signIn(page)
@@ -70,6 +94,7 @@ test('download clients: add a blackhole client, test it, and persist removal tog
 	await expect(edit.getByLabel('Remove failed downloads')).toBeChecked()
 	await edit.getByLabel('Remove completed downloads').uncheck()
 	await edit.getByRole('button', { name: 'Save changes' }).click()
+	await expect(page.locator('.s-toast-title', { hasText: 'Download client saved' })).toBeVisible()
 	const listed = await page.request.get('/api/v1/download-clients')
 	const clientBody = await listed.json() as { items?: { id: number, name: string, removeCompleted: boolean, removeFailed: boolean }[], id?: number, name?: string, removeCompleted?: boolean, removeFailed?: boolean }[]
 	const clients = Array.isArray(clientBody) ? clientBody : clientBody.items ?? []
@@ -84,6 +109,9 @@ test('download clients: add a blackhole client, test it, and persist removal tog
 
 test('import lists: add and sync custom JSON, manage an exclusion, and save clean-library level', async ({ page }) => {
 	await signIn(page)
+	const configResponse = await page.request.get('/api/v1/config/import-list')
+	expect(configResponse.ok(), await configResponse.text()).toBe(true)
+	originalImportListConfig = await configResponse.json() as { cleanLibraryLevel: string }
 	const name = 'E2E custom JSON list'
 	const existing = await page.request.get('/api/v1/import-lists')
 	if (existing.ok()) {

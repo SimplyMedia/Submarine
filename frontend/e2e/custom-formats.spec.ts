@@ -3,6 +3,16 @@ import { expect, test } from '@playwright/test'
 import { signIn } from './setup'
 
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
+test.afterEach(async ({ page }) => {
+	const response = await page.request.get('/api/v1/custom-formats', { params: { PageSize: 200 } })
+	if (!response.ok()) return
+	const formats = (await response.json() as { items: { id: number, name: string }[] }).items
+	for (const format of formats.filter(item => item.name === 'E2E release modifier format' || item.name === 'E2E release modifier format import')) {
+		const deleted = await page.request.delete(`/api/v1/custom-formats/${format.id}`)
+		expect(deleted.ok(), await deleted.text()).toBe(true)
+	}
+})
+
 
 test('custom formats: create every spec type, export and re-import TRaSH JSON', async ({ page }) => {
 	await signIn(page)
