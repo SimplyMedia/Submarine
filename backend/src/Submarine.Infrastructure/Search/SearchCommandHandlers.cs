@@ -83,6 +83,36 @@ public sealed class MissingSearchCommandHandler(SubmarineDbContext db, Automatic
 	}
 }
 
+/// <summary>Searches every monitored, missing, aired episode.</summary>
+public sealed class MissingEpisodeSearchCommandHandler(
+	SubmarineDbContext db,
+	AutomaticSearchService automaticSearchService) : ICommandHandler<MissingEpisodeSearchCommand>
+{
+	/// <inheritdoc />
+	public async Task ExecuteAsync(
+		MissingEpisodeSearchCommand command,
+		ICommandContext context,
+		CancellationToken cancellationToken = default)
+	{
+		var now = DateTime.UtcNow;
+		var episodeIds = await db.Episodes.AsNoTracking()
+			.Where(episode => episode.Monitored
+				&& episode.Series.Monitored
+				&& episode.AirDateUtc != null && episode.AirDateUtc <= now
+				&& episode.Files.Count == 0)
+			.OrderBy(episode => episode.LastSearchTime ?? DateTime.MinValue)
+			.Select(episode => episode.Id)
+			.ToListAsync(cancellationToken);
+		for (var index = 0; index < episodeIds.Count; index++)
+		{
+			await automaticSearchService.SearchEpisodesAsync([episodeIds[index]], cancellationToken);
+			await context.ReportProgressAsync(episodeIds.Count == 0 ? 100 : (index + 1) * 100 / episodeIds.Count, cancellationToken: cancellationToken);
+		}
+		if (episodeIds.Count == 0)
+			await context.ReportProgressAsync(100, cancellationToken: cancellationToken);
+	}
+}
+
 /// <summary>
 ///     Searches every media version whose held file does not meet the quality profile cutoff and upgrades are
 ///     allowed.

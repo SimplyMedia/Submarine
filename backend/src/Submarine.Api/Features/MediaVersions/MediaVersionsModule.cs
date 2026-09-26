@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Submarine.Api.Features.Compat.Shared;
 using Submarine.Api.Common;
 using Submarine.Api.Features.Series;
 using Submarine.Core.Enums;
@@ -179,6 +180,7 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 	private static async Task<NoContent> DeleteAsync(
 		int id,
 		SubmarineDbContext db,
+		CompatVersionSelection selection,
 		[FromQuery] bool deleteFiles = false,
 		CancellationToken cancellationToken = default)
 	{
@@ -194,6 +196,11 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 		{
 			throw new ConflictException("The last version of a series or movie cannot be deleted");
 		}
+		await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+		if (version.SeriesId is { } seriesId)
+			await selection.RebindSeriesBeforeVersionRemovalAsync(seriesId, id, cancellationToken);
+		else if (version.MovieId is { } movieId)
+			await selection.RebindMovieBeforeVersionRemovalAsync(movieId, id, cancellationToken);
 
 		if (deleteFiles)
 		{
@@ -228,6 +235,7 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 
 		db.MediaVersions.Remove(version);
 		await db.SaveChangesAsync(cancellationToken);
+		await transaction.CommitAsync(cancellationToken);
 		return TypedResults.NoContent();
 	}
 

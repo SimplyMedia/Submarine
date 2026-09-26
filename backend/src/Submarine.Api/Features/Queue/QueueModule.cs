@@ -2,17 +2,16 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Submarine.Api.Common;
-using Submarine.Api.Modules;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Submarine.Core.Modules;
 using Submarine.Core.Commands;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
-using Submarine.Core.Download;
 using Submarine.Core.Languages;
 using Submarine.Core.Quality;
 using Submarine.Core.Events;
 using Submarine.Infrastructure.Commands;
-using Submarine.Infrastructure.Downloads;
 using Submarine.Infrastructure.Import;
 using Submarine.Infrastructure.Persistence;
 
@@ -21,8 +20,12 @@ namespace Submarine.Api.Features.Queue;
 /// <summary>
 ///     The download queue: tracked downloads awaiting completion or import.
 /// </summary>
-public sealed class QueueModule : IEndpointModule
+public sealed class QueueModule : IEndpointModule, IServiceModule
 {
+	/// <inheritdoc />
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<QueueRemovalService>();
+
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -88,10 +91,8 @@ public sealed class QueueModule : IEndpointModule
 	private static async Task<Results<NoContent, NotFound>> DeleteAsync(
 		int id,
 		SubmarineDbContext db,
-		IDownloadClientProvider clientProvider,
-		ICommandQueue commandQueue,
+		QueueRemovalService removalService,
 		IEventBus eventBus,
-		TimeProvider timeProvider,
 		[AsParameters] QueueDeleteOptions options,
 		CancellationToken cancellationToken)
 	{
@@ -101,7 +102,7 @@ public sealed class QueueModule : IEndpointModule
 			return TypedResults.NotFound();
 		}
 
-		await RemoveOneAsync(download, options, db, clientProvider, commandQueue, timeProvider, cancellationToken);
+		await removalService.RemoveAsync(download, options, cancellationToken);
 		await db.SaveChangesAsync(cancellationToken);
 		await eventBus.PublishAsync(new QueueUpdatedEvent(), cancellationToken);
 		return TypedResults.NoContent();
@@ -109,10 +110,8 @@ public sealed class QueueModule : IEndpointModule
 
 	private static async Task<Ok<BulkQueueDeleteResult>> BulkDeleteAsync(
 		SubmarineDbContext db,
-		IDownloadClientProvider clientProvider,
-		ICommandQueue commandQueue,
+		QueueRemovalService removalService,
 		IEventBus eventBus,
-		TimeProvider timeProvider,
 		IValidator<BulkQueueDeleteRequest> validator,
 		[FromBody] BulkQueueDeleteRequest request,
 		CancellationToken cancellationToken)
@@ -122,13 +121,14 @@ public sealed class QueueModule : IEndpointModule
 		var options = new QueueDeleteOptions(request.RemoveFromClient, request.Blocklist, request.SkipRedownload);
 		foreach (var download in downloads)
 		{
-			await RemoveOneAsync(download, options, db, clientProvider, commandQueue, timeProvider, cancellationToken);
+			await removalService.RemoveAsync(download, options, cancellationToken);
 		}
 
 		await db.SaveChangesAsync(cancellationToken);
 		await eventBus.PublishAsync(new QueueUpdatedEvent(), cancellationToken);
 		return TypedResults.Ok(new BulkQueueDeleteResult(downloads.Count));
 	}
+
 
 	private static async Task<Results<Ok<Command>, NotFound>> RetryAsync(
 		int id,
@@ -177,61 +177,6 @@ public sealed class QueueModule : IEndpointModule
 		return TypedResults.Ok(new ImportRunSummaryDto(summary.AnyImported, summary.Files.Count, summary.Files.Count(x => x.Imported)));
 	}
 
-	private static async Task RemoveOneAsync(
-		TrackedDownload download,
-		QueueDeleteOptions options,
-		SubmarineDbContext db,
-		IDownloadClientProvider clientProvider,
-		ICommandQueue commandQueue,
-		TimeProvider timeProvider,
-		CancellationToken cancellationToken)
-	{
-		if (options.RemoveFromClient ?? false)
-		{
-			var client = await clientProvider.GetAsync(download.DownloadClientId, cancellationToken);
-			if (client is not null)
-			{
-				try
-				{
-					await client.Instance.RemoveAsync(download.DownloadId, deleteData: true, cancellationToken);
-				}
-				catch (DownloadClientException)
-				{
-					// best effort; the row is still removed below
-				}
-			}
-		}
-
-		if (options.Blocklist ?? false)
-		{
-			db.BlocklistItems.Add(new BlocklistItem
-			{
-				ReleaseTitle = download.ReleaseTitle ?? download.Title,
-				Protocol = download.Protocol,
-				IndexerId = download.IndexerId,
-				SeriesId = download.SeriesId,
-				MovieId = download.MovieId,
-				EpisodeIds = download.EpisodeIds,
-				Reason = "Removed from queue",
-				Size = download.Size,
-				Date = timeProvider.GetUtcNow().UtcDateTime
-			});
-		}
-
-		if (!(options.SkipRedownload ?? false))
-		{
-			if (download.SeriesId is not null && download.EpisodeIds.Count > 0)
-			{
-				await commandQueue.EnqueueAsync(new EpisodeSearchCommand(download.EpisodeIds), CommandTrigger.SYSTEM, cancellationToken: cancellationToken);
-			}
-			else if (download.MovieId is { } movieId)
-			{
-				await commandQueue.EnqueueAsync(new MovieSearchCommand([movieId]), CommandTrigger.SYSTEM, cancellationToken: cancellationToken);
-			}
-		}
-
-		db.TrackedDownloads.Remove(download);
-	}
 
 	private static IQueryable<TrackedDownload> Base(SubmarineDbContext db)
 		=> db.TrackedDownloads

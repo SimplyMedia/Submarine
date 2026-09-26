@@ -1,9 +1,9 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Common;
 using Submarine.Api.Modules;
+using Submarine.Core.Modules;
 using Submarine.Core.Profiles;
 using Submarine.Core.Quality;
 using Submarine.Infrastructure.Persistence;
@@ -13,8 +13,11 @@ namespace Submarine.Api.Features.QualityProfiles;
 /// <summary>
 ///     Quality profile CRUD, schema, cloning and templates.
 /// </summary>
-public sealed class QualityProfilesModule : IEndpointModule
+public sealed class QualityProfilesModule : IEndpointModule, IServiceModule
 {
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<QualityProfileService>();
+
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -65,163 +68,51 @@ public sealed class QualityProfilesModule : IEndpointModule
 		return profile is null ? TypedResults.NotFound() : TypedResults.Ok(ToResource(profile));
 	}
 
-	private static async Task<Created<QualityProfileResource>> CreateAsync(
-		SubmarineDbContext db,
-		IValidator<QualityProfileRequest> validator,
+private static async Task<Created<QualityProfileResource>> CreateAsync(
+		QualityProfileService service,
 		QualityProfileRequest request,
 		CancellationToken cancellationToken)
 	{
-		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		await EnsureUniqueNameAsync(db, request.Name, null, cancellationToken);
-
-		var profile = new Core.Entities.QualityProfile();
-		ApplyRequest(profile, request);
-
-		db.QualityProfiles.Add(profile);
-		await db.SaveChangesAsync(cancellationToken);
-
+		var profile = await service.CreateAsync(request, cancellationToken);
 		return TypedResults.Created($"/api/v1/quality-profiles/{profile.Id}", ToResource(profile));
 	}
 
 	private static async Task<Created<QualityProfileResource>> CreateFromTemplateAsync(
 		string name,
-		SubmarineDbContext db,
+		QualityProfileService service,
 		CancellationToken cancellationToken)
 	{
-		var profile = QualityProfileTemplates.Create(name);
-		await EnsureUniqueNameAsync(db, profile.Name, null, cancellationToken);
-
-		db.QualityProfiles.Add(profile);
-		await db.SaveChangesAsync(cancellationToken);
-
+		var profile = await service.CreateFromTemplateAsync(name, cancellationToken);
 		return TypedResults.Created($"/api/v1/quality-profiles/{profile.Id}", ToResource(profile));
 	}
 
 	private static async Task<Results<Created<QualityProfileResource>, NotFound>> CloneAsync(
 		int id,
-		SubmarineDbContext db,
+		QualityProfileService service,
 		CancellationToken cancellationToken)
 	{
-		var source = await db.QualityProfiles.AsNoTracking().FirstOrDefaultAsync(profile => profile.Id == id, cancellationToken);
-		if (source is null)
-		{
-			return TypedResults.NotFound();
-		}
-
-		var clone = new Core.Entities.QualityProfile
-		{
-			Name = $"{source.Name} Copy",
-			UpgradeAllowed = source.UpgradeAllowed,
-			Cutoff = source.Cutoff,
-			Items = [.. source.Items],
-			FormatItems = [.. source.FormatItems],
-			MinFormatScore = source.MinFormatScore,
-			CutoffFormatScore = source.CutoffFormatScore,
-			MinUpgradeFormatScore = source.MinUpgradeFormatScore
-		};
-
-		var suffix = 2;
-		while (await db.QualityProfiles.AnyAsync(profile => profile.Name == clone.Name, cancellationToken))
-		{
-			clone.Name = $"{source.Name} Copy {suffix++}";
-		}
-
-		db.QualityProfiles.Add(clone);
-		await db.SaveChangesAsync(cancellationToken);
-
-		return TypedResults.Created($"/api/v1/quality-profiles/{clone.Id}", ToResource(clone));
+		var clone = await service.CloneAsync(id, cancellationToken);
+		return clone is null
+			? TypedResults.NotFound()
+			: TypedResults.Created($"/api/v1/quality-profiles/{clone.Id}", ToResource(clone));
 	}
 
 	private static async Task<Results<Ok<QualityProfileResource>, NotFound>> UpdateAsync(
 		int id,
-		SubmarineDbContext db,
-		IValidator<QualityProfileRequest> validator,
+		QualityProfileService service,
 		QualityProfileRequest request,
 		CancellationToken cancellationToken)
 	{
-		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		await EnsureUniqueNameAsync(db, request.Name, id, cancellationToken);
-
-		var profile = await db.QualityProfiles.FirstOrDefaultAsync(profile => profile.Id == id, cancellationToken);
-		if (profile is null)
-		{
-			return TypedResults.NotFound();
-		}
-
-		ApplyRequest(profile, request);
-		await db.SaveChangesAsync(cancellationToken);
-
-		return TypedResults.Ok(ToResource(profile));
+		var profile = await service.UpdateAsync(id, request, cancellationToken);
+		return profile is null ? TypedResults.NotFound() : TypedResults.Ok(ToResource(profile));
 	}
 
-	private static async Task<Results<NoContent, NotFound>> DeleteAsync(int id, SubmarineDbContext db, CancellationToken cancellationToken)
-	{
-		var profile = await db.QualityProfiles.FirstOrDefaultAsync(profile => profile.Id == id, cancellationToken);
-		if (profile is null)
-		{
-			return TypedResults.NotFound();
-		}
-
-		var usedByVersions = await db.MediaVersions
-			.Where(version => version.QualityProfileId == id)
-			.Select(version => version.Name)
-			.Take(5)
-			.ToListAsync(cancellationToken);
-		var usedByLists = await db.ImportLists
-			.Where(list => list.QualityProfileId == id)
-			.Select(list => list.Name)
-			.Take(5)
-			.ToListAsync(cancellationToken);
-		var usedByCollections = await db.Collections
-			.Where(collection => collection.QualityProfileId == id)
-			.Select(collection => collection.Title)
-			.Take(5)
-			.ToListAsync(cancellationToken);
-
-		if (usedByVersions.Count > 0 || usedByLists.Count > 0 || usedByCollections.Count > 0)
-		{
-			var users = string.Join(", ", usedByVersions.Concat(usedByLists).Concat(usedByCollections));
-
-			throw new Submarine.Core.Common.ConflictException(
-				$"Quality profile '{profile.Name}' is in use by: {users}");
-		}
-
-		db.QualityProfiles.Remove(profile);
-		await db.SaveChangesAsync(cancellationToken);
-
-		return TypedResults.NoContent();
-	}
-
-	private static async Task EnsureUniqueNameAsync(
-		SubmarineDbContext db,
-		string name,
-		int? excludeId,
+	private static async Task<Results<NoContent, NotFound>> DeleteAsync(
+		int id,
+		QualityProfileService service,
 		CancellationToken cancellationToken)
-	{
-		var exists = await db.QualityProfiles
-			.AnyAsync(profile => profile.Name == name && (excludeId == null || profile.Id != excludeId), cancellationToken);
+		=> await service.DeleteAsync(id, cancellationToken) ? TypedResults.NoContent() : TypedResults.NotFound();
 
-		if (exists)
-		{
-			throw new Submarine.Core.Common.ConflictException($"A quality profile named '{name}' already exists");
-		}
-	}
-
-	private static void ApplyRequest(Core.Entities.QualityProfile profile, QualityProfileRequest request)
-	{
-		profile.Name = request.Name;
-		profile.UpgradeAllowed = request.UpgradeAllowed;
-		profile.Cutoff = request.Cutoff;
-		profile.Items = [.. request.Items.Select(item => new Core.Entities.QualityProfileItem(
-			new QualityResolutionModel(
-				Enum.TryParse<QualitySource>(item.Quality.Source, out var source) ? source : null,
-				Enum.TryParse<QualityResolution>(item.Quality.Resolution, out var resolution) ? resolution : null),
-			item.Allowed))];
-		profile.FormatItems = [.. (request.FormatItems ?? []).Select(item => new Core.Entities.ProfileFormatItem(item.CustomFormatId, item.Score))];
-		profile.MinFormatScore = request.MinFormatScore;
-		profile.CutoffFormatScore = request.CutoffFormatScore;
-		profile.MinUpgradeFormatScore = request.MinUpgradeFormatScore;
-	}
 
 	private static QualityProfileResource ToResource(Core.Entities.QualityProfile profile)
 		=> new(

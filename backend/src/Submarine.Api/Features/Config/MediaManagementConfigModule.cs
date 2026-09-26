@@ -33,29 +33,7 @@ public sealed class MediaManagementConfigModule : IEndpointModule
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		var config = await db.MediaManagementConfig.SingleAsync(cancellationToken);
-
-		config.UseHardlinks = request.UseHardlinks;
-		config.ImportExtraFiles = request.ImportExtraFiles;
-		config.ExtraFileExtensions = request.ExtraFileExtensions;
-		config.MinimumFreeSpaceMb = request.MinimumFreeSpaceMb;
-		config.SkipFreeSpaceCheck = request.SkipFreeSpaceCheck;
-		config.WriteNfo = request.WriteNfo;
-		config.RecycleBinPath = request.RecycleBinPath;
-		config.RecycleBinCleanupDays = request.RecycleBinCleanupDays;
-		config.CreateEmptySeriesFolders = request.CreateEmptySeriesFolders;
-		config.CreateEmptyMovieFolders = request.CreateEmptyMovieFolders;
-		config.DeleteEmptyFolders = request.DeleteEmptyFolders;
-		config.UnmonitorDeletedFiles = request.UnmonitorDeletedFiles;
-		config.ChmodFolder = request.ChmodFolder;
-		config.ChmodFile = request.ChmodFile;
-		config.ChownGroup = request.ChownGroup;
-		config.DownloadPropersAndRepacks = request.DownloadPropersAndRepacks;
-		config.EnableMediaInfo = request.EnableMediaInfo;
-
-		await db.SaveChangesAsync(cancellationToken);
-
-		return TypedResults.Ok(MediaManagementConfigResource.FromEntity(config));
+		return TypedResults.Ok(await MediaManagementConfigService.UpdateAsync(db, request, cancellationToken));
 	}
 }
 

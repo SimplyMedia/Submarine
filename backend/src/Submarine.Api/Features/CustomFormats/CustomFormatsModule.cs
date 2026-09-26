@@ -7,6 +7,7 @@ using Submarine.Api.Common;
 using Submarine.Api.Features.QualityProfiles;
 using Submarine.Api.Modules;
 using Submarine.Core.CustomFormats;
+using Submarine.Core.Modules;
 using Submarine.Core.Enums;
 using Submarine.Core.Parser;
 using Submarine.Core.Release;
@@ -17,8 +18,10 @@ namespace Submarine.Api.Features.CustomFormats;
 /// <summary>
 ///     Custom format CRUD, TRaSH import and export, and live testing.
 /// </summary>
-public sealed class CustomFormatsModule : IEndpointModule
+public sealed class CustomFormatsModule : IEndpointModule, IServiceModule
 {
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<CustomFormatService>();
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -58,20 +61,11 @@ public sealed class CustomFormatsModule : IEndpointModule
 	}
 
 	private static async Task<Created<CustomFormatResource>> CreateAsync(
-		SubmarineDbContext db,
-		IValidator<CustomFormatRequest> validator,
+		CustomFormatService service,
 		CustomFormatRequest request,
 		CancellationToken cancellationToken)
 	{
-		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		await EnsureUniqueNameAsync(db, request.Name, null, cancellationToken);
-
-		var format = new Core.Entities.CustomFormat();
-		ApplyRequest(format, request);
-
-		db.CustomFormats.Add(format);
-		await db.SaveChangesAsync(cancellationToken);
-
+		var format = await service.CreateAsync(request, cancellationToken);
 		return TypedResults.Created($"/api/v1/custom-formats/{format.Id}", CustomFormatResource.FromEntity(format));
 	}
 
@@ -160,66 +154,17 @@ public sealed class CustomFormatsModule : IEndpointModule
 
 	private static async Task<Results<Ok<CustomFormatResource>, NotFound>> UpdateAsync(
 		int id,
-		SubmarineDbContext db,
-		IValidator<CustomFormatRequest> validator,
+		CustomFormatService service,
 		CustomFormatRequest request,
 		CancellationToken cancellationToken)
 	{
-		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		await EnsureUniqueNameAsync(db, request.Name, id, cancellationToken);
-
-		var format = await db.CustomFormats.FirstOrDefaultAsync(format => format.Id == id, cancellationToken);
-		if (format is null)
-		{
-			return TypedResults.NotFound();
-		}
-
-		ApplyRequest(format, request);
-		await db.SaveChangesAsync(cancellationToken);
-
-		return TypedResults.Ok(CustomFormatResource.FromEntity(format));
+		var format = await service.UpdateAsync(id, request, cancellationToken);
+		return format is null ? TypedResults.NotFound() : TypedResults.Ok(CustomFormatResource.FromEntity(format));
 	}
 
-	private static async Task<Results<NoContent, NotFound>> DeleteAsync(int id, SubmarineDbContext db, CancellationToken cancellationToken)
-	{
-		var format = await db.CustomFormats.FirstOrDefaultAsync(format => format.Id == id, cancellationToken);
-		if (format is null)
-		{
-			return TypedResults.NotFound();
-		}
+	private static async Task<Results<NoContent, NotFound>> DeleteAsync(int id, CustomFormatService service, CancellationToken cancellationToken)
+		=> await service.DeleteAsync(id, cancellationToken) ? TypedResults.NoContent() : TypedResults.NotFound();
 
-		db.CustomFormats.Remove(format);
-		await db.SaveChangesAsync(cancellationToken);
-
-		return TypedResults.NoContent();
-	}
-
-	private static async Task EnsureUniqueNameAsync(
-		SubmarineDbContext db,
-		string name,
-		int? excludeId,
-		CancellationToken cancellationToken)
-	{
-		var exists = await db.CustomFormats
-			.AnyAsync(format => format.Name == name && (excludeId == null || format.Id != excludeId), cancellationToken);
-
-		if (exists)
-		{
-			throw new Submarine.Core.Common.ConflictException($"A custom format named '{name}' already exists");
-		}
-	}
-
-	private static void ApplyRequest(Core.Entities.CustomFormat format, CustomFormatRequest request)
-	{
-		format.Name = request.Name;
-		format.IncludeCustomFormatWhenRenaming = request.IncludeCustomFormatWhenRenaming;
-		format.Specifications = [.. request.Specifications.Select(specification => new Core.Entities.CustomFormatSpecification(
-			specification.Name,
-			specification.Type,
-			specification.Negate,
-			specification.Required,
-			specification.Value))];
-	}
 }
 
 /// <summary>A custom format resource.</summary>

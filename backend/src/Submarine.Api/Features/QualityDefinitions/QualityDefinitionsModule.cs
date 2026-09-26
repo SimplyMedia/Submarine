@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Modules;
+using Submarine.Core.Modules;
 using Submarine.Core.Profiles;
 using Submarine.Infrastructure.Persistence;
 
@@ -11,8 +12,10 @@ namespace Submarine.Api.Features.QualityDefinitions;
 /// <summary>
 ///     Read and bulk update quality size definitions.
 /// </summary>
-public sealed class QualityDefinitionsModule : IEndpointModule
+public sealed class QualityDefinitionsModule : IEndpointModule, IServiceModule
 {
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<QualityDefinitionService>();
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -97,53 +100,24 @@ public sealed class QualityDefinitionsModule : IEndpointModule
 	}
 
 	private static async Task<NoContent> UpdateAsync(
-		SubmarineDbContext db,
+		QualityDefinitionService service,
 		IReadOnlyList<QualityDefinitionUpdate> updates,
 		CancellationToken cancellationToken)
 	{
-		foreach (var update in updates)
-		{
-			await ApplyAsync(db, update, cancellationToken);
-		}
-
-		await db.SaveChangesAsync(cancellationToken);
-
+		await service.UpdateAsync(updates, cancellationToken);
 		return TypedResults.NoContent();
 	}
 
 	private static async Task<NoContent> UpdateOneAsync(
 		int id,
-		SubmarineDbContext db,
+		QualityDefinitionService service,
 		QualityDefinitionUpdate update,
 		CancellationToken cancellationToken)
 	{
 		if (update.Id != id)
-		{
 			throw new FluentValidation.ValidationException("The id in the path and the body must match");
-		}
-
-		await ApplyAsync(db, update, cancellationToken);
-		await db.SaveChangesAsync(cancellationToken);
-
+		await service.UpdateAsync([update], cancellationToken);
 		return TypedResults.NoContent();
-	}
-
-	private static async Task ApplyAsync(
-		SubmarineDbContext db,
-		QualityDefinitionUpdate update,
-		CancellationToken cancellationToken)
-	{
-		var definition = await db.QualityDefinitions.FirstOrDefaultAsync(entry => entry.Id == update.Id, cancellationToken)
-			?? throw new KeyNotFoundException($"Quality definition {update.Id} does not exist");
-
-		if (update.MinSizeMbPerMinute is { } min && update.MaxSizeMbPerMinute is { } max && min > max)
-		{
-			throw new FluentValidation.ValidationException($"Quality definition {update.Id}: min size must not exceed max size");
-		}
-
-		definition.MinSizeMbPerMinute = update.MinSizeMbPerMinute;
-		definition.MaxSizeMbPerMinute = update.MaxSizeMbPerMinute;
-		definition.PreferredSizeMbPerMinute = update.PreferredSizeMbPerMinute;
 	}
 }
 

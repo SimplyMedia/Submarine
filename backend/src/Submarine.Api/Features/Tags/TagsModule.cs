@@ -13,8 +13,11 @@ namespace Submarine.Api.Features.Tags;
 /// <summary>
 ///     Tag endpoints with a per-tag usage detail.
 /// </summary>
-public sealed class TagsModule : IEndpointModule
+public sealed class TagsModule : IServiceModule, IEndpointModule
 {
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<TagService>();
+
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -56,50 +59,41 @@ public sealed class TagsModule : IEndpointModule
 	}
 
 	private static async Task<Results<Created<TagDto>, ProblemHttpResult>> CreateAsync(
-		SubmarineDbContext db,
+		TagService service,
 		IValidator<TagRequest> validator,
 		[FromBody] TagRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		if (await db.Tags.AnyAsync(x => x.Label == request.Label, cancellationToken))
-		{
-			return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: $"Tag '{request.Label}' already exists");
-		}
-
-		var tag = new Tag { Label = request.Label };
-		db.Tags.Add(tag);
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.Created($"/api/v1/tags/{tag.Id}", new TagDto(tag.Id, tag.Label));
+		var result = await service.CreateAsync(request.Label, cancellationToken);
+		return result.Tag is null
+			? TypedResults.Problem(statusCode: result.StatusCode, title: result.Error)
+			: TypedResults.Created($"/api/v1/tags/{result.Tag.Id}", new TagDto(result.Tag.Id, result.Tag.Label));
 	}
 
 	private static async Task<Results<Ok<TagDto>, ProblemHttpResult>> UpdateAsync(
 		int id,
-		SubmarineDbContext db,
+		TagService service,
 		IValidator<TagRequest> validator,
 		[FromBody] TagRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		var tag = await db.Tags.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
-			?? throw new KeyNotFoundException($"Tag {id} not found");
-		if (await db.Tags.AnyAsync(x => x.Label == request.Label && x.Id != id, cancellationToken))
-		{
-			return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: $"Tag '{request.Label}' already exists");
-		}
-
-		tag.Label = request.Label;
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.Ok(new TagDto(tag.Id, tag.Label));
+		var result = await service.UpdateAsync(id, request.Label, cancellationToken);
+		return result.Tag is null
+			? TypedResults.Problem(statusCode: result.StatusCode, title: result.Error)
+			: TypedResults.Ok(new TagDto(result.Tag.Id, result.Tag.Label));
 	}
 
-	private static async Task<NoContent> DeleteAsync(int id, SubmarineDbContext db, CancellationToken cancellationToken)
+	private static async Task<Results<NoContent, ProblemHttpResult>> DeleteAsync(
+		int id,
+		TagService service,
+		CancellationToken cancellationToken)
 	{
-		var tag = await db.Tags.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
-			?? throw new KeyNotFoundException($"Tag {id} not found");
-		db.Tags.Remove(tag);
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.NoContent();
+		var result = await service.DeleteAsync(id, cancellationToken);
+		return result.Tag is null
+			? TypedResults.Problem(statusCode: result.StatusCode, title: result.Error)
+			: TypedResults.NoContent();
 	}
 }
 

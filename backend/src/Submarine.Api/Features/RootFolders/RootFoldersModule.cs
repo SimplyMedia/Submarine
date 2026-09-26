@@ -14,8 +14,11 @@ namespace Submarine.Api.Features.RootFolders;
 /// <summary>
 ///     Library root folder endpoints.
 /// </summary>
-public sealed class RootFoldersModule : IEndpointModule
+public sealed class RootFoldersModule : IServiceModule, IEndpointModule
 {
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<RootFolderService>();
+
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -51,76 +54,49 @@ public sealed class RootFoldersModule : IEndpointModule
 
 	private static async Task<Results<Created<RootFolderDto>, ProblemHttpResult>> CreateAsync(
 		SubmarineDbContext db,
+		RootFolderService service,
 		IValidator<RootFolderRequest> validator,
 		[FromBody] RootFolderRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		var path = Path.GetFullPath(request.Path);
-		if (!Directory.Exists(path))
-		{
-			return TypedResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: $"Path '{request.Path}' does not exist");
-		}
-
-		if (await db.RootFolders.AnyAsync(x => x.Path == path, cancellationToken))
-		{
-			return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: $"Root folder '{path}' already exists");
-		}
-
-		var folder = new RootFolder { Path = path, MediaKind = request.MediaKind };
-		db.RootFolders.Add(folder);
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.Created($"/api/v1/root-folders/{folder.Id}", ToDto(folder, []));
+		var result = await service.CreateAsync(request.Path, request.MediaKind, cancellationToken);
+		return result.Folder is null
+			? TypedResults.Problem(statusCode: result.StatusCode, title: result.Error)
+			: TypedResults.Created($"/api/v1/root-folders/{result.Folder.Id}", ToDto(result.Folder, []));
 	}
 
 	private static async Task<Results<Ok<RootFolderDto>, ProblemHttpResult>> UpdateAsync(
 		int id,
 		SubmarineDbContext db,
+		RootFolderService service,
 		IValidator<RootFolderRequest> validator,
 		[FromBody] RootFolderRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		var folder = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
-			?? throw new KeyNotFoundException($"Root folder {id} not found");
-		var path = Path.GetFullPath(request.Path);
-		if (!Directory.Exists(path))
+		var result = await service.UpdateAsync(id, request.Path, request.MediaKind, cancellationToken);
+		if (result.Folder is null)
 		{
-			return TypedResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: $"Path '{request.Path}' does not exist");
+			return TypedResults.Problem(statusCode: result.StatusCode, title: result.Error);
 		}
 
-		if (await db.RootFolders.AnyAsync(x => x.Path == path && x.Id != id, cancellationToken))
-		{
-			return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: $"Root folder '{path}' already exists");
-		}
-
-		folder.Path = path;
-		folder.MediaKind = request.MediaKind;
-		await db.SaveChangesAsync(cancellationToken);
 		var mapped = await db.MediaVersions.AsNoTracking()
 			.Where(x => x.RootFolderId == id)
 			.Select(x => x.Path)
 			.ToListAsync(cancellationToken);
-		return TypedResults.Ok(ToDto(folder, mapped));
+		return TypedResults.Ok(ToDto(result.Folder, mapped));
 	}
 
-	private static async Task<Results<NoContent, ProblemHttpResult>> DeleteAsync(int id, SubmarineDbContext db, CancellationToken cancellationToken)
+	private static async Task<Results<NoContent, ProblemHttpResult>> DeleteAsync(
+		int id,
+		RootFolderService service,
+		CancellationToken cancellationToken)
 	{
-		var folder = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
-			?? throw new KeyNotFoundException($"Root folder {id} not found");
-		var inUse = await db.MediaVersions.AnyAsync(x => x.RootFolderId == id, cancellationToken)
-			|| await db.ImportLists.AnyAsync(x => x.RootFolderId == id, cancellationToken)
-			|| await db.Collections.AnyAsync(x => x.RootFolderId == id, cancellationToken);
-		if (inUse)
-		{
-			return TypedResults.Problem(
-				statusCode: StatusCodes.Status409Conflict,
-				title: $"Root folder '{folder.Path}' is still in use");
-		}
-
-		db.RootFolders.Remove(folder);
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.NoContent();
+		var result = await service.DeleteAsync(id, cancellationToken);
+		return result.Folder is null
+			? TypedResults.Problem(statusCode: result.StatusCode, title: result.Error)
+			: TypedResults.NoContent();
 	}
 
 	private static RootFolderDto ToDto(RootFolder folder, IReadOnlyList<string> mappedPaths)

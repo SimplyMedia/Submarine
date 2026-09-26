@@ -31,6 +31,8 @@ public sealed record MovieSearchCommand(IReadOnlyList<int> MovieIds) : CommandBa
 
 public sealed record MissingSearchCommand : CommandBase;
 
+public sealed record MissingEpisodeSearchCommand : CommandBase;
+
 public sealed record CutoffUnmetSearchCommand : CommandBase;
 
 public sealed record RssSyncCommand : CommandBase;

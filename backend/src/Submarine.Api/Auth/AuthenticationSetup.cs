@@ -166,8 +166,22 @@ public sealed class ApiKeyAuthenticationHandler(
 	/// <inheritdoc />
 	protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
 	{
-		var provided = Request.Headers["X-Api-Key"].FirstOrDefault()
-			?? Request.Query["apikey"].FirstOrDefault();
+		var headers = Request.Headers["X-Api-Key"];
+		var queryKeys = Request.Query["apikey"];
+		var accessTokens = Request.Query["access_token"];
+		if (headers.Count > 1 || queryKeys.Count > 1 || accessTokens.Count > 1)
+			return AuthenticateResult.Fail("Repeated API key credentials are not accepted");
+		if (accessTokens.Count == 1 && !IsCompatSignalRRequest(Request.Path))
+			return AuthenticateResult.Fail("Invalid API key credential location");
+		string? provided;
+		if (Request.Headers.ContainsKey("X-Api-Key"))
+			provided = headers.Count == 1 ? headers[0] : null;
+		else if (queryKeys.Count == 1)
+			provided = queryKeys[0];
+		else if (accessTokens.Count == 1)
+			provided = accessTokens[0];
+		else
+			provided = null;
 		if (string.IsNullOrEmpty(provided))
 		{
 			return AuthenticateResult.NoResult();
@@ -197,6 +211,12 @@ public sealed class ApiKeyAuthenticationHandler(
 		return Task.CompletedTask;
 	}
 
+	private static bool IsCompatSignalRRequest(PathString path)
+		=> path.Value is { } value
+			&& (value.Equals("/compat/sonarr/signalr/messages", StringComparison.OrdinalIgnoreCase)
+				|| value.Equals("/compat/sonarr/signalr/messages/negotiate", StringComparison.OrdinalIgnoreCase)
+				|| value.Equals("/compat/radarr/signalr/messages", StringComparison.OrdinalIgnoreCase)
+				|| value.Equals("/compat/radarr/signalr/messages/negotiate", StringComparison.OrdinalIgnoreCase));
 	private static bool FixedTimeEquals(string left, string right)
 	{
 		var leftBytes = Encoding.UTF8.GetBytes(left);
