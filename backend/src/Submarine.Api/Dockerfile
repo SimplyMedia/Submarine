@@ -2,7 +2,8 @@
 
 # ---- Frontend build ---------------------------------------------------------
 # Context for this Dockerfile is the repository root: docker build -f backend/src/Submarine.Api/Dockerfile .
-FROM node:22-alpine AS frontend
+# Build stages run on the build host; the output is portable, so only the runtime stage is per platform.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
 RUN corepack enable
 WORKDIR /src/frontend
 # corepack runs the pnpm version pinned in package.json; the packages allowed to run
@@ -13,7 +14,7 @@ COPY frontend/ .
 RUN pnpm generate
 
 # ---- Backend build ----------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src/backend
 
 # Restore cache: project files and central package management first.
@@ -34,7 +35,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 RUN apk add --no-cache icu-libs icu-data-full ffmpeg postgresql17-client tzdata su-exec
 
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
-	ASPNETCORE_URLS=http://+:8080 \
+	ASPNETCORE_HTTP_PORTS=8080 \
 	Database__Provider=Sqlite \
 	ConnectionStrings__Sqlite="Data Source=/config/submarine.db"
 

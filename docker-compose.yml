@@ -1,69 +1,41 @@
+# Builds Submarine and its services from source. To run the published images, use examples/docker-compose.yml.
+#   docker compose up -d --build
+
 services:
   submarine:
-    image: ghcr.io/simplymedia/submarine:latest
     build:
       context: .
       dockerfile: backend/src/Submarine.Api/Dockerfile
     ports:
       - "8989:8080"
     environment:
-      PUID: 1000
-      PGID: 1000
-      TZ: Etc/UTC
-      # Behind a reverse proxy only:
-      # ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       Metadata__BaseUrl: http://submarine-metadata:8080
+      Metadata__ApiKey: dev-internal-key
       Mappings__BaseUrl: http://submarine-mappings:8080
-      # Postgres instead of the default SQLite:
-      # Database__Provider: Postgres
-      # ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=submarine;Username=submarine;Password=submarine
+      Mappings__ApiKey: dev-internal-key
     volumes:
       - ./data/submarine:/config
-      # Keep downloads and the media library on one volume so imports can hardlink.
-      - /path/to/media:/media
     depends_on:
       submarine-metadata:
         condition: service_healthy
       submarine-mappings:
         condition: service_healthy
-    restart: unless-stopped
 
   submarine-metadata:
-    image: ghcr.io/simplymedia/submarine-metadata:latest
     build:
       context: backend
       dockerfile: src/Submarine.Metadata/Dockerfile
-    ports:
-      - "8990:8080"
     environment:
+      Auth__ApiKey: dev-internal-key
       Tmdb__ApiKey: ${TMDB_API_KEY:-}
       Tvdb__ApiKey: ${TVDB_API_KEY:-}
-    restart: unless-stopped
+      Tvdb__Pin: ${TVDB_PIN:-}
 
   submarine-mappings:
-    image: ghcr.io/simplymedia/submarine-mappings:latest
     build:
       context: backend
       dockerfile: src/Submarine.Mappings/Dockerfile
-    ports:
-      - "8991:8080"
     environment:
-      PUID: 1000
-      PGID: 1000
-      TZ: Etc/UTC
-      Auth__AdminApiKey: ${MAPPINGS_ADMIN_API_KEY:-}
+      Auth__AdminApiKey: dev-internal-key
     volumes:
       - ./data/mappings:/config
-    restart: unless-stopped
-
-  # Optional Postgres. Start with: docker compose --profile postgres up -d
-  postgres:
-    image: postgres:17-alpine
-    profiles: [postgres]
-    environment:
-      POSTGRES_DB: submarine
-      POSTGRES_USER: submarine
-      POSTGRES_PASSWORD: submarine
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    restart: unless-stopped

@@ -9,7 +9,10 @@ if [ "$(id -u)" = "0" ]; then
 	addgroup -g "$PGID" app 2>/dev/null || true
 	adduser -D -H -u "$PUID" -G app app 2>/dev/null || true
 	mkdir -p /config
-	chown -R "$PUID:$PGID" /config || true
+	# Only walk the volume when ownership is off, a recursive chown on every start gets slow.
+	if [ "$(stat -c %u:%g /config)" != "$PUID:$PGID" ]; then
+		chown -R "$PUID:$PGID" /config || true
+	fi
 	exec su-exec "$PUID:$PGID" "$@"
 fi
 
