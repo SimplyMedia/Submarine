@@ -75,6 +75,14 @@ public static class CompatCommandAdapter
 				"RefreshMovie" when HasOnly(fields, "movieId")
 					&& TryOptionalInt(request, "movieId", out var refreshMovieId)
 				=> new RefreshMovieCommand(refreshMovieId),
+				"RenameFiles" when facade.Equals("sonarr", StringComparison.OrdinalIgnoreCase) && HasOnly(fields, "seriesId", "files")
+					&& TryInt(request, "seriesId", out var renameSeriesId)
+					&& TryIds(request, "files", out var renameSeriesFileIds)
+				=> new RenameSeriesCommand(renameSeriesId, renameSeriesFileIds),
+				"RenameFiles" when facade.Equals("radarr", StringComparison.OrdinalIgnoreCase) && HasOnly(fields, "movieId", "files")
+					&& TryInt(request, "movieId", out var renameMovieId)
+					&& TryIds(request, "files", out var renameMovieFileIds)
+				=> new RenameMovieCommand(renameMovieId, renameMovieFileIds),
 				_ => null!
 			};
 		}
@@ -105,6 +113,8 @@ public static class CompatCommandAdapter
 			"RescanMovie" => "RescanMovie",
 			"RefreshSeries" => "RefreshSeries",
 			"RefreshMovie" => "RefreshMovie",
+			"RenameSeries" => "RenameFiles",
+			"RenameMovie" => "RenameFiles",
 			"MissingEpisodeSearch" => "MissingEpisodeSearch",
 			"DownloadMonitor" => "RefreshMonitoredDownloads",
 			"RssSync" => "RssSync",
@@ -234,13 +244,13 @@ public static class CompatCommandAdapter
 		{
 			return name is "SeriesSearch" or "SeasonSearch" or "EpisodeSearch"
 				or "MissingEpisodeSearch" or "RefreshMonitoredDownloads"
-				or "RescanSeries" or "RefreshSeries" or "RssSync" or "Backup";
+				or "RescanSeries" or "RefreshSeries" or "RssSync" or "Backup" or "RenameFiles";
 		}
 
 		if (string.Equals(facade, "radarr", StringComparison.OrdinalIgnoreCase))
 		{
 			return name is "MoviesSearch" or "RescanMovie" or "RefreshMovie"
-				or "RssSync" or "Backup";
+				or "RssSync" or "Backup" or "RenameFiles";
 		}
 
 		return false;

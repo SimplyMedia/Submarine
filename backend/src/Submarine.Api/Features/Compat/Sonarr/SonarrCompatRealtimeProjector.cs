@@ -2,11 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Features.Compat.Shared;
 using Submarine.Api.Features.Compat.Shared.Realtime;
 using Submarine.Core.Entities;
+using Submarine.Infrastructure.Library;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.Compat.Sonarr;
 
-public sealed class SonarrCompatRealtimeProjector(SubmarineDbContext db, CompatVersionSelection selection) : ISonarrCompatRealtimeProjector
+public sealed class SonarrCompatRealtimeProjector(SubmarineDbContext db, CompatVersionSelection selection, VersionMonitoringService monitoring) : ISonarrCompatRealtimeProjector
 {
 	public async Task<object?> ProjectSeriesAsync(int seriesId, CancellationToken cancellationToken)
 	{
@@ -32,18 +33,24 @@ public sealed class SonarrCompatRealtimeProjector(SubmarineDbContext db, CompatV
 		var file = episode.Files.Where(x => binding is not null && x.MediaVersionId == binding.MediaVersionId)
 			.OrderByDescending(x => x.DateAdded).ThenByDescending(x => x.Id).FirstOrDefault();
 		string? path = null;
-		if (file is not null && binding is not null)
+		var monitored = episode.Monitored && episode.Series.Monitored;
+		if (binding is not null)
 		{
-			var version = await db.MediaVersions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == binding.MediaVersionId, cancellationToken);
-			if (version is not null)
+			monitored = await monitoring.IsEpisodeMonitoredAsync(episodeId, binding.MediaVersionId!.Value, cancellationToken);
+			if (file is not null)
 			{
-				var rootPath = await db.RootFolders.AsNoTracking().Where(x => x.Id == version.RootFolderId).Select(x => x.Path).FirstOrDefaultAsync(cancellationToken);
-				if (rootPath is not null) path = Path.GetFullPath(Path.Combine(rootPath, version.Path, file.RelativePath));
+				var version = await db.MediaVersions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == binding.MediaVersionId, cancellationToken);
+				if (version is not null)
+				{
+					var rootPath = await db.RootFolders.AsNoTracking().Where(x => x.Id == version.RootFolderId).Select(x => x.Path).FirstOrDefaultAsync(cancellationToken);
+					if (rootPath is not null) path = Path.GetFullPath(Path.Combine(rootPath, version.Path, file.RelativePath));
+				}
 			}
 		}
+
 		return new { id = episode.Id, seriesId = episode.SeriesId, title = episode.Title, seasonNumber = episode.SeasonNumber,
 			episodeNumber = episode.EpisodeNumber, absoluteEpisodeNumber = episode.AbsoluteEpisodeNumber, airDate = episode.AirDate,
-			airDateUtc = episode.AirDateUtc, monitored = episode.Monitored, hasFile = file is not null, episodeFileId = file?.Id,
+			airDateUtc = episode.AirDateUtc, monitored, hasFile = file is not null, episodeFileId = file?.Id,
 			series = new { id = episode.Series.Id, title = episode.Series.Title, year = episode.Series.Year }, episodeFile = file is null ? null : new { id = file.Id, path, relativePath = file.RelativePath, size = file.Size } };
 	}
 }

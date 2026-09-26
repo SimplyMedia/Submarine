@@ -437,7 +437,7 @@ public sealed class LibraryMutator(
 
 		db.Series.Remove(series);
 		await db.SaveChangesAsync(cancellationToken);
-		await eventBus.PublishAsync(new SeriesDeletedEvent(id, series.Title, deleteFiles), cancellationToken);
+		await eventBus.PublishAsync(new SeriesDeletedEvent(id, series.Title, deleteFiles, series.Year ?? 0), cancellationToken);
 	}
 
 	/// <summary>
@@ -562,15 +562,25 @@ public sealed class LibraryMutator(
 		{
 			throw new KeyNotFoundException($"Episode {episodeId} not found");
 		}
+
+		await eventBus.PublishAsync(new EpisodeUpdatedEvent(episodeId), cancellationToken);
 	}
 
 	/// <summary>
 	///     Set the monitored flag of many episodes at once.
 	/// </summary>
 	public async Task<int> SetEpisodesMonitoredAsync(IReadOnlyList<int> episodeIds, bool monitored, CancellationToken cancellationToken = default)
-		=> await db.Episodes
+	{
+		var affected = await db.Episodes
 			.Where(x => episodeIds.Contains(x.Id))
 			.ExecuteUpdateAsync(set => set.SetProperty(x => x.Monitored, monitored), cancellationToken);
+		foreach (var episodeId in episodeIds)
+		{
+			await eventBus.PublishAsync(new EpisodeUpdatedEvent(episodeId), cancellationToken);
+		}
+
+		return affected;
+	}
 
 	private async Task ApplyVersionEditsAsync(IReadOnlyList<UpdateVersionOptions> edits, int? seriesId, int? movieId, CancellationToken cancellationToken)
 	{
