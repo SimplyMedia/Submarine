@@ -220,23 +220,17 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 			}
 		}
 
-		var indexerRequiredFlags = await db.Indexers.AsNoTracking()
+		// RequiredFlags is stored as JSON, so filter the (few) indexers in memory.
+		var indexers = await db.Indexers.AsNoTracking().Include(indexer => indexer.Tags).ToListAsync(cancellationToken);
+		var indexerRequiredFlags = indexers
 			.Where(indexer => indexer.RequiredFlags.Count > 0)
-			.ToDictionaryAsync(
-				indexer => indexer.Id,
-				indexer => (IReadOnlyList<IndexerFlag>)indexer.RequiredFlags,
-				cancellationToken);
-
-		var indexerTagIds = await db.Indexers.AsNoTracking().Include(indexer => indexer.Tags)
+			.ToDictionary(indexer => indexer.Id, indexer => (IReadOnlyList<IndexerFlag>)indexer.RequiredFlags);
+		var indexerTagIds = indexers
 			.Where(indexer => indexer.Tags.Count > 0)
-			.ToDictionaryAsync(
-				indexer => indexer.Id,
-				indexer => (IReadOnlyList<int>)indexer.Tags.Select(tag => tag.Id).ToList(),
-				cancellationToken);
-
-		var indexerSeasonSearchMaxAge = await db.Indexers.AsNoTracking()
+			.ToDictionary(indexer => indexer.Id, indexer => (IReadOnlyList<int>)indexer.Tags.Select(tag => tag.Id).ToList());
+		var indexerSeasonSearchMaxAge = indexers
 			.Where(indexer => indexer.SeasonSearchMaximumSingleEpisodeAge > 0)
-			.ToDictionaryAsync(indexer => indexer.Id, indexer => indexer.SeasonSearchMaximumSingleEpisodeAge, cancellationToken);
+			.ToDictionary(indexer => indexer.Id, indexer => indexer.SeasonSearchMaximumSingleEpisodeAge);
 
 		QualityModel? recentGrabQuality = null;
 		var recentGrabCustomFormatScore = 0;

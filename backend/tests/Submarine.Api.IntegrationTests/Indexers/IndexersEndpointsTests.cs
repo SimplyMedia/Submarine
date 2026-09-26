@@ -85,7 +85,7 @@ public sealed class IndexersEndpointsTests : IAsyncLifetime
 			limitsUnit = "DAY",
 			redirect = false,
 			requiredFlags = Array.Empty<string>(),
-			seasonSearchMaximumSingleEpisodeAge = (int?)null
+			seasonSearchMaximumSingleEpisodeAge = 0
 		});
 
 		response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);

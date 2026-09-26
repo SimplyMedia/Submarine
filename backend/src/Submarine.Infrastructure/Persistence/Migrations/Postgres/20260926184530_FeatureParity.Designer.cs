@@ -12,8 +12,8 @@ using Submarine.Infrastructure.Persistence;
 namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
 {
     [DbContext(typeof(PostgresSubmarineDbContext))]
-    [Migration("20260926175519_ParityDecisionEngineSeasonPack")]
-    partial class ParityDecisionEngineSeasonPack
+    [Migration("20260926184530_FeatureParity")]
+    partial class FeatureParity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -495,10 +495,14 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .HasColumnType("integer");
 
                     b.Property<bool>("RemoveCompleted")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("RemoveFailed")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("SettingsJson")
                         .IsRequired()
@@ -690,13 +694,35 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("ApplicationUrl")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
                     b.Property<int>("AuthMethod")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("AuthenticationRequired")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BackupFolder")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<int>("BackupIntervalDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BackupRetention")
                         .HasColumnType("integer");
 
                     b.Property<string>("Branch")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<int>("CertificateValidation")
+                        .HasColumnType("integer");
 
                     b.Property<string>("FeedToken")
                         .IsRequired()
@@ -713,8 +739,40 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
-                    b.Property<bool?>("UpdateAutomatically")
+                    b.Property<string>("ProxyBypassFilter")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<bool>("ProxyBypassLocalAddresses")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("ProxyEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ProxyHost")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("ProxyPassword")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("ProxyPort")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProxyType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProxyUsername")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("TrustedProxies")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -893,6 +951,22 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.ToTable("ImportLists");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.ImportListConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CleanLibraryLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImportListConfig");
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.ImportListExclusion", b =>
                 {
                     b.Property<int>("Id")
@@ -924,6 +998,46 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("ImportListExclusions");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DisabledUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EscalationLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ImportListId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("InitialFailure")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastSyncAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("MostRecentFailure")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImportListId")
+                        .IsUnique();
+
+                    b.ToTable("ImportListStatuses");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>
@@ -968,7 +1082,13 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Property<bool>("EnableRss")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("GrabLimit")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Implementation")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LimitsUnit")
                         .HasColumnType("integer");
 
                     b.Property<int?>("MinimumSeeders")
@@ -988,9 +1108,15 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Property<int?>("ProxyId")
                         .HasColumnType("integer");
 
-                    b.PrimitiveCollection<int[]>("RequiredFlags")
+                    b.Property<int?>("QueryLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Redirect")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RequiredFlags")
                         .IsRequired()
-                        .HasColumnType("integer[]");
+                        .HasColumnType("text");
 
                     b.Property<int?>("SeasonPackSeedTimeMinutes")
                         .HasColumnType("integer");
@@ -1010,6 +1136,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VipExpiration")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -1691,6 +1820,43 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DisabledUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EscalationLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("InitialFailure")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("MostRecentFailure")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("NotificationId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NotificationId")
+                        .IsUnique();
+
+                    b.ToTable("NotificationStatuses");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>
@@ -2612,6 +2778,17 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Navigation("Series");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.ImportList", "ImportList")
+                        .WithMany()
+                        .HasForeignKey("ImportListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ImportList");
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>
                 {
                     b.HasOne("Submarine.Core.Entities.DownloadClient", "DownloadClient")
@@ -2685,6 +2862,17 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Navigation("MediaVersion");
 
                     b.Navigation("Movie");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.Notification", "Notification")
+                        .WithMany()
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Notification");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>

@@ -41,6 +41,7 @@ public sealed class StubTorznabServer : IAsyncDisposable
 		  <torznab:attr name="seeders" value="50"/>
 		  <torznab:attr name="peers" value="60"/>
 		  <torznab:attr name="category" value="5040"/>
+		  <torznab:attr name="downloadvolumefactor" value="0"/>
 		</item>
 		</channel>
 		</rss>

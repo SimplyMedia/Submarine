@@ -71,6 +71,9 @@ public sealed class SqliteMigrationTests : IClassFixture<SubmarineApiFactory>
 				insert.CommandText = """
 					INSERT INTO DownloadClients (Name, Type, Enable, Priority, SettingsJson, RemoveCompleted, RemoveFailed, CreatedAt, UpdatedAt)
 					VALUES ('Legacy', 0, 1, 1, '{}', 0, 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+					INSERT INTO Indexers (Name, Implementation, Protocol, BaseUrl, SettingsJson, EnableRss, EnableAutomaticSearch, EnableInteractiveSearch, Priority, Categories, AnimeCategories, AnimeStandardFormatSearch, CreatedAt, UpdatedAt)
+					VALUES ('LegacyUsenet', 0, 1, 'http://nzb', '{}', 1, 1, 1, 25, '[]', '[]', 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+					       ('LegacyTorrent', 0, 0, 'http://torrent', '{}', 1, 1, 1, 25, '[]', '[]', 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
 					""";
 				insert.ExecuteNonQuery();
 			}
@@ -90,6 +93,14 @@ public sealed class SqliteMigrationTests : IClassFixture<SubmarineApiFactory>
 				reader.Read().ShouldBeTrue();
 				Convert.ToBoolean(reader.GetInt64(0)).ShouldBeTrue("an existing client must be backfilled to remove completed downloads");
 				Convert.ToBoolean(reader.GetInt64(1)).ShouldBeTrue("an existing client must be backfilled to remove failed downloads");
+				reader.Close();
+
+				query.CommandText = "SELECT Name, Redirect FROM Indexers ORDER BY Name";
+				using var indexers = query.ExecuteReader();
+				indexers.Read().ShouldBeTrue();
+				(indexers.GetString(0), Convert.ToBoolean(indexers.GetInt64(1))).ShouldBe(("LegacyTorrent", false));
+				indexers.Read().ShouldBeTrue();
+				(indexers.GetString(0), Convert.ToBoolean(indexers.GetInt64(1))).ShouldBe(("LegacyUsenet", true), "usenet indexers must redirect after the upgrade");
 			}
 		}
 		finally

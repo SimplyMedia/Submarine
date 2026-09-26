@@ -1079,7 +1079,13 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Property<bool>("EnableRss")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("GrabLimit")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Implementation")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LimitsUnit")
                         .HasColumnType("integer");
 
                     b.Property<int?>("MinimumSeeders")
@@ -1099,9 +1105,15 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Property<int?>("ProxyId")
                         .HasColumnType("integer");
 
-                    b.PrimitiveCollection<int[]>("RequiredFlags")
+                    b.Property<int?>("QueryLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Redirect")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RequiredFlags")
                         .IsRequired()
-                        .HasColumnType("integer[]");
+                        .HasColumnType("text");
 
                     b.Property<int?>("SeasonPackSeedTimeMinutes")
                         .HasColumnType("integer");
@@ -1121,6 +1133,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VipExpiration")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
