@@ -73,6 +73,17 @@ public sealed partial class UTorrentClient(
 		=> GuiRequestAsync($"action={(deleteData ? "removedata" : "remove")}&hash={downloadId}", cancellationToken);
 
 	/// <inheritdoc />
+	public override Task MarkImportedAsync(string downloadId, CancellationToken cancellationToken)
+	{
+		if (string.IsNullOrEmpty(Settings.PostImportCategory) || Settings.PostImportCategory == Settings.Category)
+			return Task.CompletedTask;
+
+		return GuiRequestAsync(
+			$"action=setprops&hash={downloadId}&s=label&v={Uri.EscapeDataString(Settings.PostImportCategory)}",
+			cancellationToken);
+	}
+
+	/// <inheritdoc />
 	protected override Task TestAsyncCore(CancellationToken cancellationToken)
 		=> GuiRequestAsync("list=1", cancellationToken);
 

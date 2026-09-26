@@ -79,6 +79,15 @@ public sealed class RTorrentClient(
 		=> CallAsync("d.erase", [downloadId], cancellationToken);
 
 	/// <inheritdoc />
+	public override Task MarkImportedAsync(string downloadId, CancellationToken cancellationToken)
+	{
+		if (string.IsNullOrEmpty(Settings.PostImportCategory) || Settings.PostImportCategory == Settings.Category)
+			return Task.CompletedTask;
+
+		return CallAsync("d.custom1.set", [downloadId, Settings.PostImportCategory], cancellationToken);
+	}
+
+	/// <inheritdoc />
 	protected override Task TestAsyncCore(CancellationToken cancellationToken)
 		=> CallAsync("system.client_version", [], cancellationToken);
 

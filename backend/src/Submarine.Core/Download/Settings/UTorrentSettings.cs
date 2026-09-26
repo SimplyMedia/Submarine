@@ -26,6 +26,9 @@ public record UTorrentSettings : DownloadClientSettings, IDownloadClientEndpoint
 	/// <summary>Label torrents are added under and owned by</summary>
 	public string? Category { get; init; }
 
+	/// <summary>Label torrents are moved to after import, if different from <see cref="Category" /></summary>
+	public string? PostImportCategory { get; init; }
+
 	/// <summary>Whether torrents are added paused</summary>
 	public bool AddStopped { get; init; }
 

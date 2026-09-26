@@ -20,6 +20,9 @@ public record DownloadStationSettings : DownloadClientSettings, IDownloadClientE
 	/// <summary>Password of the account</summary>
 	public string Password { get; init; } = string.Empty;
 
+	/// <summary>Subfolder of the default destination tasks are placed in, if set; mutually exclusive with <see cref="Directory" /></summary>
+	public string? Category { get; init; }
+
 	/// <summary>Destination folder tasks are created in, if set</summary>
 	public string? Directory { get; init; }
 }

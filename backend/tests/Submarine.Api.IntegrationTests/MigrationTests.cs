@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Submarine.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +46,56 @@ public sealed class SqliteMigrationTests : IClassFixture<SubmarineApiFactory>
 			using var command = connection.CreateCommand();
 			command.CommandText = sql;
 			return Convert.ToInt32(command.ExecuteScalar());
+		}
+	}
+
+	[Fact]
+	public async Task Migrations_ShouldBackfillRemoveCompletedAndFailed_ForExistingDownloadClientRows()
+	{
+		var dbPath = Path.Combine(Path.GetTempPath(), $"submarine-parity-migrate-{Guid.NewGuid():N}.db");
+		try
+		{
+			var options = new DbContextOptionsBuilder<SqliteSubmarineDbContext>()
+				.UseSqlite($"Data Source={dbPath}")
+				.Options;
+
+			await using (var db = new SqliteSubmarineDbContext(options, TimeProvider.System))
+			{
+				await db.GetService<IMigrator>().MigrateAsync("20260926124842_Initial");
+			}
+
+			using (var connection = new SqliteConnection($"Data Source={dbPath}"))
+			{
+				connection.Open();
+				using var insert = connection.CreateCommand();
+				insert.CommandText = """
+					INSERT INTO DownloadClients (Name, Type, Enable, Priority, SettingsJson, RemoveCompleted, RemoveFailed, CreatedAt, UpdatedAt)
+					VALUES ('Legacy', 0, 1, 1, '{}', 0, 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+					""";
+				insert.ExecuteNonQuery();
+			}
+
+			await using (var db = new SqliteSubmarineDbContext(options, TimeProvider.System))
+			{
+				await db.GetService<IMigrator>().MigrateAsync();
+			}
+
+			using (var connection = new SqliteConnection($"Data Source={dbPath}"))
+			{
+				connection.Open();
+				using var query = connection.CreateCommand();
+				query.CommandText = "SELECT RemoveCompleted, RemoveFailed FROM DownloadClients WHERE Name = 'Legacy'";
+				using var reader = query.ExecuteReader();
+
+				reader.Read().ShouldBeTrue();
+				Convert.ToBoolean(reader.GetInt64(0)).ShouldBeTrue("an existing client must be backfilled to remove completed downloads");
+				Convert.ToBoolean(reader.GetInt64(1)).ShouldBeTrue("an existing client must be backfilled to remove failed downloads");
+			}
+		}
+		finally
+		{
+			if (File.Exists(dbPath))
+				File.Delete(dbPath);
 		}
 	}
 

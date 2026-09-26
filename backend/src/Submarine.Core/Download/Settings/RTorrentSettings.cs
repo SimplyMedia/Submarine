@@ -26,6 +26,9 @@ public record RTorrentSettings : DownloadClientSettings, IDownloadClientEndpoint
 	/// <summary>Custom1 label torrents are added under and owned by</summary>
 	public string? Category { get; init; }
 
+	/// <summary>Custom1 label torrents are moved to after import, if different from <see cref="Category" /></summary>
+	public string? PostImportCategory { get; init; }
+
 	/// <summary>Directory torrents are downloaded into, if set</summary>
 	public string? Directory { get; init; }
 

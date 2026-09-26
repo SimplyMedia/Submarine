@@ -162,4 +162,32 @@ public class UTorrentClientTests
 
 		exception.Message.ShouldContain("token");
 	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldSetLabel_WhenPostImportCategoryDiffersFromCategory()
+	{
+		var handler = new StubHttpHandler((request, _) =>
+			request.RequestUri!.PathAndQuery.EndsWith("/token.html") ? TokenPage() : ListResponse());
+		var client = new UTorrentClient(Settings() with { PostImportCategory = "imported" }, 5, "ut",
+			new HttpClient(handler));
+
+		await client.MarkImportedAsync("AAAA", TestContext.Current.CancellationToken);
+
+		var setprops = handler.Requests.Single(request => request.Url.Contains("action=setprops"));
+		setprops.Url.ShouldContain("hash=AAAA");
+		setprops.Url.ShouldContain("s=label");
+		setprops.Url.ShouldContain("v=imported");
+	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldNotCall_WhenPostImportCategoryMatchesCategory()
+	{
+		var handler = new StubHttpHandler((request, _) =>
+			request.RequestUri!.PathAndQuery.EndsWith("/token.html") ? TokenPage() : ListResponse());
+		var client = new UTorrentClient(Settings() with { PostImportCategory = "tv" }, 5, "ut", new HttpClient(handler));
+
+		await client.MarkImportedAsync("AAAA", TestContext.Current.CancellationToken);
+
+		handler.Requests.Count.ShouldBe(0);
+	}
 }

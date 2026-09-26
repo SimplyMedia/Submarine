@@ -482,10 +482,14 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .HasColumnType("integer");
 
                     b.Property<bool>("RemoveCompleted")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("RemoveFailed")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("SettingsJson")
                         .IsRequired()
