@@ -136,6 +136,9 @@ public class SubmarineDbContext(DbContextOptions options, TimeProvider timeProvi
 	/// <summary>Notifications.</summary>
 	public DbSet<Notification> Notifications => Set<Notification>();
 
+	/// <summary>Notification runtime statuses.</summary>
+	public DbSet<NotificationStatus> NotificationStatuses => Set<NotificationStatus>();
+
 	/// <summary>Command queue rows.</summary>
 	public DbSet<Command> Commands => Set<Command>();
 

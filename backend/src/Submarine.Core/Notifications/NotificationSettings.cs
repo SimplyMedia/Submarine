@@ -346,3 +346,198 @@ public sealed record AppriseSettings : NotificationSettings
 	/// <summary>Limit delivery to targets with these tags.</summary>
 	public List<string> Tags { get; init; } = [];
 }
+
+/// <summary>Join push notification settings.</summary>
+public sealed record JoinSettings : NotificationSettings
+{
+	/// <summary>Join API key.</summary>
+	public string ApiKey { get; init; } = string.Empty;
+
+	/// <summary>Comma separated device names to push to, empty for all devices.</summary>
+	public string? DeviceNames { get; init; }
+
+	/// <summary>Message priority between -2 and 2.</summary>
+	public int Priority { get; init; }
+}
+
+/// <summary>Mailgun email settings.</summary>
+public sealed record MailgunSettings : NotificationSettings
+{
+	/// <summary>Mailgun API key.</summary>
+	public string ApiKey { get; init; } = string.Empty;
+
+	/// <summary>Use the EU API endpoint instead of the US one.</summary>
+	public bool UseEuEndpoint { get; init; }
+
+	/// <summary>From address.</summary>
+	public string From { get; init; } = string.Empty;
+
+	/// <summary>Verified sending domain configured in Mailgun.</summary>
+	public string SenderDomain { get; init; } = string.Empty;
+
+	/// <summary>Recipient addresses.</summary>
+	public List<string> Recipients { get; init; } = [];
+}
+
+/// <summary>Notifiarr relay settings.</summary>
+public sealed record NotifiarrSettings : NotificationSettings
+{
+	/// <summary>Notifiarr API key.</summary>
+	public string ApiKey { get; init; } = string.Empty;
+}
+
+/// <summary>Prowl settings.</summary>
+public sealed record ProwlSettings : NotificationSettings
+{
+	/// <summary>Prowl API key.</summary>
+	public string ApiKey { get; init; } = string.Empty;
+
+	/// <summary>Message priority between -2 and 2.</summary>
+	public int Priority { get; init; }
+}
+
+/// <summary>Pushcut settings.</summary>
+public sealed record PushcutSettings : NotificationSettings
+{
+	/// <summary>Name of the Pushcut notification to trigger.</summary>
+	public string NotificationName { get; init; } = string.Empty;
+
+	/// <summary>Pushcut API key.</summary>
+	public string ApiKey { get; init; } = string.Empty;
+
+	/// <summary>Mark the notification as time sensitive.</summary>
+	public bool TimeSensitive { get; init; }
+}
+
+/// <summary>Pushsafer settings.</summary>
+public sealed record PushsaferSettings : NotificationSettings
+{
+	/// <summary>Pushsafer API key.</summary>
+	public string ApiKey { get; init; } = string.Empty;
+
+	/// <summary>Device group id or device ids to push to, empty for all devices.</summary>
+	public List<string> DeviceIds { get; init; } = [];
+
+	/// <summary>Message priority between -2 and 2.</summary>
+	public int Priority { get; init; }
+
+	/// <summary>Retry interval in seconds for emergency priority, 60 to 10800.</summary>
+	public int Retry { get; init; }
+
+	/// <summary>Maximum retry duration in seconds for emergency priority, 60 to 10800.</summary>
+	public int Expire { get; init; }
+
+	/// <summary>Notification sound number, 0 to 62.</summary>
+	public string? Sound { get; init; }
+
+	/// <summary>Vibration pattern number, 1 to 3.</summary>
+	public string? Vibration { get; init; }
+
+	/// <summary>Icon number, 1 to 181.</summary>
+	public string? Icon { get; init; }
+
+	/// <summary>Icon color in hex format.</summary>
+	public string? IconColor { get; init; }
+}
+
+/// <summary>SendGrid email settings.</summary>
+public sealed record SendGridSettings : NotificationSettings
+{
+	/// <summary>SendGrid API key.</summary>
+	public string ApiKey { get; init; } = string.Empty;
+
+	/// <summary>From address.</summary>
+	public string From { get; init; } = string.Empty;
+
+	/// <summary>Recipient addresses.</summary>
+	public List<string> Recipients { get; init; } = [];
+}
+
+/// <summary>Signal messenger settings, sent through a signal-cli REST API instance.</summary>
+public sealed record SignalSettings : NotificationSettings
+{
+	/// <summary>Hostname or ip of the signal-cli REST API.</summary>
+	public string Host { get; init; } = string.Empty;
+
+	/// <summary>HTTP port.</summary>
+	public int Port { get; init; } = 8080;
+
+	/// <summary>Connect using https.</summary>
+	public bool UseSsl { get; init; }
+
+	/// <summary>Registered sender phone number.</summary>
+	public string SenderNumber { get; init; } = string.Empty;
+
+	/// <summary>Recipient phone number or group id.</summary>
+	public string ReceiverId { get; init; } = string.Empty;
+
+	/// <summary>Basic auth username.</summary>
+	public string? AuthUsername { get; init; }
+
+	/// <summary>Basic auth password.</summary>
+	public string? AuthPassword { get; init; }
+}
+
+/// <summary>Simplepush settings.</summary>
+public sealed record SimplepushSettings : NotificationSettings
+{
+	/// <summary>Simplepush key.</summary>
+	public string Key { get; init; } = string.Empty;
+
+	/// <summary>Optional encryption password configured in the Simplepush app.</summary>
+	public string? Event { get; init; }
+}
+
+/// <summary>Synology DiskStation media indexer settings.</summary>
+public sealed record SynologyIndexerSettings : NotificationSettings
+{
+	/// <summary>Update the Synology media index on media events.</summary>
+	public bool UpdateLibrary { get; init; } = true;
+}
+
+/// <summary>Twitter/X settings. Requires a user supplied developer app and access tokens.</summary>
+public sealed record TwitterSettings : NotificationSettings
+{
+	/// <summary>OAuth1 consumer key of the Twitter developer app.</summary>
+	public string ConsumerKey { get; init; } = string.Empty;
+
+	/// <summary>OAuth1 consumer secret of the Twitter developer app.</summary>
+	public string ConsumerSecret { get; init; } = string.Empty;
+
+	/// <summary>OAuth1 access token of the authorizing account.</summary>
+	public string AccessToken { get; init; } = string.Empty;
+
+	/// <summary>OAuth1 access token secret of the authorizing account.</summary>
+	public string AccessTokenSecret { get; init; } = string.Empty;
+
+	/// <summary>Screen name mentioned in tweets or messaged directly.</summary>
+	public string? Mention { get; init; }
+
+	/// <summary>Send a direct message to <see cref="Mention" /> instead of posting a tweet.</summary>
+	public bool DirectMessage { get; init; } = true;
+}
+
+/// <summary>
+///     Trakt collection sync settings. Authenticated via an OAuth device code flow started and polled through
+///     the notifications API using a user supplied (or instance default) Trakt developer app.
+/// </summary>
+public sealed record TraktSettings : NotificationSettings
+{
+	/// <summary>Trakt app client id, falls back to the Trakt:ClientId setting when empty.</summary>
+	public string? ClientId { get; init; }
+
+	/// <summary>Trakt app client secret, falls back to the Trakt:ClientSecret setting when empty.</summary>
+	public string? ClientSecret { get; init; }
+
+	/// <summary>OAuth access token, obtained through the device code flow.</summary>
+	public string AccessToken { get; init; } = string.Empty;
+
+	/// <summary>OAuth refresh token, obtained through the device code flow.</summary>
+	public string RefreshToken { get; init; } = string.Empty;
+
+	/// <summary>UTC expiration of <see cref="AccessToken" />.</summary>
+	public DateTime ExpiresAt { get; init; }
+
+	/// <summary>Trakt username the tokens authorize, for display only.</summary>
+	public string? AuthUser { get; init; }
+}

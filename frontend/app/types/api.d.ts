@@ -7318,6 +7318,156 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/trakt/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TraktAuthorizeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TraktAuthorizeResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/trakt/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TraktPollRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TraktPollResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/movies": {
         parameters: {
             query?: never;
@@ -19571,12 +19721,14 @@ export interface components {
             type: string;
             /** @description Field descriptors. */
             fields: components["schemas"]["NotificationFieldDescriptor"][];
+            /** @description Events this notification type can deliver, driving which toggles the UI shows. */
+            supportedEvents: string[];
         };
         /**
          * @description Type of a notification.
          * @enum {unknown}
          */
-        NotificationType: "DISCORD" | "TELEGRAM" | "WEBHOOK" | "SLACK" | "PUSHOVER" | "PUSHBULLET" | "GOTIFY" | "KODI" | "CUSTOM_SCRIPT" | "PLEX" | "EMBY" | "JELLYFIN" | "EMAIL" | "NTFY" | "APPRISE";
+        NotificationType: "DISCORD" | "TELEGRAM" | "WEBHOOK" | "SLACK" | "PUSHOVER" | "PUSHBULLET" | "GOTIFY" | "KODI" | "CUSTOM_SCRIPT" | "PLEX" | "EMBY" | "JELLYFIN" | "EMAIL" | "NTFY" | "APPRISE" | "JOIN" | "MAILGUN" | "NOTIFIARR" | "PROWL" | "PUSHCUT" | "PUSHSAFER" | "SENDGRID" | "SIGNAL" | "SIMPLEPUSH" | "SYNOLOGY_INDEXER" | "TWITTER" | "TRAKT";
         /** @description A single page of items. */
         PagedResultOfBlocklistItemDto: {
             items: components["schemas"]["BlocklistItemDto"][];
@@ -21017,6 +21169,38 @@ export interface components {
          * @enum {unknown}
          */
         Theme: "AUTO" | "LIGHT" | "DARK";
+        /** @description Starts a Trakt OAuth device code flow. */
+        TraktAuthorizeRequest: {
+            /** @description Trakt app client id, falls back to the instance's Trakt:ClientId setting. */
+            clientId: null | string;
+        };
+        /** @description The device code the user must enter at the verification url. */
+        TraktAuthorizeResponse: {
+            deviceCode: string;
+            userCode: string;
+            verificationUrl: string;
+            /** Format: int32 */
+            expiresIn: number;
+            /** Format: int32 */
+            interval: number;
+        };
+        /** @description Polls once for the outcome of a previously started device code flow. */
+        TraktPollRequest: {
+            /** @description Trakt app client id, falls back to the instance's Trakt:ClientId setting. */
+            clientId: null | string;
+            /** @description Trakt app client secret, falls back to the instance's Trakt:ClientSecret setting. */
+            clientSecret: null | string;
+            /** @description Device code returned by TraktAuthorizeResponse. */
+            deviceCode: string;
+        };
+        /** @description Outcome of a device code poll: PENDING, AUTHORIZED, DENIED or EXPIRED. Tokens are set only when AUTHORIZED. */
+        TraktPollResponse: {
+            status: string;
+            accessToken: null | string;
+            refreshToken: null | string;
+            /** Format: date-time */
+            expiresAt: null | string;
+        };
         /** @description A TRaSH custom format. */
         TrashFormat: {
             /** @description Name of the format. */

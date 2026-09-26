@@ -1746,6 +1746,43 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DisabledUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EscalationLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("InitialFailure")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("MostRecentFailure")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("NotificationId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NotificationId")
+                        .IsUnique();
+
+                    b.ToTable("NotificationStatuses");
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>
                 {
                     b.Property<int>("Id")
@@ -2749,6 +2786,17 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Navigation("MediaVersion");
 
                     b.Navigation("Movie");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.Notification", "Notification")
+                        .WithMany()
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Notification");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>

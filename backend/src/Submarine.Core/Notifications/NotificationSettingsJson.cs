@@ -248,6 +248,86 @@ public static class NotificationSettingsJson
 				Select("notificationType", "Notification type", false, ["info", "success", "warning", "failure"], "info"),
 				Tags("tags", "Tags")
 			],
+			NotificationType.JOIN =>
+			[
+				Password("apiKey", "API Key", true),
+				Text("deviceNames", "Device names", false, "Comma separated device names, empty for all devices"),
+				Number("priority", "Priority", false, "Between -2 (silent) and 2 (emergency)", "0")
+			],
+			NotificationType.MAILGUN =>
+			[
+				Password("apiKey", "API Key", true),
+				Checkbox("useEuEndpoint", "Use EU endpoint"),
+				Text("from", "From address", true),
+				Text("senderDomain", "Sender domain", true, "Verified sending domain configured in Mailgun"),
+				Tags("recipients", "Recipients", true, null, "Recipient addresses")
+			],
+			NotificationType.NOTIFIARR =>
+			[
+				Password("apiKey", "API Key", true)
+			],
+			NotificationType.PROWL =>
+			[
+				Password("apiKey", "API Key", true),
+				Number("priority", "Priority", false, "Between -2 (very low) and 2 (emergency)", "0")
+			],
+			NotificationType.PUSHCUT =>
+			[
+				Text("notificationName", "Notification name", true, "Name of the Pushcut notification to trigger"),
+				Password("apiKey", "API Key", true),
+				Checkbox("timeSensitive", "Time sensitive")
+			],
+			NotificationType.PUSHSAFER =>
+			[
+				Password("apiKey", "API Key", true),
+				Tags("deviceIds", "Device IDs", false, null, "Device group id or device ids, empty for all devices"),
+				Number("priority", "Priority", false, "Between -2 (silent) and 2 (emergency)", "0"),
+				Number("retry", "Retry", false, "Seconds between emergency retries, 60 to 10800"),
+				Number("expire", "Expire", false, "Maximum retry duration in seconds, 60 to 10800"),
+				Text("sound", "Sound", false, "Sound number 0 to 62"),
+				Text("vibration", "Vibration", false, "Vibration pattern 1 to 3"),
+				Text("icon", "Icon", false, "Icon number 1 to 181"),
+				Text("iconColor", "Icon color", false, "Hex color, e.g. #FF0000")
+			],
+			NotificationType.SENDGRID =>
+			[
+				Password("apiKey", "API Key", true),
+				Text("from", "From address", true),
+				Tags("recipients", "Recipients", true, null, "Recipient addresses")
+			],
+			NotificationType.SIGNAL =>
+			[
+				Text("host", "Host", true),
+				Number("port", "Port", false, null, "8080"),
+				Checkbox("useSsl", "Use SSL"),
+				Password("senderNumber", "Sender number", true, "Registered signal-cli phone number"),
+				Text("receiverId", "Receiver", true, "Recipient phone number or group id"),
+				Text("authUsername", "Username"),
+				Password("authPassword", "Password", false)
+			],
+			NotificationType.SIMPLEPUSH =>
+			[
+				Password("key", "Key", true),
+				Text("event", "Encryption password", false, "Optional encryption password configured in the Simplepush app")
+			],
+			NotificationType.SYNOLOGY_INDEXER =>
+			[
+				Checkbox("updateLibrary", "Update library", true)
+			],
+			NotificationType.TWITTER =>
+			[
+				Password("consumerKey", "Consumer key", true, "Twitter/X developer app consumer key"),
+				Password("consumerSecret", "Consumer secret", true),
+				Password("accessToken", "Access token", true),
+				Password("accessTokenSecret", "Access token secret", true),
+				Text("mention", "Mention", false, "Screen name to mention or message"),
+				Checkbox("directMessage", "Send as direct message", true)
+			],
+			NotificationType.TRAKT =>
+			[
+				Text("clientId", "Client id", false, "Trakt app client id, falls back to the Trakt:ClientId setting"),
+				Password("clientSecret", "Client secret", false, "Trakt app client secret, falls back to the Trakt:ClientSecret setting")
+			],
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown notification type")
 		};
 
@@ -275,6 +355,18 @@ public static class NotificationSettingsJson
 			NotificationType.EMAIL => typeof(EmailSettings),
 			NotificationType.NTFY => typeof(NtfySettings),
 			NotificationType.APPRISE => typeof(AppriseSettings),
+			NotificationType.JOIN => typeof(JoinSettings),
+			NotificationType.MAILGUN => typeof(MailgunSettings),
+			NotificationType.NOTIFIARR => typeof(NotifiarrSettings),
+			NotificationType.PROWL => typeof(ProwlSettings),
+			NotificationType.PUSHCUT => typeof(PushcutSettings),
+			NotificationType.PUSHSAFER => typeof(PushsaferSettings),
+			NotificationType.SENDGRID => typeof(SendGridSettings),
+			NotificationType.SIGNAL => typeof(SignalSettings),
+			NotificationType.SIMPLEPUSH => typeof(SimplepushSettings),
+			NotificationType.SYNOLOGY_INDEXER => typeof(SynologyIndexerSettings),
+			NotificationType.TWITTER => typeof(TwitterSettings),
+			NotificationType.TRAKT => typeof(TraktSettings),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown notification type")
 		};
 
@@ -365,6 +457,99 @@ public static class NotificationSettingsJson
 				if (string.IsNullOrWhiteSpace(s.ConfigurationKey) && s.StatelessUrls.Count == 0)
 				{
 					Add(errors, "statelessUrls", "must not be empty when no configuration key is set");
+				}
+
+				break;
+			case JoinSettings s:
+				Require(errors, s.ApiKey, "apiKey");
+				if (s.Priority is < -2 or > 2)
+				{
+					Add(errors, "priority", "must be between -2 and 2");
+				}
+
+				break;
+			case MailgunSettings s:
+				Require(errors, s.ApiKey, "apiKey");
+				Require(errors, s.From, "from");
+				Require(errors, s.SenderDomain, "senderDomain");
+				if (s.Recipients.Count == 0)
+				{
+					Add(errors, "recipients", "must not be empty");
+				}
+
+				break;
+			case NotifiarrSettings s:
+				Require(errors, s.ApiKey, "apiKey");
+				break;
+			case ProwlSettings s:
+				Require(errors, s.ApiKey, "apiKey");
+				if (s.Priority is < -2 or > 2)
+				{
+					Add(errors, "priority", "must be between -2 and 2");
+				}
+
+				break;
+			case PushcutSettings s:
+				Require(errors, s.ApiKey, "apiKey");
+				Require(errors, s.NotificationName, "notificationName");
+				break;
+			case PushsaferSettings s:
+				Require(errors, s.ApiKey, "apiKey");
+				if (s.Priority is < -2 or > 2)
+				{
+					Add(errors, "priority", "must be between -2 and 2");
+				}
+
+				if (s.Priority == 2 && s.Retry is < 60 or > 10800)
+				{
+					Add(errors, "retry", "must be between 60 and 10800 for emergency priority");
+				}
+
+				if (s.Priority == 2 && s.Expire is < 60 or > 10800)
+				{
+					Add(errors, "expire", "must be between 60 and 10800 for emergency priority");
+				}
+
+				break;
+			case SendGridSettings s:
+				Require(errors, s.ApiKey, "apiKey");
+				Require(errors, s.From, "from");
+				if (s.Recipients.Count == 0)
+				{
+					Add(errors, "recipients", "must not be empty");
+				}
+
+				break;
+			case SignalSettings s:
+				Require(errors, s.Host, "host");
+				Require(errors, s.SenderNumber, "senderNumber");
+				Require(errors, s.ReceiverId, "receiverId");
+				if (s.Port is < 1 or > 65535)
+				{
+					Add(errors, "port", "must be between 1 and 65535");
+				}
+
+				break;
+			case SimplepushSettings s:
+				Require(errors, s.Key, "key");
+				break;
+			case TwitterSettings s:
+				Require(errors, s.ConsumerKey, "consumerKey");
+				Require(errors, s.ConsumerSecret, "consumerSecret");
+				Require(errors, s.AccessToken, "accessToken");
+				Require(errors, s.AccessTokenSecret, "accessTokenSecret");
+				if (s.DirectMessage)
+				{
+					Require(errors, s.Mention, "mention");
+				}
+
+				break;
+			case TraktSettings s:
+				Require(errors, s.AccessToken, "accessToken");
+				Require(errors, s.RefreshToken, "refreshToken");
+				if (s.ExpiresAt == default)
+				{
+					Add(errors, "expiresAt", "is required");
 				}
 
 				break;

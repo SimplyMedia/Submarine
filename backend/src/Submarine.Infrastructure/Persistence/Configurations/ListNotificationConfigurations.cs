@@ -50,3 +50,15 @@ internal sealed class NotificationConfiguration : EntityConfiguration<Notificati
 		builder.HasMany(x => x.Tags).WithMany();
 	}
 }
+
+/// <summary>Configuration for <see cref="NotificationStatus" />.</summary>
+internal sealed class NotificationStatusConfiguration : EntityConfiguration<NotificationStatus>
+{
+	/// <inheritdoc />
+	public override void Configure(EntityTypeBuilder<NotificationStatus> builder)
+	{
+		base.Configure(builder);
+		builder.HasIndex(x => x.NotificationId).IsUnique();
+		builder.HasOne(x => x.Notification).WithMany().HasForeignKey(x => x.NotificationId).OnDelete(DeleteBehavior.Cascade);
+	}
+}

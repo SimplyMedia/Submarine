@@ -7752,6 +7752,144 @@
         }
       }
     },
+    "/api/v1/notifications/trakt/authorize": {
+      "post": {
+        "tags": [
+          "NotificationsModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TraktAuthorizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraktAuthorizeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/trakt/poll": {
+      "post": {
+        "tags": [
+          "NotificationsModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TraktPollRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraktPollResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/movies": {
       "get": {
         "tags": [
@@ -23737,7 +23875,8 @@
       "NotificationSchemaDto": {
         "required": [
           "type",
-          "fields"
+          "fields",
+          "supportedEvents"
         ],
         "type": "object",
         "properties": {
@@ -23751,6 +23890,13 @@
               "$ref": "#/components/schemas/NotificationFieldDescriptor"
             },
             "description": "Field descriptors."
+          },
+          "supportedEvents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Events this notification type can deliver, driving which toggles the UI shows."
           }
         },
         "description": "Field descriptors of one notification type."
@@ -23771,7 +23917,19 @@
           "JELLYFIN",
           "EMAIL",
           "NTFY",
-          "APPRISE"
+          "APPRISE",
+          "JOIN",
+          "MAILGUN",
+          "NOTIFIARR",
+          "PROWL",
+          "PUSHCUT",
+          "PUSHSAFER",
+          "SENDGRID",
+          "SIGNAL",
+          "SIMPLEPUSH",
+          "SYNOLOGY_INDEXER",
+          "TWITTER",
+          "TRAKT"
         ],
         "description": "Type of a notification."
       },
@@ -27517,6 +27675,115 @@
           "DARK"
         ],
         "description": "Color theme of the web UI."
+      },
+      "TraktAuthorizeRequest": {
+        "required": [
+          "clientId"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Trakt app client id, falls back to the instance's Trakt:ClientId setting."
+          }
+        },
+        "description": "Starts a Trakt OAuth device code flow."
+      },
+      "TraktAuthorizeResponse": {
+        "required": [
+          "deviceCode",
+          "userCode",
+          "verificationUrl",
+          "expiresIn",
+          "interval"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceCode": {
+            "type": "string"
+          },
+          "userCode": {
+            "type": "string"
+          },
+          "verificationUrl": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "interval": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The device code the user must enter at the verification url."
+      },
+      "TraktPollRequest": {
+        "required": [
+          "clientId",
+          "clientSecret",
+          "deviceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Trakt app client id, falls back to the instance's Trakt:ClientId setting."
+          },
+          "clientSecret": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Trakt app client secret, falls back to the instance's Trakt:ClientSecret setting."
+          },
+          "deviceCode": {
+            "type": "string",
+            "description": "Device code returned by TraktAuthorizeResponse."
+          }
+        },
+        "description": "Polls once for the outcome of a previously started device code flow."
+      },
+      "TraktPollResponse": {
+        "required": [
+          "status",
+          "accessToken",
+          "refreshToken",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "accessToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "refreshToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "Outcome of a device code poll: PENDING, AUTHORIZED, DENIED or EXPIRED. Tokens are set only when AUTHORIZED."
       },
       "TrashFormat": {
         "required": [

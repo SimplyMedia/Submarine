@@ -26,6 +26,18 @@ public sealed class NotificationSettingsJsonTests
 	[InlineData(NotificationType.EMAIL, """{"server":"smtp","from":"a@b.c","to":["d@e.f"]}""")]
 	[InlineData(NotificationType.NTFY, """{"topics":["t1"]}""")]
 	[InlineData(NotificationType.APPRISE, """{"serverUrl":"https://apprise","statelessUrls":["json://x"]}""")]
+	[InlineData(NotificationType.JOIN, """{"apiKey":"jk"}""")]
+	[InlineData(NotificationType.MAILGUN, """{"apiKey":"mg","from":"a@b.c","senderDomain":"d.com","recipients":["e@f.g"]}""")]
+	[InlineData(NotificationType.NOTIFIARR, """{"apiKey":"nr"}""")]
+	[InlineData(NotificationType.PROWL, """{"apiKey":"pk"}""")]
+	[InlineData(NotificationType.PUSHCUT, """{"notificationName":"Submarine","apiKey":"pc"}""")]
+	[InlineData(NotificationType.PUSHSAFER, """{"apiKey":"ps"}""")]
+	[InlineData(NotificationType.SENDGRID, """{"apiKey":"sg","from":"a@b.c","recipients":["d@e.f"]}""")]
+	[InlineData(NotificationType.SIGNAL, """{"host":"signal","senderNumber":"1000","receiverId":"2000"}""")]
+	[InlineData(NotificationType.SIMPLEPUSH, """{"key":"spk"}""")]
+	[InlineData(NotificationType.SYNOLOGY_INDEXER, """{}""")]
+	[InlineData(NotificationType.TWITTER, """{"consumerKey":"ck","consumerSecret":"cs","accessToken":"at","accessTokenSecret":"ats","directMessage":false}""")]
+	[InlineData(NotificationType.TRAKT, """{"accessToken":"at","refreshToken":"rt","expiresAt":"2030-01-01T00:00:00"}""")]
 	public void Validate_ShouldPass_WhenRequiredFieldsAreSet(NotificationType type, string json)
 	{
 		var result = NotificationSettingsJson.Validate(type, json);
@@ -77,6 +89,44 @@ public sealed class NotificationSettingsJsonTests
 
 		result.IsValid.ShouldBeFalse();
 		result.Errors["statelessUrls"].ShouldContain("must not be empty when no configuration key is set");
+	}
+
+	[Fact]
+	public void Validate_ShouldRequireSenderDomainAndRecipients_ForMailgun()
+	{
+		var result = NotificationSettingsJson.Validate(NotificationType.MAILGUN, """{"apiKey":"k","from":"a@b.c"}""");
+
+		result.IsValid.ShouldBeFalse();
+		result.Errors.ShouldContainKey("senderDomain");
+		result.Errors.ShouldContainKey("recipients");
+	}
+
+	[Fact]
+	public void Validate_ShouldRequireRetryAndExpireInRange_ForPushsaferEmergency()
+	{
+		var result = NotificationSettingsJson.Validate(NotificationType.PUSHSAFER, """{"apiKey":"k","priority":2,"retry":10,"expire":20000}""");
+
+		result.IsValid.ShouldBeFalse();
+		result.Errors.ShouldContainKey("retry");
+		result.Errors.ShouldContainKey("expire");
+	}
+
+	[Fact]
+	public void Validate_ShouldNotRequireRetryAndExpire_ForPushsaferNonEmergency()
+	{
+		var result = NotificationSettingsJson.Validate(NotificationType.PUSHSAFER, """{"apiKey":"k","priority":0}""");
+
+		result.IsValid.ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Validate_ShouldRequireMention_ForTwitterDirectMessage()
+	{
+		var result = NotificationSettingsJson.Validate(NotificationType.TWITTER,
+			"""{"consumerKey":"ck","consumerSecret":"cs","accessToken":"at","accessTokenSecret":"ats","directMessage":true}""");
+
+		result.IsValid.ShouldBeFalse();
+		result.Errors.ShouldContainKey("mention");
 	}
 
 	[Fact]

@@ -195,6 +195,18 @@ const NOTIFICATION_TYPE: Record<string, string> = {
 	EMAIL: 'Email',
 	NTFY: 'Ntfy',
 	APPRISE: 'Apprise',
+	JOIN: 'Join',
+	MAILGUN: 'Mailgun',
+	NOTIFIARR: 'Notifiarr',
+	PROWL: 'Prowl',
+	PUSHCUT: 'Pushcut',
+	PUSHSAFER: 'Pushsafer',
+	SENDGRID: 'SendGrid',
+	SIGNAL: 'Signal',
+	SIMPLEPUSH: 'Simplepush',
+	SYNOLOGY_INDEXER: 'Synology Indexer',
+	TWITTER: 'Twitter',
+	TRAKT: 'Trakt',
 }
 
 const STREAMING_PROVIDER: Record<string, string> = {
@@ -312,6 +324,18 @@ export function notificationTypeIcon(type: string): string {
 		EMAIL: 'lucide:mail',
 		NTFY: 'lucide:bell-plus',
 		APPRISE: 'lucide:radio',
+		JOIN: 'lucide:smartphone',
+		MAILGUN: 'lucide:mail',
+		NOTIFIARR: 'lucide:webhook',
+		PROWL: 'lucide:bell-ring',
+		PUSHCUT: 'lucide:scissors',
+		PUSHSAFER: 'lucide:bell',
+		SENDGRID: 'lucide:mail',
+		SIGNAL: 'lucide:message-square',
+		SIMPLEPUSH: 'lucide:bell',
+		SYNOLOGY_INDEXER: 'lucide:hard-drive',
+		TWITTER: 'lucide:at-sign',
+		TRAKT: 'lucide:clapperboard',
 	}
 	return icons[type] ?? 'lucide:bell'
 }
