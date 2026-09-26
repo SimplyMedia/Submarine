@@ -28,23 +28,24 @@ public sealed class RTorrentClient(
 		CancellationToken cancellationToken)
 	{
 		var magnetUrl = MagnetUrl(release);
+		var priority = release.IsRecentRelease ? Settings.RecentPriority : Settings.OlderPriority;
 
 		if (magnetUrl is not null)
 		{
-			var parameters = LoadParameters(magnetUrl);
+			var parameters = LoadParameters(magnetUrl, priority);
 			await CallAsync(Settings.AddStopped ? "load.stop" : "load.start", parameters, cancellationToken);
 
 			return ResolveTorrentId(release, magnetUrl, null);
 		}
 
 		var torrentData = await GetTorrentDataAsync(release, cancellationToken);
-		var fileParameters = LoadParameters(torrentData);
+		var fileParameters = LoadParameters(torrentData, priority);
 		await CallAsync(Settings.AddStopped ? "load.raw" : "load.raw_start", fileParameters, cancellationToken);
 
 		return ResolveTorrentId(release, magnetUrl, torrentData);
 	}
 
-	private List<object?> LoadParameters(object target)
+	private List<object?> LoadParameters(object target, RTorrentPriority priority)
 	{
 		var parameters = new List<object?> { string.Empty, target };
 
@@ -53,6 +54,9 @@ public sealed class RTorrentClient(
 
 		if (Settings.Directory is { Length: > 0 })
 			parameters.Add($"d.directory_base.set={Settings.Directory}");
+
+		if (priority != RTorrentPriority.NORMAL)
+			parameters.Add($"d.priority.set={(int)priority}");
 
 		return parameters;
 	}

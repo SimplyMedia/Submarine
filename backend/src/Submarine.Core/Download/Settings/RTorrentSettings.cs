@@ -34,4 +34,28 @@ public record RTorrentSettings : DownloadClientSettings, IDownloadClientEndpoint
 
 	/// <summary>Whether torrents are added without starting them</summary>
 	public bool AddStopped { get; init; }
+
+	/// <summary>Transfer priority for recent releases</summary>
+	public RTorrentPriority RecentPriority { get; init; } = RTorrentPriority.NORMAL;
+
+	/// <summary>Transfer priority for older releases</summary>
+	public RTorrentPriority OlderPriority { get; init; } = RTorrentPriority.NORMAL;
+}
+
+/// <summary>
+///     Transfer priority supported by rTorrent
+/// </summary>
+public enum RTorrentPriority
+{
+	/// <summary>Very low priority</summary>
+	VERY_LOW,
+
+	/// <summary>Low priority</summary>
+	LOW,
+
+	/// <summary>Normal priority</summary>
+	NORMAL,
+
+	/// <summary>High priority</summary>
+	HIGH
 }

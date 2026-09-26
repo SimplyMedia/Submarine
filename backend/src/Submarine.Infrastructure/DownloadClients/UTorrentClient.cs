@@ -47,13 +47,24 @@ public sealed partial class UTorrentClient(
 			downloadId = ResolveTorrentId(release, magnetUrl, torrentData);
 		}
 
-		if (Settings.AddStopped)
-			await GuiRequestAsync($"action=stop&hash={downloadId}", cancellationToken);
+		var stateAction = Settings.InitialState switch
+		{
+			UTorrentInitialState.FORCE_START => "forcestart",
+			UTorrentInitialState.PAUSE => "pause",
+			UTorrentInitialState.STOP => "stop",
+			_ => null
+		};
+		if (stateAction is not null)
+			await GuiRequestAsync($"action={stateAction}&hash={downloadId}", cancellationToken);
 
 		if (Settings.Category is { Length: > 0 })
 			await GuiRequestAsync(
 				$"action=setprops&hash={downloadId}&s=label&v={Uri.EscapeDataString(Settings.Category)}",
 				cancellationToken);
+
+		var priority = release.IsRecentRelease ? Settings.RecentPriority : Settings.OlderPriority;
+		if (priority == DownloadClientItemPriority.FIRST)
+			await GuiRequestAsync($"action=queuetop&hash={downloadId}", cancellationToken);
 
 		return downloadId;
 	}

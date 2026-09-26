@@ -72,7 +72,8 @@ public class UTorrentClientTests
 			request.RequestUri!.PathAndQuery.EndsWith("/token.html")
 				? TokenPage()
 				: StubHttpHandler.Text("{}"));
-		var client = new UTorrentClient(Settings() with { AddStopped = true }, 5, "ut", new HttpClient(handler));
+		var client = new UTorrentClient(Settings() with { InitialState = UTorrentInitialState.STOP }, 5, "ut",
+			new HttpClient(handler));
 
 		await client.AddAsync(TestTorrent.MagnetRelease(), null, TestContext.Current.CancellationToken);
 
@@ -80,6 +81,70 @@ public class UTorrentClientTests
 			.Url.ShouldContain("hash=0123456789ABCDEF0123456789ABCDEF01234567");
 		handler.Requests.Single(request => request.Url.Contains("action=setprops"))
 			.Url.ShouldContain("s=label&v=tv");
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldForceStart_WhenInitialStateForceStart()
+	{
+		var handler = new StubHttpHandler((request, _) =>
+			request.RequestUri!.PathAndQuery.EndsWith("/token.html")
+				? TokenPage()
+				: StubHttpHandler.Text("{}"));
+		var client = new UTorrentClient(Settings() with { InitialState = UTorrentInitialState.FORCE_START }, 5, "ut",
+			new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease(), null, TestContext.Current.CancellationToken);
+
+		handler.Requests.Any(request => request.Url.Contains("action=forcestart")).ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldNotChangeState_WhenInitialStateStart()
+	{
+		var handler = new StubHttpHandler((request, _) =>
+			request.RequestUri!.PathAndQuery.EndsWith("/token.html")
+				? TokenPage()
+				: StubHttpHandler.Text("{}"));
+		var client = new UTorrentClient(Settings(), 5, "ut", new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease(), null, TestContext.Current.CancellationToken);
+
+		handler.Requests.Any(request => request.Url.Contains("action=start")
+			|| request.Url.Contains("action=stop")
+			|| request.Url.Contains("action=pause")
+			|| request.Url.Contains("action=forcestart")).ShouldBeFalse();
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldMoveToTopOfQueue_WhenRecentReleaseAndPriorityFirst()
+	{
+		var handler = new StubHttpHandler((request, _) =>
+			request.RequestUri!.PathAndQuery.EndsWith("/token.html")
+				? TokenPage()
+				: StubHttpHandler.Text("{}"));
+		var client = new UTorrentClient(Settings() with { RecentPriority = DownloadClientItemPriority.FIRST }, 5,
+			"ut", new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease() with { IsRecentRelease = true }, null,
+			TestContext.Current.CancellationToken);
+
+		handler.Requests.Any(request => request.Url.Contains("action=queuetop")).ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldNotMoveToTopOfQueue_WhenOlderReleaseAndOlderPriorityLast()
+	{
+		var handler = new StubHttpHandler((request, _) =>
+			request.RequestUri!.PathAndQuery.EndsWith("/token.html")
+				? TokenPage()
+				: StubHttpHandler.Text("{}"));
+		var client = new UTorrentClient(Settings() with { RecentPriority = DownloadClientItemPriority.FIRST }, 5,
+			"ut", new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease() with { IsRecentRelease = false }, null,
+			TestContext.Current.CancellationToken);
+
+		handler.Requests.Any(request => request.Url.Contains("action=queuetop")).ShouldBeFalse();
 	}
 
 	[Fact]

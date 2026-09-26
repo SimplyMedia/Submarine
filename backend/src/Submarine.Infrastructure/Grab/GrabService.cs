@@ -95,6 +95,8 @@ public sealed class GrabService(
 		var isSeasonPack = (episodeIds?.Count ?? 0) > 1
 			|| parsed.SeriesReleaseData?.ReleaseType is SeriesReleaseType.FULL_SEASON or SeriesReleaseType.MULTI_SEASON;
 
+		var (isRecentRelease, year, network) = await GetReleaseMetadataAsync(seriesId, episodeIds, movieId, cancellationToken);
+
 		var remoteRelease = new RemoteRelease
 		{
 			Title = parsed.FullTitle,
@@ -106,7 +108,14 @@ public sealed class GrabService(
 			IsSeasonPack = isSeasonPack,
 			Category = movieId is not null ? RemoteReleaseCategory.MOVIE : RemoteReleaseCategory.SERIES,
 			TorrentFile = torrentFile,
-			NzbFile = nzbFile
+			NzbFile = nzbFile,
+			IsRecentRelease = isRecentRelease,
+			ReleaseGroup = parsed.ReleaseGroup,
+			Quality = $"{parsed.Quality.Resolution.Source}-{parsed.Quality.Resolution.Resolution}",
+			Languages = [.. parsed.Languages.Select(language => ToTitleCase(language.ToString()))],
+			Indexer = release.Indexer,
+			Year = year,
+			Network = network
 		};
 
 		var downloadId = await client.AddAsync(remoteRelease, seedCriteria, cancellationToken);
@@ -317,4 +326,57 @@ public sealed class GrabService(
 			return null;
 		}
 	}
+
+	/// <summary>
+	///     Resolves the media metadata download clients can key their behaviour on: whether the release is
+	///     recent (a series episode that aired within the last 14 days, or a movie whose physical/digital
+	///     release was within the last 21 days or cinema release within the last 120 days), the media's
+	///     first-air or release year, and the series' broadcast network (null for movies)
+	/// </summary>
+	private async Task<(bool IsRecent, int? Year, string? Network)> GetReleaseMetadataAsync(int? seriesId,
+		IReadOnlyList<int>? episodeIds, int? movieId, CancellationToken cancellationToken)
+	{
+		var now = timeProvider.GetUtcNow().UtcDateTime;
+
+		if (seriesId is { } id)
+		{
+			var series = await db.Series.AsNoTracking().Where(entity => entity.Id == id)
+				.Select(entity => new { entity.Year, entity.Network })
+				.FirstOrDefaultAsync(cancellationToken);
+
+			var isRecent = episodeIds is { Count: > 0 } && await db.Episodes.AsNoTracking()
+				.Where(episode => episodeIds.Contains(episode.Id))
+				.AnyAsync(episode => episode.AirDateUtc != null && episode.AirDateUtc >= now.AddDays(-14),
+					cancellationToken);
+
+			return (isRecent, series?.Year, series?.Network);
+		}
+
+		if (movieId is { } id2)
+		{
+			var movie = await db.Movies.AsNoTracking().Where(entity => entity.Id == id2)
+				.Select(entity => new
+				{
+					entity.Year,
+					entity.PhysicalReleaseDate,
+					entity.DigitalReleaseDate,
+					entity.InCinemasDate
+				})
+				.FirstOrDefaultAsync(cancellationToken);
+
+			if (movie is null)
+				return (false, null, null);
+
+			var isRecent = (movie.PhysicalReleaseDate is { } physical && physical >= now.AddDays(-21))
+				|| (movie.DigitalReleaseDate is { } digital && digital >= now.AddDays(-21))
+				|| (movie.InCinemasDate is { } cinemas && cinemas >= now.AddDays(-120));
+
+			return (isRecent, movie.Year, null);
+		}
+
+		return (false, null, null);
+	}
+
+	private static string ToTitleCase(string value)
+		=> value.Length == 0 ? value : char.ToUpperInvariant(value[0]) + value[1..].ToLowerInvariant();
 }

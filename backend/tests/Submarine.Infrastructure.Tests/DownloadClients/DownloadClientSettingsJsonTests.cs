@@ -135,4 +135,43 @@ public class DownloadClientSettingsJsonTests
 		result.IsValid.ShouldBeTrue();
 		result.Settings.ShouldBeOfType<QBittorrentSettings>();
 	}
+
+	[Fact]
+	public void Parse_ShouldReadLegacyUTorrentAddStoppedAsInitialStateStop_WhenInitialStateAbsent()
+	{
+		var settings = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT,
+			"""{"host":"ut.local","addStopped":true}""");
+
+		settings.InitialState.ShouldBe(UTorrentInitialState.STOP);
+	}
+
+	[Fact]
+	public void Parse_ShouldDefaultUTorrentInitialStateToStart_WhenLegacyAddStoppedFalse()
+	{
+		var settings = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT,
+			"""{"host":"ut.local","addStopped":false}""");
+
+		settings.InitialState.ShouldBe(UTorrentInitialState.START);
+	}
+
+	[Fact]
+	public void Parse_ShouldPreferExplicitUTorrentInitialState_OverLegacyAddStopped()
+	{
+		var settings = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT,
+			"""{"host":"ut.local","addStopped":true,"initialState":"FORCE_START"}""");
+
+		settings.InitialState.ShouldBe(UTorrentInitialState.FORCE_START);
+	}
+
+	[Fact]
+	public void Serialize_ShouldRoundTripUTorrentInitialState()
+	{
+		var settings = new UTorrentSettings { Host = "ut.local", InitialState = UTorrentInitialState.PAUSE };
+
+		var json = DownloadClientSettingsJson.Serialize(settings);
+		var parsed = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT, json);
+
+		parsed.InitialState.ShouldBe(UTorrentInitialState.PAUSE);
+		json.ShouldNotContain("addStopped");
+	}
 }
