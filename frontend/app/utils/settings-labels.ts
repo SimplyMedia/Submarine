@@ -68,6 +68,13 @@ const DOWNLOAD_PROPERS_AND_REPACKS: Record<string, string> = {
 	DO_NOT_UPGRADE: 'Do not prefer',
 	DO_NOT_PREFER: 'Do not prefer or upgrade',
 }
+const FILE_DATE: Record<string, string> = {
+	NONE: 'None',
+	LOCAL_AIR_DATE: 'Local air date (series)',
+	UTC_AIR_DATE: 'UTC air date (series)',
+	IN_CINEMAS: 'In cinemas date (movies)',
+	RELEASE: 'Release date (movies)',
+}
 const MEDIA_KIND: Record<string, string> = { SERIES: 'Series', MOVIES: 'Movies' }
 const PROTOCOL: Record<string, string> = { BITTORRENT: 'Torrent', USENET: 'Usenet', XDCC: 'XDCC' }
 const RELEASE_FILTER_MODE: Record<string, string> = { ALLOW: 'Allow', BLOCK: 'Block', PREFER: 'Prefer' }
@@ -237,6 +244,7 @@ export const streamingProviderOptions = toOptions(STREAMING_PROVIDER)
 export const releaseFlagOptions = toOptions(RELEASE_FLAG)
 export const indexerFlagOptions = toOptions(INDEXER_FLAG)
 export const languageOptions = toOptions(LANGUAGE)
+export const fileDateOptions = toOptions(FILE_DATE)
 
 export const authMethodLabel = makeLookup(AUTH_METHOD)
 export const themeLabel = makeLookup(THEME)
@@ -246,6 +254,7 @@ export const downloadPropersAndRepacksLabel = makeLookup(DOWNLOAD_PROPERS_AND_RE
 export const mediaKindLabel = makeLookup(MEDIA_KIND)
 export const protocolLabel = makeLookup(PROTOCOL)
 export const releaseFilterModeLabel = makeLookup(RELEASE_FILTER_MODE)
+export const fileDateLabel = makeLookup(FILE_DATE)
 export const releaseFilterFieldLabel = makeLookup(RELEASE_FILTER_FIELD)
 export const qualitySourceLabel = makeLookup(QUALITY_SOURCE)
 export const customFormatSpecTypeLabel = makeLookup(CUSTOM_FORMAT_SPEC_TYPE)

@@ -74,3 +74,24 @@ public enum DownloadPropersAndRepacks
 	/// <summary>Do not rank propers and repacks differently.</summary>
 	DO_NOT_PREFER
 }
+
+/// <summary>
+///     Which date, when available, is applied to a media file's modified timestamp on import and rescan.
+/// </summary>
+public enum FileDate
+{
+	/// <summary>Do not change the file date.</summary>
+	NONE,
+
+	/// <summary>Episode air date in the series' local time.</summary>
+	LOCAL_AIR_DATE,
+
+	/// <summary>Episode air date in UTC.</summary>
+	UTC_AIR_DATE,
+
+	/// <summary>Movie in cinemas date.</summary>
+	IN_CINEMAS,
+
+	/// <summary>Movie physical release date, falling back to the digital release date.</summary>
+	RELEASE
+}

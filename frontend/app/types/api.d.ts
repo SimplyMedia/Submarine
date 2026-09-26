@@ -8337,6 +8337,339 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/metadata-consumers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MetadataConsumerDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveMetadataConsumerRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MetadataConsumerDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metadata-consumers/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MetadataConsumerSchemaDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metadata-consumers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveMetadataConsumerRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MetadataConsumerDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/series/{seriesId}/versions": {
         parameters: {
             query?: never;
@@ -16930,6 +17263,268 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auto-tagging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AutoTaggingRuleDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveAutoTaggingRuleRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AutoTaggingRuleDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auto-tagging/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveAutoTaggingRuleRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AutoTaggingRuleDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -17397,6 +17992,33 @@ export interface components {
          * @enum {unknown}
          */
         AuthMethod: "NONE" | "FORMS";
+        /** @description A saved auto tagging rule. */
+        AutoTaggingRuleDto: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            enable: boolean;
+            removeTagsAutomatically: boolean;
+            specifications: components["schemas"]["AutoTaggingSpecification"][];
+            tags: string[];
+        };
+        /** @description One specification of an auto tagging rule. The shape of JsonElement? AutoTaggingSpecification.Value depends on AutoTaggingSpecificationType AutoTaggingSpecification.Type. */
+        AutoTaggingSpecification: {
+            /** @description Display name. */
+            name: string;
+            /** @description Specification type. */
+            type: components["schemas"]["AutoTaggingSpecificationType"];
+            /** @description Invert the match result. */
+            negate: boolean;
+            /** @description The series or movie must match for the rule to apply. */
+            required: boolean;
+            value: null | components["schemas"]["JsonElement"];
+        };
+        /**
+         * @description Type of an auto tagging rule specification.
+         * @enum {unknown}
+         */
+        AutoTaggingSpecificationType: "GENRE" | "ROOT_FOLDER" | "SERIES_TYPE" | "STATUS" | "YEAR" | "QUALITY_PROFILE" | "MONITORED" | "NETWORK_OR_STUDIO";
         /** @description One backup archive on disk. */
         BackupEntry: {
             /** @description File name including extension. */
@@ -18080,6 +18702,11 @@ export interface components {
             /** @description The new feed token. */
             feedToken: string;
         };
+        /**
+         * @description Which date, when available, is applied to a media file's modified timestamp on import and rescan.
+         * @enum {unknown}
+         */
+        FileDate: "NONE" | "LOCAL_AIR_DATE" | "UTC_AIR_DATE" | "IN_CINEMAS" | "RELEASE";
         /** @description One directory or file entry. */
         FileSystemEntryDto: {
             /** @description Entry name. */
@@ -19030,8 +19657,8 @@ export interface components {
             minimumFreeSpaceMb: number;
             /** @description Skip the free space check. */
             skipFreeSpaceCheck: boolean;
-            /** @description Write Kodi compatible NFO files. */
-            writeNfo: boolean;
+            /** @description Which date is applied to a media file's modified timestamp on import and rescan. */
+            fileDate: components["schemas"]["FileDate"];
             /** @description Recycle bin path, empty to delete immediately. */
             recycleBinPath: string;
             /**
@@ -19058,6 +19685,38 @@ export interface components {
             /** @description Extract media info with ffprobe during import. */
             enableMediaInfo: boolean;
         };
+        /** @description A saved metadata consumer. */
+        MetadataConsumerDto: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            type: string;
+            enable: boolean;
+            settingsJson: string;
+        };
+        /** @description One configurable field of a metadata consumer type, used by the schema endpoint. */
+        MetadataConsumerFieldDescriptor: {
+            /** @description Field name as it appears in the settings JSON. */
+            name: string;
+            /** @description Human readable label. */
+            label: string;
+            /** @description Short explanation, often the resulting file name. */
+            helpText: null | string;
+            /** @description Default value. */
+            default: boolean;
+        };
+        /** @description Field descriptors of one metadata consumer type. */
+        MetadataConsumerSchemaDto: {
+            /** @description Consumer implementation name. */
+            type: string;
+            /** @description Field descriptors. */
+            fields: components["schemas"]["MetadataConsumerFieldDescriptor"][];
+        };
+        /**
+         * @description Implementation of a metadata consumer, writing companion files and images next to imported media.
+         * @enum {unknown}
+         */
+        MetadataConsumerType: "KODI" | "PLEX" | "EMBY" | "ROKSBOX" | "WDTV";
         /**
          * @description Metadata provider used for a series.
          * @enum {unknown}
@@ -20168,6 +20827,19 @@ export interface components {
              */
             totalBytes: null | number;
         };
+        /** @description Create or replace an auto tagging rule request. */
+        SaveAutoTaggingRuleRequest: {
+            /** @description Display name. */
+            name: string;
+            /** @description Whether the rule is active. */
+            enable: boolean;
+            /** @description Remove the tags automatically when the item no longer matches. */
+            removeTagsAutomatically: boolean;
+            /** @description Specifications all or some of which must match, depending on Required flags. */
+            specifications: components["schemas"]["AutoTaggingSpecification"][];
+            /** @description Tag labels applied when the rule matches. */
+            tags: string[];
+        };
         /** @description Create or update import list exclusion request. */
         SaveImportListExclusionRequest: {
             /**
@@ -20226,6 +20898,23 @@ export interface components {
             seasonFolder: null | boolean;
             /** @description Tags applied to added items. */
             tagIds: null | number[];
+        };
+        /** @description Create or replace a metadata consumer request. */
+        SaveMetadataConsumerRequest: {
+            /** @description Display name. */
+            name: string;
+            /** @description Consumer implementation. */
+            type: components["schemas"]["MetadataConsumerType"];
+            /**
+             * @description Whether the consumer is active.
+             * @default true
+             */
+            enable: boolean;
+            /**
+             * @description Implementation settings as JSON.
+             * @default {}
+             */
+            settingsJson: string;
         };
         /** @description Create or replace a notification request. */
         SaveNotificationRequest: {
@@ -20701,6 +21390,8 @@ export interface components {
             releaseProfileIds: number[];
             /** @description Import lists using the tag. */
             importListIds: number[];
+            /** @description Auto tagging rules using the tag. */
+            autoTaggingRuleIds: number[];
         };
         /** @description A tag reference. */
         TagDto: {

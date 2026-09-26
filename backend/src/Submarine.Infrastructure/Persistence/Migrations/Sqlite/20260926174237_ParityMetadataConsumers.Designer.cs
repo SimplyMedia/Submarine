@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Submarine.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using Submarine.Infrastructure.Persistence;
 namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
 {
     [DbContext(typeof(SqliteSubmarineDbContext))]
-    partial class SqliteSubmarineDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926174237_ParityMetadataConsumers")]
+    partial class ParityMetadataConsumers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");

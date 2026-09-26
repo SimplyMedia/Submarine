@@ -6,6 +6,7 @@ using Submarine.Core.Enums;
 using Submarine.Core.Events;
 using Submarine.Core.Naming;
 using Submarine.Infrastructure.Commands;
+using Submarine.Infrastructure.Metadata;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Infrastructure.Import;
@@ -16,6 +17,7 @@ namespace Submarine.Infrastructure.Import;
 public sealed class RenameSeriesCommandHandler(
 	SubmarineDbContext db,
 	NamingService namingService,
+	IMetadataConsumerWriter metadataWriter,
 	IEventBus eventBus,
 	TimeProvider timeProvider) : ICommandHandler<RenameSeriesCommand>
 {
@@ -26,6 +28,7 @@ public sealed class RenameSeriesCommandHandler(
 			?? throw new KeyNotFoundException($"Series {command.SeriesId} not found");
 		var naming = await db.NamingConfig.AsNoTracking().SingleAsync(cancellationToken);
 		var renamed = new List<RenamedFile>();
+		var renamedEpisodeFiles = new List<(int VersionId, string VersionFolder, EpisodeFile File, List<Episode> Episodes)>();
 
 		foreach (var version in series.Versions)
 		{
@@ -85,10 +88,16 @@ public sealed class RenameSeriesCommandHandler(
 				file.RelativePath = Path.GetRelativePath(versionFolder, newFullPath);
 				file.NamedFromPlaceholder = false;
 				renamed.Add(new RenamedFile(oldFullPath, newFullPath));
+				renamedEpisodeFiles.Add((version.Id, versionFolder, file, episodes));
 			}
 		}
 
 		await db.SaveChangesAsync(cancellationToken);
+
+		foreach (var (versionId, versionFolder, file, episodes) in renamedEpisodeFiles)
+		{
+			await metadataWriter.WriteEpisodeAsync(series, versionId, versionFolder, file, episodes, cancellationToken);
+		}
 
 		if (renamed.Count == 0)
 		{
@@ -114,6 +123,7 @@ public sealed class RenameSeriesCommandHandler(
 public sealed class RenameMovieCommandHandler(
 	SubmarineDbContext db,
 	NamingService namingService,
+	IMetadataConsumerWriter metadataWriter,
 	IEventBus eventBus,
 	TimeProvider timeProvider) : ICommandHandler<RenameMovieCommand>
 {
@@ -124,6 +134,7 @@ public sealed class RenameMovieCommandHandler(
 			?? throw new KeyNotFoundException($"Movie {command.MovieId} not found");
 		var naming = await db.NamingConfig.AsNoTracking().SingleAsync(cancellationToken);
 		var renamed = new List<RenamedFile>();
+		var renamedMovieFiles = new List<(string VersionFolder, MovieFile File)>();
 
 		foreach (var version in movie.Versions)
 		{
@@ -173,10 +184,16 @@ public sealed class RenameMovieCommandHandler(
 				File.Move(oldFullPath, newFullPath);
 				file.RelativePath = Path.GetRelativePath(versionFolder, newFullPath);
 				renamed.Add(new RenamedFile(oldFullPath, newFullPath));
+				renamedMovieFiles.Add((versionFolder, file));
 			}
 		}
 
 		await db.SaveChangesAsync(cancellationToken);
+
+		foreach (var (versionFolder, file) in renamedMovieFiles)
+		{
+			await metadataWriter.WriteMovieAsync(movie, versionFolder, file, cancellationToken);
+		}
 
 		if (renamed.Count == 0)
 		{

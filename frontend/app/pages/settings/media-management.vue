@@ -5,6 +5,7 @@ import { useReferenceStore } from '~/stores/reference'
 import {
 	colonReplacementOptions,
 	downloadPropersAndRepacksOptions,
+	fileDateOptions,
 	multiEpisodeStyleOptions, mediaKindOptions,
 } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
@@ -202,14 +203,27 @@ onMounted(async () => {
 						label="Extract media info on import"
 					/>
 					<SSwitch
-						v-model="mediaDraft.writeNfo"
-						label="Write NFO files"
-					/>
-					<SSwitch
 						v-model="mediaDraft.importExtraFiles"
 						label="Import extra files (subtitles, NFO)"
 					/>
 				</div>
+				<SField
+					label="File date"
+					hint="Sets the file's modified timestamp on import and rescan."
+					control-id="file-date"
+				>
+					<SSelect
+						v-model="mediaDraft.fileDate"
+						control-id="file-date"
+						:options="fileDateOptions"
+					/>
+				</SField>
+				<p class="nfo-hint">
+					NFO and image files are written by
+					<NuxtLink to="/settings/metadata-consumers">
+						metadata consumers
+					</NuxtLink>.
+				</p>
 				<SField
 					v-if="mediaDraft.importExtraFiles"
 					label="Extra file extensions"
@@ -631,6 +645,16 @@ onMounted(async () => {
 
 .field-grid:last-child {
 	margin-bottom: 0;
+}
+
+.nfo-hint {
+	font-size: 0.8125rem;
+	color: var(--fg-muted);
+	margin: 8px 0 0;
+}
+
+.nfo-hint a {
+	color: var(--accent);
 }
 
 .section-actions {

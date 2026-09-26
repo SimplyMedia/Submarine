@@ -22,6 +22,21 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AutoTaggingRuleTag", b =>
+                {
+                    b.Property<int>("AutoTaggingRuleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TagsId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AutoTaggingRuleId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("AutoTaggingRuleTag");
+                });
+
             modelBuilder.Entity("DelayProfileTag", b =>
                 {
                     b.Property<int>("DelayProfileId")
@@ -207,6 +222,40 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.HasIndex("SeriesId");
 
                     b.ToTable("AlternativeTitles");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.AutoTaggingRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enable")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("RemoveTagsAutomatically")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Specifications")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AutoTaggingRules");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.BlocklistItem", b =>
@@ -1291,6 +1340,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("FileDate")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("ImportExtraFiles")
                         .HasColumnType("boolean");
 
@@ -1315,9 +1367,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("UseHardlinks")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("WriteNfo")
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");
@@ -1374,6 +1423,40 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.HasIndex("SeriesId");
 
                     b.ToTable("MediaVersions");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MetadataConsumer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enable")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("SettingsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MetadataConsumers");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.Movie", b =>
@@ -2335,6 +2418,21 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("AutoTaggingRuleTag", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.AutoTaggingRule", null)
+                        .WithMany()
+                        .HasForeignKey("AutoTaggingRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Submarine.Core.Entities.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DelayProfileTag", b =>

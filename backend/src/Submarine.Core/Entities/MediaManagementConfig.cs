@@ -22,8 +22,8 @@ public sealed class MediaManagementConfig : SingletonEntity
 	/// <summary>Skip the free space check.</summary>
 	public bool SkipFreeSpaceCheck { get; set; }
 
-	/// <summary>Write Kodi compatible NFO files.</summary>
-	public bool WriteNfo { get; set; }
+	/// <summary>Which date is applied to a media file's modified timestamp on import and rescan.</summary>
+	public FileDate FileDate { get; set; } = FileDate.NONE;
 
 	/// <summary>Recycle bin path, empty to delete immediately.</summary>
 	public string RecycleBinPath { get; set; } = string.Empty;
