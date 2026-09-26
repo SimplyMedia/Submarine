@@ -398,3 +398,10 @@ frontend/.e2e/
 
 # built UI copied into the API image
 backend/src/Submarine.Api/wwwroot/
+
+# docker compose data from the root compose file and the examples folder
+/data/
+/examples/config/
+/examples/mappings/
+/examples/postgres/
+/examples/.env

@@ -1,0 +1,70 @@
+# Submarine with its metadata and mappings services.
+# Copy this file and .env.example next to each other, rename .env.example to .env, fill it in, then:
+#   docker compose up -d
+# Open http://localhost:8989 and create your account right away.
+
+services:
+  submarine:
+    image: ghcr.io/simplymedia/submarine:${SUBMARINE_TAG:-latest}
+    container_name: submarine
+    ports:
+      - "8989:8080"
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+      Metadata__BaseUrl: http://submarine-metadata:8080
+      Metadata__ApiKey: ${INTERNAL_API_KEY}
+      Mappings__BaseUrl: http://submarine-mappings:8080
+      Mappings__ApiKey: ${INTERNAL_API_KEY}
+      # Behind a reverse proxy, and only if port 8989 is not reachable directly:
+      # ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+    volumes:
+      - ./config:/config
+      # Downloads and the library on one volume, so imports can hardlink instead of copy.
+      - ${MEDIA_PATH:?Set MEDIA_PATH in .env}:/media
+    depends_on:
+      submarine-metadata:
+        condition: service_healthy
+      submarine-mappings:
+        condition: service_healthy
+    restart: unless-stopped
+
+  submarine-metadata:
+    image: ghcr.io/simplymedia/submarine-metadata:${SUBMARINE_TAG:-latest}
+    container_name: submarine-metadata
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      Auth__ApiKey: ${INTERNAL_API_KEY}
+      Tmdb__ApiKey: ${TMDB_API_KEY:-}
+      Tvdb__ApiKey: ${TVDB_API_KEY:-}
+      Tvdb__Pin: ${TVDB_PIN:-}
+    restart: unless-stopped
+
+  submarine-mappings:
+    image: ghcr.io/simplymedia/submarine-mappings:${SUBMARINE_TAG:-latest}
+    container_name: submarine-mappings
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+      Auth__AdminApiKey: ${INTERNAL_API_KEY}
+    volumes:
+      - ./mappings:/config
+    restart: unless-stopped
+
+  # Optional Postgres instead of SQLite. Start with: docker compose --profile postgres up -d
+  # and set on the submarine service:
+  #   Database__Provider: Postgres
+  #   ConnectionStrings__Postgres: Host=postgres;Database=submarine;Username=submarine;Password=${POSTGRES_PASSWORD}
+  postgres:
+    image: postgres:17-alpine
+    container_name: submarine-postgres
+    profiles: [postgres]
+    environment:
+      POSTGRES_DB: submarine
+      POSTGRES_USER: submarine
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    restart: unless-stopped
