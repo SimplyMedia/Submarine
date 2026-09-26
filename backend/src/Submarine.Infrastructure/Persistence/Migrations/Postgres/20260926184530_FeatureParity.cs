@@ -294,6 +294,10 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                 column: "NotificationId",
                 unique: true);
 
+            // New columns on existing rows get the entity defaults, not zero or empty values.
+            migrationBuilder.Sql("UPDATE \"GeneralConfig\" SET \"BackupIntervalDays\" = 7, \"BackupRetention\" = 7, \"ProxyPort\" = 8080, \"ProxyBypassLocalAddresses\" = TRUE;");
+            migrationBuilder.Sql("UPDATE \"Indexers\" SET \"RequiredFlags\" = '[]';");
+
             // Per-client removal toggles were never read before, so existing clients keep removing like they did.
             migrationBuilder.Sql("UPDATE \"DownloadClients\" SET \"RemoveCompleted\" = TRUE, \"RemoveFailed\" = TRUE;");
 

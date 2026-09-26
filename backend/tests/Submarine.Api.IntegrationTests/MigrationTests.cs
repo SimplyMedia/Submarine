@@ -74,6 +74,10 @@ public sealed class SqliteMigrationTests : IClassFixture<SubmarineApiFactory>
 					INSERT INTO Indexers (Name, Implementation, Protocol, BaseUrl, SettingsJson, EnableRss, EnableAutomaticSearch, EnableInteractiveSearch, Priority, Categories, AnimeCategories, AnimeStandardFormatSearch, CreatedAt, UpdatedAt)
 					VALUES ('LegacyUsenet', 0, 1, 'http://nzb', '{}', 1, 1, 1, 25, '[]', '[]', 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
 					       ('LegacyTorrent', 0, 0, 'http://torrent', '{}', 1, 1, 1, 25, '[]', '[]', 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+					INSERT INTO GeneralConfig (Id, AuthMethod, ApiKey, FeedToken, UrlBase, InstanceName, LogLevel, Branch, UpdateAutomatically, UpdatedAt)
+					VALUES (1, 1, 'key', 'feed', '', 'Submarine', 'Information', 'develop', 0, '2024-01-01 00:00:00');
+					INSERT INTO IndexerConfig (Id, RssSyncIntervalMinutes, MinimumAgeMinutes, RetentionDays, MaximumSizeMb, AvailabilityDelayDays, UpdatedAt)
+					VALUES (1, 30, 0, 0, 0, 0, '2024-01-01 00:00:00');
 					""";
 				insert.ExecuteNonQuery();
 			}
@@ -81,6 +85,17 @@ public sealed class SqliteMigrationTests : IClassFixture<SubmarineApiFactory>
 			await using (var db = new SqliteSubmarineDbContext(options, TimeProvider.System))
 			{
 				await db.GetService<IMigrator>().MigrateAsync();
+
+				// Load upgraded rows through EF so new columns must hold values the model can read.
+				(await db.Indexers.ToListAsync()).ShouldAllBe(indexer => indexer.RequiredFlags.Count == 0);
+				var general = await db.GeneralConfig.SingleAsync();
+				general.BackupIntervalDays.ShouldBe(7);
+				general.BackupRetention.ShouldBe(7, "a zero retention would delete every backup");
+				general.ProxyPort.ShouldBe(8080);
+				general.ProxyBypassLocalAddresses.ShouldBeTrue();
+				await db.IndexerConfig.SingleAsync();
+				(await db.DownloadClients.ToListAsync()).ShouldNotBeEmpty();
+				await db.DelayProfiles.ToListAsync();
 			}
 
 			using (var connection = new SqliteConnection($"Data Source={dbPath}"))

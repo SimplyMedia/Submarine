@@ -167,7 +167,7 @@ public sealed class GeneralConfigValidator : AbstractValidator<GeneralConfig>
 		RuleFor(x => x.ProxyHost).NotEmpty().When(x => x.ProxyEnabled);
 		RuleFor(x => x.ProxyPort).InclusiveBetween(1, 65535);
 		RuleFor(x => x.BackupIntervalDays).GreaterThan(0);
-		RuleFor(x => x.BackupRetention).GreaterThanOrEqualTo(0);
+		RuleFor(x => x.BackupRetention).GreaterThan(0);
 	}
 }
 
