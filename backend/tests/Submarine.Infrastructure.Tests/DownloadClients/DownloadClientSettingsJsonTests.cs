@@ -56,7 +56,12 @@ public class DownloadClientSettingsJsonTests
 			[DownloadClientType.SABNZBD] = ["host", "apiKey"],
 			[DownloadClientType.NZBGET] = ["host", "username", "password"],
 			[DownloadClientType.TORRENT_BLACKHOLE] = ["torrentFolder", "watchFolder"],
-			[DownloadClientType.USENET_BLACKHOLE] = ["nzbFolder", "watchFolder"]
+			[DownloadClientType.USENET_BLACKHOLE] = ["nzbFolder", "watchFolder"],
+			[DownloadClientType.HADOUKEN] = ["host", "username", "password"],
+			[DownloadClientType.NZBVORTEX] = ["host", "apiKey"],
+			[DownloadClientType.PNEUMATIC] = ["nzbFolder", "strmFolder"],
+			[DownloadClientType.FREEBOX_DOWNLOAD] = ["appId", "appToken"],
+			[DownloadClientType.RQBIT] = ["host"]
 		};
 
 		foreach (var (type, expectedFields) in cases)

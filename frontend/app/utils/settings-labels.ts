@@ -130,6 +130,12 @@ const DOWNLOAD_CLIENT_TYPE: Record<string, string> = {
 	NZBGET: 'NZBGet',
 	TORRENT_BLACKHOLE: 'Torrent blackhole',
 	USENET_BLACKHOLE: 'Usenet blackhole',
+	VUZE: 'Vuze',
+	HADOUKEN: 'Hadouken',
+	NZBVORTEX: 'NZBVortex',
+	PNEUMATIC: 'Pneumatic',
+	FREEBOX_DOWNLOAD: 'Freebox Download',
+	RQBIT: 'RQBit',
 }
 
 const IMPORT_LIST_TYPE: Record<string, string> = {
@@ -294,6 +300,12 @@ export function downloadClientTypeIcon(type: string): string {
 		NZBGET: 'lucide:newspaper',
 		TORRENT_BLACKHOLE: 'lucide:folder-down',
 		USENET_BLACKHOLE: 'lucide:folder-down',
+		VUZE: 'lucide:magnet',
+		HADOUKEN: 'lucide:magnet',
+		NZBVORTEX: 'lucide:newspaper',
+		PNEUMATIC: 'lucide:newspaper',
+		FREEBOX_DOWNLOAD: 'lucide:magnet',
+		RQBIT: 'lucide:magnet',
 	}
 	return icons[type] ?? 'lucide:download'
 }

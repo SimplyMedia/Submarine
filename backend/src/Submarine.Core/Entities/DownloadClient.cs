@@ -23,10 +23,10 @@ public sealed class DownloadClient : Entity
 	public string SettingsJson { get; set; } = "{}";
 
 	/// <summary>Remove completed downloads from the client.</summary>
-	public bool RemoveCompleted { get; set; }
+	public bool RemoveCompleted { get; set; } = true;
 
 	/// <summary>Remove failed downloads from the client.</summary>
-	public bool RemoveFailed { get; set; }
+	public bool RemoveFailed { get; set; } = true;
 
 	/// <summary>Tags.</summary>
 	public ICollection<Tag> Tags { get; set; } = [];

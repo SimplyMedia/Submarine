@@ -17,6 +17,12 @@ public record QBittorrentSettings : DownloadClientSettings, IDownloadClientEndpo
 	/// <summary>Url base path the WebUI is served under, if any</summary>
 	public string? UrlBase { get; init; }
 
+	/// <summary>
+	///     Api key used to bypass WebUI login, e.g. behind a reverse proxy; when set, username/password are
+	///     ignored and requests use a Bearer token instead of session cookies
+	/// </summary>
+	public string? ApiKey { get; init; }
+
 	/// <summary>Username, if the WebUI requires authentication</summary>
 	public string? Username { get; init; }
 
@@ -43,6 +49,9 @@ public record QBittorrentSettings : DownloadClientSettings, IDownloadClientEndpo
 
 	/// <summary>Whether to prioritize first and last pieces</summary>
 	public bool FirstAndLast { get; init; }
+
+	/// <summary>How the torrent's content is laid out on disk</summary>
+	public QBittorrentContentLayout ContentLayout { get; init; } = QBittorrentContentLayout.DEFAULT;
 }
 
 /// <summary>
@@ -58,4 +67,19 @@ public enum QBittorrentInitialState
 
 	/// <summary>Add paused</summary>
 	PAUSE
+}
+
+/// <summary>
+///     Content layout for torrents added to qBittorrent
+/// </summary>
+public enum QBittorrentContentLayout
+{
+	/// <summary>Use qBittorrent's global default</summary>
+	DEFAULT,
+
+	/// <summary>Keep the torrent's original layout, even for single-file torrents with a subfolder</summary>
+	ORIGINAL,
+
+	/// <summary>Always create a subfolder</summary>
+	SUBFOLDER
 }
