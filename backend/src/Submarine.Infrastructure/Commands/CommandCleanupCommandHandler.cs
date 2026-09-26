@@ -1,0 +1,27 @@
+using Microsoft.EntityFrameworkCore;
+using Submarine.Core.Commands;
+using Submarine.Core.Entities;
+using Submarine.Infrastructure.Persistence;
+
+namespace Submarine.Infrastructure.Commands;
+
+/// <summary>
+///     Deletes completed, failed and cancelled commands older than seven days.
+/// </summary>
+public sealed class CommandCleanupCommandHandler(SubmarineDbContext db, TimeProvider timeProvider)
+	: ICommandHandler<CommandCleanupCommand>
+{
+	/// <inheritdoc />
+	public async Task ExecuteAsync(CommandCleanupCommand command, ICommandContext context, CancellationToken cancellationToken = default)
+	{
+		var cutoff = timeProvider.GetUtcNow().UtcDateTime.AddDays(-7);
+		var removed = await db.Commands
+			.Where(x => x.CreatedAt < cutoff
+				&& (x.Status == CommandStatus.COMPLETED
+					|| x.Status == CommandStatus.FAILED
+					|| x.Status == CommandStatus.CANCELLED))
+			.ExecuteDeleteAsync(cancellationToken);
+
+		await context.ReportProgressAsync(100, $"Pruned {removed} command rows", cancellationToken);
+	}
+}
