@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: test-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+  cancel-in-progress: true
 
 jobs:
   backend:

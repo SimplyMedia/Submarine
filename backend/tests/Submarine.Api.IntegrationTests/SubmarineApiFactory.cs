@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Submarine.Infrastructure.Commands;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.IntegrationTests;
@@ -45,6 +47,10 @@ public class SubmarineApiFactory : WebApplicationFactory<Program>
 			builder.UseSetting("ConnectionStrings:Postgres", PostgresConnectionString);
 		}
 
+		// Seeded tasks are due on first start (definition sync, health checks). Tests queue the
+		// commands they need, so the scheduler stays off to keep them off the network.
+		builder.ConfigureTestServices(services => services.Remove(services.Single(descriptor =>
+			descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(SchedulerHostedService))));
 		builder.ConfigureTestServices(ConfigureTestServices);
 	}
 
