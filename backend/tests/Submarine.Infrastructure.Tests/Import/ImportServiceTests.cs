@@ -13,6 +13,7 @@ using Submarine.Core.MediaFiles;
 using Submarine.Core.Provider;
 using Submarine.Core.Quality;
 using Submarine.Infrastructure.Import;
+using Submarine.Infrastructure.Metadata;
 using Submarine.Infrastructure.MediaFiles;
 using Submarine.Infrastructure.Persistence;
 using Xunit;
@@ -40,7 +41,8 @@ public sealed class ImportServiceTests : IDisposable
 			new NamingService(),
 			new global::Submarine.Infrastructure.Import.FileLinker(NullLogger<global::Submarine.Infrastructure.Import.FileLinker>.Instance),
 			new global::Submarine.Infrastructure.Import.RecycleBinService(),
-			new global::Submarine.Infrastructure.Import.NfoWriter(),
+			Substitute.For<global::Submarine.Infrastructure.Metadata.IMetadataConsumerWriter>(),
+			Substitute.For<global::Submarine.Infrastructure.Import.IFileDateService>(),
 			mediaInfo,
 			_eventBus,
 			_time,
@@ -343,7 +345,7 @@ public sealed class ImportServiceTests : IDisposable
 		_db.RootFolders.Add(root);
 		_db.QualityProfiles.Add(quality);
 		_db.LanguageProfiles.Add(language);
-		_db.MediaManagementConfig.Add(new MediaManagementConfig { UseHardlinks = false, WriteNfo = false, ImportExtraFiles = false, EnableMediaInfo = false, DeleteEmptyFolders = true, UnmonitorDeletedFiles = false });
+		_db.MediaManagementConfig.Add(new MediaManagementConfig { UseHardlinks = false, ImportExtraFiles = false, EnableMediaInfo = false, DeleteEmptyFolders = true, UnmonitorDeletedFiles = false });
 		_db.NamingConfig.Add(new NamingConfig());
 		_db.SaveChanges();
 

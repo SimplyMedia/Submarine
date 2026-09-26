@@ -254,7 +254,8 @@ public sealed class TvdbClient(
 			detail.Poster,
 			detail.Backdrops?.FirstOrDefault(b => !string.IsNullOrWhiteSpace(b)),
 			MetadataMapping.ParseDate(detail.FirstAired)?.Year,
-			alternateTitles);
+			alternateTitles,
+			detail.OriginalLanguage);
 	}
 
 	internal static SearchResultResource MapSearchResult(TvdbSearchItem item) => new(

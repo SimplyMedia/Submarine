@@ -164,7 +164,8 @@ internal sealed record TmdbTvDetail(
 	[property: JsonPropertyName("external_ids")] TmdbExternalIds? ExternalIds,
 	[property: JsonPropertyName("alternative_titles")] TmdbAlternativeTitles? AlternativeTitles,
 	[property: JsonPropertyName("content_ratings")] TmdbContentRatings? ContentRatings,
-	[property: JsonPropertyName("episode_groups")] TmdbEpisodeGroups? EpisodeGroups);
+	[property: JsonPropertyName("episode_groups")] TmdbEpisodeGroups? EpisodeGroups,
+	[property: JsonPropertyName("original_language")] string? OriginalLanguage);
 
 internal sealed record TmdbReleaseDate(
 	string? Certification,
@@ -191,7 +192,8 @@ internal sealed record TmdbMovieSummary(
 	[property: JsonPropertyName("release_date")] string? ReleaseDate,
 	[property: JsonPropertyName("poster_path")] string? PosterPath,
 	[property: JsonPropertyName("backdrop_path")] string? BackdropPath,
-	[property: JsonPropertyName("original_title")] string? OriginalTitle);
+	[property: JsonPropertyName("original_title")] string? OriginalTitle,
+	[property: JsonPropertyName("original_language")] string? OriginalLanguage);
 
 internal sealed record TmdbMovieDetail(
 	int Id,
@@ -209,7 +211,13 @@ internal sealed record TmdbMovieDetail(
 	[property: JsonPropertyName("release_dates")] TmdbReleaseDates? ReleaseDates,
 	[property: JsonPropertyName("alternative_titles")] TmdbAlternativeTitles? AlternativeTitles,
 	TmdbVideos? Videos,
-	[property: JsonPropertyName("external_ids")] TmdbExternalIds? ExternalIds);
+	[property: JsonPropertyName("external_ids")] TmdbExternalIds? ExternalIds,
+	[property: JsonPropertyName("original_language")] string? OriginalLanguage,
+	TmdbKeywordsWrapper? Keywords);
+
+internal sealed record TmdbKeyword(string? Name);
+
+internal sealed record TmdbKeywordsWrapper(IReadOnlyList<TmdbKeyword>? Keywords);
 
 internal sealed record TmdbCollectionDetail(
 	int Id,
@@ -285,7 +293,8 @@ internal sealed record TvdbSeriesDetail(
 	IReadOnlyList<TvdbAlias>? Aliases,
 	IReadOnlyList<TvdbCompany>? Companies,
 	IReadOnlyList<TvdbRemoteId>? RemoteIds,
-	IReadOnlyList<TvdbSeasonEntry>? Seasons);
+	IReadOnlyList<TvdbSeasonEntry>? Seasons,
+	[property: JsonPropertyName("originalLanguage")] string? OriginalLanguage);
 
 internal sealed record TvdbSearchItem(
 	[property: JsonPropertyName("tvdbId")] int? TvdbId,

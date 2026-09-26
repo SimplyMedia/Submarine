@@ -21,7 +21,9 @@ public record MovieResource(
 	string? YouTubeTrailerId,
 	int? TmdbCollectionId,
 	string? CollectionTitle,
-	IReadOnlyList<AlternateTitleResource> AlternateTitles);
+	IReadOnlyList<AlternateTitleResource> AlternateTitles,
+	string? OriginalLanguage = null,
+	IReadOnlyList<string>? Keywords = null);
 
 public record CollectionResource(
 	int TmdbCollectionId,

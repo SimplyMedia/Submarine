@@ -14,6 +14,7 @@ using Submarine.Core.Profiles;
 using Submarine.Core.Quality;
 using Submarine.Core.Release;
 using Submarine.Infrastructure.MediaFiles;
+using Submarine.Infrastructure.Metadata;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Infrastructure.Import;
@@ -25,7 +26,8 @@ public sealed class ImportService(
 	NamingService namingService,
 	IFileLinker fileLinker,
 	IRecycleBinService recycleBinService,
-	INfoWriter nfoWriter,
+	IMetadataConsumerWriter metadataWriter,
+	IFileDateService fileDateService,
 	IMediaInfoService mediaInfoService,
 	IEventBus eventBus,
 	TimeProvider timeProvider,
@@ -301,6 +303,17 @@ public sealed class ImportService(
 				.Select(x => Path.GetFullPath(Path.Combine(versionFolder, x.RelativePath)))
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+			foreach (var file in registered)
+			{
+				var episode = file.Episodes.FirstOrDefault();
+				if (episode is null || !registeredPaths.Contains(Path.GetFullPath(Path.Combine(versionFolder, file.RelativePath))))
+				{
+					continue;
+				}
+
+				fileDateService.ApplyEpisodeFileDate(Path.Combine(versionFolder, file.RelativePath), mediaManagement.FileDate, episode);
+			}
+
 			var candidates = Directory.EnumerateFiles(versionFolder, "*", SearchOption.AllDirectories)
 				.Where(x => MediaFileConstants.MediaFileExtensions.Contains(Path.GetExtension(x).ToLowerInvariant()))
 				.Where(x => !registeredPaths.Contains(Path.GetFullPath(x)))
@@ -392,6 +405,14 @@ public sealed class ImportService(
 				.Where(x => onDisk.Contains(Path.GetFullPath(Path.Combine(versionFolder, x.RelativePath))))
 				.Select(x => Path.GetFullPath(Path.Combine(versionFolder, x.RelativePath)))
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var file in registered)
+			{
+				if (registeredPaths.Contains(Path.GetFullPath(Path.Combine(versionFolder, file.RelativePath))))
+				{
+					fileDateService.ApplyMovieFileDate(Path.Combine(versionFolder, file.RelativePath), mediaManagement.FileDate, movie);
+				}
+			}
 
 			var candidates = Directory.EnumerateFiles(versionFolder, "*", SearchOption.AllDirectories)
 				.Where(x => MediaFileConstants.MediaFileExtensions.Contains(Path.GetExtension(x).ToLowerInvariant()))
@@ -523,11 +544,6 @@ public sealed class ImportService(
 				ImportExtraFiles(sourcePath, destinationPath, mediaManagement.ExtraFileExtensions, mediaManagement.UseHardlinks);
 			}
 
-			if (mediaManagement.WriteNfo)
-			{
-				nfoWriter.WriteEpisodeNfo(destinationPath, episodes);
-				nfoWriter.WriteSeriesNfo(versionFolder, series);
-			}
 		}
 
 		var isUpgrade = existing is not null;
@@ -559,6 +575,9 @@ public sealed class ImportService(
 
 		db.EpisodeFiles.Add(newFile);
 		await db.SaveChangesAsync(cancellationToken);
+
+		fileDateService.ApplyEpisodeFileDate(destinationPath, mediaManagement.FileDate, episodes[0]);
+		await metadataWriter.WriteEpisodeAsync(series, version.Id, versionFolder, newFile, episodes, cancellationToken);
 
 		foreach (var oldFile in existingFiles)
 		{
@@ -669,11 +688,6 @@ public sealed class ImportService(
 			{
 				ImportExtraFiles(sourcePath, destinationPath, mediaManagement.ExtraFileExtensions, mediaManagement.UseHardlinks);
 			}
-
-			if (mediaManagement.WriteNfo)
-			{
-				nfoWriter.WriteMovieNfo(destinationPath, movie);
-			}
 		}
 
 		var isUpgrade = existing is not null;
@@ -699,6 +713,9 @@ public sealed class ImportService(
 
 		db.MovieFiles.Add(newFile);
 		await db.SaveChangesAsync(cancellationToken);
+
+		fileDateService.ApplyMovieFileDate(destinationPath, mediaManagement.FileDate, movie);
+		await metadataWriter.WriteMovieAsync(movie, versionFolder, newFile, cancellationToken);
 
 		foreach (var oldFile in existingFiles)
 		{
