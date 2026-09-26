@@ -108,6 +108,23 @@ public sealed class AutomaticSearchServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task ProcessSeriesCandidatesAsync_ShouldGrabApprovedDecisionInsteadOfRejectedCandidate()
+	{
+		var rejected = Candidate("Automatic.search.series.S01E01.1080p-REJECTED", [1]);
+		var approved = Candidate("Automatic.search.series.S01E01.1080p-APPROVED", [1]);
+		_decisionMaker.DecideAll(Arg.Any<IReadOnlyCollection<ReleaseCandidate>>(), Arg.Any<DecisionContext>(), Arg.Any<DateTime?>())
+			.Returns(_ => [
+				new DownloadDecision(rejected, false, 0, [new RejectionReason("blocked", RejectionType.PERMANENT)], [], 0),
+				new DownloadDecision(approved, true, 100, [], [], 0)
+			]);
+
+		await _service.ProcessSeriesCandidatesAsync(_series.Id, [rejected, approved], TestContext.Current.CancellationToken);
+
+		await _grabService.Received(1).GrabAsync(
+			Arg.Is<DownloadDecision>(decision => decision.Approved && decision.Candidate == approved),
+			Arg.Any<int>(), Arg.Any<int?>(), Arg.Any<IReadOnlyList<int>?>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
+	}
+	[Fact]
 	public async Task ProcessSeriesCandidatesAsync_ShouldGrabEachGroup_WhenEpisodeSetsDoNotOverlap()
 	{
 		var seasonPackEpisode1 = Candidate("Automatic.search.series.S01.1080p-GROUP", [1]);
