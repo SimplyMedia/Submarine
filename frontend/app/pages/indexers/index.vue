@@ -945,7 +945,7 @@ async function copyToClipboard(value: string) {
 						<SSelect
 							control-id="idx-protocol"
 							:model-value="protocol"
-							:options="protocolOptions"
+							:options="protocolOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 							@update:model-value="protocol = $event as Protocol"
 						/>
 					</SField>

@@ -7,7 +7,9 @@ import {
 	colonReplacementOptions,
 	downloadPropersAndRepacksOptions,
 	fileDateOptions,
-	multiEpisodeStyleOptions, mediaKindOptions,
+	humanizeEnumValue,
+	mediaKindOptions,
+	multiEpisodeStyleOptions,
 } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
 
@@ -233,7 +235,7 @@ onMounted(async () => {
 					<SSelect
 						v-model="mediaDraft.fileDate"
 						control-id="file-date"
-						:options="fileDateOptions"
+						:options="fileDateOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 				<p class="nfo-hint">
@@ -367,7 +369,7 @@ onMounted(async () => {
 					<SSelect
 						v-model="mediaDraft.downloadPropersAndRepacks"
 						control-id="propers"
-						:options="downloadPropersAndRepacksOptions"
+						:options="downloadPropersAndRepacksOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 			</SSection>
@@ -462,7 +464,7 @@ onMounted(async () => {
 					<SSelect
 						v-model="namingDraft.colonReplacement"
 						control-id="colon-replacement"
-						:options="colonReplacementOptions"
+						:options="colonReplacementOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 				<SField
@@ -472,7 +474,7 @@ onMounted(async () => {
 					<SSelect
 						v-model="namingDraft.multiEpisodeStyle"
 						control-id="multi-episode-style"
-						:options="multiEpisodeStyleOptions"
+						:options="multiEpisodeStyleOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 			</div>
@@ -599,7 +601,7 @@ onMounted(async () => {
 				<SSelect
 					v-model="rootFolderKind"
 					control-id="new-root-kind"
-					:options="mediaKindOptions"
+					:options="mediaKindOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 				/>
 			</SField>
 			<template #footer>

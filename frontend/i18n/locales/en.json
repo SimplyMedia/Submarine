@@ -1744,7 +1744,7 @@
       "deleteDescription": "This removes {title} from the library.",
       "deleteFilesOnDisk": "Delete files on disk",
       "addImportListExclusion": "Add an import list exclusion",
-      "deletedToast": "Series deleted",
+      "deletedToast": "{title} deleted",
       "none": "None",
       "current": "Current",
       "sort": {

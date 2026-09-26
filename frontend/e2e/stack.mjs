@@ -3,6 +3,7 @@
 //   node e2e/stack.mjs stop
 // The API listens on http://localhost:8989 (E2E_API_PORT) with a fresh SQLite database under .e2e/.
 import { spawn } from 'node:child_process'
+import { createServer } from 'node:net'
 import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, openSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -32,6 +33,14 @@ async function waitFor(url, attempts = 60) {
 	throw new Error(`Timed out waiting for ${url}`)
 }
 
+async function assertPortAvailable(port) {
+	const server = createServer()
+	await new Promise((resolve, reject) => {
+		server.once('error', reject)
+		server.listen(port, '127.0.0.1', () => server.close(error => error ? reject(error) : resolve()))
+	})
+}
+
 function detach(name, command, args, options) {
 	const log = openSync(path.join(stateDir, `${name}.log`), 'a')
 	const child = spawn(command, args, { ...options, detached: true, stdio: ['ignore', log, log] })
@@ -40,6 +49,14 @@ function detach(name, command, args, options) {
 }
 
 async function start() {
+	try {
+		await assertPortAvailable(apiPort)
+	}
+	catch (error) {
+		if (error?.code !== 'EADDRINUSE') throw error
+		throw new Error(`Cannot start e2e stack: API port ${apiPort} is already in use`, { cause: error })
+	}
+
 	rmSync(stateDir, { recursive: true, force: true })
 	mkdirSync(path.join(stateDir, 'data'), { recursive: true })
 	mkdirSync(path.join(stateDir, 'media', 'tv'), { recursive: true })
