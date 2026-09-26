@@ -12,6 +12,7 @@ definePageMeta({ layout: 'default' })
 useHead({ title: 'General' })
 
 const api = useApi()
+const system = useSystemStore()
 const { toast } = useToast()
 
 const logLevelOptions = ['Verbose', 'Debug', 'Information', 'Warning', 'Error', 'Fatal'].map(value => ({ value, label: value }))
@@ -66,6 +67,9 @@ async function save() {
 			throw toApiError(result.error, result.response)
 		}
 		markSaved(result.data)
+		if (system.status) {
+			system.status.instanceName = result.data.instanceName ?? 'Submarine'
+		}
 		toast({ title: 'Saved', tone: 'ok' })
 	}
 	catch (error) {

@@ -40,6 +40,8 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 		_provider = services.BuildServiceProvider();
 		var db = _provider.GetRequiredService<SubmarineDbContext>();
 		await db.Database.EnsureCreatedAsync();
+		db.GeneralConfig.Add(new GeneralConfig());
+		await db.SaveChangesAsync();
 	}
 
 	public async ValueTask DisposeAsync()
@@ -99,6 +101,10 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 	public async Task Grab_ShouldBuildMessageFromMedia()
 	{
 		await SeedSeriesAsync();
+		var config = await Db.GeneralConfig.SingleAsync(TestContext.Current.CancellationToken);
+		config.InstanceName = "My Submarine";
+		config.ApplicationUrl = "https://submarine.example/base";
+		await Db.SaveChangesAsync(TestContext.Current.CancellationToken);
 		await SeedNotificationAsync(n =>
 		{
 			n.OnGrab = true;
@@ -111,6 +117,10 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 
 		var message = sender.Messages.Single();
 		message.EventType.ShouldBe(NotificationEventType.GRAB);
+		message.Title.ShouldBe("My Submarine - Grabbed");
+		message.Links.ShouldContain(link =>
+			link.Label == "Open My Submarine"
+			&& link.Url == "https://submarine.example/base/series/1");
 		message.MediaTitle.ShouldBe("Some Show");
 		message.Year.ShouldBe(2024);
 		message.ImageUrl.ShouldBe("https://image/poster.jpg");
