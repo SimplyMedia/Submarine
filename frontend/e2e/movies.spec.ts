@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
-import { ensureRootFolder, signIn } from './setup'
+import type { ensureRootFolder } from './setup'
+import { signIn } from './setup'
 
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
 

@@ -35,7 +35,6 @@ async function ensureMovie(request: Parameters<typeof ensureLibrary>[0], tmdbId:
 	expect(added.ok(), await added.text()).toBe(true)
 }
 
-
 test('collections: list a metadata-backed collection and add its missing movies', async ({ page }) => {
 	for (const tmdbId of COLLECTION_MOVIE_IDS) {
 		const list = await page.request.get('/api/v1/movies', { params: { PageSize: 200 } })
