@@ -21,48 +21,20 @@ public interface IHealthCheck
 }
 
 /// <summary>
-///     Checks indexer configuration and failure backoff state.
+///     Checks that at least one indexer is configured. Per-mode enablement and failure backoff are
+///     covered by the dedicated indexer health checks.
 /// </summary>
-public sealed class IndexerHealthCheck(SubmarineDbContext db, TimeProvider timeProvider) : IHealthCheck
+public sealed class IndexerHealthCheck(SubmarineDbContext db) : IHealthCheck
 {
 	private const string Source = "Indexers";
 
 	/// <inheritdoc />
 	public async Task<IReadOnlyList<HealthIssueSnapshot>> CheckAsync(CancellationToken cancellationToken = default)
 	{
-		var issues = new List<HealthIssueSnapshot>();
-		var indexers = await db.Indexers.AsNoTracking()
-			.Select(x => new { x.Id, x.Name, x.EnableRss, x.EnableAutomaticSearch })
-			.ToListAsync(cancellationToken);
-		if (indexers.Count == 0)
-		{
-			issues.Add(new(HealthIssueType.WARNING, Source, "No indexers are configured", null));
-			return issues;
-		}
-
-		if (indexers.All(x => !x.EnableRss))
-		{
-			issues.Add(new(HealthIssueType.WARNING, Source, "No indexers have RSS sync enabled", null));
-		}
-
-		if (indexers.All(x => !x.EnableAutomaticSearch))
-		{
-			issues.Add(new(HealthIssueType.WARNING, Source, "No indexers have automatic search enabled", null));
-		}
-
-		var now = timeProvider.GetUtcNow().UtcDateTime;
-		var disabledUntil = await db.IndexerStatuses.AsNoTracking()
-			.Where(x => x.DisabledUntil > now)
-			.Join(db.Indexers, status => status.IndexerId, indexer => indexer.Id,
-				(status, indexer) => new { indexer.Name, status.DisabledUntil })
-			.ToListAsync(cancellationToken);
-		foreach (var status in disabledUntil)
-		{
-			issues.Add(new(HealthIssueType.WARNING, Source,
-				$"Indexer {status.Name} is disabled until {status.DisabledUntil:R} after repeated failures", null));
-		}
-
-		return issues;
+		var count = await db.Indexers.AsNoTracking().CountAsync(cancellationToken);
+		return count == 0
+			? [new(HealthIssueType.WARNING, Source, "No indexers are configured", HealthWikiLinks.For("no-indexers-configured"))]
+			: [];
 	}
 }
 
@@ -254,13 +226,6 @@ public sealed class SettingsHealthCheck(SubmarineDbContext db) : IHealthCheck
 		if (indexerConfig.RssSyncIntervalMinutes == 0)
 		{
 			issues.Add(new(HealthIssueType.WARNING, "RSS sync", "RSS sync is disabled", null));
-		}
-
-		var mediaManagement = await db.MediaManagementConfig.AsNoTracking().SingleAsync(cancellationToken);
-		if (!string.IsNullOrEmpty(mediaManagement.RecycleBinPath) && !Directory.Exists(mediaManagement.RecycleBinPath))
-		{
-			issues.Add(new(HealthIssueType.WARNING, "Recycle bin",
-				$"Recycle bin path {mediaManagement.RecycleBinPath} is missing", null));
 		}
 
 		var general = await db.GeneralConfig.AsNoTracking().SingleAsync(cancellationToken);
