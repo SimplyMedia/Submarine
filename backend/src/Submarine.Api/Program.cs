@@ -69,7 +69,10 @@ builder.Host.UseSerilog((context, services, configuration) =>
 			{
 				BatchSizeLimit = 100,
 				Period = TimeSpan.FromSeconds(5),
-				EagerlyEmitFirstEvent = true
+				// The Logs table is created by SubmarineMigrationService as a hosted service, which
+				// starts after Serilog is already active; an eager first flush could race the
+				// migration and drop the first batch of startup logs.
+				EagerlyEmitFirstEvent = false
 			}));
 });
 
@@ -160,6 +163,15 @@ builder.Services.AddModules(
 
 var app = builder.Build();
 
+// docker run / Unraid templates without compose default Metadata:BaseUrl and Mappings:BaseUrl to
+// localhost, which inside a container resolves to the container itself, so every sibling call
+// fails until the operator points it at the sibling container's name or host.
+if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
+{
+	WarnIfLoopback("Metadata:BaseUrl", builder.Configuration["Metadata:BaseUrl"]);
+	WarnIfLoopback("Mappings:BaseUrl", builder.Configuration["Mappings:BaseUrl"]);
+}
+
 // UrlBase lives in the database and can change at runtime, so the path base is applied per request.
 app.Use(async (context, next) =>
 {
@@ -180,7 +192,12 @@ app.Use(async (context, next) =>
 // any earlier middleware, including this one).
 app.UseRouting();
 
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+	options.GetLevel = (context, elapsed, ex) => ex is not null || context.Response.StatusCode >= 500
+		? Serilog.Events.LogEventLevel.Error
+		: IsQuietRequestPath(context.Request.Path)
+			? Serilog.Events.LogEventLevel.Debug
+			: Serilog.Events.LogEventLevel.Information);
 app.UseExceptionHandler();
 app.UseRateLimiter();
 app.UseStaticFiles();
@@ -188,8 +205,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapModules(typeof(Program).Assembly, typeof(SubmarineDbContext).Assembly);
-app.MapOpenApi("openapi/{documentName}.json").AllowAnonymous();
-app.MapScalarApiReference().AllowAnonymous();
+if (SubmarineDesignTime.IsDocumentGeneration()
+	|| app.Configuration.GetValue("Swagger:Enabled", app.Environment.IsDevelopment()))
+{
+	app.MapOpenApi("openapi/{documentName}.json").AllowAnonymous();
+	app.MapScalarApiReference().AllowAnonymous();
+}
+
 // A single catch-all: MapFallback with a route-constrained pattern never matches an empty
 // segment (the root "/"), which would otherwise fall through to the global FallbackPolicy and
 // 401 instead of serving the SPA (and, for excluded prefixes, instead of a clean 404). Matching
@@ -262,5 +284,23 @@ static void SwapStagedSqliteRestore(string dataDirectory)
 
 	File.Move(staged, live, overwrite: true);
 }
+
+static void WarnIfLoopback(string key, string? baseUrl)
+{
+	if (Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) && uri.Host is "localhost" or "127.0.0.1")
+	{
+		Serilog.Log.Warning(
+			"{Key} is {BaseUrl}, which resolves to this container itself. Point it at the sibling service's container name or host instead of localhost",
+			key, baseUrl);
+	}
+}
+
+// _status (health probes, hit every 30s by Docker/monitoring), hubs (SignalR negotiate/poll) and
+// static assets (anything with a file extension: SPA bundles, images, fonts) are noisy but
+// uninteresting at Information; errors still surface via the status-code check above.
+static bool IsQuietRequestPath(PathString path)
+	=> path.StartsWithSegments("/_status")
+		|| path.StartsWithSegments("/hubs")
+		|| Path.HasExtension(path.Value);
 
 public partial class Program;
