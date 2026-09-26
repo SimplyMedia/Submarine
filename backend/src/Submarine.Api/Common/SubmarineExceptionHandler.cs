@@ -2,13 +2,15 @@ using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Submarine.Core.Common;
+using Submarine.Infrastructure.Metadata;
 
 namespace Submarine.Api.Common;
 
 /// <summary>
 ///     Maps well known exceptions to ProblemDetails responses:
 ///     KeyNotFoundException to 404, ValidationException to 400 with errors,
-///     ConflictException to 409, everything else to 500 with no exception detail.
+///     ConflictException to 409, SiblingServiceException to 502 naming the service,
+///     everything else to 500 with no exception detail.
 /// </summary>
 public sealed class SubmarineExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
@@ -23,6 +25,7 @@ public sealed class SubmarineExceptionHandler(IProblemDetailsService problemDeta
 			KeyNotFoundException => (StatusCodes.Status404NotFound, "Not found", exception.Message),
 			ValidationException => (StatusCodes.Status400BadRequest, "Validation failed", exception.Message),
 			ConflictException => (StatusCodes.Status409Conflict, "Conflict", exception.Message),
+			SiblingServiceException => (StatusCodes.Status502BadGateway, "Upstream service unavailable", exception.Message),
 			_ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", "An unexpected error occurred")
 		};
 

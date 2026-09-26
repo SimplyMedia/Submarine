@@ -101,6 +101,63 @@ public sealed class SiblingClientTests
 		captured!.Headers.Contains("X-Api-Key").ShouldBeFalse();
 	}
 
+	[Fact]
+	public async Task SiblingResponseHandler_ShouldThrowNamingTheService_WhenResponseIsServerError()
+	{
+		var handler = new SiblingResponseHandler("Metadata service")
+		{
+			InnerHandler = new RespondingHandler(HttpStatusCode.BadGateway, "boom")
+		};
+		using var invoker = new HttpMessageInvoker(handler);
+
+		var exception = await Should.ThrowAsync<SiblingServiceException>(
+			() => invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://localhost/x"), CancellationToken.None));
+
+		exception.ServiceName.ShouldBe("Metadata service");
+		exception.Message.ShouldContain("Metadata service");
+	}
+
+	[Fact]
+	public async Task SiblingResponseHandler_ShouldThrowNamingTheService_WhenTransportFails()
+	{
+		var handler = new SiblingResponseHandler("Mappings service")
+		{
+			InnerHandler = new ThrowingHandler()
+		};
+		using var invoker = new HttpMessageInvoker(handler);
+
+		var exception = await Should.ThrowAsync<SiblingServiceException>(
+			() => invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://localhost/x"), CancellationToken.None));
+
+		exception.ServiceName.ShouldBe("Mappings service");
+	}
+
+	[Fact]
+	public async Task SiblingResponseHandler_ShouldPassThrough_NotFoundAndSuccess()
+	{
+		var notFoundHandler = new SiblingResponseHandler("Metadata service") { InnerHandler = new RespondingHandler(HttpStatusCode.NotFound, "") };
+		using var notFoundInvoker = new HttpMessageInvoker(notFoundHandler);
+		var notFoundResponse = await notFoundInvoker.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://localhost/x"), CancellationToken.None);
+		notFoundResponse.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+		var okHandler = new SiblingResponseHandler("Metadata service") { InnerHandler = new RespondingHandler(HttpStatusCode.OK, "{}") };
+		using var okInvoker = new HttpMessageInvoker(okHandler);
+		var okResponse = await okInvoker.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://localhost/x"), CancellationToken.None);
+		okResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+	}
+
+	private sealed class RespondingHandler(HttpStatusCode status, string body) : HttpMessageHandler
+	{
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+			=> Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+	}
+
+	private sealed class ThrowingHandler : HttpMessageHandler
+	{
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+			=> throw new HttpRequestException("connection refused");
+	}
+
 	private sealed class CapturingHandler(Action<HttpRequestMessage> capture) : HttpMessageHandler
 	{
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

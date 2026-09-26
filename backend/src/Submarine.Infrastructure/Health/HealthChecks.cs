@@ -1,5 +1,7 @@
+using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Submarine.Core.Common;
 using Submarine.Core.Download;
 using Submarine.Core.Enums;
 using Submarine.Core.Events;
@@ -151,16 +153,21 @@ public sealed class RootFolderHealthCheck(SubmarineDbContext db) : IHealthCheck
 }
 
 /// <summary>
-///     Checks the reachability of the metadata and mappings services.
+///     Checks the reachability of the metadata and mappings services, and which metadata
+///     providers have credentials configured.
 /// </summary>
 public sealed class ServiceHealthCheck(IConfiguration configuration, IHttpClientFactory httpClientFactory) : IHealthCheck
 {
+	private const string MetadataSource = "Metadata service";
+
 	/// <inheritdoc />
 	public async Task<IReadOnlyList<HealthIssueSnapshot>> CheckAsync(CancellationToken cancellationToken = default)
 	{
 		var issues = new List<HealthIssueSnapshot>();
-		await CheckAsync(issues, "Metadata service", configuration["Metadata:BaseUrl"], cancellationToken);
+		var metadataBaseUrl = configuration["Metadata:BaseUrl"];
+		await CheckAsync(issues, MetadataSource, metadataBaseUrl, cancellationToken);
 		await CheckAsync(issues, "Mappings service", configuration["Mappings:BaseUrl"], cancellationToken);
+		await CheckMetadataProvidersAsync(issues, metadataBaseUrl, cancellationToken);
 		return issues;
 	}
 
@@ -191,6 +198,47 @@ public sealed class ServiceHealthCheck(IConfiguration configuration, IHttpClient
 			issues.Add(new(HealthIssueType.ERROR, source, $"{source} is unreachable: {ex.Message}", null));
 		}
 	}
+
+	private async Task CheckMetadataProvidersAsync(List<HealthIssueSnapshot> issues, string? baseUrl, CancellationToken cancellationToken)
+	{
+		if (string.IsNullOrEmpty(baseUrl))
+		{
+			return;
+		}
+
+		try
+		{
+			var client = httpClientFactory.CreateClient("health");
+			using var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/_status/ready", cancellationToken);
+			if (!response.IsSuccessStatusCode)
+			{
+				// Already reported as unreachable/erroring by the healthz check above.
+				return;
+			}
+
+			var readiness = await response.Content.ReadFromJsonAsync<MetadataReadiness>(SubmarineJson.Default, cancellationToken);
+			if (readiness is null)
+			{
+				return;
+			}
+
+			if (!readiness.Tmdb)
+			{
+				issues.Add(new(HealthIssueType.WARNING, MetadataSource, "TMDB is not configured on the metadata service", null));
+			}
+
+			if (!readiness.Tvdb)
+			{
+				issues.Add(new(HealthIssueType.WARNING, MetadataSource, "TVDB is not configured on the metadata service", null));
+			}
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			// Already reported as unreachable by the healthz check above.
+		}
+	}
+
+	private sealed record MetadataReadiness(bool Tmdb, bool Tvdb);
 }
 
 /// <summary>

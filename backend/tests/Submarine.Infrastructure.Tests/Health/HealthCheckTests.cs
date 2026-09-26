@@ -1,5 +1,8 @@
+using System.Net;
+using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -210,6 +213,40 @@ public sealed class HealthCheckTests : IAsyncLifetime
 		var issues = await new UpdateHealthCheck(checker).CheckAsync(TestContext.Current.CancellationToken);
 
 		issues.ShouldContain(x => x.Type == HealthIssueType.NOTICE && x.Message.Contains("2.0.0"));
+	}
+
+	[Fact]
+	public async Task ServiceCheck_ShouldWarnPerProvider_WhenMetadataReadyReportsMissingCredentials()
+	{
+		var configuration = new ConfigurationBuilder()
+			.AddInMemoryCollection(new Dictionary<string, string?> { ["Metadata:BaseUrl"] = "http://metadata" })
+			.Build();
+		var factory = Substitute.For<IHttpClientFactory>();
+		factory.CreateClient("health").Returns(_ => new HttpClient(new MetadataReadinessHandler())
+		{
+			BaseAddress = new Uri("http://metadata")
+		});
+
+		var issues = await new ServiceHealthCheck(configuration, factory).CheckAsync(TestContext.Current.CancellationToken);
+
+		issues.ShouldContain(x => x.Type == HealthIssueType.WARNING && x.Message == "TMDB is not configured on the metadata service");
+		issues.ShouldNotContain(x => x.Message.Contains("TVDB"));
+	}
+
+	private sealed class MetadataReadinessHandler : HttpMessageHandler
+	{
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		{
+			if (request.RequestUri!.AbsolutePath == "/_status/ready")
+			{
+				return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+				{
+					Content = new StringContent("""{"tmdb":false,"tvdb":true}""", Encoding.UTF8, "application/json")
+				});
+			}
+
+			return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+		}
 	}
 
 	[Fact]

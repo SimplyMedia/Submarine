@@ -100,11 +100,15 @@ public sealed class SubmarineSeeder(SubmarineDbContext db, TimeProvider timeProv
 				continue;
 			}
 
+			// HealthCheck and IndexerDefinitionSync run once immediately on a fresh install, so a
+			// broken setup (unreachable sibling service, missing definitions) is visible right away
+			// instead of only after the first scheduled interval.
+			var nextRun = name is "HealthCheck" or "IndexerDefinitionSync" ? now : now.AddMinutes(interval);
 			db.ScheduledTasks.Add(new ScheduledTask
 			{
 				Name = name,
 				IntervalMinutes = interval,
-				NextRun = now.AddMinutes(interval)
+				NextRun = nextRun
 			});
 		}
 
