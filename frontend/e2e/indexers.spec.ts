@@ -89,3 +89,35 @@ test('indexers: add a Torznab tracker, test it, then search and grab a release',
 	await expect(page.locator('.s-toast-title', { hasText: '1 releases grabbed' })).toBeVisible()
 	await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
 })
+
+test('interactive search: shows rejected releases with decision reasons', async ({ page }) => {
+	await signIn(page)
+	await ensureLibrary(page.request)
+	await ensureStubTrackerIndexer(page.request)
+	await resetGrabState(page.request)
+	const name = 'E2E search rejection profile'
+	const profileResponse = await page.request.get('/api/v1/release-profiles')
+	const profiles = (await profileResponse.json() as { items: { id: number, name: string }[] }).items
+	for (const profile of profiles.filter(item => item.name === name)) await page.request.delete(`/api/v1/release-profiles/${profile.id}`)
+	const created = await page.request.post('/api/v1/release-profiles', {
+		data: { name, enabled: true, required: ['E2E-NOT-FOUND'], ignored: [], indexerId: null, tags: [] },
+	})
+	expect(created.ok(), await created.text()).toBe(true)
+	const releaseProfile = await created.json() as { id: number }
+	try {
+		await page.goto('/indexers/search')
+		await page.getByPlaceholder('Release title, e.g. Harbour Lights S02E06').fill('Harbour Lights')
+		await page.getByRole('button', { name: 'Search', exact: true }).click()
+
+		const results = page.getByRole('table')
+		const rejected = results.getByRole('row').filter({ hasText: TARGET_RELEASE_FRAGMENT })
+		await expect(rejected).toBeVisible()
+		const score = rejected.locator('.release-score-rejected')
+		await expect(score).toBeVisible()
+		await score.hover()
+		await expect(page.getByRole('tooltip')).toContainText('E2E-NOT-FOUND')
+	}
+	finally {
+		await page.request.delete(`/api/v1/release-profiles/${releaseProfile.id}`)
+	}
+})

@@ -52,13 +52,33 @@ test('quality profiles: create from template, then edit and save', async ({ page
 	await page.getByRole('menuitem', { name: 'Edit' }).click()
 
 	const dialog = page.getByRole('dialog', { name: 'Edit quality profile' })
-	await expect(dialog).toBeVisible()
 	const nameInput = dialog.getByLabel('Name')
 	await nameInput.fill('HD-720p (renamed)')
+	const cutoff = dialog.getByLabel('Upgrade until')
+	await cutoff.click()
+	await page.getByRole('option').last().click()
+	const cutoffLabel = (await cutoff.textContent())?.trim()
+	const formatScore = dialog.getByLabel('Score for E2E release modifier format')
+	await expect(formatScore).toBeVisible()
+	await formatScore.fill('37')
+	await dialog.getByLabel('Minimum score to grab').fill('11')
+	await dialog.getByLabel('Score to upgrade past cutoff').fill('22')
+	await dialog.getByLabel('Minimum score for further upgrades').fill('5')
 	await dialog.getByRole('button', { name: 'Save changes' }).click()
 
 	await expect(page.locator('.s-toast-title', { hasText: 'Saved' })).toBeVisible()
 	await expect(page.getByRole('row').filter({ hasText: 'HD-720p (renamed)' })).toBeVisible()
+	const profilesResponse = await page.request.get('/api/v1/quality-profiles')
+	const profiles = (await profilesResponse.json() as { items: { id: number, name: string, cutoff: number, items: { quality: { name: string } }[], formatItems: { customFormatId: number, score: number }[], minFormatScore: number, cutoffFormatScore: number, minUpgradeFormatScore: number }[] }).items
+	const savedProfile = profiles.find(profile => profile.name === 'HD-720p (renamed)')
+	expect(savedProfile).toBeDefined()
+	expect(savedProfile).toMatchObject({ minFormatScore: 11, cutoffFormatScore: 22, minUpgradeFormatScore: 5 })
+	expect(savedProfile!.items[savedProfile!.cutoff]!.quality.name).toBe(cutoffLabel)
+	const formatsResponse = await page.request.get('/api/v1/custom-formats')
+	const formats = (await formatsResponse.json() as { items: { id: number, name: string }[] }).items
+	const format = formats.find(item => item.name === 'E2E release modifier format')
+	expect(format).toBeDefined()
+	expect(savedProfile?.formatItems).toContainEqual({ customFormatId: format!.id, score: 37 })
 
 	// Clean up so re-runs stay idempotent.
 	await page.getByRole('row').filter({ hasText: 'HD-720p (renamed)' })
