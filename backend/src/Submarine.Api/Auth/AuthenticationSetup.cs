@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Submarine.Core.Enums;
+using Submarine.Core.Net;
 using Submarine.Infrastructure.Auth;
 
 namespace Submarine.Api.Auth;
@@ -24,7 +25,10 @@ public static class AuthenticationSetup
 	/// <summary>API key scheme for external tools and SignalR.</summary>
 	public const string ApiKeyScheme = "ApiKey";
 
-	/// <summary>Scheme authenticating every request when AuthMethod is None.</summary>
+	/// <summary>HTTP Basic scheme, used when AuthMethod is Basic.</summary>
+	public const string BasicScheme = "Submarine.Basic";
+
+	/// <summary>Scheme authenticating every request when AuthMethod is None or External.</summary>
 	public const string AnonymousScheme = "Submarine.Anonymous";
 
 	/// <summary>Display name.</summary>
@@ -71,7 +75,23 @@ public static class AuthenticationSetup
 				.GetSnapshotAsync()
 				.GetAwaiter()
 				.GetResult();
-			return snapshot.Method == AuthMethod.NONE ? AnonymousScheme : CookieScheme;
+
+			// The forwarded-headers middleware (Program.cs, runs before routing) has already
+			// resolved the connection's remote address against the trusted proxy list, so this
+			// check cannot be fooled by a spoofed X-Forwarded-For from an untrusted peer.
+			if (snapshot.AuthenticationRequired == AuthenticationRequiredType.DISABLED_FOR_LOCAL_ADDRESSES
+				&& context.Connection.RemoteIpAddress is { } remoteIp
+				&& remoteIp.IsLocalAddress())
+			{
+				return AnonymousScheme;
+			}
+
+			return snapshot.Method switch
+			{
+				AuthMethod.NONE or AuthMethod.EXTERNAL => AnonymousScheme,
+				AuthMethod.BASIC => BasicScheme,
+				_ => CookieScheme
+			};
 		};
 	}
 
@@ -183,5 +203,64 @@ public sealed class ApiKeyAuthenticationHandler(
 		var rightBytes = Encoding.UTF8.GetBytes(right);
 		return leftBytes.Length == rightBytes.Length
 			&& System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
+	}
+}
+
+/// <summary>
+///     Authenticates requests carrying an HTTP Basic Authorization header against the Users
+///     table. Active when AuthMethod is Basic.
+/// </summary>
+public sealed class BasicAuthenticationHandler(
+	IOptionsMonitor<AuthenticationSchemeOptions> options,
+	ILoggerFactory logger,
+	System.Text.Encodings.Web.UrlEncoder encoder,
+	IUserCredentialVerifier verifier)
+	: AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+{
+	private const string Prefix = "Basic ";
+
+	/// <inheritdoc />
+	protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+	{
+		var header = Request.Headers.Authorization.FirstOrDefault();
+		if (header is null || !header.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
+		{
+			return AuthenticateResult.Fail("Authorization header missing or not Basic");
+		}
+
+		string decoded;
+		try
+		{
+			decoded = Encoding.UTF8.GetString(Convert.FromBase64String(header[Prefix.Length..]));
+		}
+		catch (FormatException)
+		{
+			return AuthenticateResult.Fail("Malformed Basic authorization header");
+		}
+
+		var parts = decoded.Split(':', 2);
+		if (parts.Length != 2)
+		{
+			return AuthenticateResult.Fail("Malformed Basic authorization header");
+		}
+
+		var user = await verifier.VerifyAsync(parts[0], parts[1], Context.RequestAborted);
+		if (user is null)
+		{
+			return AuthenticateResult.Fail("The username or password is not correct");
+		}
+
+		var identity = new ClaimsIdentity(
+			[new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Name, user.Username)],
+			Scheme.Name);
+		return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name));
+	}
+
+	/// <inheritdoc />
+	protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+	{
+		Response.Headers.WWWAuthenticate = $"Basic realm=\"{AuthenticationSetup.DisplayName}\"";
+		Response.StatusCode = StatusCodes.Status401Unauthorized;
+		return Task.CompletedTask;
 	}
 }

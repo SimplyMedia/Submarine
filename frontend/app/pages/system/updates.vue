@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { useCommandsStore } from '~/stores/commands'
 import { navChildren } from '~/navigation'
+import { formatDate, formatDateTime } from '~/composables/useFormat'
 import type { components } from '~/types/api'
 
 useHead({ title: 'Updates' })
 
 type UpdateInfo = components['schemas']['UpdateDto']
+type ReleaseInfo = components['schemas']['ReleaseInfo']
 
 const { toast } = useToast()
 const commandsStore = useCommandsStore()
 
 const update = ref<UpdateInfo | null>(null)
+const releases = ref<ReleaseInfo[]>([])
 const loading = ref(true)
 const loadError = ref(false)
 const checkCommandId = ref<number | null>(null)
@@ -25,13 +28,17 @@ async function loadUpdate() {
 	loadError.value = false
 	try {
 		const api = useApi()
-		const result = await api.GET('/api/v1/updates')
-		if (result.data) {
-			update.value = result.data
+		const [updateResult, releasesResult] = await Promise.all([
+			api.GET('/api/v1/updates'),
+			api.GET('/api/v1/updates/releases'),
+		])
+		if (updateResult.data) {
+			update.value = updateResult.data
 		}
 		else {
 			loadError.value = true
 		}
+		releases.value = releasesResult.data ?? []
 	}
 	catch {
 		loadError.value = true
@@ -108,7 +115,7 @@ onMounted(() => {
 				</dl>
 
 				<div class="updates-status">
-					<template v-if="!update.latest">
+					<template v-if="update.checkFailed">
 						<SBadge tone="warn">
 							Unknown
 						</SBadge>
@@ -127,6 +134,12 @@ onMounted(() => {
 							View release notes
 						</a>
 					</template>
+					<template v-else-if="!update.latest">
+						<SBadge tone="ok">
+							No releases yet
+						</SBadge>
+						<span>No published releases were found for this branch.</span>
+					</template>
 					<template v-else>
 						<SBadge tone="ok">
 							Up to date
@@ -142,6 +155,55 @@ onMounted(() => {
 					Pull the new image to update.
 				</p>
 			</template>
+		</SSection>
+
+		<SSection
+			v-if="!loading && !loadError"
+			title="Release history"
+		>
+			<SEmptyState
+				v-if="releases.length === 0"
+				message="No releases have been published yet."
+				icon="lucide:package"
+			/>
+			<ul
+				v-else
+				class="release-list"
+			>
+				<li
+					v-for="release in releases"
+					:key="release.version"
+					class="release-row"
+				>
+					<div class="release-header">
+						<span class="release-version">{{ release.version }}</span>
+						<SBadge v-if="release.installed" tone="ok">
+							Currently installed
+						</SBadge>
+						<SBadge v-if="release.prerelease" tone="info">
+							Prerelease
+						</SBadge>
+						<span
+							class="release-date"
+							:title="formatDateTime(release.publishedAt)"
+						>
+							{{ formatDate(release.publishedAt) }}
+						</span>
+						<a
+							:href="release.htmlUrl"
+							target="_blank"
+							rel="noopener"
+							class="release-link"
+						>
+							View on GitHub
+						</a>
+					</div>
+					<pre
+						v-if="release.notes"
+						class="release-notes"
+					>{{ release.notes }}</pre>
+				</li>
+			</ul>
 		</SSection>
 	</div>
 </template>
@@ -180,5 +242,51 @@ onMounted(() => {
 	margin-top: 12px;
 	color: var(--fg-muted);
 	font-size: 0.8125rem;
+}
+
+.release-list {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.release-row {
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--line);
+}
+
+.release-row:last-child {
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+.release-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.release-version {
+	font-weight: 600;
+}
+
+.release-date {
+	color: var(--fg-muted);
+	font-size: 0.8125rem;
+}
+
+.release-link {
+	margin-left: auto;
+	font-size: 0.8125rem;
+}
+
+.release-notes {
+	margin-top: 8px;
+	white-space: pre-wrap;
+	word-break: break-word;
+	font-family: inherit;
+	font-size: 0.875rem;
+	color: var(--fg-muted);
 }
 </style>

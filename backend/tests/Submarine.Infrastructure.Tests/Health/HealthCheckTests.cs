@@ -207,10 +207,10 @@ public sealed class HealthCheckTests : IAsyncLifetime
 	public async Task UpdateCheck_ShouldNotice_WhenUpdateAvailable()
 	{
 		var checker = Substitute.For<IUpdateChecker>();
-		checker.GetLatestAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>())
+		checker.GetLatestAsync(Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
 			.Returns(new UpdateInfo("1.0.0", "2.0.0", "https://example/r", true, false));
 
-		var issues = await new UpdateHealthCheck(checker).CheckAsync(TestContext.Current.CancellationToken);
+		var issues = await new UpdateHealthCheck(Db, checker).CheckAsync(TestContext.Current.CancellationToken);
 
 		issues.ShouldContain(x => x.Type == HealthIssueType.NOTICE && x.Message.Contains("2.0.0"));
 	}

@@ -654,13 +654,35 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ApplicationUrl")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("AuthMethod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AuthenticationRequired")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BackupFolder")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("BackupIntervalDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BackupRetention")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Branch")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("CertificateValidation")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("FeedToken")
                         .IsRequired()
@@ -677,8 +699,40 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
-                    b.Property<bool?>("UpdateAutomatically")
+                    b.Property<string>("ProxyBypassFilter")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ProxyBypassLocalAddresses")
                         .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ProxyEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProxyHost")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProxyPassword")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProxyPort")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProxyType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProxyUsername")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TrustedProxies")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");

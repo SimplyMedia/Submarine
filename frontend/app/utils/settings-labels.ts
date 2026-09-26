@@ -46,7 +46,9 @@ export function humanizeFieldName(name: string): string {
 		.join(' ')
 }
 
-const AUTH_METHOD: Record<string, string> = { NONE: 'Disabled', FORMS: 'Forms login' }
+const AUTH_METHOD: Record<string, string> = { NONE: 'Disabled', FORMS: 'Forms login', BASIC: 'Basic authentication', EXTERNAL: 'External (reverse proxy)' }
+const AUTHENTICATION_REQUIRED: Record<string, string> = { ENABLED: 'Enabled', DISABLED_FOR_LOCAL_ADDRESSES: 'Disabled for local addresses' }
+const CERTIFICATE_VALIDATION: Record<string, string> = { ENABLED: 'Enabled', DISABLED_FOR_LOCAL_ADDRESSES: 'Disabled for local addresses', DISABLED: 'Disabled' }
 const THEME: Record<string, string> = { AUTO: 'Match system', LIGHT: 'Light', DARK: 'Dark' }
 const COLON_REPLACEMENT: Record<string, string> = {
 	DELETE: 'Delete',
@@ -220,6 +222,8 @@ const LANGUAGE_NAMES = [
 const LANGUAGE: Record<string, string> = Object.fromEntries(LANGUAGE_NAMES.map(name => [name, humanizeEnumValue(name)]))
 
 export const authMethodOptions = toOptions(AUTH_METHOD)
+export const authenticationRequiredOptions = toOptions(AUTHENTICATION_REQUIRED)
+export const certificateValidationOptions = toOptions(CERTIFICATE_VALIDATION)
 export const themeOptions = toOptions(THEME)
 export const colonReplacementOptions = toOptions(COLON_REPLACEMENT)
 export const multiEpisodeStyleOptions = toOptions(MULTI_EPISODE_STYLE)
@@ -239,6 +243,8 @@ export const indexerFlagOptions = toOptions(INDEXER_FLAG)
 export const languageOptions = toOptions(LANGUAGE)
 
 export const authMethodLabel = makeLookup(AUTH_METHOD)
+export const authenticationRequiredLabel = makeLookup(AUTHENTICATION_REQUIRED)
+export const certificateValidationLabel = makeLookup(CERTIFICATE_VALIDATION)
 export const themeLabel = makeLookup(THEME)
 export const colonReplacementLabel = makeLookup(COLON_REPLACEMENT)
 export const multiEpisodeStyleLabel = makeLookup(MULTI_EPISODE_STYLE)

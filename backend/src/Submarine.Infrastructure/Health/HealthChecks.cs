@@ -277,12 +277,13 @@ public sealed class SettingsHealthCheck(SubmarineDbContext db) : IHealthCheck
 /// <summary>
 ///     Reports an available application update.
 /// </summary>
-public sealed class UpdateHealthCheck(Submarine.Infrastructure.Updates.IUpdateChecker updateChecker) : IHealthCheck
+public sealed class UpdateHealthCheck(SubmarineDbContext db, Submarine.Infrastructure.Updates.IUpdateChecker updateChecker) : IHealthCheck
 {
 	/// <inheritdoc />
 	public async Task<IReadOnlyList<HealthIssueSnapshot>> CheckAsync(CancellationToken cancellationToken = default)
 	{
-		var info = await updateChecker.GetLatestAsync(cancellationToken: cancellationToken);
+		var branch = await db.GeneralConfig.AsNoTracking().Select(x => x.Branch).SingleAsync(cancellationToken);
+		var info = await updateChecker.GetLatestAsync(branch, cancellationToken: cancellationToken);
 		return info.UpdateAvailable
 			? [new(HealthIssueType.NOTICE, "Updates", $"New update available: {info.LatestVersion}", info.ReleaseNotesUrl)]
 			: [];

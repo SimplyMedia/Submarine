@@ -23,11 +23,6 @@ namespace Submarine.Api.Features.Auth;
 /// </summary>
 public sealed class AuthModule : IEndpointModule
 {
-	// Verified against every unknown-username login so the response time does not reveal
-	// whether the account exists; the password never matches, so this only costs one PBKDF2 hash.
-	private static readonly Lazy<string> DummyPasswordHash =
-		new(() => new PasswordHasher<User>().HashPassword(new User(), "Submarine-Dummy-Hash-Never-Used"));
-
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -94,8 +89,7 @@ public sealed class AuthModule : IEndpointModule
 		=> TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "Setup already completed");
 
 	private static async Task<Results<Ok<UserDto>, ProblemHttpResult>> LoginAsync(
-		SubmarineDbContext db,
-		IPasswordHasher<User> hasher,
+		IUserCredentialVerifier verifier,
 		IValidator<LoginRequest> validator,
 		HttpContext httpContext,
 		TimeProvider timeProvider,
@@ -103,17 +97,8 @@ public sealed class AuthModule : IEndpointModule
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		var user = await db.Users.FirstOrDefaultAsync(x => x.Username == request.Username, cancellationToken);
+		var user = await verifier.VerifyAsync(request.Username, request.Password, cancellationToken);
 		if (user is null)
-		{
-			// Run a verification of the same cost as a real login so timing does not leak
-			// whether the username exists.
-			hasher.VerifyHashedPassword(new User(), DummyPasswordHash.Value, request.Password);
-			return InvalidCredentials();
-		}
-
-		var verification = hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
-		if (verification == PasswordVerificationResult.Failed)
 		{
 			return InvalidCredentials();
 		}
