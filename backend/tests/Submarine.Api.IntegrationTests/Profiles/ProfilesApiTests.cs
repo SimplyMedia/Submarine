@@ -278,6 +278,14 @@ public sealed class ProfilesApiTests : IClassFixture<SubmarineApiFactory>
 		firstDto!.EnableUsenet.ShouldBeTrue();
 		firstDto.EnableTorrent.ShouldBeTrue();
 
+		// The columns have a database default of true; an explicit false must still be stored on create.
+		var torrentOnly = await client.PostAsync("/api/v1/delay-profiles",
+			Json("""{ "name": "Torrent only", "preferredProtocol": "BITTORRENT", "enableUsenet": false, "enableTorrent": true, "usenetDelayMinutes": 0, "torrentDelayMinutes": 0, "bypassIfHighestQuality": false, "bypassIfAboveCustomFormatScore": false, "minimumCustomFormatScore": 0, "tags": [] }"""));
+		var torrentOnlyDto = await torrentOnly.Content.ReadFromJsonAsync<DelayProfileDto>();
+		(await client.GetFromJsonAsync<List<DelayProfileDto>>("/api/v1/delay-profiles"))!
+			.Single(profile => profile.Id == torrentOnlyDto!.Id).EnableUsenet.ShouldBeFalse();
+		(await client.DeleteAsync($"/api/v1/delay-profiles/{torrentOnlyDto!.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
 		var reorder = await client.PutAsync("/api/v1/delay-profiles/reorder",
 			Json($"[{secondDto!.Id}, {firstDto!.Id}]"));
 		reorder.StatusCode.ShouldBe(HttpStatusCode.NoContent);

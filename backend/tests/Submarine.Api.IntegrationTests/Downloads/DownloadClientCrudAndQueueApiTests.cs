@@ -66,6 +66,10 @@ public sealed class DownloadClientCrudAndQueueApiTests : IClassFixture<Downloads
 		create.StatusCode.ShouldBe(HttpStatusCode.Created);
 		var created = await create.Content.ReadFromJsonAsync<DownloadClientDto>(JsonOptions);
 		created!.Name.ShouldBe("Blackhole");
+		// The columns have a database default of true; an explicit false must still be stored.
+		var stored = await _factory.WithDbAsync(db => db.DownloadClients.SingleAsync(c => c.Id == created.Id));
+		stored.RemoveCompleted.ShouldBeFalse();
+		stored.RemoveFailed.ShouldBeFalse();
 
 		var test = await client.PostAsync($"/api/v1/download-clients/{created.Id}/test", null);
 		test.StatusCode.ShouldBe(HttpStatusCode.OK);
