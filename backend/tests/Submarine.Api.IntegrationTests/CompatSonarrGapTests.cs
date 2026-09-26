@@ -419,8 +419,9 @@ public sealed class CompatSonarrGapTests : IClassFixture<CompatSonarrExtendedApi
 	[Fact]
 	public async Task ConsumerSequence_Overseerr_LookupAddUpdateSearch_ShouldNotDuplicateMetadataIdentity()
 	{
+		await using var factory = new CompatSonarrExtendedApiFactory();
 		var unique = Guid.NewGuid().ToString("N");
-		var (rootId, qualityId, languageId) = await _factory.WithDbAsync(async db =>
+		var (rootId, qualityId, languageId) = await factory.WithDbAsync(async db =>
 		{
 			var root = new RootFolder { Path = Path.Combine(Path.GetTempPath(), "overseerr-root-" + unique), MediaKind = MediaKind.SERIES };
 			var quality = new QualityProfile { Name = "overseerr-quality-" + unique, UpgradeAllowed = true, Cutoff = 0, Items = [new QualityProfileItem(new QualityResolutionModel(QualitySource.WEB_DL, QualityResolution.R1080_P), true)] };
@@ -432,7 +433,7 @@ public sealed class CompatSonarrGapTests : IClassFixture<CompatSonarrExtendedApi
 			return (root.Id, quality.Id, language.Id);
 		});
 
-		var client = await _factory.CreateAuthorizedClientAsync();
+		var client = await factory.CreateAuthorizedClientAsync();
 		using var status = await client.GetAsync("/compat/sonarr/api/v3/system/status");
 		status.StatusCode.ShouldBe(HttpStatusCode.OK);
 		using var profiles = await client.GetAsync("/compat/sonarr/api/v3/qualityprofile");
@@ -443,14 +444,14 @@ public sealed class CompatSonarrGapTests : IClassFixture<CompatSonarrExtendedApi
 		tags.StatusCode.ShouldBe(HttpStatusCode.OK);
 
 		var tvdbId = Random.Shared.Next(1_000_000, int.MaxValue);
-		_factory.Metadata.Series[tvdbId] = Library.LibraryTestSupport.SeriesFixture(tvdbId, "Overseerr Show " + unique, DateTime.UtcNow);
+		factory.Metadata.Series[tvdbId] = Library.LibraryTestSupport.SeriesFixture(tvdbId, "Overseerr Show " + unique, DateTime.UtcNow);
 		using var add = await client.PostAsJsonAsync("/compat/sonarr/api/v3/series", new
 		{
 			tvdbId,
 			title = "Overseerr Show " + unique,
 			qualityProfileId = qualityId,
 			languageProfileId = languageId,
-			rootFolderPath = (await _factory.WithDbAsync(db => db.RootFolders.Where(x => x.Id == rootId).Select(x => x.Path).SingleAsync())),
+			rootFolderPath = (await factory.WithDbAsync(db => db.RootFolders.Where(x => x.Id == rootId).Select(x => x.Path).SingleAsync())),
 			seasonFolder = true,
 			monitored = true,
 			seriesType = "standard",
@@ -487,7 +488,7 @@ public sealed class CompatSonarrGapTests : IClassFixture<CompatSonarrExtendedApi
 		using var queue = await client.GetAsync("/compat/sonarr/api/v3/queue");
 		queue.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-		(await _factory.WithDbAsync(db => db.Series.CountAsync(x => x.TvdbId == tvdbId))).ShouldBe(1);
+		(await factory.WithDbAsync(db => db.Series.CountAsync(x => x.TvdbId == tvdbId))).ShouldBe(1);
 	}
 
 	[Fact]

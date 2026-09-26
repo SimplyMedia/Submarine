@@ -188,7 +188,7 @@ public sealed class RadarrModule : IEndpointModule
 		return Results.Json(results, CompatJson.Options);
 	}
 
-	private static async Task<IResult> DeleteAsync(int id, bool deleteFiles, bool? addImportExclusion, bool? addImportListExclusion, LibraryMutator mutator, SubmarineDbContext db, CompatVersionSelection versions, SelectedMovieDeletionService selectedDeletion, CancellationToken ct)
+	private static async Task<IResult> DeleteAsync(int id, bool? addImportExclusion, bool? addImportListExclusion, LibraryMutator mutator, SubmarineDbContext db, CompatVersionSelection versions, SelectedMovieDeletionService selectedDeletion, CancellationToken ct, bool deleteFiles = false)
 	{
 		if (addImportExclusion is not null && addImportListExclusion is not null && addImportExclusion != addImportListExclusion) return CompatErrors.Validation("addImportExclusion", "Conflicting import exclusion flags.");
 		var movie = await db.Movies.Include(x => x.Versions).SingleOrDefaultAsync(x => x.Id == id, ct);
@@ -210,8 +210,7 @@ public sealed class RadarrModule : IEndpointModule
 	private static async Task<IResult> DeleteCollectionAsync(HttpRequest request, LibraryMutator mutator, SubmarineDbContext db, CompatVersionSelection versions, SelectedMovieDeletionService selectedDeletion, CancellationToken ct)
 	{
 		if (!int.TryParse(request.Query["id"], out var id)) return CompatErrors.Validation("id", "Movie id is required.");
-		return await DeleteAsync(id, bool.TryParse(request.Query["deleteFiles"], out var files) && files,
-			bool.TryParse(request.Query["addImportExclusion"], out var exclusion) ? exclusion : null, null, mutator, db, versions, selectedDeletion, ct);
+		return await DeleteAsync(id, bool.TryParse(request.Query["addImportExclusion"], out var exclusion) ? exclusion : null, null, mutator, db, versions, selectedDeletion, ct, bool.TryParse(request.Query["deleteFiles"], out var files) && files);
 	}
 
 	private static async Task<IResult> EditorAsync(HttpRequest request, SubmarineDbContext db, LibraryMutator mutator, CompatVersionSelection versions, Submarine.Api.Features.MediaVersions.MediaVersionMover mover, CancellationToken ct)
@@ -478,7 +477,7 @@ public sealed class RadarrModule : IEndpointModule
 		return exclusion is null ? CompatErrors.Message("Movie exclusion not found", StatusCodes.Status404NotFound) : Results.Json(exclusion, CompatJson.Options);
 	}
 
-	private static async Task<IResult> ImportListMoviesAsync(bool includeRecommendations, SubmarineDbContext db, IEnumerable<Submarine.Infrastructure.ImportLists.IImportList> implementations, IMetadataClient metadata, CancellationToken ct)
+	private static async Task<IResult> ImportListMoviesAsync(SubmarineDbContext db, IEnumerable<Submarine.Infrastructure.ImportLists.IImportList> implementations, IMetadataClient metadata, CancellationToken ct, bool includeRecommendations = false)
 	{
 		if (includeRecommendations) return CompatErrors.Message("TMDB recommendation sourcing is not available in the native import-list service.", StatusCodes.Status501NotImplemented);
 		var lists = await db.ImportLists.AsNoTracking().Where(x => x.MediaKind == MediaKind.MOVIES && x.Enable).OrderBy(x => x.Id).ToListAsync(ct);

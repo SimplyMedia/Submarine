@@ -225,7 +225,14 @@ public sealed class CompatQualityExtrasEndpoints : IEndpointModule
 		if (type == CustomFormatSpecificationType.LANGUAGE && CompatLanguageMap.TryGetNativeLanguage(id, facade, out var language)) { name = language.ToString(); return true; }
 		if (type == CustomFormatSpecificationType.QUALITY_SOURCE)
 		{
-			name = id switch { 0 => "UNKNOWN", 1 => "CAM", 4 => "DVD", 5 => "TV", 6 => "WEB_DL", 7 => "WEB_RIP", 8 => "BLURAY", 9 => "RAW_HD", 10 => "BLURAY_REMUX", _ => "" };
+			name = facade == "sonarr"
+				? id switch { 0 => "UNKNOWN", 1 => "TV", 2 => "RAW_HD", 3 => "WEB_DL", 4 => "WEB_RIP", 5 => "DVD", 6 => "BLURAY", 7 => "BLURAY_REMUX", _ => "" }
+				: id switch { 0 => "UNKNOWN", 1 => "CAM", 4 => "DVD", 5 => "TV", 6 => "WEB_DL", 7 => "WEB_RIP", 8 => "BLURAY", 9 => "RAW_HD", 10 => "BLURAY_REMUX", _ => "" };
+			return name.Length > 0;
+		}
+		if (type == CustomFormatSpecificationType.QUALITY_MODIFIER)
+		{
+			name = id switch { 0 => "NONE", 3 => "RAW_HD", 4 => "BLURAY_DISK", 5 => "BLURAY_REMUX", _ => "" };
 			return name.Length > 0;
 		}
 		if (type == CustomFormatSpecificationType.RESOLUTION)
@@ -274,11 +281,17 @@ public sealed class CompatQualityExtrasEndpoints : IEndpointModule
 		if (value.ValueKind != JsonValueKind.String) return value.Clone();
 		var name = value.GetString();
 		if (type == CustomFormatSpecificationType.LANGUAGE && Enum.TryParse<Language>(name, out var language)) return CompatLanguageMap.ToUpstreamId(language, facade);
-		if (type == CustomFormatSpecificationType.QUALITY_SOURCE) return name switch { "UNKNOWN" => 0, "CAM" => 1, "DVD" => 4, "TV" => 5, "WEB_DL" => 6, "WEB_RIP" => 7, "BLURAY" => 8, "RAW_HD" => 9, "BLURAY_REMUX" => 10, _ => name! };
+		if (type == CustomFormatSpecificationType.QUALITY_SOURCE) return UpstreamSourceId(name!, facade) is { } sourceId ? sourceId : name!;
+		if (type == CustomFormatSpecificationType.QUALITY_MODIFIER) return name switch { "NONE" => 0, "RAW_HD" => 3, "BLURAY_DISK" => 4, "BLURAY_REMUX" => 5, _ => name! };
 		if (type == CustomFormatSpecificationType.RESOLUTION) return name switch { "R360_P" => 360, "R480_P" => 480, "R540_P" => 540, "R576_P" => 576, "R720_P" => 720, "R1080_P" => 1080, "R2160_P" => 2160, _ => name! };
 		if (type == CustomFormatSpecificationType.PROTOCOL) return name switch { "BITTORRENT" => 0, "USENET" => 1, _ => name! };
 		return value.Clone();
 	}
+
+	private static int? UpstreamSourceId(string name, string facade) => facade == "sonarr"
+		? name switch { "UNKNOWN" => 0, "TV" => 1, "RAW_HD" => 2, "WEB_DL" => 3, "WEB_RIP" => 4, "DVD" => 5, "BLURAY" => 6, "BLURAY_REMUX" => 7, _ => null }
+		: name switch { "UNKNOWN" => 0, "CAM" => 1, "DVD" => 4, "TV" => 5, "WEB_DL" => 6, "WEB_RIP" => 7, "BLURAY" => 8, "RAW_HD" => 9, "BLURAY_REMUX" => 10, _ => null };
+
 
 	private static SpecificationResource ToResource(CustomFormatSpecification spec) => new(spec.Name, spec.Type, spec.Negate, spec.Required, spec.Value);
 	private static bool FormatFailure(string property, string message, out CustomFormatRequest request, out (string Property, string Message) error) { request = null!; error = (property, message); return false; }
@@ -328,7 +341,7 @@ public sealed class CompatQualityExtrasEndpoints : IEndpointModule
 	{
 		if (type is CustomFormatSpecificationType.SIZE or CustomFormatSpecificationType.YEAR)
 			return [new { name = "min", label = "Minimum", type = "number", advanced = false, value = (object?)null }, new { name = "max", label = "Maximum", type = "number", advanced = false, value = (object?)null }];
-		var fieldType = type is CustomFormatSpecificationType.LANGUAGE or CustomFormatSpecificationType.QUALITY_SOURCE or CustomFormatSpecificationType.RESOLUTION or CustomFormatSpecificationType.PROTOCOL ? "select" : type == CustomFormatSpecificationType.HARDCODED_SUBS ? "checkbox" : "textbox";
+		var fieldType = type is CustomFormatSpecificationType.LANGUAGE or CustomFormatSpecificationType.QUALITY_SOURCE or CustomFormatSpecificationType.QUALITY_MODIFIER or CustomFormatSpecificationType.RESOLUTION or CustomFormatSpecificationType.PROTOCOL ? "select" : type == CustomFormatSpecificationType.HARDCODED_SUBS ? "checkbox" : "textbox";
 		var selectOptions = SelectOptions(type, facade);
 		return [new { name = "value", label = "Value", type = fieldType, advanced = false, value = (object?)null, selectOptions }];
 	}
@@ -338,7 +351,11 @@ public sealed class CompatQualityExtrasEndpoints : IEndpointModule
 		if (type == CustomFormatSpecificationType.LANGUAGE)
 			return CompatLanguageMap.Catalog(facade).Select(language => (object)new { value = language.Id, name = language.Name }).ToArray();
 		if (type == CustomFormatSpecificationType.QUALITY_SOURCE)
-			return new object[] { new { value = 0, name = "Unknown" }, new { value = 1, name = "Cam" }, new { value = 4, name = "DVD" }, new { value = 5, name = "TV" }, new { value = 6, name = "WebDL" }, new { value = 7, name = "WebRip" }, new { value = 8, name = "Bluray" }, new { value = 9, name = "RawHD" }, new { value = 10, name = "BlurayRemux" } };
+			return facade == "sonarr"
+				? new object[] { new { value = 0, name = "Unknown" }, new { value = 1, name = "TV" }, new { value = 2, name = "RawHD" }, new { value = 3, name = "WebDL" }, new { value = 4, name = "WebRip" }, new { value = 5, name = "DVD" }, new { value = 6, name = "Bluray" }, new { value = 7, name = "BlurayRemux" } }
+				: new object[] { new { value = 0, name = "Unknown" }, new { value = 1, name = "Cam" }, new { value = 4, name = "DVD" }, new { value = 5, name = "TV" }, new { value = 6, name = "WebDL" }, new { value = 7, name = "WebRip" }, new { value = 8, name = "Bluray" }, new { value = 9, name = "RawHD" }, new { value = 10, name = "BlurayRemux" } };
+		if (type == CustomFormatSpecificationType.QUALITY_MODIFIER)
+			return new object[] { new { value = 0, name = "None" }, new { value = 3, name = "RawHD" }, new { value = 4, name = "BlurayDisc" }, new { value = 5, name = "Remux" } };
 		if (type == CustomFormatSpecificationType.RESOLUTION)
 			return new object[] { new { value = 360, name = "360p" }, new { value = 480, name = "480p" }, new { value = 540, name = "540p" }, new { value = 576, name = "576p" }, new { value = 720, name = "720p" }, new { value = 1080, name = "1080p" }, new { value = 2160, name = "2160p" } };
 		if (type == CustomFormatSpecificationType.PROTOCOL)

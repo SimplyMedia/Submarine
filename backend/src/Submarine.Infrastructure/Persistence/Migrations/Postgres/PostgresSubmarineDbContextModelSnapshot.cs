@@ -2948,7 +2948,7 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.HasOne("Submarine.Core.Entities.MediaVersion", "MediaVersion")
                         .WithMany()
                         .HasForeignKey("MediaVersionId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Submarine.Core.Entities.Movie", "Movie")
                         .WithMany()

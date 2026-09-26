@@ -103,6 +103,31 @@ public sealed class CompatRadarrTests
 	}
 
 	[Fact]
+	public async Task DeleteMovieWithoutOptionalFlagsUsesUpstreamDefaults()
+	{
+		await using var factory = new LibraryApiFactory();
+		var client = await factory.CreateAuthorizedClientAsync();
+		var ids = await SeedMovieAsync(factory);
+
+		var response = await client.DeleteAsync($"/compat/radarr/api/v3/movie/{ids.MovieId}");
+
+		response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+		(await factory.WithDbAsync(db => db.Movies.AnyAsync(x => x.Id == ids.MovieId))).ShouldBeFalse();
+	}
+
+	[Fact]
+	public async Task ImportListMoviesWithoutRecommendationsFlagReturnsList()
+	{
+		await using var factory = new LibraryApiFactory();
+		var client = await factory.CreateAuthorizedClientAsync();
+
+		var response = await client.GetAsync("/compat/radarr/api/v3/importlist/movie");
+
+		response.StatusCode.ShouldBe(HttpStatusCode.OK);
+		(await response.Content.ReadFromJsonAsync<JsonElement[]>()).ShouldNotBeNull();
+	}
+
+	[Fact]
 	public async Task MovieAddCreatesNativeTitleAndBindsTheCreatedVersion()
 	{
 		await using var factory = new LibraryApiFactory();

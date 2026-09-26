@@ -17,6 +17,6 @@ internal sealed class CompatLibraryBindingConfiguration : EntityConfiguration<Co
 		builder.HasIndex(x => new { x.Facade, x.MediaVersionId }).IsUnique().HasFilter("\"MediaVersionId\" IS NOT NULL");
 		builder.HasOne(x => x.Series).WithMany().HasForeignKey(x => x.SeriesId).OnDelete(DeleteBehavior.Cascade);
 		builder.HasOne(x => x.Movie).WithMany().HasForeignKey(x => x.MovieId).OnDelete(DeleteBehavior.Cascade);
-		builder.HasOne(x => x.MediaVersion).WithMany().HasForeignKey(x => x.MediaVersionId).OnDelete(DeleteBehavior.Restrict);
+		builder.HasOne(x => x.MediaVersion).WithMany().HasForeignKey(x => x.MediaVersionId).OnDelete(DeleteBehavior.SetNull);
 	}
 }
