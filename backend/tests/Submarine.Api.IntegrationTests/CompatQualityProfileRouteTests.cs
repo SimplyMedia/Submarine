@@ -38,6 +38,9 @@ public sealed class CompatQualityProfileRouteTests : IClassFixture<SubmarineApiF
 		createdResponse.Headers.Location.ShouldNotBeNull();
 		created.GetProperty("cutoff").GetInt32().ShouldBe(3);
 		created.GetProperty("items")[0].GetProperty("quality").GetProperty("id").GetInt32().ShouldBe(3);
+		created.GetProperty("items")[0].GetProperty("quality").GetProperty("name").GetString().ShouldBe("WEBDL-1080p");
+		created.GetProperty("items")[0].GetProperty("quality").GetProperty("source").GetString().ShouldBe("web");
+		created.GetProperty("items")[1].GetProperty("quality").GetProperty("name").GetString().ShouldBe("Bluray-1080p");
 		created.GetProperty("minFormatScore").GetInt32().ShouldBe(2);
 		created.GetProperty("cutoffFormatScore").GetInt32().ShouldBe(4);
 		created.GetProperty("minUpgradeFormatScore").GetInt32().ShouldBe(1);

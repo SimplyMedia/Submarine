@@ -45,7 +45,10 @@ public sealed class CompatQualityExtrasEndpoints : IEndpointModule
 			var model = new QualityResolutionModel(definition.Source, definition.Resolution);
 			var id = CompatQualityMap.ToUpstreamQualityId(model, facade);
 			if (id is null) continue;
-			result.Add(new { id, name = definition.Title, source = SourceValue(definition.Source), resolution = ResolutionValue(definition.Resolution), modifier = "", preferredSize = definition.PreferredSizeMbPerMinute, minSize = definition.MinSizeMbPerMinute, maxSize = definition.MaxSizeMbPerMinute, title = definition.Title, weight = id.Value });
+			var qualityName = CompatQualityMap.ToUpstreamQualityName(id.Value, facade);
+			var weight = CompatQualityMap.ToUpstreamQualityWeight(id.Value, facade);
+			if (qualityName is null || weight is null) continue;
+			result.Add(new { id, quality = new { id, name = qualityName }, title = definition.Title, weight, preferredSize = definition.PreferredSizeMbPerMinute, minSize = definition.MinSizeMbPerMinute, maxSize = definition.MaxSizeMbPerMinute });
 		}
 		return Results.Json(result, CompatJson.Options);
 	}

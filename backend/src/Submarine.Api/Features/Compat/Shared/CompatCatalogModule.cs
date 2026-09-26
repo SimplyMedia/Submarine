@@ -57,16 +57,20 @@ public sealed class CompatCatalogModule : IEndpointModule
 			name = profile.Name,
 			upgradeAllowed = profile.UpgradeAllowed,
 			cutoff = profile.Cutoff,
-			items = profile.Items.Select(item => new
+			items = profile.Items.Select(item =>
 			{
-				quality = new
+				var id = CompatQualityMap.ToUpstreamQualityId(item.Quality, facade);
+				return new
 				{
-					id = CompatQualityMap.ToUpstreamQualityId(item.Quality, facade),
-					name = item.Quality.Name,
-					source = UpstreamQualitySource(item.Quality.Source),
-					resolution = UpstreamQualityResolution(item.Quality.Resolution)
-				},
-				allowed = item.Allowed
+					quality = new
+					{
+						id,
+						name = id is { } qualityId ? CompatQualityMap.ToUpstreamQualityName(qualityId, facade) : item.Quality.Name,
+						source = UpstreamQualitySource(item.Quality.Source, facade),
+						resolution = UpstreamQualityResolution(item.Quality.Resolution)
+					},
+					allowed = item.Allowed
+				};
 			}).ToList(),
 			formatItems = profile.FormatItems.Select(item => new { format = new { id = item.CustomFormatId }, score = item.Score }).ToList(),
 			minFormatScore = profile.MinFormatScore,
@@ -74,19 +78,25 @@ public sealed class CompatCatalogModule : IEndpointModule
 			minUpgradeFormatScore = profile.MinUpgradeFormatScore
 		};
 
-	private static string? UpstreamQualitySource(Submarine.Core.Quality.QualitySource? source)
-		=> source switch
+	private static string? UpstreamQualitySource(Submarine.Core.Quality.QualitySource? source, string facade)
+		=> (facade, source) switch
 		{
-			Submarine.Core.Quality.QualitySource.UNKNOWN => "unknown",
-			Submarine.Core.Quality.QualitySource.TV => "tv",
-			Submarine.Core.Quality.QualitySource.DVD => "dvd",
-			Submarine.Core.Quality.QualitySource.WEB_DL => "webdl",
-			Submarine.Core.Quality.QualitySource.WEB_RIP => "webrip",
-			Submarine.Core.Quality.QualitySource.BLURAY => "bluray",
-			Submarine.Core.Quality.QualitySource.BLURAY_REMUX => "blurayremux",
-			Submarine.Core.Quality.QualitySource.RAW_HD => "rawhd",
-			Submarine.Core.Quality.QualitySource.CAM => "cam",
-			Submarine.Core.Quality.QualitySource.BLURAY_DISK => "bluraydisk",
+			("sonarr", Submarine.Core.Quality.QualitySource.UNKNOWN) => "unknown",
+			("sonarr", Submarine.Core.Quality.QualitySource.TV) => "television",
+			("sonarr", Submarine.Core.Quality.QualitySource.DVD) => "dvd",
+			("sonarr", Submarine.Core.Quality.QualitySource.WEB_DL) => "web",
+			("sonarr", Submarine.Core.Quality.QualitySource.WEB_RIP) => "webRip",
+			("sonarr", Submarine.Core.Quality.QualitySource.BLURAY) => "bluray",
+			("sonarr", Submarine.Core.Quality.QualitySource.BLURAY_REMUX) => "blurayRaw",
+			("sonarr", Submarine.Core.Quality.QualitySource.RAW_HD) => "televisionRaw",
+			("radarr", Submarine.Core.Quality.QualitySource.UNKNOWN) => "unknown",
+			("radarr", Submarine.Core.Quality.QualitySource.CAM) => "cam",
+			("radarr", Submarine.Core.Quality.QualitySource.TV) => "tv",
+			("radarr", Submarine.Core.Quality.QualitySource.DVD) => "dvd",
+			("radarr", Submarine.Core.Quality.QualitySource.WEB_DL) => "webdl",
+			("radarr", Submarine.Core.Quality.QualitySource.WEB_RIP) => "webrip",
+			("radarr", Submarine.Core.Quality.QualitySource.BLURAY or Submarine.Core.Quality.QualitySource.BLURAY_REMUX or Submarine.Core.Quality.QualitySource.BLURAY_DISK) => "bluray",
+			("radarr", Submarine.Core.Quality.QualitySource.RAW_HD) => "tv",
 			_ => null
 		};
 

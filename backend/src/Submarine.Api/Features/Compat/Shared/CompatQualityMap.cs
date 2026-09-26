@@ -27,6 +27,70 @@ public static class CompatQualityMap
 		return false;
 	}
 
+	public static string? ToUpstreamQualityName(int upstreamId, string facade)
+		=> (facade, upstreamId) switch
+		{
+			(_, 0) => "Unknown",
+			(_, 1) => "SDTV",
+			(_, 2) => "DVD",
+			(_, 3) => "WEBDL-1080p",
+			(_, 4) => "HDTV-720p",
+			(_, 5) => "WEBDL-720p",
+			(_, 6) => "Bluray-720p",
+			(_, 7) => "Bluray-1080p",
+			(_, 8) => "WEBDL-480p",
+			(_, 9) => "HDTV-1080p",
+			(_, 10) => "Raw-HD",
+			("sonarr", 12) => "WEBRip-480p",
+			("sonarr", 13) => "Bluray-480p",
+			(_, 14) => "WEBRip-720p",
+			(_, 15) => "WEBRip-1080p",
+			(_, 16) => "HDTV-2160p",
+			(_, 17) => "WEBRip-2160p",
+			(_, 18) => "WEBDL-2160p",
+			(_, 19) => "Bluray-2160p",
+			("sonarr", 20) => "Remux-1080p",
+			("radarr", 20) => "Bluray-480p",
+			("sonarr", 21) => "Remux-2160p",
+			("radarr", 21) => "Bluray-576p",
+			("sonarr", 22) => "Bluray-576p",
+			("radarr", 22) => "BR-DISK",
+			("radarr", 25) => "CAM",
+			_ => null
+		};
+
+	public static int? ToUpstreamQualityWeight(int upstreamId, string facade)
+		=> (facade, upstreamId) switch
+		{
+			(_, 0) => 1,
+			(_, 1) => 8,
+			(_, 2) => 9,
+			(_, 3) => 18,
+			(_, 4) => 14,
+			(_, 5) => 15,
+			(_, 6) => 16,
+			(_, 7) => 19,
+			(_, 8) => 11,
+			(_, 9) => 17,
+			(_, 10) => 26,
+			("sonarr", 12) => 11,
+			("sonarr", 13) => 12,
+			(_, 14) => 15,
+			(_, 15) => 18,
+			(_, 16) => 21,
+			(_, 17) => 22,
+			(_, 18) => 22,
+			(_, 19) => 23,
+			("sonarr", 20) => 20,
+			("radarr", 20) => 12,
+			("sonarr", 21) => 24,
+			("radarr", 21) => 13,
+			("sonarr", 22) => 13,
+			("radarr", 22) => 25,
+			("radarr", 25) => 3,
+			_ => null
+		};
+
 	private static bool IsFacade(string facade) => facade is "sonarr" or "radarr";
 
 	private static Dictionary<(string Facade, QualitySource Source, QualityResolution? Resolution), int> BuildIds()

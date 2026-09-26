@@ -236,18 +236,22 @@ public sealed class CompatQualityProfileEndpoints : IEndpointModule
 			name = profile.Name,
 			upgradeAllowed = profile.UpgradeAllowed,
 			cutoff = profile.Items.ElementAtOrDefault(profile.Cutoff) is { } cutoffItem ? CompatQualityMap.ToUpstreamQualityId(cutoffItem.Quality, facade) : null,
-			items = profile.Items.Select(item => new
+			items = profile.Items.Select(item =>
 			{
-				quality = new
+				var id = CompatQualityMap.ToUpstreamQualityId(item.Quality, facade);
+				return new
 				{
-					id = CompatQualityMap.ToUpstreamQualityId(item.Quality, facade),
-					name = item.Quality.Name,
-					source = UpstreamSource(item.Quality.Source),
-					modifier = item.Quality.Source == QualitySource.BLURAY_DISK ? "BR-DISK" : null,
-					resolution = UpstreamResolution(item.Quality.Resolution)
-				},
-				items = Array.Empty<object>(),
-				allowed = item.Allowed
+					quality = new
+					{
+						id,
+						name = id is { } qualityId ? CompatQualityMap.ToUpstreamQualityName(qualityId, facade) : item.Quality.Name,
+						source = UpstreamSource(facade, item.Quality.Source),
+						modifier = item.Quality.Source == QualitySource.BLURAY_DISK ? "BR-DISK" : null,
+						resolution = UpstreamResolution(item.Quality.Resolution)
+					},
+					items = Array.Empty<object>(),
+					allowed = item.Allowed
+				};
 			}).ToArray(),
 			formatItems = profile.FormatItems.Select(item => new { format = new { id = item.CustomFormatId, name = formats.GetValueOrDefault(item.CustomFormatId) }, score = item.Score }).ToArray(),
 			minFormatScore = profile.MinFormatScore,
@@ -256,19 +260,25 @@ public sealed class CompatQualityProfileEndpoints : IEndpointModule
 		};
 	}
 
-	private static string? UpstreamSource(QualitySource? source)
-		=> source switch
+	private static string? UpstreamSource(string facade, QualitySource? source)
+		=> (facade, source) switch
 		{
-			QualitySource.UNKNOWN => "unknown",
-			QualitySource.TV => "tv",
-			QualitySource.DVD => "dvd",
-			QualitySource.WEB_DL => "webdl",
-			QualitySource.WEB_RIP => "webrip",
-			QualitySource.BLURAY => "bluray",
-			QualitySource.BLURAY_REMUX => "blurayremux",
-			QualitySource.RAW_HD => "rawhd",
-			QualitySource.CAM => "cam",
-			QualitySource.BLURAY_DISK => "bluraydisk",
+			("sonarr", QualitySource.UNKNOWN) => "unknown",
+			("sonarr", QualitySource.TV) => "television",
+			("sonarr", QualitySource.DVD) => "dvd",
+			("sonarr", QualitySource.WEB_DL) => "web",
+			("sonarr", QualitySource.WEB_RIP) => "webRip",
+			("sonarr", QualitySource.BLURAY) => "bluray",
+			("sonarr", QualitySource.BLURAY_REMUX) => "blurayRaw",
+			("sonarr", QualitySource.RAW_HD) => "televisionRaw",
+			("radarr", QualitySource.UNKNOWN) => "unknown",
+			("radarr", QualitySource.TV) => "tv",
+			("radarr", QualitySource.DVD) => "dvd",
+			("radarr", QualitySource.WEB_DL) => "webdl",
+			("radarr", QualitySource.WEB_RIP) => "webrip",
+			("radarr", QualitySource.BLURAY or QualitySource.BLURAY_REMUX or QualitySource.BLURAY_DISK) => "bluray",
+			("radarr", QualitySource.RAW_HD) => "tv",
+			("radarr", QualitySource.CAM) => "cam",
 			_ => null
 		};
 

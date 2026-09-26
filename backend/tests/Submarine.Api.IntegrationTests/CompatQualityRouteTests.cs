@@ -20,9 +20,24 @@ public sealed class CompatQualityRouteTests : IClassFixture<SubmarineApiFactory>
 	public async Task QualityDefinitions_ShouldMapExplicitIdsAndApplyNullableBatchAtomically()
 	{
 		using var client = await _factory.CreateAuthorizedClientAsync();
+		foreach (var facade in new[] { "sonarr", "radarr" })
+		{
+			var facadeDefinitions = await client.GetFromJsonAsync<JsonElement>($"/compat/{facade}/api/v3/qualitydefinition");
+			facadeDefinitions.ValueKind.ShouldBe(JsonValueKind.Array);
+			var facadeTarget = facadeDefinitions.EnumerateArray().First(item => item.GetProperty("quality").GetProperty("name").GetString() == "HDTV-720p");
+			facadeTarget.GetProperty("quality").GetProperty("id").GetInt32().ShouldBe(facadeTarget.GetProperty("id").GetInt32());
+			facadeTarget.GetProperty("title").GetString().ShouldBe("TV-720p");
+			facadeTarget.GetProperty("weight").GetInt32().ShouldBe(14);
+			facadeTarget.TryGetProperty("minSize", out _).ShouldBeTrue();
+			facadeTarget.TryGetProperty("maxSize", out _).ShouldBeTrue();
+			facadeTarget.TryGetProperty("preferredSize", out _).ShouldBeTrue();
+			var profiles = await client.GetFromJsonAsync<JsonElement>($"/compat/{facade}/api/v3/qualityprofile");
+			var hdtv = profiles[0].GetProperty("items").EnumerateArray().First(item => item.GetProperty("quality").GetProperty("name").GetString() == "HDTV-720p");
+			hdtv.GetProperty("quality").GetProperty("source").GetString().ShouldBe(facade == "sonarr" ? "television" : "tv");
+			hdtv.GetProperty("quality").GetProperty("id").GetInt32().ShouldBe(4);
+		}
 		var definitions = await client.GetFromJsonAsync<JsonElement>("/compat/sonarr/api/v3/qualitydefinition");
-		definitions.ValueKind.ShouldBe(JsonValueKind.Array);
-		var target = definitions.EnumerateArray().First(item => item.GetProperty("source").GetInt32() == 5 && item.GetProperty("resolution").GetInt32() == 720);
+		var target = definitions.EnumerateArray().First(item => item.GetProperty("quality").GetProperty("id").GetInt32() == 4);
 		var id = target.GetProperty("id").GetInt32();
 		var before = await _factory.WithDbAsync(db => db.QualityDefinitions.Where(item => item.Source == Submarine.Core.Quality.QualitySource.TV && item.Resolution == Submarine.Core.Quality.QualityResolution.R720_P).Select(item => item.MinSizeMbPerMinute).SingleAsync());
 
@@ -40,6 +55,7 @@ public sealed class CompatQualityRouteTests : IClassFixture<SubmarineApiFactory>
 			(object)new { id, minSize = (double?)null, maxSize = 120d, preferredSize = 35d, title = "ignored", weight = 999 }
 		});
 		update.StatusCode.ShouldBe(HttpStatusCode.OK);
+
 		var changed = await _factory.WithDbAsync(db => db.QualityDefinitions.Where(item => item.Source == Submarine.Core.Quality.QualitySource.TV && item.Resolution == Submarine.Core.Quality.QualityResolution.R720_P).SingleAsync());
 		changed.MinSizeMbPerMinute.ShouldBeNull();
 		changed.MaxSizeMbPerMinute.ShouldBe(120d);
