@@ -59,7 +59,7 @@ public sealed class ReleasesModule : IEndpointModule
 
 		candidate = ApplyOverrides(candidate, request);
 
-		var context = await contextFactory.BuildAsync(version, request.EpisodeIds, cancellationToken);
+		var context = await contextFactory.BuildAsync(version, request.EpisodeIds, isInteractive: true, cancellationToken: cancellationToken);
 
 		var decision = decisionMaker.Decide(candidate, context);
 		if (request.Override && !decision.Approved)
@@ -113,7 +113,7 @@ public sealed class ReleasesModule : IEndpointModule
 
 		foreach (var version in versions)
 		{
-			var context = await contextFactory.BuildAsync(version, match.EpisodeIds, cancellationToken);
+			var context = await contextFactory.BuildAsync(version, match.EpisodeIds, cancellationToken: cancellationToken);
 			var decision = decisionMaker.Decide(candidate, context);
 
 			if (!decision.Approved)

@@ -73,6 +73,8 @@ public class TrashCustomFormatJsonTest
 	[InlineData("StreamingProviderSpecification", CustomFormatSpecificationType.STREAMING_PROVIDER)]
 	[InlineData("ReleaseGroupSpecification", CustomFormatSpecificationType.RELEASE_GROUP)]
 	[InlineData("ReleaseTitleSpecification", CustomFormatSpecificationType.RELEASE_TITLE)]
+	[InlineData("ReleaseTypeSpecification", CustomFormatSpecificationType.RELEASE_TYPE)]
+	[InlineData("QualityModifierSpecification", CustomFormatSpecificationType.QUALITY_MODIFIER)]
 	public void FromTrash_ShouldMapEverySupportedImplementation(string implementation, CustomFormatSpecificationType expected)
 	{
 		var format = new TrashFormat("Test", false,
@@ -143,6 +145,27 @@ public class TrashCustomFormatJsonTest
 		trash.Specifications[0].Implementation.ShouldBe("SizeSpecification");
 		trash.Specifications[0].Fields!.Value.GetProperty("min").GetDouble().ShouldBe(2);
 		trash.Specifications[0].Fields!.Value.GetProperty("max").GetDouble().ShouldBe(8);
+	}
+
+	[Fact]
+	public void ToTrash_ShouldRoundTrip_ReleaseTypeAndQualityModifier()
+	{
+		var format = new TrashFormat("Season pack, remux", false,
+		[
+			new TrashSpecification("Full season", "ReleaseTypeSpecification", false, true, Fields("value", Json("FULL_SEASON"))),
+			new TrashSpecification("Remux", "QualityModifierSpecification", false, true, Fields("value", Json("BLURAY_REMUX")))
+		]);
+
+		var mapped = TrashCustomFormatJson.FromTrash(format);
+
+		mapped.Specifications[0].Type.ShouldBe(CustomFormatSpecificationType.RELEASE_TYPE);
+		mapped.Specifications[0].Value!.Value.GetString().ShouldBe("FULL_SEASON");
+		mapped.Specifications[1].Type.ShouldBe(CustomFormatSpecificationType.QUALITY_MODIFIER);
+		mapped.Specifications[1].Value!.Value.GetString().ShouldBe("BLURAY_REMUX");
+
+		var roundTripped = TrashCustomFormatJson.FromTrash(TrashCustomFormatJson.ToTrash(mapped));
+		roundTripped.Specifications[0].Type.ShouldBe(CustomFormatSpecificationType.RELEASE_TYPE);
+		roundTripped.Specifications[1].Type.ShouldBe(CustomFormatSpecificationType.QUALITY_MODIFIER);
 	}
 
 	[Fact]

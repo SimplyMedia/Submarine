@@ -71,6 +71,17 @@ public sealed class Indexer : Entity
 	/// <summary>Search standard anime episode formats.</summary>
 	public bool AnimeStandardFormatSearch { get; set; }
 
+	/// <summary>
+	///     Torrent flags at least one of which a release must carry to be grabbed, empty allows any. Ignored for usenet.
+	/// </summary>
+	public List<IndexerFlag> RequiredFlags { get; set; } = [];
+
+	/// <summary>
+	///     Maximum age in days a season may reach, past its last aired episode, before a single-episode season search
+	///     result is held back for a season pack instead. 0 disables the check.
+	/// </summary>
+	public int SeasonSearchMaximumSingleEpisodeAge { get; set; }
+
 	/// <summary>Tags.</summary>
 	public ICollection<Tag> Tags { get; set; } = [];
 }

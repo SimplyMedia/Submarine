@@ -6926,6 +6926,75 @@
         }
       }
     },
+    "/api/v1/quality-definitions/import": {
+      "post": {
+        "tags": [
+          "QualityDefinitionsModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityDefinitionImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/quality-definitions/{id}": {
       "put": {
         "tags": [
@@ -19263,7 +19332,9 @@
           "HARDCODED_SUBS",
           "SIZE",
           "YEAR",
-          "INDEXER_FLAG"
+          "INDEXER_FLAG",
+          "RELEASE_TYPE",
+          "QUALITY_MODIFIER"
         ],
         "description": "Type of a custom format specification."
       },
@@ -19321,6 +19392,16 @@
               "format": "int32"
             },
             "description": "Tag ids this profile applies to."
+          },
+          "enableUsenet": {
+            "type": "boolean",
+            "description": "Whether usenet releases are grabbed for tagged media.",
+            "default": true
+          },
+          "enableTorrent": {
+            "type": "boolean",
+            "description": "Whether torrent releases are grabbed for tagged media.",
+            "default": true
           }
         },
         "description": "Create or update request for a delay profile."
@@ -19330,6 +19411,8 @@
           "id",
           "name",
           "preferredProtocol",
+          "enableUsenet",
+          "enableTorrent",
           "usenetDelayMinutes",
           "torrentDelayMinutes",
           "bypassIfHighestQuality",
@@ -19352,6 +19435,14 @@
           "preferredProtocol": {
             "description": "Protocol preferred when both are available.",
             "$ref": "#/components/schemas/Protocol"
+          },
+          "enableUsenet": {
+            "type": "boolean",
+            "description": "Whether usenet releases are grabbed for tagged media."
+          },
+          "enableTorrent": {
+            "type": "boolean",
+            "description": "Whether torrent releases are grabbed for tagged media."
           },
           "usenetDelayMinutes": {
             "type": "integer",
@@ -21143,7 +21234,9 @@
           "minimumAgeMinutes",
           "retentionDays",
           "maximumSizeMb",
-          "availabilityDelayDays"
+          "availabilityDelayDays",
+          "allowHardcodedSubs",
+          "whitelistedHardcodedSubs"
         ],
         "type": "object",
         "properties": {
@@ -21171,6 +21264,14 @@
             "type": "integer",
             "description": "Days a movie must be past its release date before grabbing, 0 disables.",
             "format": "int32"
+          },
+          "allowHardcodedSubs": {
+            "type": "boolean",
+            "description": "Allow releases reporting hardcoded subtitles."
+          },
+          "whitelistedHardcodedSubs": {
+            "type": "string",
+            "description": "Comma separated release groups allowed to have hardcoded subtitles even when bool IndexerConfigResource.AllowHardcodedSubs is off."
           }
         },
         "description": "Indexer behaviour configuration resource."
@@ -24619,6 +24720,30 @@
           }
         },
         "description": "Request to push a release from an external tool through the decision pipeline."
+      },
+      "QualityDefinitionImportResult": {
+        "required": [
+          "updated",
+          "skipped"
+        ],
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QualityDefinitionResource"
+            },
+            "description": "Definitions updated by the import."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "TRaSH quality names that did not match a known Submarine quality."
+          }
+        },
+        "description": "Result of importing TRaSH quality-size entries."
       },
       "QualityDefinitionResource": {
         "required": [

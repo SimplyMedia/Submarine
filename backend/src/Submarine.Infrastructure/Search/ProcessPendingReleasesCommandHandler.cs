@@ -54,7 +54,7 @@ public sealed class ProcessPendingReleasesCommandHandler(
 
 			foreach (var version in versions)
 			{
-				var decisionContext = await contextFactory.BuildAsync(version, pending.EpisodeIds, cancellationToken);
+				var decisionContext = await contextFactory.BuildAsync(version, pending.EpisodeIds, cancellationToken: cancellationToken);
 				var decision = decisionMaker.Decide(candidate, decisionContext);
 
 				if (decision.Approved)

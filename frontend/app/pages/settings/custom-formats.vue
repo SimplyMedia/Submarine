@@ -6,6 +6,7 @@ import {
 	indexerFlagOptions,
 	languageOptions,
 	protocolOptions,
+	qualityModifierOptions,
 	qualityResolutionLabel,
 	qualitySourceOptions,
 	releaseFilterFieldLabel,
@@ -13,6 +14,7 @@ import {
 	releaseFilterModeLabel,
 	releaseFilterModeOptions,
 	releaseFlagOptions,
+	releaseTypeOptions,
 	streamingProviderOptions,
 } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
@@ -106,6 +108,10 @@ function specOptions(type: CustomFormatSpecificationType) {
 			return protocolOptions
 		case 'INDEXER_FLAG':
 			return indexerFlagOptions
+		case 'RELEASE_TYPE':
+			return releaseTypeOptions
+		case 'QUALITY_MODIFIER':
+			return qualityModifierOptions
 		default:
 			return []
 	}

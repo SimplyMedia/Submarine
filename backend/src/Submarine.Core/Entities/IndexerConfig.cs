@@ -19,4 +19,10 @@ public sealed class IndexerConfig : SingletonEntity
 
 	/// <summary>Days a movie must be past its release date before grabbing, 0 disables.</summary>
 	public int AvailabilityDelayDays { get; set; }
+
+	/// <summary>Allow releases reporting hardcoded subtitles.</summary>
+	public bool AllowHardcodedSubs { get; set; }
+
+	/// <summary>Comma separated release groups allowed to have hardcoded subtitles even when <see cref="AllowHardcodedSubs" /> is off.</summary>
+	public string WhitelistedHardcodedSubs { get; set; } = string.Empty;
 }

@@ -7,6 +7,7 @@ using Submarine.Core.Indexers;
 using Submarine.Core.Languages;
 using Submarine.Core.Provider;
 using Submarine.Core.Quality;
+using Submarine.Core.Release;
 using Submarine.Core.Release.Torrent;
 
 namespace Submarine.Core.CustomFormats;
@@ -94,9 +95,23 @@ public static class CustomFormatCalculator
 			CustomFormatSpecificationType.YEAR => MatchesYear(specification, context),
 			CustomFormatSpecificationType.INDEXER_FLAG => TryEnum<IndexerFlag>(specification, out var indexerFlag)
 			                                             && context.IndexerFlags?.Contains(indexerFlag) == true,
+			CustomFormatSpecificationType.RELEASE_TYPE => release.SeriesReleaseData is { } seriesData
+			                                             && TryEnum<SeriesReleaseType>(specification, out var releaseType)
+			                                             && seriesData.ReleaseType == releaseType,
+			CustomFormatSpecificationType.QUALITY_MODIFIER => TryEnum<QualityModifier>(specification, out var modifier)
+			                                                 && QualityModifierOf(release.Quality) == modifier,
 			_ => false
 		};
 	}
+
+	private static QualityModifier QualityModifierOf(QualityModel quality)
+		=> quality.Resolution.Source switch
+		{
+			QualitySource.RAW_HD => QualityModifier.RAW_HD,
+			QualitySource.BLURAY_DISK => QualityModifier.BLURAY_DISK,
+			QualitySource.BLURAY_REMUX => QualityModifier.BLURAY_REMUX,
+			_ => QualityModifier.NONE
+		};
 
 	private static bool MatchesRegex(CustomFormatSpecification specification, string input)
 	{

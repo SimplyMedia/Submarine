@@ -223,6 +223,43 @@ public class CustomFormatCalculatorTest
 	}
 
 	[Fact]
+	public void Match_ShouldMatchReleaseType_WhenSeriesReleaseTypeMatches()
+	{
+		var release = CreateRelease() with { SeriesReleaseData = new SeriesReleaseData { ReleaseType = SeriesReleaseType.FULL_SEASON } };
+		var format = CreateFormat(1, Spec(CustomFormatSpecificationType.RELEASE_TYPE, "FULL_SEASON"));
+
+		CustomFormatCalculator.Match([format], CreateContext(release)).ShouldHaveSingleItem();
+
+		var otherRelease = CreateRelease() with { SeriesReleaseData = new SeriesReleaseData { ReleaseType = SeriesReleaseType.EPISODE } };
+		CustomFormatCalculator.Match([format], CreateContext(otherRelease)).ShouldBeEmpty();
+	}
+
+	[Fact]
+	public void Match_ShouldNotMatchReleaseType_WhenReleaseIsNotASeriesRelease()
+	{
+		var format = CreateFormat(1, Spec(CustomFormatSpecificationType.RELEASE_TYPE, "FULL_SEASON"));
+
+		CustomFormatCalculator.Match([format], CreateContext()).ShouldBeEmpty();
+	}
+
+	[Theory]
+	[InlineData(QualitySource.BLURAY_REMUX, "BLURAY_REMUX", true)]
+	[InlineData(QualitySource.RAW_HD, "RAW_HD", true)]
+	[InlineData(QualitySource.BLURAY_DISK, "BLURAY_DISK", true)]
+	[InlineData(QualitySource.WEB_DL, "NONE", true)]
+	[InlineData(QualitySource.WEB_DL, "BLURAY_REMUX", false)]
+	public void Match_ShouldMatchQualityModifier_DerivedFromTheQualitySource(QualitySource source, string modifier, bool expected)
+	{
+		var release = CreateRelease() with
+		{
+			Quality = new QualityModel(new QualityResolutionModel(source, QualityResolution.R1080_P), new Revision())
+		};
+		var format = CreateFormat(1, Spec(CustomFormatSpecificationType.QUALITY_MODIFIER, modifier));
+
+		CustomFormatCalculator.Match([format], CreateContext(release)).Count.ShouldBe(expected ? 1 : 0);
+	}
+
+	[Fact]
 	public void Score_ShouldSumTheProfileScoresOfMatchedFormats()
 	{
 		var profile = new QualityProfile

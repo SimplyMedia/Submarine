@@ -122,6 +122,26 @@ const CUSTOM_FORMAT_SPEC_TYPE: Record<string, string> = {
 	SIZE: 'Size',
 	YEAR: 'Year',
 	INDEXER_FLAG: 'Indexer flag',
+	RELEASE_TYPE: 'Release type',
+	QUALITY_MODIFIER: 'Quality modifier',
+}
+
+/** SeriesReleaseType member names (Submarine.Core.Release). */
+const RELEASE_TYPE: Record<string, string> = {
+	SPECIAL: 'Special',
+	EPISODE: 'Episode',
+	MULTI_EPISODES: 'Multi-episode',
+	PARTIAL_SEASON: 'Partial season',
+	FULL_SEASON: 'Full season',
+	MULTI_SEASON: 'Multi-season',
+}
+
+/** QualityModifier member names (Submarine.Core.Enums). */
+const QUALITY_MODIFIER: Record<string, string> = {
+	NONE: 'None',
+	RAW_HD: 'Raw HD',
+	BLURAY_DISK: 'BluRay disc',
+	BLURAY_REMUX: 'BluRay remux',
 }
 
 const DOWNLOAD_CLIENT_TYPE: Record<string, string> = {
@@ -248,6 +268,8 @@ export const notificationTypeOptions = toOptions(NOTIFICATION_TYPE)
 export const streamingProviderOptions = toOptions(STREAMING_PROVIDER)
 export const releaseFlagOptions = toOptions(RELEASE_FLAG)
 export const indexerFlagOptions = toOptions(INDEXER_FLAG)
+export const releaseTypeOptions = toOptions(RELEASE_TYPE)
+export const qualityModifierOptions = toOptions(QUALITY_MODIFIER)
 export const languageOptions = toOptions(LANGUAGE)
 
 export const authMethodLabel = makeLookup(AUTH_METHOD)
@@ -268,6 +290,8 @@ export const notificationTypeLabel = makeLookup(NOTIFICATION_TYPE)
 export const streamingProviderLabel = makeLookup(STREAMING_PROVIDER)
 export const releaseFlagLabel = makeLookup(RELEASE_FLAG)
 export const indexerFlagLabel = makeLookup(INDEXER_FLAG)
+export const releaseTypeLabel = makeLookup(RELEASE_TYPE)
+export const qualityModifierLabel = makeLookup(QUALITY_MODIFIER)
 export const languageLabel = makeLookup(LANGUAGE)
 
 /** Icon for a notification/provider type, used by ProviderCard grids. Falls back to a generic bell. */

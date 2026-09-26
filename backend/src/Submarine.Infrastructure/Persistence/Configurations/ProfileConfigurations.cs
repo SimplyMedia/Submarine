@@ -51,6 +51,8 @@ internal sealed class DelayProfileConfiguration : EntityConfiguration<DelayProfi
 	{
 		base.Configure(builder);
 		builder.Property(x => x.Name).HasMaxLength(256);
+		builder.Property(x => x.EnableUsenet).HasDefaultValue(true);
+		builder.Property(x => x.EnableTorrent).HasDefaultValue(true);
 		builder.HasMany(x => x.Tags).WithMany();
 	}
 }

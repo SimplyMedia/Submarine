@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Submarine.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Submarine.Infrastructure.Persistence;
 namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
 {
     [DbContext(typeof(PostgresSubmarineDbContext))]
-    partial class PostgresSubmarineDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926175519_ParityDecisionEngineSeasonPack")]
+    partial class ParityDecisionEngineSeasonPack
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -890,22 +893,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.ToTable("ImportLists");
                 });
 
-            modelBuilder.Entity("Submarine.Core.Entities.ImportListConfig", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CleanLibraryLevel")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ImportListConfig");
-                });
-
             modelBuilder.Entity("Submarine.Core.Entities.ImportListExclusion", b =>
                 {
                     b.Property<int>("Id")
@@ -937,46 +924,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("ImportListExclusions");
-                });
-
-            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DisabledUntil")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("EscalationLevel")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ImportListId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("InitialFailure")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("LastSyncAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("MostRecentFailure")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ImportListId")
-                        .IsUnique();
-
-                    b.ToTable("ImportListStatuses");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>
@@ -2663,17 +2610,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Navigation("Movie");
 
                     b.Navigation("Series");
-                });
-
-            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
-                {
-                    b.HasOne("Submarine.Core.Entities.ImportList", "ImportList")
-                        .WithMany()
-                        .HasForeignKey("ImportListId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ImportList");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>

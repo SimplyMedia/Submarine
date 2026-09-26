@@ -103,6 +103,7 @@ public sealed class InteractiveSearchService(
 			throw new ValidationException("One of seriesId, episodeId, movieId or term is required");
 		}
 
+		var isSeasonSearch = seriesId is not null && seasonNumber is not null && episodeId is null;
 		var minimumSeeders = await db.Indexers.AsNoTracking()
 			.Select(indexer => new { indexer.Id, indexer.MinimumSeeders })
 			.ToDictionaryAsync(indexer => indexer.Id, indexer => indexer.MinimumSeeders, cancellationToken);
@@ -133,7 +134,8 @@ public sealed class InteractiveSearchService(
 
 			foreach (var version in versions)
 			{
-				var context = await contextFactory.BuildAsync(version, match?.EpisodeIds, cancellationToken);
+				var context = await contextFactory.BuildAsync(
+					version, match?.EpisodeIds, isInteractive: true, isSeasonSearch: isSeasonSearch, cancellationToken: cancellationToken);
 				var decision = decisionMaker.Decide(candidate, context);
 				decisions.Add(new SearchResultDecision(
 					version.Id,

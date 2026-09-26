@@ -414,6 +414,16 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("EnableTorrent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("EnableUsenet")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
                     b.Property<int>("MinimumCustomFormatScore")
                         .HasColumnType("INTEGER");
 
@@ -996,7 +1006,14 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<int?>("ProxyId")
                         .HasColumnType("INTEGER");
 
+                    b.PrimitiveCollection<string>("RequiredFlags")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("SeasonPackSeedTimeMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeasonSearchMaximumSingleEpisodeAge")
                         .HasColumnType("INTEGER");
 
                     b.Property<double?>("SeedRatio")
@@ -1026,6 +1043,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<int>("Id")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("AllowHardcodedSubs")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("AvailabilityDelayDays")
                         .HasColumnType("INTEGER");
 
@@ -1042,6 +1062,10 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WhitelistedHardcodedSubs")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

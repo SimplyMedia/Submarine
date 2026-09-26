@@ -20,6 +20,8 @@ const editorOpen = ref(false)
 const editingId = ref<number | null>(null)
 const name = ref('')
 const preferredProtocol = ref<Protocol>('USENET')
+const enableUsenet = ref(true)
+const enableTorrent = ref(true)
 const usenetDelayMinutes = ref(0)
 const torrentDelayMinutes = ref(0)
 const bypassIfHighestQuality = ref(false)
@@ -70,6 +72,8 @@ function openCreate() {
 	editingId.value = null
 	name.value = ''
 	preferredProtocol.value = 'USENET'
+	enableUsenet.value = true
+	enableTorrent.value = true
 	usenetDelayMinutes.value = 0
 	torrentDelayMinutes.value = 0
 	bypassIfHighestQuality.value = false
@@ -84,6 +88,8 @@ function openEdit(profile: DelayProfileResource) {
 	editingId.value = profile.id
 	name.value = profile.name
 	preferredProtocol.value = profile.preferredProtocol
+	enableUsenet.value = profile.enableUsenet
+	enableTorrent.value = profile.enableTorrent
 	usenetDelayMinutes.value = profile.usenetDelayMinutes
 	torrentDelayMinutes.value = profile.torrentDelayMinutes
 	bypassIfHighestQuality.value = profile.bypassIfHighestQuality
@@ -100,6 +106,8 @@ async function save() {
 	const body = {
 		name: name.value,
 		preferredProtocol: preferredProtocol.value,
+		enableUsenet: enableUsenet.value,
+		enableTorrent: enableTorrent.value,
 		usenetDelayMinutes: usenetDelayMinutes.value,
 		torrentDelayMinutes: torrentDelayMinutes.value,
 		bypassIfHighestQuality: bypassIfHighestQuality.value,
@@ -253,6 +261,16 @@ async function doDelete() {
 					:options="protocolOptions"
 				/>
 			</SField>
+			<div class="field-grid">
+				<SSwitch
+					v-model="enableUsenet"
+					label="Enable usenet"
+				/>
+				<SSwitch
+					v-model="enableTorrent"
+					label="Enable torrent"
+				/>
+			</div>
 			<div class="field-grid">
 				<SField
 					label="Usenet delay (minutes)"
