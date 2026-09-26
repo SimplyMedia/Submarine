@@ -518,7 +518,8 @@ async function doDeleteUser() {
 						>
 							<SInput
 								id="general-proxy-username"
-								v-model="draft.proxyUsername"
+								:model-value="draft.proxyUsername ?? ''"
+								@update:model-value="draft!.proxyUsername = $event"
 							/>
 						</SField>
 						<SField
@@ -528,7 +529,8 @@ async function doDeleteUser() {
 							<SInput
 								id="general-proxy-password"
 								type="password"
-								v-model="draft.proxyPassword"
+								:model-value="draft.proxyPassword ?? ''"
+								@update:model-value="draft!.proxyPassword = $event"
 							/>
 						</SField>
 					</div>

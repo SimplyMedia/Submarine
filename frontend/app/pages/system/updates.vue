@@ -177,10 +177,16 @@ onMounted(() => {
 				>
 					<div class="release-header">
 						<span class="release-version">{{ release.version }}</span>
-						<SBadge v-if="release.installed" tone="ok">
+						<SBadge
+							v-if="release.installed"
+							tone="ok"
+						>
 							Currently installed
 						</SBadge>
-						<SBadge v-if="release.prerelease" tone="info">
+						<SBadge
+							v-if="release.prerelease"
+							tone="info"
+						>
 							Prerelease
 						</SBadge>
 						<span
