@@ -1,0 +1,18 @@
+<Solution>
+	<Folder Name="/src/">
+		<Project Path="src/Submarine.Core/Submarine.Core.csproj" />
+		<Project Path="src/Submarine.Contracts/Submarine.Contracts.csproj" />
+		<Project Path="src/Submarine.Infrastructure/Submarine.Infrastructure.csproj" />
+		<Project Path="src/Submarine.Api/Submarine.Api.csproj" />
+		<Project Path="src/Submarine.Metadata/Submarine.Metadata.csproj" />
+		<Project Path="src/Submarine.Mappings/Submarine.Mappings.csproj" />
+	</Folder>
+	<Folder Name="/tests/">
+		<Project Path="tests/Submarine.Core.Tests/Submarine.Core.Tests.csproj" />
+		<Project Path="tests/Submarine.Infrastructure.Tests/Submarine.Infrastructure.Tests.csproj" />
+		<Project Path="tests/Submarine.Api.Tests/Submarine.Api.Tests.csproj" />
+		<Project Path="tests/Submarine.Api.IntegrationTests/Submarine.Api.IntegrationTests.csproj" />
+		<Project Path="tests/Submarine.Metadata.Tests/Submarine.Metadata.Tests.csproj" />
+		<Project Path="tests/Submarine.Mappings.Tests/Submarine.Mappings.Tests.csproj" />
+	</Folder>
+</Solution>

@@ -6,22 +6,50 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageVersion Include="AspNetCore.ExceptionHandler" Version="1.1.0" />
-		<PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
-		<PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
-		<PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
-		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
-		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+		<PackageVersion Include="AngleSharp" Version="1.8.2" />
+		<PackageVersion Include="BencodeNET" Version="5.0.0" />
+		<PackageVersion Include="FluentValidation" Version="12.1.1" />
+		<PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+		<PackageVersion Include="Ical.Net" Version="5.2.3" />
+		<PackageVersion Include="MailKit" Version="4.18.0" />
+		<PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.10.0" />
+		<PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
+		<PackageVersion Include="Microsoft.Extensions.Identity.Core" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+		<PackageVersion Include="NSubstitute" Version="6.2.0" />
 		<PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+		<PackageVersion Include="Scalar.AspNetCore" Version="2.17.10" />
 		<PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
 		<PackageVersion Include="Serilog.Enrichers.Thread" Version="4.0.0" />
 		<PackageVersion Include="Serilog.Settings.Configuration" Version="10.0.1" />
 		<PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />
 		<PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-		<PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
-		<PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
-		<PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-		<PackageVersion Include="xunit.v3" Version="3.2.2" />
+		<PackageVersion Include="Serilog.Sinks.PeriodicBatching" Version="5.0.0" />
+		<PackageVersion Include="Shouldly" Version="4.3.0" />
+		<PackageVersion Include="System.Text.Json" Version="10.0.12" />
+		<PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
+		<PackageVersion Include="YamlDotNet" Version="18.1.0" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+		<PackageVersion Include="xunit.v3" Version="4.0.1" />
 	</ItemGroup>
 
 </Project>

@@ -8,4 +8,8 @@
 		<NoWarn>$(NoWarn);CS1591</NoWarn>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
 </Project>
