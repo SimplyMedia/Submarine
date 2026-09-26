@@ -58,7 +58,7 @@ test('quality profiles: create from template, then edit and save', async ({ page
 	await cutoff.click()
 	await page.getByRole('option').last().click()
 	const cutoffLabel = (await cutoff.textContent())?.trim()
-	const formatScore = dialog.getByLabel('Score for E2E release modifier format')
+	const formatScore = dialog.getByLabel('Score for E2E release modifier format', { exact: true })
 	await expect(formatScore).toBeVisible()
 	await formatScore.fill('37')
 	await dialog.getByLabel('Minimum score to grab').fill('11')

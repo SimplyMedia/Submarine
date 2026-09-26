@@ -4,7 +4,6 @@ import { ensureLibrary, ensureStubTrackerIndexer, signIn, STUB_TRACKER_NAME } fr
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
 const metadataPort = process.env.E2E_MOCK_PORT_BASE ? Number(process.env.E2E_MOCK_PORT_BASE) : 5100
 
-
 test('profiles: create language, delay with protocol switches, and release profiles', async ({ page }) => {
 	await signIn(page)
 	await page.goto('/settings/profiles')
@@ -43,7 +42,7 @@ test('profiles: create language, delay with protocol switches, and release profi
 	await dialog.getByLabel('Usenet delay (minutes)').fill('12')
 	await dialog.getByLabel('Torrent delay (minutes)').fill('34')
 	await dialog.getByRole('button', { name: 'Save changes' }).click()
-	await expect(page.getByRole('row').filter({ hasText: delayName })).toContainText('Usenet')
+	await expect(page.getByRole('listitem').filter({ hasText: delayName })).toContainText('Usenet')
 
 	await page.getByRole('tab', { name: 'Release' }).click()
 	await page.getByRole('button', { name: 'Add release profile' }).first().click()
@@ -55,8 +54,11 @@ test('profiles: create language, delay with protocol switches, and release profi
 	await dialog.getByPlaceholder('Type and press enter').nth(1).press('Enter')
 	await dialog.getByRole('button', { name: 'Save changes' }).click()
 	const profile = page.getByRole('row').filter({ hasText: releaseName })
-	await expect(profile).toContainText('E2E-REQUIRED')
-	await expect(profile).toContainText('E2E-IGNORED')
+	await expect(profile).toBeVisible()
+	const releaseProfiles = (await (await page.request.get('/api/v1/release-profiles', { params: { PageSize: 200 } })).json() as { items: { name: string, required: string[], ignored: string[] }[] }).items
+	const savedReleaseProfile = releaseProfiles.find(item => item.name === releaseName)
+	expect(savedReleaseProfile?.required).toContain('E2E-REQUIRED')
+	expect(savedReleaseProfile?.ignored).toContain('E2E-IGNORED')
 })
 
 test('quality definitions: edit a size and import TRaSH quality sizes', async ({ page }) => {

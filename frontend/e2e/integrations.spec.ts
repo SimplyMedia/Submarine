@@ -5,7 +5,6 @@ import { signIn } from './setup'
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
 const metadataPort = process.env.E2E_MOCK_PORT_BASE ? Number(process.env.E2E_MOCK_PORT_BASE) : 5100
 
-
 test('connect: add and test a webhook, then preserve its enabled event selections', async ({ page }) => {
 	await signIn(page)
 	const name = 'E2E webhook connection'
