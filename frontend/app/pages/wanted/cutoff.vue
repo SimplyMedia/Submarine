@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { formatDate } from '~/composables/useFormat'
 import { useWantedTable } from '~/composables/useWantedTable'
 import type { WantedItem } from '~/composables/useWantedTable'
 import { qualityLabel } from '~/utils/library-labels'
 import { navChildren } from '~/navigation'
 
-useHead({ title: 'Cut off' })
+const { t } = useI18n()
+useHead({ title: t('pages.wanted.cutoff.title') })
 
 const {
 	items,
@@ -30,11 +32,11 @@ const {
 
 const columns = [
 	{ key: 'select', label: '' },
-	{ key: 'title', label: 'Title' },
-	{ key: 'episode', label: 'Episode' },
-	{ key: 'airDate', label: 'Air date' },
-	{ key: 'quality', label: 'Quality' },
-	{ key: 'monitored', label: 'Monitored', align: 'right' as const },
+	{ key: 'title', label: t('pages.wanted.cutoff.titleColumn') },
+	{ key: 'episode', label: t('pages.wanted.cutoff.episode') },
+	{ key: 'airDate', label: t('pages.wanted.cutoff.airDate') },
+	{ key: 'quality', label: t('pages.wanted.cutoff.quality') },
+	{ key: 'monitored', label: t('pages.wanted.cutoff.monitored'), align: 'right' as const },
 ]
 
 function episodeLabel(row: WantedItem): string {
@@ -51,32 +53,32 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Cut off">
+		<SPageHeader :title="t('pages.wanted.cutoff.title')">
 			<template #actions>
 				<SButton
 					variant="secondary"
 					:loading="searchingAll"
 					@click="searchAll"
 				>
-					Search all
+					{{ t('pages.wanted.cutoff.searchAll') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="Wanted"
+			:label="t('pages.wanted.cutoff.wantedNav')"
 			:items="navChildren('wanted')"
 		/>
 
 		<div class="wanted-toolbar">
 			<SCheckbox
 				:model-value="allSelected"
-				label="Select all on this page"
+				:label="t('pages.wanted.cutoff.selectAll')"
 				@update:model-value="toggleAll"
 			/>
 			<SSwitch
 				v-model="monitoredOnly"
-				label="Monitored only"
+				:label="t('pages.wanted.cutoff.monitoredOnly')"
 			/>
 			<SButton
 				size="sm"
@@ -84,7 +86,7 @@ onMounted(() => {
 				:loading="searching"
 				@click="searchSelected"
 			>
-				Search selected
+				{{ t('pages.wanted.cutoff.searchSelected') }}
 			</SButton>
 		</div>
 
@@ -100,14 +102,14 @@ onMounted(() => {
 		>
 			<template #empty>
 				<SEmptyState
-					message="Nothing is waiting for a quality upgrade right now."
+					:message="t('pages.wanted.cutoff.emptyState')"
 					icon="lucide:circle-check"
 				/>
 			</template>
 			<template #cell-select="{ row }">
 				<SCheckbox
 					:model-value="isSelected(row)"
-					:aria-label="`Select ${row.title}`"
+					:aria-label="t('pages.wanted.cutoff.selectItem', { title: row.title })"
 					@update:model-value="value => toggleRow(row, value)"
 				/>
 			</template>
@@ -127,11 +129,11 @@ onMounted(() => {
 				{{ row.airDateUtc ? formatDate(row.airDateUtc) : '' }}
 			</template>
 			<template #cell-quality="{ row }">
-				{{ qualityLabel(row.quality) }}
+				{{ t(qualityLabel(row.quality)) }}
 			</template>
 			<template #cell-monitored="{ row }">
 				<SBadge :tone="row.monitored ? 'ok' : 'neutral'">
-					{{ row.monitored ? 'Monitored' : 'Unmonitored' }}
+					{{ t(row.monitored ? 'pages.wanted.cutoff.monitored' : 'pages.wanted.cutoff.unmonitored') }}
 				</SBadge>
 			</template>
 		</STable>
@@ -146,16 +148,16 @@ onMounted(() => {
 				:disabled="page <= 1"
 				@click="setPage(page - 1)"
 			>
-				Previous
+				{{ t('pages.wanted.cutoff.previous') }}
 			</SButton>
-			<span>Page {{ page }} of {{ totalPages }} ({{ totalCount }} total)</span>
+			<span>{{ t('pages.wanted.cutoff.page', { page, totalPages, totalCount }) }}</span>
 			<SButton
 				variant="secondary"
 				size="sm"
 				:disabled="page >= totalPages"
 				@click="setPage(page + 1)"
 			>
-				Next
+				{{ t('pages.wanted.cutoff.next') }}
 			</SButton>
 		</div>
 	</div>

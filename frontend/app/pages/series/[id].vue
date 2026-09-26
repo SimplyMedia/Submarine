@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 import {
 	addMonitorOptionOptions,
@@ -10,6 +11,8 @@ import {
 	seriesTypeLabel,
 	seriesTypeOptions,
 } from '~/utils/library-labels'
+
+const { t } = useI18n()
 
 type SeriesDetail = components['schemas']['SeriesDetailDto']
 type Episode = components['schemas']['EpisodeDto']
@@ -34,7 +37,7 @@ const loadError = ref('')
 
 const series = computed(() => detail.value?.series ?? null)
 
-useHead({ title: computed(() => series.value?.title ?? 'Series') })
+useHead({ title: computed(() => series.value?.title ?? t('pages.series.title')) })
 
 const episodesBySeason = computed(() => {
 	const map = new Map<number, Episode[]>()
@@ -63,7 +66,7 @@ async function load() {
 		detail.value = detailResult.data
 	}
 	else {
-		loadError.value = 'Could not load this series. Check your connection and try again.'
+		loadError.value = t('pages.series.loadError')
 	}
 	if (episodesResult.data) {
 		episodes.value = episodesResult.data
@@ -88,7 +91,7 @@ onMounted(async () => {
 	stopHandlers.push(events.on('SeriesDeletedEvent', (payload) => {
 		const id = (payload as { seriesId?: number }).seriesId
 		if (id === seriesId) {
-			toast.toast({ title: 'This series was deleted', tone: 'info' })
+			toast.toast({ title: t('pages.series.deleted'), tone: 'info' })
 			void navigateTo('/series', { replace: true })
 		}
 	}))
@@ -160,7 +163,7 @@ async function runCommand(name: string, body: Record<string, unknown> = {}) {
 	const result = await api.POST('/api/v1/commands', { body: { name, ...body } })
 	if (result.data) {
 		const label = name.replace(/([A-Z])/g, ' $1').trim().toLowerCase()
-		toast.toast({ title: `${label.charAt(0).toUpperCase()}${label.slice(1)} queued`, tone: 'ok' })
+		toast.toast({ title: t('pages.series.commandQueued', { command: `${label.charAt(0).toUpperCase()}${label.slice(1)}` }), tone: 'ok' })
 	}
 	else {
 		toast.toast({ title: toApiError(result.error, result.response).message, tone: 'danger' })
@@ -168,28 +171,28 @@ async function runCommand(name: string, body: Record<string, unknown> = {}) {
 }
 
 const actionItems = computed(() => [
-	{ label: 'Refresh metadata', icon: 'lucide:refresh-cw', onSelect: () => void refresh() },
-	{ label: 'Rescan files', icon: 'lucide:folder-search', onSelect: () => void rescan() },
-	{ label: 'Search', icon: 'lucide:search', onSelect: () => void searchSeries() },
-	{ label: 'Interactive search', icon: 'lucide:search-check', onSelect: () => { interactiveSearchOpen.value = true } },
-	{ label: 'Preview renames', icon: 'lucide:file-text', onSelect: () => void openRenamePreview() },
-	{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit() },
-	{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => { deleteOpen.value = true } },
+	{ label: t('pages.series.actions.refreshMetadata'), icon: 'lucide:refresh-cw', onSelect: () => void refresh() },
+	{ label: t('pages.series.actions.rescanFiles'), icon: 'lucide:folder-search', onSelect: () => void rescan() },
+	{ label: t('pages.series.actions.search'), icon: 'lucide:search', onSelect: () => void searchSeries() },
+	{ label: t('pages.series.actions.interactiveSearch'), icon: 'lucide:search-check', onSelect: () => { interactiveSearchOpen.value = true } },
+	{ label: t('pages.series.actions.previewRenames'), icon: 'lucide:file-text', onSelect: () => void openRenamePreview() },
+	{ label: t('pages.series.actions.edit'), icon: 'lucide:pencil', onSelect: () => openEdit() },
+	{ label: t('pages.series.actions.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => { deleteOpen.value = true } },
 ])
 
 async function refresh() {
 	const result = await api.POST('/api/v1/series/{id}/refresh', { params: { path: { id: seriesId } } })
-	toast.toast({ title: result.data ? 'Refresh queued' : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
+	toast.toast({ title: result.data ? t('pages.series.refreshQueued') : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
 }
 
 async function rescan() {
 	const result = await api.POST('/api/v1/series/{id}/rescan', { params: { path: { id: seriesId } } })
-	toast.toast({ title: result.data ? 'Rescan queued' : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
+	toast.toast({ title: result.data ? t('pages.series.rescanQueued') : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
 }
 
 async function searchSeries() {
 	const result = await api.POST('/api/v1/series/{id}/search', { params: { path: { id: seriesId } } })
-	toast.toast({ title: result.data ? 'Search queued' : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
+	toast.toast({ title: result.data ? t('pages.series.searchQueued') : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
 }
 
 async function searchSeason(seasonNumber: number) {
@@ -215,7 +218,7 @@ async function applyRename() {
 	try {
 		const result = await api.POST('/api/v1/rename', { body: { seriesId, movieId: null, fileIds: null } })
 		if (result.data) {
-			toast.toast({ title: 'Rename queued', tone: 'ok' })
+			toast.toast({ title: t('pages.series.renameQueued'), tone: 'ok' })
 			renamePreviewOpen.value = false
 		}
 		else {
@@ -276,7 +279,7 @@ async function saveEdit() {
 		if (result.data) {
 			detail.value = result.data
 			editOpen.value = false
-			toast.toast({ title: 'Series updated', tone: 'ok' })
+			toast.toast({ title: t('pages.series.detail.updated'), tone: 'ok' })
 		}
 		else {
 			toast.toast({ title: toApiError(result.error, result.response).message, tone: 'danger' })
@@ -299,7 +302,7 @@ async function confirmDelete() {
 			params: { path: { id: seriesId }, query: { deleteFiles: deleteFiles.value, addImportListExclusion: deleteExclusion.value } },
 		})
 		if (result.response.ok) {
-			toast.toast({ title: `${series.value?.title ?? 'Series'} deleted`, tone: 'ok' })
+			toast.toast({ title: t('pages.series.deletedToast', { title: series.value?.title ?? t('pages.series.title') }), tone: 'ok' })
 			await navigateTo('/series', { replace: true })
 		}
 		else {
@@ -348,7 +351,7 @@ async function applySeasonPass() {
 			body: { seasons: null, monitoringOption: seasonPassOption.value, monitorSpecials: seasonPassSpecials.value },
 		})
 		if (result.response.ok) {
-			toast.toast({ title: 'Season pass applied', tone: 'ok' })
+			toast.toast({ title: t('pages.series.seasonPassApplied'), tone: 'ok' })
 			seasonPassOpen.value = false
 			await load()
 		}
@@ -380,7 +383,7 @@ async function submitAddVersion() {
 		if (result.data && detail.value) {
 			detail.value.series.versions = [...detail.value.series.versions, result.data]
 			addVersionOpen.value = false
-			toast.toast({ title: 'Version added', tone: 'ok' })
+			toast.toast({ title: t('pages.series.versionAdded'), tone: 'ok' })
 		}
 		else {
 			toast.toast({ title: toApiError(result.error, result.response).message, tone: 'danger' })
@@ -420,7 +423,7 @@ async function confirmDeleteVersion() {
 	})
 	if (result.response.ok) {
 		detail.value.series.versions = detail.value.series.versions.filter(version => version.id !== deleteVersionTarget.value?.id)
-		toast.toast({ title: 'Version removed', tone: 'ok' })
+		toast.toast({ title: t('pages.series.versionRemoved'), tone: 'ok' })
 	}
 	else {
 		toast.toast({ title: toApiError(result.error, result.response).message, tone: 'danger' })
@@ -434,11 +437,11 @@ async function confirmDeleteVersion() {
 		<SSpinner v-if="loading && !series" />
 		<SEmptyState
 			v-else-if="!series"
-			:message="loadError || 'This series could not be found.'"
+			:message="loadError || t('pages.series.notFound')"
 		>
 			<template #action>
 				<SButton @click="navigateTo('/series')">
-					Back to series
+					{{ t('pages.series.backToSeries') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -459,16 +462,16 @@ async function confirmDeleteVersion() {
 						<h1>{{ series.title }}<span v-if="series.year"> ({{ series.year }})</span></h1>
 						<MonitorToggle
 							:model-value="series.monitored"
-							:label="`Toggle monitored for ${series.title}`"
+							:label="t('pages.series.toggleMonitored', { title: series.title })"
 							@update:model-value="toggleMonitored"
 						/>
 					</div>
 					<div class="series-badges">
 						<SBadge :tone="series.status === 'CONTINUING' ? 'ok' : 'neutral'">
-							{{ seriesStatusLabel(series.status) }}
+							{{ t(seriesStatusLabel(series.status)) }}
 						</SBadge>
 						<SBadge tone="neutral">
-							{{ seriesTypeLabel(series.seriesType) }}
+							{{ t(seriesTypeLabel(series.seriesType)) }}
 						</SBadge>
 						<SBadge
 							v-if="series.certification"
@@ -479,7 +482,7 @@ async function confirmDeleteVersion() {
 					</div>
 					<p class="series-meta">
 						<span v-if="series.network">{{ series.network }}</span>
-						<span v-if="series.runtime"> · {{ series.runtime }} min</span>
+						<span v-if="series.runtime"> · {{ t('pages.series.minutes', { count: series.runtime }) }}</span>
 						<span v-if="series.genres.length"> · {{ series.genres.join(', ') }}</span>
 					</p>
 					<p
@@ -489,7 +492,7 @@ async function confirmDeleteVersion() {
 						{{ series.overview }}
 					</p>
 					<SField
-						label="Tags"
+						:label="t('pages.series.tags')"
 						class="series-tags-field"
 					>
 						<TagPicker v-model:tag-ids="tagIds" />
@@ -499,14 +502,14 @@ async function confirmDeleteVersion() {
 					<SDropdownMenu :items="actionItems">
 						<template #trigger>
 							<SButton variant="secondary">
-								Actions
+								{{ t('pages.series.actionsLabel') }}
 							</SButton>
 						</template>
 					</SDropdownMenu>
 				</div>
 			</div>
 
-			<SSection title="Versions">
+			<SSection :title="t('pages.series.versions')">
 				<template #default>
 					<div class="version-list">
 						<div
@@ -528,11 +531,11 @@ async function confirmDeleteVersion() {
 							<span class="version-path">{{ version.rootFolderPath }}/{{ version.path }}</span>
 							<MonitorToggle
 								:model-value="version.monitored"
-								:label="`Toggle monitored for version ${version.name}`"
+								:label="t('pages.series.toggleVersionMonitored', { name: version.name })"
 								disabled
 							/>
 							<SIconButton
-								label="Remove version"
+								:label="t('pages.series.removeVersion')"
 								:disabled="series.versions.length <= 1"
 								@click="deleteVersionTarget = version"
 							>
@@ -547,19 +550,19 @@ async function confirmDeleteVersion() {
 						size="sm"
 						@click="addVersionOpen = true"
 					>
-						Add version
+						{{ t('pages.series.addVersion') }}
 					</SButton>
 				</template>
 			</SSection>
 
-			<SSection title="Seasons">
+			<SSection :title="t('pages.series.seasons')">
 				<template #default>
 					<div class="season-pass-row">
 						<SButton
 							size="sm"
 							@click="seasonPassOpen = true"
 						>
-							Season pass
+							{{ t('pages.series.seasonPass') }}
 						</SButton>
 					</div>
 					<details
@@ -569,32 +572,32 @@ async function confirmDeleteVersion() {
 						open
 					>
 						<summary class="season-summary">
-							<span class="season-title">{{ season.seasonNumber === 0 ? 'Specials' : `Season ${season.seasonNumber}` }}</span>
+							<span class="season-title">{{ season.seasonNumber === 0 ? t('pages.series.specials') : t('pages.series.seasonNumber', { number: season.seasonNumber }) }}</span>
 							<SProgress
 								class="season-progress"
 								:value="season.statistics.episodeCount > 0 ? (season.statistics.episodeFileCount / season.statistics.episodeCount) * 100 : 0"
-								:label="`Season ${season.seasonNumber} episodes on disk`"
+								:label="t('pages.series.seasonEpisodesOnDisk', { number: season.seasonNumber })"
 							/>
 							<span class="season-stats">{{ season.statistics.episodeFileCount }} / {{ season.statistics.episodeCount }}</span>
 							<SButton
 								size="sm"
 								@click.prevent="searchSeason(season.seasonNumber)"
 							>
-								Search season
+								{{ t('pages.series.searchSeason') }}
 							</SButton>
 							<MonitorToggle
 								:model-value="season.monitored"
-								:label="`Toggle monitored for season ${season.seasonNumber}`"
+								:label="t('pages.series.toggleSeasonMonitored', { number: season.seasonNumber })"
 								@update:model-value="toggleSeasonMonitored(season.seasonNumber, $event)"
 							/>
 						</summary>
 						<STable
 							:columns="[
 								{ key: 'episodeNumber', label: '#' },
-								{ key: 'title', label: 'Title' },
-								{ key: 'airDate', label: 'Air date' },
-								{ key: 'file', label: 'Quality' },
-								{ key: 'monitored', label: 'Monitored', align: 'right' },
+								{ key: 'title', label: t('pages.series.titleColumn') },
+								{ key: 'airDate', label: t('pages.series.airDate') },
+								{ key: 'file', label: t('pages.series.quality') },
+								{ key: 'monitored', label: t('pages.series.monitored'), align: 'right' },
 								{ key: 'actions', label: '', align: 'right' },
 							]"
 							:rows="episodesBySeason.get(season.seasonNumber) ?? []"
@@ -604,30 +607,30 @@ async function confirmDeleteVersion() {
 								{{ row.episodeNumber }}
 							</template>
 							<template #cell-title="{ row }">
-								{{ row.title || `Episode ${row.episodeNumber}` }}
+								{{ row.title || t('pages.series.episodeNumber', { number: row.episodeNumber }) }}
 							</template>
 							<template #cell-airDate="{ row }">
 								<span v-if="row.airDate">{{ formatDate(row.airDate) }}</span>
 								<span
 									v-else
 									class="s-cell-muted"
-								>None</span>
+								>{{ t('pages.series.none') }}</span>
 							</template>
 							<template #cell-file="{ row }">
 								<SBadge :tone="row.hasFile ? 'ok' : 'neutral'">
-									{{ row.hasFile ? qualityLabel(row.files[0]?.quality) : 'No file' }}
+									{{ row.hasFile ? t(qualityLabel(row.files[0]?.quality)) : t('pages.series.noFile') }}
 								</SBadge>
 							</template>
 							<template #cell-monitored="{ row }">
 								<MonitorToggle
 									:model-value="row.monitored"
-									:label="`Toggle monitored for episode ${row.episodeNumber}`"
+									:label="t('pages.series.toggleEpisodeMonitored', { number: row.episodeNumber })"
 									@update:model-value="toggleEpisodeMonitored(row, $event)"
 								/>
 							</template>
 							<template #cell-actions="{ row }">
 								<SIconButton
-									label="Search episode"
+									:label="t('pages.series.searchEpisode')"
 									@click="searchEpisodes([row.id])"
 								>
 									<Icon
@@ -641,19 +644,19 @@ async function confirmDeleteVersion() {
 				</template>
 			</SSection>
 
-			<SSection title="History">
+			<SSection :title="t('pages.series.history')">
 				<STable
 					v-if="history.length > 0"
 					:columns="[
-						{ key: 'type', label: 'Event' },
-						{ key: 'sourceTitle', label: 'Release' },
-						{ key: 'date', label: 'Date' },
+						{ key: 'type', label: t('pages.series.event') },
+						{ key: 'sourceTitle', label: t('pages.series.release') },
+						{ key: 'date', label: t('pages.series.date') },
 					]"
 					:rows="history"
 					:row-key="(row) => row.id"
 				>
 					<template #cell-type="{ row }">
-						{{ historyEventTypeLabel(row.type as never) }}
+						{{ t(historyEventTypeLabel(row.type as never)) }}
 					</template>
 					<template #cell-date="{ row }">
 						{{ formatDateTime(row.date) }}
@@ -661,39 +664,39 @@ async function confirmDeleteVersion() {
 				</STable>
 				<SEmptyState
 					v-else
-					message="No activity yet"
+					:message="t('pages.series.noActivity')"
 				/>
 			</SSection>
 		</template>
 
 		<SDialog
 			v-model="editOpen"
-			title="Edit series"
+			:title="t('pages.series.editTitle')"
 		>
 			<div class="add-form">
-				<SField label="Series type">
+				<SField :label="t('pages.series.seriesType')">
 					<SSelect
 						v-model="editForm.seriesType"
-						:options="seriesTypeOptions"
+						:options="seriesTypeOptions.map(option => ({ ...option, label: t(option.label) }))"
 					/>
 				</SField>
-				<SField label="Episode numbering">
+				<SField :label="t('pages.series.episodeNumbering')">
 					<SSelect
 						v-model="editForm.numbering"
-						:options="seriesNumberingOptions"
+						:options="seriesNumberingOptions.map(option => ({ ...option, label: t(option.label) }))"
 					/>
 				</SField>
-				<SField label="New seasons">
+				<SField :label="t('pages.series.newSeasons')">
 					<SSelect
 						v-model="editForm.monitorNewItems"
-						:options="monitorNewItemsOptions"
+						:options="monitorNewItemsOptions.map(option => ({ ...option, label: t(option.label) }))"
 					/>
 				</SField>
 				<SCheckbox
 					v-model="editForm.seasonFolder"
-					label="Use a season folder"
+					:label="t('pages.series.useSeasonFolder')"
 				/>
-				<SField label="Root folder">
+				<SField :label="t('pages.series.rootFolder')">
 					<SSelect
 						v-model="editForm.rootFolderId"
 						:options="rootFolderOptions"
@@ -701,167 +704,167 @@ async function confirmDeleteVersion() {
 				</SField>
 				<SCheckbox
 					v-model="editForm.moveFiles"
-					label="Move files on disk"
+					:label="t('pages.series.moveFilesOnDisk')"
 				/>
 			</div>
 			<template #footer>
 				<SButton @click="editOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="savingEdit"
 					@click="saveEdit"
 				>
-					Save changes
+					{{ t('pages.series.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteOpen"
-			title="Delete series"
-			:description="`This removes ${series?.title} from the library.`"
+			:title="t('pages.series.deleteTitle')"
+			:description="t('pages.series.detail.deleteDescription', { title: series?.title })"
 		>
 			<SCheckbox
 				v-model="deleteFiles"
-				label="Delete files on disk"
+				:label="t('pages.series.deleteFiles')"
 			/>
 			<SCheckbox
 				v-model="deleteExclusion"
-				label="Add an import list exclusion"
+				:label="t('pages.series.importListExclusion')"
 			/>
 			<template #footer>
 				<SButton @click="deleteOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="confirmDelete"
 				>
-					Delete
+					{{ t('pages.series.delete') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="seasonPassOpen"
-			title="Season pass"
-			description="Set monitoring across every season at once."
+			:title="t('pages.series.seasonPass')"
+			:description="t('pages.series.seasonPassDescription')"
 		>
 			<div class="add-form">
-				<SField label="Monitor">
+				<SField :label="t('pages.series.monitor')">
 					<SSelect
 						v-model="seasonPassOption"
-						:options="addMonitorOptionOptions"
+						:options="addMonitorOptionOptions.map(option => ({ ...option, label: t(option.label) }))"
 					/>
 				</SField>
 				<SCheckbox
 					v-model="seasonPassSpecials"
-					label="Include specials"
+					:label="t('pages.series.includeSpecials')"
 				/>
 			</div>
 			<template #footer>
 				<SButton @click="seasonPassOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="seasonPassSaving"
 					@click="applySeasonPass"
 				>
-					Apply
+					{{ t('pages.series.apply') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="addVersionOpen"
-			title="Add version"
+			:title="t('pages.series.addVersion')"
 		>
 			<div class="add-form">
-				<SField label="Name">
+				<SField :label="t('pages.series.name')">
 					<SInput
 						v-model="addVersionForm.name"
-						placeholder="Main"
+						:placeholder="t('pages.series.mainPlaceholder')"
 					/>
 				</SField>
-				<SField label="Quality profile">
+				<SField :label="t('pages.series.qualityProfile')">
 					<SSelect
 						v-model="addVersionForm.qualityProfileId"
 						:options="qualityOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.series.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Language profile">
+				<SField :label="t('pages.series.languageProfile')">
 					<SSelect
 						v-model="addVersionForm.languageProfileId"
 						:options="languageOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.series.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Root folder">
+				<SField :label="t('pages.series.rootFolder')">
 					<SSelect
 						v-model="addVersionForm.rootFolderId"
 						:options="rootFolderOptions"
-						placeholder="Use the series root folder"
+						:placeholder="t('pages.series.seriesRootFolder')"
 					/>
 				</SField>
 			</div>
 			<template #footer>
 				<SButton @click="addVersionOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="addingVersion"
 					@click="submitAddVersion"
 				>
-					Add version
+					{{ t('pages.series.addVersion') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteVersionOpen"
-			title="Remove version"
-			description="This removes the version and, if selected, its files."
+			:title="t('pages.series.removeVersion')"
+			:description="t('pages.series.removeVersionDescription')"
 		>
 			<SCheckbox
 				v-model="deleteVersionFiles"
-				label="Delete files on disk"
+				:label="t('pages.series.deleteFiles')"
 			/>
 			<template #footer>
 				<SButton @click="deleteVersionTarget = null">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					@click="confirmDeleteVersion"
 				>
-					Remove
+					{{ t('pages.series.remove') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="renamePreviewOpen"
-			title="Preview renames"
+			:title="t('pages.series.previewRenames')"
 			wide
 		>
 			<STable
-				:columns="[{ key: 'existingPath', label: 'Current' }, { key: 'newPath', label: 'New' }]"
+				:columns="[{ key: 'existingPath', label: t('pages.series.current') }, { key: 'newPath', label: t('pages.series.new') }]"
 				:rows="renamePreview"
 				:row-key="(row) => row.fileId"
 			>
 				<template #empty>
-					<SEmptyState message="Every file already matches the naming format." />
+					<SEmptyState :message="t('pages.series.renameAlreadyMatches')" />
 				</template>
 			</STable>
 			<template #footer>
 				<SButton @click="renamePreviewOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
@@ -869,7 +872,7 @@ async function confirmDeleteVersion() {
 					:loading="renaming"
 					@click="applyRename"
 				>
-					Rename {{ renamePreview.length }} file(s)
+					{{ t('pages.series.renameFiles', { count: renamePreview.length }) }}
 				</SButton>
 			</template>
 		</SDialog>

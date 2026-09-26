@@ -14,7 +14,7 @@
 					{{ title }}
 				</DialogTitle>
 				<DialogClose as-child>
-					<SIconButton label="Close">
+					<SIconButton :label="$t('components.ui.SDialog.close')">
 						<Icon
 							name="lucide:x"
 							aria-hidden="true"

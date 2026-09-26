@@ -7,6 +7,26 @@ test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine AP
 
 const username = 'submarine-e2e'
 const password = 'submarine-e2e-password'
+test.afterEach(async ({ page }) => {
+	const [formatsResponse, profilesResponse] = await Promise.all([
+		page.request.get('/api/v1/custom-formats', { params: { PageSize: 200 } }),
+		page.request.get('/api/v1/quality-profiles', { params: { PageSize: 200 } }),
+	])
+	if (formatsResponse.ok()) {
+		const formats = (await formatsResponse.json() as { items: { id: number, name: string }[] }).items
+		for (const format of formats.filter(item => item.name === 'E2E release modifier format')) {
+			const deleted = await page.request.delete(`/api/v1/custom-formats/${format.id}`)
+			expect(deleted.ok(), await deleted.text()).toBe(true)
+		}
+	}
+	if (profilesResponse.ok()) {
+		const profiles = (await profilesResponse.json() as { items: { id: number, name: string }[] }).items
+		for (const profile of profiles.filter(item => item.name === 'HD-720p' || item.name === 'HD-720p (renamed)')) {
+			const deleted = await page.request.delete(`/api/v1/quality-profiles/${profile.id}`)
+			expect(deleted.ok(), await deleted.text()).toBe(true)
+		}
+	}
+})
 
 async function signIn(page: Page) {
 	await page.goto('/settings/profiles')
@@ -26,6 +46,21 @@ async function signIn(page: Page) {
 
 test('quality profiles: create from template, then edit and save', async ({ page }) => {
 	await signIn(page)
+	const existingFormats = await page.request.get('/api/v1/custom-formats', { params: { PageSize: 200 } })
+	expect(existingFormats.ok(), await existingFormats.text()).toBe(true)
+	const existingFormatItems = (await existingFormats.json() as { items: { id: number, name: string }[] }).items
+	for (const format of existingFormatItems.filter(item => item.name === 'E2E release modifier format')) {
+		const deleted = await page.request.delete(`/api/v1/custom-formats/${format.id}`)
+		expect(deleted.ok(), await deleted.text()).toBe(true)
+	}
+	const createdFormat = await page.request.post('/api/v1/custom-formats', {
+		data: {
+			name: 'E2E release modifier format',
+			includeCustomFormatWhenRenaming: false,
+			specifications: [{ name: 'E2E title', type: 'RELEASE_TITLE', negate: false, required: false, value: 'E2E' }],
+		},
+	})
+	expect(createdFormat.ok(), await createdFormat.text()).toBe(true)
 	await page.goto('/settings/profiles')
 	await expect(page.getByRole('button', { name: 'New from template' })).toBeVisible()
 	// The seeded profile shows once the list has loaded, so the leftover check below sees real rows.
@@ -52,20 +87,35 @@ test('quality profiles: create from template, then edit and save', async ({ page
 	await page.getByRole('menuitem', { name: 'Edit' }).click()
 
 	const dialog = page.getByRole('dialog', { name: 'Edit quality profile' })
-	await expect(dialog).toBeVisible()
 	const nameInput = dialog.getByLabel('Name')
 	await nameInput.fill('HD-720p (renamed)')
+	const cutoff = dialog.getByLabel('Upgrade until')
+	await cutoff.click()
+	const cutoffOption = page.getByRole('option').first()
+	const cutoffLabel = await cutoffOption.innerText()
+	await cutoffOption.click()
+	await expect(cutoff).toHaveText(cutoffLabel)
+	const formatScore = dialog.getByLabel('Score for E2E release modifier format', { exact: true })
+	await expect(formatScore).toBeVisible()
+	await formatScore.fill('37')
+	await dialog.getByLabel('Minimum score to grab').fill('11')
+	await dialog.getByLabel('Score to upgrade past cutoff').fill('22')
+	await dialog.getByLabel('Minimum score for further upgrades').fill('5')
 	await dialog.getByRole('button', { name: 'Save changes' }).click()
 
 	await expect(page.locator('.s-toast-title', { hasText: 'Saved' })).toBeVisible()
 	await expect(page.getByRole('row').filter({ hasText: 'HD-720p (renamed)' })).toBeVisible()
-
-	// Clean up so re-runs stay idempotent.
-	await page.getByRole('row').filter({ hasText: 'HD-720p (renamed)' })
-		.getByRole('button', { name: 'Profile actions' }).click()
-	await page.getByRole('menuitem', { name: 'Delete' }).click()
-	await page.getByRole('button', { name: 'Delete', exact: true }).click()
-	await expect(page.getByRole('row').filter({ hasText: 'HD-720p' })).toHaveCount(0)
+	const profilesResponse = await page.request.get('/api/v1/quality-profiles')
+	const profiles = (await profilesResponse.json() as { items: { id: number, name: string, cutoff: number, items: { quality: { name: string } }[], formatItems: { customFormatId: number, score: number }[], minFormatScore: number, cutoffFormatScore: number, minUpgradeFormatScore: number }[] }).items
+	const savedProfile = profiles.find(profile => profile.name === 'HD-720p (renamed)')
+	expect(savedProfile).toBeDefined()
+	expect(savedProfile).toMatchObject({ minFormatScore: 11, cutoffFormatScore: 22, minUpgradeFormatScore: 5 })
+	expect(savedProfile!.items[savedProfile!.cutoff]!.quality.name).toBe(cutoffLabel)
+	const formatsResponse = await page.request.get('/api/v1/custom-formats')
+	const formats = (await formatsResponse.json() as { items: { id: number, name: string }[] }).items
+	const format = formats.find(item => item.name === 'E2E release modifier format')
+	expect(format).toBeDefined()
+	expect(savedProfile?.formatItems).toContainEqual({ customFormatId: format!.id, score: 37 })
 })
 
 test('general settings: regenerate the API key', async ({ page }) => {

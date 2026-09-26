@@ -3,12 +3,15 @@
  * Multi-select tag input: chips for selected tags, type-ahead suggestions
  * from the reference store, and inline "create tag" when nothing matches.
  */
-withDefaults(defineProps<{
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+const props = withDefaults(defineProps<{
 	controlId?: string
 	placeholder?: string
 }>(), {
 	controlId: undefined,
-	placeholder: 'Add a tag',
+	placeholder: undefined,
 })
 
 const tagIds = defineModel<number[]>('tagIds', { default: () => [] })
@@ -116,7 +119,7 @@ watch(query, () => {
 				{{ tag.label }}
 				<button
 					type="button"
-					:aria-label="`Remove ${tag.label}`"
+					:aria-label="t('components.shared.TagPicker.removeTag', { tag: tag.label })"
 					@click="removeTag(tag.id)"
 				>
 					<Icon
@@ -132,7 +135,7 @@ watch(query, () => {
 					v-model="query"
 					type="text"
 					class="tag-picker-input"
-					:placeholder="selectedTags.length === 0 ? placeholder : ''"
+					:placeholder="selectedTags.length === 0 ? (props.placeholder ?? t('components.shared.TagPicker.addTag')) : ''"
 					role="combobox"
 					:aria-expanded="open"
 					aria-autocomplete="list"
@@ -166,7 +169,7 @@ watch(query, () => {
 				:class="{ 'tag-picker-option-active': activeIndex === suggestions.length }"
 				@mousedown.prevent="createAndAdd"
 			>
-				Create "{{ query.trim() }}"
+				{{ t('components.shared.TagPicker.createTag', { query: query.trim() }) }}
 			</li>
 		</ul>
 	</div>

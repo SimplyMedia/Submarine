@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { LOG_LEVELS } from '~/utils/system-labels'
+import { useI18n } from 'vue-i18n'
+import { LOG_LEVELS, logLevelLabel } from '~/utils/system-labels'
 import { formatBytes, formatDateTime } from '~/composables/useFormat'
 import { useLogsStore } from '~/stores/logs'
 import { navChildren } from '~/navigation'
 
-useHead({ title: 'Logs' })
+const { t } = useI18n()
+useHead({ title: t('pages.system.logs.title') })
 
 const { toast } = useToast()
 const logsStore = useLogsStore()
@@ -19,21 +21,21 @@ const expandedId = ref<number | null>(null)
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 
 const tabs = [
-	{ value: 'table', label: 'Logs' },
-	{ value: 'files', label: 'Log files' },
+	{ value: 'table', label: t('pages.system.logs.logs') },
+	{ value: 'files', label: t('pages.system.logs.logFiles') },
 ]
 
 const columns = [
-	{ key: 'time', label: 'Time' },
-	{ key: 'level', label: 'Level' },
-	{ key: 'logger', label: 'Logger' },
-	{ key: 'message', label: 'Message' },
+	{ key: 'time', label: t('pages.system.logs.time') },
+	{ key: 'level', label: t('pages.system.logs.level') },
+	{ key: 'logger', label: t('pages.system.logs.logger') },
+	{ key: 'message', label: t('pages.system.logs.message') },
 ]
 
 const fileColumns = [
-	{ key: 'name', label: 'File' },
-	{ key: 'size', label: 'Size', align: 'right' as const },
-	{ key: 'lastModified', label: 'Last modified' },
+	{ key: 'name', label: t('pages.system.logs.file') },
+	{ key: 'size', label: t('pages.system.logs.size'), align: 'right' as const },
+	{ key: 'lastModified', label: t('pages.system.logs.lastModified') },
 	{ key: 'download', label: '' },
 ]
 
@@ -55,10 +57,10 @@ async function confirmClear() {
 	clearing.value = true
 	try {
 		await logsStore.clear()
-		toast({ title: 'Log history cleared', tone: 'ok' })
+		toast({ title: t('pages.system.logs.cleared'), tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Could not clear the logs', description: error instanceof Error ? error.message : undefined, tone: 'danger' })
+		toast({ title: t('pages.system.logs.clearFailed'), description: error instanceof Error ? error.message : undefined, tone: 'danger' })
 	}
 	finally {
 		clearing.value = false
@@ -88,26 +90,26 @@ onUnmounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Logs">
+		<SPageHeader :title="t('pages.system.logs.title')">
 			<template #actions>
 				<SButton
 					variant="danger"
 					@click="clearConfirmOpen = true"
 				>
-					Clear logs
+					{{ t('pages.system.logs.clearLogs') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="System"
+			:label="t('pages.system.logs.systemNav')"
 			:items="navChildren('system')"
 		/>
 
 		<STabs
 			v-model="activeTab"
 			:tabs="tabs"
-			label="Logs view"
+			:label="t('pages.system.logs.logsView')"
 		>
 			<template #panel-table>
 				<div class="logs-toolbar">
@@ -120,7 +122,7 @@ onUnmounted(() => {
 							:class="logsStore.level === lvl ? 's-badge-info' : 's-badge-neutral'"
 							@click="selectLevel(lvl)"
 						>
-							{{ lvl }}
+							{{ t(logLevelLabel(lvl), lvl) }}
 						</button>
 					</div>
 					<form
@@ -130,18 +132,18 @@ onUnmounted(() => {
 						<SInput
 							v-model="searchInput"
 							type="search"
-							placeholder="Search message or logger"
+							:placeholder="t('pages.system.logs.searchPlaceholder')"
 						/>
 						<SButton
 							type="submit"
 							size="sm"
 						>
-							Search
+							{{ t('pages.system.logs.search') }}
 						</SButton>
 					</form>
 					<SSwitch
 						:model-value="autoRefresh"
-						label="Refresh every 10s"
+						:label="t('pages.system.logs.refreshEvery10s')"
 						@update:model-value="setAutoRefresh"
 					/>
 				</div>
@@ -153,7 +155,7 @@ onUnmounted(() => {
 				>
 					<template #empty>
 						<SEmptyState
-							message="No log entries match your filters."
+							:message="t('pages.system.logs.noMatchingEntries')"
 							icon="lucide:scroll-text"
 						/>
 					</template>
@@ -172,7 +174,7 @@ onUnmounted(() => {
 								size="sm"
 								@click="toggleException(row.id)"
 							>
-								{{ expandedId === row.id ? 'Hide exception' : 'Show exception' }}
+								{{ t(expandedId === row.id ? 'pages.system.logs.hideException' : 'pages.system.logs.showException') }}
 							</SButton>
 						</div>
 						<pre
@@ -192,16 +194,16 @@ onUnmounted(() => {
 						:disabled="logsStore.page <= 1"
 						@click="logsStore.setPage(logsStore.page - 1); logsStore.load()"
 					>
-						Previous
+						{{ t('pages.system.logs.previous') }}
 					</SButton>
-					<span>Page {{ logsStore.page }} of {{ logsStore.totalPages }}</span>
+					<span>{{ t('pages.system.logs.page', { current: logsStore.page, total: logsStore.totalPages }) }}</span>
 					<SButton
 						variant="secondary"
 						size="sm"
 						:disabled="logsStore.page >= logsStore.totalPages"
 						@click="logsStore.setPage(logsStore.page + 1); logsStore.load()"
 					>
-						Next
+						{{ t('pages.system.logs.next') }}
 					</SButton>
 				</div>
 			</template>
@@ -214,7 +216,7 @@ onUnmounted(() => {
 				>
 					<template #empty>
 						<SEmptyState
-							message="No rolling log files on disk yet."
+							:message="t('pages.system.logs.noLogFiles')"
 							icon="lucide:folder"
 						/>
 					</template>
@@ -229,7 +231,7 @@ onUnmounted(() => {
 							:href="`${baseUrl()}/api/v1/logs/files/${row.name}`"
 							download
 						>
-							<SIconButton label="Download log file">
+							<SIconButton :label="t('pages.system.logs.downloadLogFile')">
 								<Icon
 									name="lucide:download"
 									aria-hidden="true"
@@ -243,9 +245,9 @@ onUnmounted(() => {
 
 		<ConfirmDialog
 			v-model="clearConfirmOpen"
-			title="Clear log history?"
-			description="This deletes every stored log entry. Rolling log files on disk are not affected."
-			confirm-label="Clear logs"
+			:title="t('pages.system.logs.clearHistoryTitle')"
+			:description="t('pages.system.logs.clearHistoryDescription')"
+			:confirm-label="t('pages.system.logs.clearLogs')"
 			danger
 			:busy="clearing"
 			@confirm="confirmClear"

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { formatDate } from '~/composables/useFormat'
 import { useWantedTable } from '~/composables/useWantedTable'
 import type { WantedItem } from '~/composables/useWantedTable'
 import { navChildren } from '~/navigation'
 
-useHead({ title: 'Missing' })
+const { t } = useI18n()
+useHead({ title: t('pages.wanted.missing.title') })
 
 const {
 	items,
@@ -29,10 +31,10 @@ const {
 
 const columns = [
 	{ key: 'select', label: '' },
-	{ key: 'title', label: 'Title' },
-	{ key: 'episode', label: 'Episode' },
-	{ key: 'airDate', label: 'Air date' },
-	{ key: 'monitored', label: 'Monitored', align: 'right' as const },
+	{ key: 'title', label: t('pages.wanted.missing.titleColumn') },
+	{ key: 'episode', label: t('pages.wanted.missing.episode') },
+	{ key: 'airDate', label: t('pages.wanted.missing.airDate') },
+	{ key: 'monitored', label: t('pages.wanted.missing.monitored'), align: 'right' as const },
 ]
 
 function episodeLabel(row: WantedItem): string {
@@ -49,32 +51,32 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Missing">
+		<SPageHeader :title="t('pages.wanted.missing.title')">
 			<template #actions>
 				<SButton
 					variant="secondary"
 					:loading="searchingAll"
 					@click="searchAll"
 				>
-					Search all
+					{{ t('pages.wanted.missing.searchAll') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="Wanted"
+			:label="t('pages.wanted.missing.wantedNav')"
 			:items="navChildren('wanted')"
 		/>
 
 		<div class="wanted-toolbar">
 			<SCheckbox
 				:model-value="allSelected"
-				label="Select all on this page"
+				:label="t('pages.wanted.missing.selectAll')"
 				@update:model-value="toggleAll"
 			/>
 			<SSwitch
 				v-model="monitoredOnly"
-				label="Monitored only"
+				:label="t('pages.wanted.missing.monitoredOnly')"
 			/>
 			<SButton
 				size="sm"
@@ -82,7 +84,7 @@ onMounted(() => {
 				:loading="searching"
 				@click="searchSelected"
 			>
-				Search selected
+				{{ t('pages.wanted.missing.searchSelected') }}
 			</SButton>
 		</div>
 
@@ -98,14 +100,14 @@ onMounted(() => {
 		>
 			<template #empty>
 				<SEmptyState
-					message="Nothing is missing right now."
+					:message="t('pages.wanted.missing.emptyState')"
 					icon="lucide:circle-check"
 				/>
 			</template>
 			<template #cell-select="{ row }">
 				<SCheckbox
 					:model-value="isSelected(row)"
-					:aria-label="`Select ${row.title}`"
+					:aria-label="t('pages.wanted.missing.selectItem', { title: row.title })"
 					@update:model-value="value => toggleRow(row, value)"
 				/>
 			</template>
@@ -126,7 +128,7 @@ onMounted(() => {
 			</template>
 			<template #cell-monitored="{ row }">
 				<SBadge :tone="row.monitored ? 'ok' : 'neutral'">
-					{{ row.monitored ? 'Monitored' : 'Unmonitored' }}
+					{{ t(row.monitored ? 'pages.wanted.missing.monitored' : 'pages.wanted.missing.unmonitored') }}
 				</SBadge>
 			</template>
 		</STable>
@@ -141,16 +143,16 @@ onMounted(() => {
 				:disabled="page <= 1"
 				@click="setPage(page - 1)"
 			>
-				Previous
+				{{ t('pages.wanted.missing.previous') }}
 			</SButton>
-			<span>Page {{ page }} of {{ totalPages }} ({{ totalCount }} total)</span>
+			<span>{{ t('pages.wanted.missing.page', { page, totalPages, totalCount }) }}</span>
 			<SButton
 				variant="secondary"
 				size="sm"
 				:disabled="page >= totalPages"
 				@click="setPage(page + 1)"
 			>
-				Next
+				{{ t('pages.wanted.missing.next') }}
 			</SButton>
 		</div>
 	</div>

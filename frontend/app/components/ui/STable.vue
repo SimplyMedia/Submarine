@@ -42,7 +42,7 @@
 		v-else
 		name="empty"
 	>
-		<SEmptyState message="Nothing here yet" />
+		<SEmptyState :message="$t('components.ui.STable.nothingHereYet')" />
 	</slot>
 </template>
 

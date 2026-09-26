@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useApi } from '~/composables/useApi'
 import type { components } from '~/types/api'
 
@@ -6,7 +7,8 @@ type SystemStatusDto = components['schemas']['SystemStatusDto']
 type HealthIssueDto = components['schemas']['HealthIssueDto']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Metadata and mappings' })
+const { t } = useI18n()
+useHead({ title: t('pages.settings.metadata.title') })
 
 const api = useApi()
 
@@ -29,7 +31,7 @@ async function load() {
 		issues.value = healthResult.data
 	}
 	if (!statusResult.data || !healthResult.data) {
-		loadError.value = 'Could not load service status. Check your connection and try again.'
+		loadError.value = t('pages.settings.metadata.loadFailed')
 	}
 	loading.value = false
 }
@@ -40,15 +42,15 @@ interface ServiceRow { key: string, name: string, url: string, helpText: string 
 const services = computed<ServiceRow[]>(() => [
 	{
 		key: 'Metadata',
-		name: 'Metadata',
+		name: t('pages.settings.metadata.metadataName'),
 		url: status.value?.metadataUrl ?? '',
-		helpText: 'Set via the Metadata:BaseUrl configuration key or the Metadata__BaseUrl environment variable.',
+		helpText: t('pages.settings.metadata.metadataHelp'),
 	},
 	{
 		key: 'Mappings',
-		name: 'Mappings',
+		name: t('pages.settings.metadata.mappingsName'),
 		url: status.value?.mappingsUrl ?? '',
-		helpText: 'Set via the Mappings:BaseUrl configuration key or the Mappings__BaseUrl environment variable.',
+		helpText: t('pages.settings.metadata.mappingsHelp'),
 	},
 ])
 
@@ -59,9 +61,9 @@ function issueFor(key: string): HealthIssueDto | undefined {
 
 <template>
 	<div>
-		<SPageHeader title="Metadata and mappings" />
+		<SPageHeader :title="t('pages.settings.metadata.title')" />
 
-		<SSection title="Metadata and mappings">
+		<SSection :title="t('pages.settings.metadata.title')">
 			<SEmptyState
 				v-if="loadError"
 				:message="loadError"
@@ -69,7 +71,7 @@ function issueFor(key: string): HealthIssueDto | undefined {
 			>
 				<template #action>
 					<SButton @click="load">
-						Retry
+						{{ t('pages.settings.metadata.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -96,7 +98,7 @@ function issueFor(key: string): HealthIssueDto | undefined {
 								v-else
 								tone="ok"
 							>
-								Reachable
+								{{ t('pages.settings.metadata.reachable') }}
 							</SBadge>
 						</div>
 						<SInput

@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 import type { PosterCardBadge, PosterCardItem } from '~/types/ui'
 import { minimumAvailabilityOptions, movieStatusLabel } from '~/utils/library-labels'
 import { formatBytes } from '~/composables/useFormat'
+
+const { t } = useI18n()
 
 type CollectionDto = components['schemas']['CollectionDto']
 type MovieListItem = components['schemas']['MovieListItemDto']
@@ -19,7 +22,7 @@ const movies = ref<MovieListItem[]>([])
 const loading = ref(true)
 const loadError = ref('')
 
-useHead({ title: computed(() => collection.value?.title ?? 'Collection') })
+useHead({ title: computed(() => collection.value?.title ?? t('pages.movies.collections.collectionTitle')) })
 
 async function loadCollectionMovies(): Promise<MovieListItem[]> {
 	// The movies endpoint has no collection filter, so page through every
@@ -48,17 +51,17 @@ async function load() {
 	if (collectionsResult.data) {
 		collection.value = collectionsResult.data.find(entry => entry.tmdbCollectionId === tmdbCollectionId) ?? null
 		if (!collection.value) {
-			loadError.value = 'This collection could not be found.'
+			loadError.value = t('pages.movies.collections.notFound')
 		}
 	}
 	else {
-		loadError.value = 'Could not load this collection. Check your connection and try again.'
+		loadError.value = t('pages.movies.collections.detailLoadError')
 	}
 	try {
 		movies.value = await loadCollectionMovies()
 	}
 	catch {
-		loadError.value = loadError.value || 'Could not load the movies in this collection.'
+		loadError.value = loadError.value || t('pages.movies.collections.moviesLoadError')
 	}
 	loading.value = false
 }
@@ -69,10 +72,10 @@ onMounted(async () => {
 })
 
 const cards = computed<PosterCardItem[]>(() => movies.value.map((movie) => {
-	const badges: PosterCardBadge[] = [{ label: movieStatusLabel(movie.status), tone: movie.hasFile ? 'ok' : 'neutral' }]
-	badges.push({ label: movie.hasFile ? formatBytes(movie.sizeOnDisk) : 'No file', tone: 'neutral' as const })
+	const badges: PosterCardBadge[] = [{ label: t(movieStatusLabel(movie.status)), tone: movie.hasFile ? 'ok' : 'neutral' }]
+	badges.push({ label: movie.hasFile ? formatBytes(movie.sizeOnDisk) : t('pages.movies.noFile'), tone: 'neutral' as const })
 	if (!movie.monitored) {
-		badges.push({ label: 'Unmonitored', tone: 'neutral' as const })
+		badges.push({ label: t('pages.movies.unmonitored'), tone: 'neutral' as const })
 	}
 	return {
 		id: movie.id,
@@ -149,7 +152,7 @@ async function saveEdit() {
 			},
 		})
 		if (result.data) {
-			toast.toast({ title: 'Collection updated', tone: 'ok' })
+			toast.toast({ title: t('pages.movies.collections.updated'), tone: 'ok' })
 			editOpen.value = false
 			await load()
 		}
@@ -175,7 +178,7 @@ async function confirmAddMissing() {
 			params: { path: { id: collection.value.id } },
 		})
 		if (result.data) {
-			toast.toast({ title: `${result.data.added} movie${result.data.added === 1 ? '' : 's'} added`, tone: 'ok' })
+			toast.toast({ title: t(result.data.added === 1 ? 'pages.movies.collections.addedMissingSingle' : 'pages.movies.collections.addedMissingPlural', { count: result.data.added }), tone: 'ok' })
 			addMissingOpen.value = false
 			await load()
 		}
@@ -194,14 +197,14 @@ async function confirmAddMissing() {
 		<SSpinner v-if="loading && !collection" />
 		<SEmptyState
 			v-else-if="!collection"
-			:message="loadError || 'This collection could not be found.'"
+			:message="loadError || t('pages.movies.collections.notFound')"
 		>
 			<template #action>
 				<SButton
 					variant="primary"
 					@click="navigateTo('/movies/collections')"
 				>
-					Back to collections
+					{{ t('pages.movies.collections.backToCollections') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -215,10 +218,10 @@ async function confirmAddMissing() {
 				<div class="collection-facts">
 					<div class="collection-title-row">
 						<h1>{{ collection.title }}</h1>
-						<STooltip :text="collection.id == null ? 'Configure this collection to enable monitoring' : undefined">
+						<STooltip :text="collection.id == null ? t('pages.movies.collections.configureMonitoring') : undefined">
 							<MonitorToggle
 								:model-value="collection.monitored"
-								:label="`Toggle monitored for ${collection.title}`"
+								:label="t('pages.movies.collections.toggleMonitored', { title: collection.title })"
 								:disabled="collection.id == null"
 								@update:model-value="toggleMonitored"
 							/>
@@ -231,44 +234,44 @@ async function confirmAddMissing() {
 						{{ collection.overview }}
 					</p>
 					<p class="collection-meta">
-						{{ collection.movieCount }} movie{{ collection.movieCount === 1 ? '' : 's' }} in the library
+						{{ t(collection.movieCount === 1 ? 'pages.movies.collections.movieCountLibrarySingle' : 'pages.movies.collections.movieCountLibraryPlural', { count: collection.movieCount }) }}
 					</p>
 				</div>
 				<div class="collection-header-actions">
-					<STooltip :text="collection.id == null ? 'This collection has no saved settings yet; add one of its movies first' : undefined">
+					<STooltip :text="collection.id == null ? t('pages.movies.collections.noSavedSettingsShort') : undefined">
 						<SButton
 							variant="secondary"
 							:disabled="collection.id == null"
 							@click="openEdit"
 						>
-							Edit defaults
+							{{ t('pages.movies.collections.editDefaults') }}
 						</SButton>
 					</STooltip>
 				</div>
 			</div>
 
-			<SSection title="In your library">
+			<SSection :title="t('pages.movies.collections.inYourLibrary')">
 				<MediaPosterGrid :items="cards">
 					<template #empty>
-						<SEmptyState message="None of this collection's movies are in the library yet. Add one from the movies page." />
+						<SEmptyState :message="t('pages.movies.collections.noMoviesInLibrary')" />
 					</template>
 				</MediaPosterGrid>
 			</SSection>
 
 			<SSection
 				v-if="collection.missingCount > 0"
-				title="Missing from this collection"
+				:title="t('pages.movies.collections.missingFromCollection')"
 			>
 				<p class="collection-missing-note">
-					{{ collection.missingCount }} movie{{ collection.missingCount === 1 ? '' : 's' }} from this collection {{ collection.missingCount === 1 ? 'is' : 'are' }} not in the library yet.
+					{{ t(collection.missingCount === 1 ? 'pages.movies.collections.missingCountNoteSingle' : 'pages.movies.collections.missingCountNotePlural', { count: collection.missingCount }) }}
 				</p>
-				<STooltip :text="collection.id == null ? 'Configure a root folder, quality profile and language profile first' : undefined">
+				<STooltip :text="collection.id == null ? t('pages.movies.collections.configureBeforeAdd') : undefined">
 					<SButton
 						variant="primary"
 						:disabled="collection.id == null"
 						@click="addMissingOpen = true"
 					>
-						Add missing
+						{{ t('pages.movies.collections.addMissing') }}
 					</SButton>
 				</STooltip>
 			</SSection>
@@ -276,71 +279,71 @@ async function confirmAddMissing() {
 
 		<SDialog
 			v-model="editOpen"
-			title="Collection defaults"
-			:description="collection ? `Applied when adding missing movies from ${collection.title}.` : undefined"
+			:title="t('pages.movies.collections.defaultsTitle')"
+			:description="collection ? t('pages.movies.collections.defaultsDescription', { title: collection.title }) : undefined"
 		>
 			<div class="add-form">
-				<SField label="Root folder">
+				<SField :label="t('pages.movies.collections.rootFolder')">
 					<SSelect
 						v-model="editForm.rootFolderId"
 						:options="rootFolderOptions"
-						placeholder="Choose a root folder"
+						:placeholder="t('pages.movies.collections.chooseRootFolder')"
 					/>
 				</SField>
-				<SField label="Quality profile">
+				<SField :label="t('pages.movies.collections.qualityProfile')">
 					<SSelect
 						v-model="editForm.qualityProfileId"
 						:options="qualityOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.movies.collections.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Language profile">
+				<SField :label="t('pages.movies.collections.languageProfile')">
 					<SSelect
 						v-model="editForm.languageProfileId"
 						:options="languageOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.movies.collections.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Minimum availability">
+				<SField :label="t('pages.movies.collections.minimumAvailability')">
 					<SSelect
 						v-model="editForm.minimumAvailability"
-						:options="minimumAvailabilityOptions"
+						:options="minimumAvailabilityOptions.map(option => ({ ...option, label: t(option.label) }))"
 					/>
 				</SField>
 				<SCheckbox
 					v-model="editForm.searchOnAdd"
-					label="Search for a release when adding missing movies"
+					:label="t('pages.movies.collections.searchMissingOnAdd')"
 				/>
 			</div>
 			<template #footer>
 				<SButton @click="editOpen = false">
-					Cancel
+					{{ t('pages.movies.collections.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="savingEdit"
 					@click="saveEdit"
 				>
-					Save changes
+					{{ t('pages.movies.collections.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="addMissingOpen"
-			title="Add missing movies"
-			:description="collection ? `This adds every movie from ${collection.title} that is not already in the library, using its saved root folder and profiles.` : undefined"
+			:title="t('pages.movies.collections.addMissingTitle')"
+			:description="collection ? t('pages.movies.collections.addMissingDescription', { title: collection.title }) : undefined"
 		>
 			<template #footer>
 				<SButton @click="addMissingOpen = false">
-					Cancel
+					{{ t('pages.movies.collections.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="addingMissing"
 					@click="confirmAddMissing"
 				>
-					Add missing movies
+					{{ t('pages.movies.collections.addMissingMovies') }}
 				</SButton>
 			</template>
 		</SDialog>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useSettingsStore } from '~/stores/settings'
 import {
@@ -26,14 +27,15 @@ type ReleaseFilterResource = components['schemas']['ReleaseFilterResource']
 type ReleaseGroupOverrideResource = components['schemas']['ReleaseGroupOverrideResource']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Custom formats' })
+const { t } = useI18n()
+useHead({ title: t('pages.settings.customFormats.title') })
 
 const api = useApi()
 const settings = useSettingsStore()
 const { toast } = useToast()
 
 const RESOLUTIONS = ['R360_P', 'R480_P', 'R540_P', 'R576_P', 'R720_P', 'R1080_P', 'R2160_P']
-const resolutionOptions = RESOLUTIONS.map(value => ({ value, label: qualityResolutionLabel(value) }))
+const resolutionOptions = RESOLUTIONS.map(value => ({ value, label: t(qualityResolutionLabel(value)) }))
 
 const loading = ref(true)
 
@@ -154,7 +156,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('pages.settings.customFormats.saved'), tone: 'ok' })
 		editorOpen.value = false
 		await load()
 	}
@@ -184,7 +186,7 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Custom format deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.customFormats.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await load()
@@ -193,7 +195,7 @@ async function doDelete() {
 async function exportFormat(format: CustomFormatResource) {
 	const result = await api.GET('/api/v1/custom-formats/{id}/export', { params: { path: { id: format.id } } })
 	if (!result.data) {
-		toast({ title: 'Could not export', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.customFormats.exportFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
 	const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' })
@@ -224,7 +226,7 @@ async function runImport() {
 		parsed = JSON.parse(importText.value)
 	}
 	catch {
-		importError.value = 'That is not valid JSON.'
+		importError.value = t('pages.settings.customFormats.invalidJson')
 		return
 	}
 	importing.value = true
@@ -234,7 +236,7 @@ async function runImport() {
 		importError.value = toApiError(result.error, result.response).message
 		return
 	}
-	toast({ title: `Imported ${result.data.length} custom format${result.data.length === 1 ? '' : 's'}`, tone: 'ok' })
+	toast({ title: t(result.data.length === 1 ? 'pages.settings.customFormats.importedOne' : 'pages.settings.customFormats.importedMany', { count: result.data.length }), tone: 'ok' })
 	importOpen.value = false
 	await load()
 }
@@ -274,9 +276,9 @@ async function runTest() {
 }
 
 const formatColumns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'specifications', label: 'Specifications', align: 'right' as const },
-	{ key: 'renaming', label: 'Renamed' },
+	{ key: 'name', label: t('pages.settings.customFormats.name') },
+	{ key: 'specifications', label: t('pages.settings.customFormats.specifications'), align: 'right' as const },
+	{ key: 'renaming', label: t('pages.settings.customFormats.renamed') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -305,7 +307,7 @@ async function loadFilters() {
 	filtersLoadError.value = ''
 	const result = await api.GET('/api/v1/release-filters')
 	if (!result.data) {
-		filtersLoadError.value = 'Could not load release filters. Check your connection and try again.'
+		filtersLoadError.value = t('pages.settings.customFormats.filtersLoadFailed')
 	}
 	filters.value = result.data ?? []
 }
@@ -349,10 +351,10 @@ async function saveFilter() {
 		: await api.PUT('/api/v1/release-filters/{id}', { params: { path: { id: filterEditingId.value } }, body })
 	filterSaving.value = false
 	if (!result.data) {
-		toast({ title: 'Could not save', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.customFormats.saveFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
-	toast({ title: 'Saved', tone: 'ok' })
+	toast({ title: t('pages.settings.customFormats.saved'), tone: 'ok' })
 	filterEditorOpen.value = false
 	await loadFilters()
 }
@@ -363,19 +365,19 @@ async function deleteFilter() {
 	}
 	const result = await api.DELETE('/api/v1/release-filters/{id}', { params: { path: { id: filterDeleteTarget.value.id } } })
 	if (!result.response.ok) {
-		toast({ title: 'Could not delete', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.customFormats.deleteFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
-	toast({ title: 'Release filter deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.customFormats.filterDeleted'), tone: 'ok' })
 	filterDeleteTarget.value = null
 	await loadFilters()
 }
 
 const filterColumns = [
-	{ key: 'field', label: 'Field' },
-	{ key: 'mode', label: 'Mode' },
-	{ key: 'values', label: 'Values' },
-	{ key: 'tier', label: 'Tier', align: 'right' as const },
+	{ key: 'field', label: t('pages.settings.customFormats.field') },
+	{ key: 'mode', label: t('pages.settings.customFormats.mode') },
+	{ key: 'values', label: t('pages.settings.customFormats.values') },
+	{ key: 'tier', label: t('pages.settings.customFormats.tier'), align: 'right' as const },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -402,7 +404,7 @@ async function loadOverrides() {
 	overridesLoadError.value = ''
 	const result = await api.GET('/api/v1/quality-overrides')
 	if (!result.data) {
-		overridesLoadError.value = 'Could not load quality overrides. Check your connection and try again.'
+		overridesLoadError.value = t('pages.settings.customFormats.overridesLoadFailed')
 	}
 	overrides.value = result.data ?? []
 }
@@ -436,7 +438,7 @@ async function saveOverride() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('pages.settings.customFormats.saved'), tone: 'ok' })
 		overrideEditorOpen.value = false
 		await loadOverrides()
 	}
@@ -455,42 +457,42 @@ async function deleteOverride() {
 	}
 	const result = await api.DELETE('/api/v1/quality-overrides/{id}', { params: { path: { id: overrideDeleteTarget.value.id } } })
 	if (!result.response.ok) {
-		toast({ title: 'Could not delete', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.customFormats.deleteFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
-	toast({ title: 'Override deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.customFormats.overrideDeleted'), tone: 'ok' })
 	overrideDeleteTarget.value = null
 	await loadOverrides()
 }
 
 const overrideColumns = [
-	{ key: 'releaseGroup', label: 'Release group' },
-	{ key: 'source', label: 'Assumed source' },
+	{ key: 'releaseGroup', label: t('pages.settings.customFormats.releaseGroup') },
+	{ key: 'source', label: t('pages.settings.customFormats.assumedSource') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Custom formats">
+		<SPageHeader :title="t('pages.settings.customFormats.title')">
 			<template #actions>
 				<SButton
 					variant="secondary"
 					@click="openTest"
 				>
-					Test
+					{{ t('pages.settings.customFormats.test') }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					@click="openImport"
 				>
-					Import
+					{{ t('pages.settings.customFormats.import') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add custom format
+					{{ t('pages.settings.customFormats.addCustomFormat') }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -503,7 +505,7 @@ const overrideColumns = [
 			>
 				<template #action>
 					<SButton @click="load">
-						Retry
+						{{ t('pages.settings.customFormats.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -519,19 +521,19 @@ const overrideColumns = [
 				</template>
 				<template #cell-renaming="{ row }">
 					<SBadge :tone="row.includeCustomFormatWhenRenaming ? 'ok' : 'neutral'">
-						{{ row.includeCustomFormatWhenRenaming ? 'Yes' : 'No' }}
+						{{ row.includeCustomFormatWhenRenaming ? t('pages.settings.customFormats.yes') : t('pages.settings.customFormats.no') }}
 					</SBadge>
 				</template>
 				<template #cell-actions="{ row }">
 					<SDropdownMenu
 						:items="[
-							{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-							{ label: 'Export', icon: 'lucide:download', onSelect: () => exportFormat(row) },
-							{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
+							{ label: t('pages.settings.customFormats.edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+							{ label: t('pages.settings.customFormats.export'), icon: 'lucide:download', onSelect: () => exportFormat(row) },
+							{ label: t('pages.settings.customFormats.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
 						]"
 					>
 						<template #trigger>
-							<SIconButton label="Custom format actions">
+							<SIconButton :label="t('pages.settings.customFormats.actions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -541,13 +543,13 @@ const overrideColumns = [
 					</SDropdownMenu>
 				</template>
 				<template #empty>
-					<SEmptyState message="No custom formats yet. Import a TRaSH format or build one from scratch.">
+					<SEmptyState :message="t('pages.settings.customFormats.emptyState')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openCreate"
 							>
-								Add custom format
+								{{ t('pages.settings.customFormats.addCustomFormat') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -555,7 +557,7 @@ const overrideColumns = [
 			</STable>
 		</SSection>
 
-		<SSection title="Release filters">
+		<SSection :title="t('pages.settings.customFormats.releaseFilters')">
 			<SEmptyState
 				v-if="filtersLoadError"
 				:message="filtersLoadError"
@@ -563,7 +565,7 @@ const overrideColumns = [
 			>
 				<template #action>
 					<SButton @click="loadFilters">
-						Retry
+						{{ t('pages.settings.customFormats.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -574,10 +576,10 @@ const overrideColumns = [
 				:row-key="(row) => row.id"
 			>
 				<template #cell-field="{ row }">
-					{{ releaseFilterFieldLabel(row.field) }}
+					{{ t(releaseFilterFieldLabel(row.field)) }}
 				</template>
 				<template #cell-mode="{ row }">
-					{{ releaseFilterModeLabel(row.mode) }}
+					{{ t(releaseFilterModeLabel(row.mode)) }}
 				</template>
 				<template #cell-values="{ row }">
 					{{ row.values.join(', ') }}
@@ -585,12 +587,12 @@ const overrideColumns = [
 				<template #cell-actions="{ row }">
 					<SDropdownMenu
 						:items="[
-							{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openFilterEdit(row) },
-							{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => filterDeleteTarget = row },
+							{ label: t('pages.settings.customFormats.edit'), icon: 'lucide:pencil', onSelect: () => openFilterEdit(row) },
+							{ label: t('pages.settings.customFormats.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => filterDeleteTarget = row },
 						]"
 					>
 						<template #trigger>
-							<SIconButton label="Filter actions">
+							<SIconButton :label="t('pages.settings.customFormats.filterActions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -600,13 +602,13 @@ const overrideColumns = [
 					</SDropdownMenu>
 				</template>
 				<template #empty>
-					<SEmptyState message="No release filters yet. Add one to allow, block or prefer releases by group, quality, language or source.">
+					<SEmptyState :message="t('pages.settings.customFormats.filtersEmpty')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openFilterCreate"
 							>
-								Add release filter
+								{{ t('pages.settings.customFormats.addReleaseFilter') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -620,14 +622,14 @@ const overrideColumns = [
 					variant="secondary"
 					@click="openFilterCreate"
 				>
-					Add release filter
+					{{ t('pages.settings.customFormats.addReleaseFilter') }}
 				</SButton>
 			</div>
 		</SSection>
 
-		<SSection title="Quality overrides">
+		<SSection :title="t('pages.settings.customFormats.qualityOverrides')">
 			<p class="hint">
-				Assume a quality source for releases from a release group when the title doesn't say.
+				{{ t('pages.settings.customFormats.qualityOverrideHint') }}
 			</p>
 			<SEmptyState
 				v-if="overridesLoadError"
@@ -636,7 +638,7 @@ const overrideColumns = [
 			>
 				<template #action>
 					<SButton @click="loadOverrides">
-						Retry
+						{{ t('pages.settings.customFormats.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -647,17 +649,17 @@ const overrideColumns = [
 				:row-key="(row) => row.id"
 			>
 				<template #cell-source="{ row }">
-					{{ qualitySourceOptions.find(o => o.value === row.source)?.label ?? row.source }}
+					{{ t(qualitySourceOptions.find(o => o.value === row.source)?.label ?? row.source ?? '') }}
 				</template>
 				<template #cell-actions="{ row }">
 					<SDropdownMenu
 						:items="[
-							{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openOverrideEdit(row) },
-							{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => overrideDeleteTarget = row },
+							{ label: t('pages.settings.customFormats.edit'), icon: 'lucide:pencil', onSelect: () => openOverrideEdit(row) },
+							{ label: t('pages.settings.customFormats.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => overrideDeleteTarget = row },
 						]"
 					>
 						<template #trigger>
-							<SIconButton label="Override actions">
+							<SIconButton :label="t('pages.settings.customFormats.overrideActions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -667,13 +669,13 @@ const overrideColumns = [
 					</SDropdownMenu>
 				</template>
 				<template #empty>
-					<SEmptyState message="No quality overrides yet.">
+					<SEmptyState :message="t('pages.settings.customFormats.overridesEmpty')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openOverrideCreate"
 							>
-								Add override
+								{{ t('pages.settings.customFormats.addOverride') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -687,7 +689,7 @@ const overrideColumns = [
 					variant="secondary"
 					@click="openOverrideCreate"
 				>
-					Add override
+					{{ t('pages.settings.customFormats.addOverride') }}
 				</SButton>
 			</div>
 		</SSection>
@@ -695,11 +697,11 @@ const overrideColumns = [
 		<!-- Custom format editor -->
 		<SDialog
 			v-model="editorOpen"
-			:title="editingId === null ? 'Add custom format' : 'Edit custom format'"
+			:title="editingId === null ? t('pages.settings.customFormats.addCustomFormat') : t('pages.settings.customFormats.editCustomFormat')"
 			wide
 		>
 			<SField
-				label="Name"
+				:label="t('pages.settings.customFormats.name')"
 				:error="nameError"
 				control-id="format-name"
 			>
@@ -711,10 +713,10 @@ const overrideColumns = [
 			</SField>
 			<SSwitch
 				v-model="includeWhenRenaming"
-				label="Include the format name when renaming"
+				:label="t('pages.settings.customFormats.includeNameWhenRenaming')"
 			/>
 
-			<SSection title="Specifications">
+			<SSection :title="t('pages.settings.customFormats.specifications')">
 				<div class="spec-list">
 					<div
 						v-for="(spec, index) in specs"
@@ -723,25 +725,25 @@ const overrideColumns = [
 					>
 						<SInput
 							v-model="spec.name"
-							placeholder="Specification name"
+							:placeholder="t('pages.settings.customFormats.specificationName')"
 							class="spec-name"
 						/>
 						<SSelect
 							:model-value="spec.type"
-							:options="customFormatSpecTypeOptions"
+							:options="customFormatSpecTypeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 							@update:model-value="onSpecTypeChange(index, $event as CustomFormatSpecificationType)"
 						/>
 						<template v-if="isSelectSpec(spec.type)">
 							<SSelect
 								:model-value="spec.value as string"
-								:options="specOptions(spec.type)"
+								:options="specOptions(spec.type).map(option => ({ ...option, label: t(option.label, option.label) }))"
 								@update:model-value="spec.value = $event"
 							/>
 						</template>
 						<template v-else-if="spec.type === 'HARDCODED_SUBS'">
 							<SCheckbox
 								:model-value="spec.value !== false"
-								label="Present"
+								:label="t('pages.settings.customFormats.present')"
 								@update:model-value="spec.value = $event"
 							/>
 						</template>
@@ -750,14 +752,14 @@ const overrideColumns = [
 								<input
 									type="number"
 									class="s-input"
-									placeholder="Min"
+									:placeholder="t('pages.settings.customFormats.min')"
 									:value="(spec.value as { min: number | null, max: number | null })?.min ?? ''"
 									@input="spec.value = { ...(spec.value as object), min: ($event.target as HTMLInputElement).valueAsNumber || null }"
 								>
 								<input
 									type="number"
 									class="s-input"
-									placeholder="Max"
+									:placeholder="t('pages.settings.customFormats.max')"
 									:value="(spec.value as { min: number | null, max: number | null })?.max ?? ''"
 									@input="spec.value = { ...(spec.value as object), max: ($event.target as HTMLInputElement).valueAsNumber || null }"
 								>
@@ -766,20 +768,20 @@ const overrideColumns = [
 						<template v-else>
 							<SInput
 								:model-value="spec.value as string"
-								placeholder="Text or /regex/"
+								:placeholder="t('pages.settings.customFormats.textOrRegex')"
 								@update:model-value="spec.value = $event"
 							/>
 						</template>
 						<SCheckbox
 							v-model="spec.negate"
-							label="Negate"
+							:label="t('pages.settings.customFormats.negate')"
 						/>
 						<SCheckbox
 							v-model="spec.required"
-							label="Required"
+							:label="t('pages.settings.customFormats.required')"
 						/>
 						<SIconButton
-							label="Remove specification"
+							:label="t('pages.settings.customFormats.removeSpecification')"
 							@click="removeSpec(index)"
 						>
 							<Icon
@@ -793,7 +795,7 @@ const overrideColumns = [
 					variant="secondary"
 					@click="addSpec"
 				>
-					Add specification
+					{{ t('pages.settings.customFormats.addSpecification') }}
 				</SButton>
 			</SSection>
 
@@ -802,24 +804,24 @@ const overrideColumns = [
 					variant="secondary"
 					@click="editorOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.customFormats.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					Save changes
+					{{ t('pages.settings.customFormats.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete custom format"
+			:title="t('pages.settings.customFormats.deleteCustomFormat')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ t('pages.settings.customFormats.deleteConfirm', { name: deleteTarget.name }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -834,14 +836,14 @@ const overrideColumns = [
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.customFormats.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete
+					{{ t('pages.settings.customFormats.delete') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -849,18 +851,18 @@ const overrideColumns = [
 		<!-- Import -->
 		<SDialog
 			v-model="importOpen"
-			title="Import custom formats"
-			description="Paste a TRaSH Guides custom format JSON object, or an array of them."
+			:title="t('pages.settings.customFormats.importCustomFormats')"
+			:description="t('pages.settings.customFormats.importDescription')"
 		>
 			<SField
-				label="TRaSH JSON"
+				:label="t('pages.settings.customFormats.trashJson')"
 				:error="importError"
 			>
 				<STextarea
 					v-model="importText"
 					:rows="10"
 					:invalid="!!importError"
-					placeholder="{&quot;name&quot;: &quot;...&quot;, &quot;specifications&quot;: [...] }"
+					:placeholder="t('pages.settings.customFormats.importPlaceholder')"
 				/>
 			</SField>
 			<template #footer>
@@ -868,14 +870,14 @@ const overrideColumns = [
 					variant="secondary"
 					@click="importOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.customFormats.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="importing"
 					@click="runImport"
 				>
-					Import
+					{{ t('pages.settings.customFormats.import') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -883,17 +885,17 @@ const overrideColumns = [
 		<!-- Test -->
 		<SDialog
 			v-model="testOpen"
-			title="Test a release title"
+			:title="t('pages.settings.customFormats.testReleaseTitle')"
 		>
-			<SField label="Release title">
+			<SField :label="t('pages.settings.customFormats.releaseTitle')">
 				<SInput
 					v-model="testTitle"
-					placeholder="Some.Series.S01E01.1080p.WEB-DL.DDP5.1.H.264-GROUP"
+					:placeholder="t('pages.settings.customFormats.releaseTitlePlaceholder')"
 				/>
 			</SField>
 			<SField
-				label="Size (GB)"
-				hint="Optional, used by size specifications"
+				:label="t('pages.settings.customFormats.sizeGb')"
+				:hint="t('pages.settings.customFormats.sizeHint')"
 			>
 				<SInput
 					type="number"
@@ -910,7 +912,7 @@ const overrideColumns = [
 			</p>
 			<div v-if="testResult">
 				<p class="hint">
-					Score: {{ testResult.score }}
+					{{ t('pages.settings.customFormats.score', { score: testResult.score }) }}
 				</p>
 				<div
 					v-if="testResult.matched.length > 0"
@@ -928,7 +930,7 @@ const overrideColumns = [
 					v-else
 					class="hint"
 				>
-					No custom formats matched.
+					{{ t('pages.settings.customFormats.noMatches') }}
 				</p>
 			</div>
 			<template #footer>
@@ -936,7 +938,7 @@ const overrideColumns = [
 					variant="secondary"
 					@click="testOpen = false"
 				>
-					Close
+					{{ t('pages.settings.customFormats.close') }}
 				</SButton>
 				<SButton
 					variant="primary"
@@ -944,7 +946,7 @@ const overrideColumns = [
 					:disabled="!testTitle"
 					@click="runTest"
 				>
-					Test
+					{{ t('pages.settings.customFormats.test') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -952,19 +954,19 @@ const overrideColumns = [
 		<!-- Release filter editor -->
 		<SDialog
 			v-model="filterEditorOpen"
-			:title="filterEditingId === null ? 'Add release filter' : 'Edit release filter'"
+			:title="filterEditingId === null ? t('pages.settings.customFormats.addReleaseFilter') : t('pages.settings.customFormats.editReleaseFilter')"
 		>
 			<SField
-				label="Field"
+				:label="t('pages.settings.customFormats.field')"
 				control-id="filter-field"
 			>
 				<SSelect
 					v-model="filterField"
 					control-id="filter-field"
-					:options="releaseFilterFieldOptions"
+					:options="releaseFilterFieldOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 				/>
 			</SField>
-			<SField label="Values">
+			<SField :label="t('pages.settings.customFormats.values')">
 				<div class="spec-values">
 					<span
 						v-for="(value, index) in filterValues"
@@ -974,7 +976,7 @@ const overrideColumns = [
 						{{ value }}
 						<button
 							type="button"
-							:aria-label="`Remove ${value}`"
+							:aria-label="t('pages.settings.customFormats.removeValue', { value })"
 							@click="filterValues = filterValues.filter((_, i) => i !== index)"
 						>
 							<Icon
@@ -987,26 +989,26 @@ const overrideColumns = [
 						v-model="filterValueTerm"
 						type="text"
 						class="value-input"
-						placeholder="Type and press enter"
+						:placeholder="t('pages.settings.customFormats.valuePlaceholder')"
 						@keydown.enter.prevent="addFilterValue"
 					>
 				</div>
 			</SField>
 			<div class="field-grid">
 				<SField
-					label="Mode"
+					:label="t('pages.settings.customFormats.mode')"
 					control-id="filter-mode"
 				>
 					<SSelect
 						v-model="filterMode"
 						control-id="filter-mode"
-						:options="releaseFilterModeOptions"
+						:options="releaseFilterModeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 					/>
 				</SField>
 				<SField
 					v-if="filterMode === 'PREFER'"
-					label="Tier"
-					hint="Lower tiers win"
+					:label="t('pages.settings.customFormats.tier')"
+					:hint="t('pages.settings.customFormats.tierHint')"
 					control-id="filter-tier"
 				>
 					<SInput
@@ -1022,37 +1024,37 @@ const overrideColumns = [
 					variant="secondary"
 					@click="filterEditorOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.customFormats.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="filterSaving"
 					@click="saveFilter"
 				>
-					Save changes
+					{{ t('pages.settings.customFormats.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="filterDeleteTargetOpen"
-			title="Delete release filter"
+			:title="t('pages.settings.customFormats.deleteReleaseFilter')"
 		>
 			<p v-if="filterDeleteTarget">
-				Delete this release filter? This cannot be undone.
+				{{ t('pages.settings.customFormats.deleteFilterConfirm') }}
 			</p>
 			<template #footer>
 				<SButton
 					variant="secondary"
 					@click="filterDeleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.customFormats.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					@click="deleteFilter"
 				>
-					Delete
+					{{ t('pages.settings.customFormats.delete') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -1060,10 +1062,10 @@ const overrideColumns = [
 		<!-- Quality override editor -->
 		<SDialog
 			v-model="overrideEditorOpen"
-			:title="overrideEditingId === null ? 'Add quality override' : 'Edit quality override'"
+			:title="overrideEditingId === null ? t('pages.settings.customFormats.addQualityOverride') : t('pages.settings.customFormats.editQualityOverride')"
 		>
 			<SField
-				label="Release group"
+				:label="t('pages.settings.customFormats.releaseGroup')"
 				:error="overrideError"
 				control-id="override-group"
 			>
@@ -1074,13 +1076,13 @@ const overrideColumns = [
 				/>
 			</SField>
 			<SField
-				label="Assumed source"
+				:label="t('pages.settings.customFormats.assumedSource')"
 				control-id="override-source"
 			>
 				<SSelect
 					v-model="overrideSource"
 					control-id="override-source"
-					:options="qualitySourceOptions"
+					:options="qualitySourceOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 				/>
 			</SField>
 			<template #footer>
@@ -1088,37 +1090,37 @@ const overrideColumns = [
 					variant="secondary"
 					@click="overrideEditorOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.customFormats.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="overrideSaving"
 					@click="saveOverride"
 				>
-					Save changes
+					{{ t('pages.settings.customFormats.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="overrideDeleteTargetOpen"
-			title="Delete quality override"
+			:title="t('pages.settings.customFormats.deleteQualityOverride')"
 		>
 			<p v-if="overrideDeleteTarget">
-				Delete the override for "{{ overrideDeleteTarget.releaseGroup }}"?
+				{{ t('pages.settings.customFormats.deleteOverrideConfirm', { group: overrideDeleteTarget.releaseGroup }) }}
 			</p>
 			<template #footer>
 				<SButton
 					variant="secondary"
 					@click="overrideDeleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.customFormats.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					@click="deleteOverride"
 				>
-					Delete
+					{{ t('pages.settings.customFormats.delete') }}
 				</SButton>
 			</template>
 		</SDialog>

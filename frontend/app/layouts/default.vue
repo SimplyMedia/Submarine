@@ -3,7 +3,7 @@
 		<a
 			class="skip-link"
 			href="#content"
-		>Skip to content</a>
+		>{{ t('utils.layout.skipToContent', 'Skip to content') }}</a>
 
 		<aside class="rail">
 			<div class="rail-brand">
@@ -14,7 +14,7 @@
 				<span
 					class="rail-state"
 					:class="`tone-${hubTone}`"
-					:title="`Hub ${hubLabel}`"
+					:title="t('utils.layout.hubStatus', { status: t(hubLabel) }, 'Hub {status}')"
 				>
 					<span
 						class="state-dot"
@@ -23,102 +23,102 @@
 					<span
 						v-if="railExpanded"
 						class="rail-state-text"
-					>{{ hubLabel }}</span>
+					>{{ t(hubLabel) }}</span>
 				</span>
-			</div>
 
-			<nav
-				class="rail-nav"
-				aria-label="Primary"
-			>
-				<div
-					v-for="item in navigation"
-					:key="item.id"
-					class="rail-group"
+				<nav
+					class="rail-nav"
+					:aria-label="t('utils.layout.primaryNavigation', 'Primary')"
 				>
-					<STooltip
-						:text="railExpanded ? undefined : item.label"
-						side="right"
-					>
-						<NuxtLink
-							:to="item.to"
-							class="rail-item"
-							:class="{ 'rail-item-active': isActive(item) }"
-							:aria-current="isActive(item) ? 'page' : undefined"
-						>
-							<Icon
-								:name="item.icon"
-								class="rail-item-icon"
-								aria-hidden="true"
-							/>
-							<span
-								v-if="railExpanded"
-								class="rail-item-label"
-							>{{ item.label }}</span>
-						</NuxtLink>
-					</STooltip>
 					<div
-						v-if="railExpanded && isActive(item) && item.children"
-						class="rail-children"
+						v-for="item in navigation"
+						:key="item.id"
+						class="rail-group"
 					>
-						<NuxtLink
-							v-for="child in item.children"
-							:key="child.to"
-							:to="child.to"
-							class="rail-child"
-							:class="{ 'rail-child-active': route.path === child.to }"
+						<STooltip
+							:text="railExpanded ? undefined : t(item.key)"
+							side="right"
 						>
-							{{ child.label }}
-						</NuxtLink>
+							<NuxtLink
+								:to="item.to"
+								class="rail-item"
+								:class="{ 'rail-item-active': isActive(item) }"
+								:aria-current="isActive(item) ? 'page' : undefined"
+							>
+								<Icon
+									:name="item.icon"
+									class="rail-item-icon"
+									aria-hidden="true"
+								/>
+								<span
+									v-if="railExpanded"
+									class="rail-item-label"
+								>{{ t(item.key) }}</span>
+							</NuxtLink>
+						</STooltip>
+						<div
+							v-if="railExpanded && isActive(item) && item.children"
+							class="rail-children"
+						>
+							<NuxtLink
+								v-for="child in item.children"
+								:key="child.to"
+								:to="child.to"
+								class="rail-child"
+								:class="{ 'rail-child-active': route.path === child.to }"
+							>
+								{{ t(child.key) }}
+							</NuxtLink>
+						</div>
 					</div>
-				</div>
-			</nav>
+				</nav>
 
-			<div class="rail-foot">
-				<TaskIndicator
-					:icon-only="!railExpanded"
-					:trigger-class="railExpanded ? 'rail-item' : ''"
-				/>
-				<ThemeMenu
-					:icon-only="!railExpanded"
-					:trigger-class="railExpanded ? 'rail-item' : ''"
-				/>
-				<SDropdownMenu :items="userItems">
-					<template #trigger>
-						<button
-							v-if="railExpanded"
-							type="button"
-							class="rail-item"
-						>
-							<span
-								class="rail-avatar"
-								aria-hidden="true"
-							>{{ userInitials }}</span>
-							<span class="rail-item-label">{{ displayName }}</span>
-						</button>
-						<SIconButton
-							v-else
-							:label="`Signed in as ${displayName}`"
-						>
-							<span
-								class="rail-avatar"
-								aria-hidden="true"
-							>{{ userInitials }}</span>
-						</SIconButton>
-					</template>
-				</SDropdownMenu>
-				<div
-					class="rail-health"
-					:class="`tone-${healthTone}`"
-				>
-					<span
-						class="state-dot"
-						aria-hidden="true"
+				<div class="rail-foot">
+					<TaskIndicator
+						:icon-only="!railExpanded"
+						:trigger-class="railExpanded ? 'rail-item' : ''"
 					/>
-					<span
-						v-if="railExpanded"
-						class="rail-health-text"
-					>{{ healthText }}</span>
+					<ThemeMenu
+						:icon-only="!railExpanded"
+						:trigger-class="railExpanded ? 'rail-item' : ''"
+					/>
+					<SDropdownMenu :items="userItems">
+						<template #trigger>
+							<button
+								v-if="railExpanded"
+								type="button"
+								class="rail-item"
+							>
+								<span
+									class="rail-avatar"
+									aria-hidden="true"
+								>{{ userInitials }}</span>
+								<span class="rail-item-label">{{ displayName }}</span>
+							</button>
+							<SIconButton
+								v-else
+								:label="t('utils.layout.signedInAs', { name: displayName }, 'Signed in as {name}')"
+							>
+								<span
+									class="rail-avatar"
+									aria-hidden="true"
+								>{{ userInitials }}</span>
+							</SIconButton>
+						</template>
+					</SDropdownMenu>
+					<div
+						class="rail-health"
+						:class="`tone-${healthTone}`"
+					>
+						<span
+							class="state-dot"
+							aria-hidden="true"
+						/>
+						<span
+							v-if="railExpanded"
+							class="rail-health-text"
+						>{{ healthText }}</span>
+					</div>
 				</div>
 			</div>
 		</aside>
@@ -134,7 +134,7 @@
 
 		<nav
 			class="tabbar"
-			aria-label="Primary"
+			:aria-label="t('utils.layout.primaryNavigation', 'Primary')"
 		>
 			<NuxtLink
 				v-for="item in primaryNav"
@@ -148,7 +148,7 @@
 					class="tabbar-icon"
 					aria-hidden="true"
 				/>
-				<span>{{ item.label }}</span>
+				<span>{{ t(item.key) }}</span>
 			</NuxtLink>
 			<button
 				type="button"
@@ -160,17 +160,17 @@
 					class="tabbar-icon"
 					aria-hidden="true"
 				/>
-				<span>More</span>
+				<span>{{ t('utils.layout.more', 'More') }}</span>
 			</button>
 		</nav>
 
 		<SDialog
 			v-model="moreOpen"
-			title="More"
+			:title="t('utils.layout.more', 'More')"
 		>
 			<nav
 				class="more-nav"
-				aria-label="All pages"
+				:aria-label="t('utils.layout.allPages', 'All pages')"
 			>
 				<div
 					v-for="item in navigation"
@@ -187,7 +187,7 @@
 							class="more-icon"
 							aria-hidden="true"
 						/>
-						{{ item.label }}
+						{{ t(item.key) }}
 					</NuxtLink>
 					<NuxtLink
 						v-for="child in item.children ?? []"
@@ -196,7 +196,7 @@
 						class="more-item more-item-child"
 						@click="moreOpen = false"
 					>
-						{{ child.label }}
+						{{ t(child.key) }}
 					</NuxtLink>
 				</div>
 			</nav>
@@ -206,7 +206,7 @@
 					variant="secondary"
 					@click="signOut"
 				>
-					Sign out
+					{{ t('utils.layout.signOut', 'Sign out') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -214,6 +214,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { navigation } from '~/navigation'
 import type { NavItem } from '~/navigation'
 import type { MenuEntry } from '~/types/ui'
@@ -221,6 +222,7 @@ import type { components } from '~/types/api'
 import { useReferenceStore } from '~/stores/reference'
 import { applyUiFormat } from '~/composables/useFormat'
 
+const { t } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
 const system = useSystemStore()
@@ -236,13 +238,13 @@ const primaryNav = computed(() => navigation.slice(0, 4))
 const hubLabel = computed(() => {
 	switch (events.state.value) {
 		case 'connected':
-			return 'live'
+			return 'utils.layout.live'
 		case 'reconnecting':
-			return 'reconnecting'
+			return 'utils.layout.reconnecting'
 		case 'connecting':
-			return 'connecting'
+			return 'utils.layout.connecting'
 		default:
-			return 'offline'
+			return 'utils.layout.offline'
 	}
 })
 
@@ -260,14 +262,19 @@ const healthTone = computed(() => {
 
 const healthText = computed(() => {
 	const count = system.healthIssues.length
-	return count === 0 ? 'All systems normal' : `${count} health ${count === 1 ? 'issue' : 'issues'}`
+	return count === 0
+		? t('utils.layout.allSystemsNormal', 'All systems normal')
+		: t('utils.layout.healthIssueCount', {
+				count,
+				countLabel: t(count === 1 ? 'utils.layout.issue' : 'utils.layout.issues', count === 1 ? 'issue' : 'issues'),
+			}, '{count} health {countLabel}')
 })
 
-const displayName = computed(() => auth.user?.username ?? 'Anonymous')
+const displayName = computed(() => auth.user?.username ?? t('utils.layout.anonymous', 'Anonymous'))
 const userInitials = computed(() => displayName.value.slice(0, 2).toUpperCase())
 
 const userItems = computed<MenuEntry[]>(() => (
-	auth.authMethodNone ? [] : [{ label: 'Sign out', icon: 'lucide:log-out', danger: true, onSelect: signOut }]
+	auth.authMethodNone ? [] : [{ label: t('utils.layout.signOut', 'Sign out'), icon: 'lucide:log-out', danger: true, onSelect: signOut }]
 ))
 
 function isActive(item: NavItem) {

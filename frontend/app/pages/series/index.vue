@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 import type { MediaLookupResult, MediaTableColumn, PosterCardBadge, PosterCardItem } from '~/types/ui'
 import {
@@ -12,7 +13,8 @@ import {
 
 type SeriesListItem = components['schemas']['SeriesListItemDto']
 
-useHead({ title: 'Series' })
+const { t } = useI18n()
+useHead({ title: t('pages.series.title') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -41,22 +43,22 @@ const selected = ref<number[]>([])
 const addOpen = ref(false)
 
 const monitoredOptions = [
-	{ value: 'any', label: 'Any monitor state' },
-	{ value: 'true', label: 'Monitored' },
-	{ value: 'false', label: 'Unmonitored' },
+	{ value: 'any', label: t('pages.series.filters.anyMonitor') },
+	{ value: 'true', label: t('pages.series.monitored') },
+	{ value: 'false', label: t('pages.series.unmonitored') },
 ]
-const typeOptions = [{ value: 'any', label: 'Any type' }, ...seriesTypeOptions]
-const statusOptions = [{ value: 'any', label: 'Any status' }, ...seriesStatusOptions]
+const typeOptions = [{ value: 'any', label: t('pages.series.filters.anyType') }, ...seriesTypeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))]
+const statusOptions = [{ value: 'any', label: t('pages.series.filters.anyStatus') }, ...seriesStatusOptions.map(option => ({ ...option, label: t(option.label, option.label) }))]
 const sortOptions = [
-	{ value: 'SortTitle', label: 'Title' },
-	{ value: 'CreatedAt', label: 'Added' },
-	{ value: 'Year', label: 'Year' },
-	{ value: 'Status', label: 'Status' },
+	{ value: 'SortTitle', label: t('pages.series.sort.title') },
+	{ value: 'CreatedAt', label: t('pages.series.sort.added') },
+	{ value: 'Year', label: t('pages.series.sort.year') },
+	{ value: 'Status', label: t('pages.series.sort.status') },
 ]
 
-const tagOptions = computed(() => [{ value: 'any', label: 'Any tag' }, ...reference.tags.map(tag => ({ value: String(tag.id), label: tag.label }))])
+const tagOptions = computed(() => [{ value: 'any', label: t('pages.series.filters.anyTag') }, ...reference.tags.map(tag => ({ value: String(tag.id), label: tag.label }))])
 const rootFolderOptions = computed(() => [
-	{ value: 'any', label: 'Any root folder' },
+	{ value: 'any', label: t('pages.series.filters.anyRootFolder') },
 	...reference.rootFolders.filter(folder => folder.mediaKind === 'SERIES').map(folder => ({ value: String(folder.id), label: folder.path })),
 ])
 const addRootFolderOptions = computed(() =>
@@ -66,9 +68,9 @@ const addRootFolderOptions = computed(() =>
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
 
 const cards = computed<PosterCardItem[]>(() => items.value.map((series) => {
-	const badges: PosterCardBadge[] = [{ label: seriesStatusLabel(series.status), tone: series.status === 'CONTINUING' ? 'ok' : 'neutral' }]
+	const badges: PosterCardBadge[] = [{ label: t(seriesStatusLabel(series.status)), tone: series.status === 'CONTINUING' ? 'ok' : 'neutral' }]
 	if (!series.monitored) {
-		badges.push({ label: 'Unmonitored', tone: 'neutral' as const })
+		badges.push({ label: t('pages.series.unmonitored'), tone: 'neutral' as const })
 	}
 	const total = series.statistics.episodeCount
 	return {
@@ -80,7 +82,7 @@ const cards = computed<PosterCardItem[]>(() => items.value.map((series) => {
 		metaSecondary: series.network ?? undefined,
 		badges,
 		progress: total > 0 ? (series.statistics.episodeFileCount / total) * 100 : null,
-		progressLabel: `${series.title} episodes on disk`,
+		progressLabel: t('pages.series.episodesOnDisk', { title: series.title }),
 	}
 }))
 
@@ -94,10 +96,10 @@ interface SeriesRow {
 }
 
 const tableColumns: MediaTableColumn[] = [
-	{ key: 'status', label: 'Status' },
-	{ key: 'nextAiring', label: 'Next airing' },
-	{ key: 'episodes', label: 'Episodes' },
-	{ key: 'monitored', label: 'Monitored', align: 'right' },
+	{ key: 'status', label: t('pages.series.table.status') },
+	{ key: 'nextAiring', label: t('pages.series.table.nextAiring') },
+	{ key: 'episodes', label: t('pages.series.table.episodes') },
+	{ key: 'monitored', label: t('pages.series.table.monitored'), align: 'right' },
 ]
 
 const rows = computed<SeriesRow[]>(() => items.value.map(series => ({
@@ -184,7 +186,7 @@ async function load() {
 		totalCount.value = result.data.totalCount
 	}
 	else {
-		loadError.value = 'Could not load series. Check your connection and try again.'
+		loadError.value = t('pages.series.loadFailed')
 	}
 	loading.value = false
 }
@@ -258,7 +260,7 @@ watch(() => reference.languageProfiles, (profiles) => {
 
 async function submitAdd(result: MediaLookupResult) {
 	if (!addForm.rootFolderId) {
-		toast.toast({ title: 'Choose a root folder', tone: 'danger' })
+		toast.toast({ title: t('pages.series.chooseRootFolder'), tone: 'danger' })
 		return
 	}
 	adding.value = true
@@ -289,7 +291,7 @@ async function submitAdd(result: MediaLookupResult) {
 		})
 		if (created.data) {
 			addOpen.value = false
-			toast.toast({ title: `${result.title} added`, tone: 'ok' })
+			toast.toast({ title: t('pages.series.added', { title: result.title }), tone: 'ok' })
 			await navigateTo(`/series/${created.data.series.id}`)
 		}
 		else {
@@ -333,7 +335,7 @@ async function applyMassEdit() {
 			},
 		})
 		if (result.data) {
-			toast.toast({ title: `${result.data.updated} series updated`, tone: 'ok' })
+			toast.toast({ title: t('pages.series.updated', { count: result.data.updated }), tone: 'ok' })
 			massEditOpen.value = false
 			selectMode.value = false
 			selected.value = []
@@ -372,7 +374,7 @@ async function confirmDelete() {
 			body: { ids: selected.value, deleteFiles: deleteFiles.value, addImportListExclusion: deleteExclusion.value },
 		})
 		if (result.response.ok) {
-			toast.toast({ title: `${selected.value.length} series removed`, tone: 'ok' })
+			toast.toast({ title: t('pages.series.removed', { count: selected.value.length }), tone: 'ok' })
 			deleteConfirmOpen.value = false
 			massEditOpen.value = false
 			selectMode.value = false
@@ -391,7 +393,7 @@ async function confirmDelete() {
 
 <template>
 	<div>
-		<SPageHeader title="Series">
+		<SPageHeader :title="t('pages.series.title')">
 			<template #actions>
 				<SButton
 					v-if="selectMode"
@@ -399,25 +401,25 @@ async function confirmDelete() {
 					:disabled="selected.length === 0"
 					@click="massEditOpen = true"
 				>
-					Edit {{ selected.length }} selected
+					{{ t('pages.series.editSelected', { count: selected.length }) }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					@click="toggleSelectMode"
 				>
-					{{ selectMode ? 'Cancel' : 'Mass edit' }}
+					{{ selectMode ? t('pages.series.cancel') : t('pages.series.massEdit') }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					@click="navigateTo('/library-import')"
 				>
-					Import existing library
+					{{ t('pages.series.importExistingLibrary') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					@click="addOpen = true"
 				>
-					Add series
+					{{ t('pages.series.addSeries') }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -426,7 +428,7 @@ async function confirmDelete() {
 			<SInput
 				v-model="term"
 				type="search"
-				placeholder="Search series"
+				:placeholder="t('pages.series.searchPlaceholder')"
 			/>
 			<SSelect
 				v-model="monitoredFilter"
@@ -453,7 +455,7 @@ async function confirmDelete() {
 				:options="sortOptions"
 			/>
 			<SIconButton
-				:label="sortDirection === 'asc' ? 'Sort descending' : 'Sort ascending'"
+				:label="sortDirection === 'asc' ? t('pages.series.sortDescending') : t('pages.series.sortAscending')"
 				@click="sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'"
 			>
 				<Icon
@@ -466,7 +468,7 @@ async function confirmDelete() {
 					type="button"
 					class="library-view-btn"
 					:class="{ 'library-view-btn-active': view === 'grid' }"
-					aria-label="Poster grid view"
+					:aria-label="t('pages.series.posterGridView')"
 					@click="view = 'grid'"
 				>
 					<Icon
@@ -478,7 +480,7 @@ async function confirmDelete() {
 					type="button"
 					class="library-view-btn"
 					:class="{ 'library-view-btn-active': view === 'table' }"
-					aria-label="Table view"
+					:aria-label="t('pages.series.tableView')"
 					@click="view = 'table'"
 				>
 					<Icon
@@ -498,13 +500,13 @@ async function confirmDelete() {
 			{{ loadError }}
 		</p>
 		<template v-else-if="items.length === 0">
-			<SEmptyState message="No series match yet. Add a series to start building your library.">
+			<SEmptyState :message="t('pages.series.emptyState')">
 				<template #action>
 					<SButton
 						variant="primary"
 						@click="addOpen = true"
 					>
-						Add series
+						{{ t('pages.series.addSeries') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -530,7 +532,7 @@ async function confirmDelete() {
 			>
 				<template #cell-status="{ row }">
 					<SBadge :tone="row.series.status === 'CONTINUING' ? 'ok' : 'neutral'">
-						{{ seriesStatusLabel(row.series.status) }}
+						{{ t(seriesStatusLabel(row.series.status)) }}
 					</SBadge>
 				</template>
 				<template #cell-nextAiring="{ row }">
@@ -538,7 +540,7 @@ async function confirmDelete() {
 					<span
 						v-else
 						class="s-cell-muted"
-					>None</span>
+					>{{ t('pages.series.none') }}</span>
 				</template>
 				<template #cell-episodes="{ row }">
 					{{ row.series.statistics.episodeFileCount }} / {{ row.series.statistics.episodeCount }}
@@ -546,17 +548,17 @@ async function confirmDelete() {
 				<template #cell-monitored="{ row }">
 					<MonitorToggle
 						:model-value="row.series.monitored"
-						:label="`Toggle monitored for ${row.series.title}`"
+						:label="t('pages.series.toggleMonitored', { title: row.series.title })"
 						@update:model-value="toggleMonitored(row.series, $event)"
 					/>
 				</template>
 			</MediaTable>
 
 			<div class="library-pager">
-				<span>{{ totalCount }} series</span>
+				<span>{{ t('pages.series.seriesCount', { count: totalCount }) }}</span>
 				<SSelect
 					class="library-pager-size"
-					:options="[{ value: '20', label: '20 per page' }, { value: '40', label: '40 per page' }, { value: '100', label: '100 per page' }]"
+					:options="[{ value: '20', label: t('pages.series.perPage', { count: 20 }) }, { value: '40', label: t('pages.series.perPage', { count: 40 }) }, { value: '100', label: t('pages.series.perPage', { count: 100 }) }]"
 					:model-value="String(pageSize)"
 					@update:model-value="pageSize = Number($event)"
 				/>
@@ -565,15 +567,15 @@ async function confirmDelete() {
 					:disabled="page <= 1"
 					@click="page = page - 1"
 				>
-					Previous
+					{{ t('pages.series.previous') }}
 				</SButton>
-				<span>Page {{ page }} of {{ totalPages }}</span>
+				<span>{{ t('pages.series.pageOf', { page, totalPages }) }}</span>
 				<SButton
 					size="sm"
 					:disabled="page >= totalPages"
 					@click="page = page + 1"
 				>
-					Next
+					{{ t('pages.series.next') }}
 				</SButton>
 			</div>
 		</template>
@@ -581,57 +583,57 @@ async function confirmDelete() {
 		<AddMediaDialog
 			ref="addDialogRef"
 			v-model:open="addOpen"
-			title="Add series"
-			search-placeholder="Search by title"
+			:title="t('pages.series.addSeries')"
+			:search-placeholder="t('pages.series.searchByTitle')"
 			:search="searchSeries"
 		>
 			<template #details>
 				<div class="add-form">
-					<SField label="Root folder">
+					<SField :label="t('pages.series.rootFolder')">
 						<SSelect
 							v-model="addForm.rootFolderId"
 							:options="addRootFolderOptions"
-							placeholder="Choose a root folder"
+							:placeholder="t('pages.series.chooseRootFolder')"
 						/>
 					</SField>
-					<SField label="Series type">
+					<SField :label="t('pages.series.seriesType')">
 						<SSelect
 							v-model="addForm.seriesType"
-							:options="seriesTypeOptions"
+							:options="seriesTypeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
-					<SField label="Episode numbering">
+					<SField :label="t('pages.series.episodeNumbering')">
 						<SSelect
 							v-model="addForm.numbering"
-							:options="seriesNumberingOptions"
+							:options="seriesNumberingOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
-					<SField label="Monitor">
+					<SField :label="t('pages.series.monitor')">
 						<SSelect
 							v-model="addForm.monitorOption"
-							:options="addMonitorOptionOptions"
+							:options="addMonitorOptionOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
-					<SField label="New seasons">
+					<SField :label="t('pages.series.newSeasons')">
 						<SSelect
 							v-model="addForm.monitorNewItems"
-							:options="monitorNewItemsOptions"
+							:options="monitorNewItemsOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
-					<SField label="Tags">
+					<SField :label="t('pages.series.tags')">
 						<TagPicker v-model:tag-ids="addForm.tagIds" />
 					</SField>
 					<SCheckbox
 						v-model="addForm.seasonFolder"
-						label="Use a season folder"
+						:label="t('pages.series.useSeasonFolder')"
 					/>
 					<SCheckbox
 						v-model="addForm.monitorSpecials"
-						label="Include specials"
+						:label="t('pages.series.includeSpecials')"
 					/>
 					<SCheckbox
 						v-model="addForm.searchOnAdd"
-						label="Search for episodes on add"
+						:label="t('pages.series.searchEpisodesOnAdd')"
 					/>
 					<VersionEditor
 						v-model="addVersions"
@@ -641,53 +643,53 @@ async function confirmDelete() {
 			</template>
 			<template #footer="{ result }">
 				<SButton @click="addOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="adding"
 					@click="submitAdd(result)"
 				>
-					Add series
+					{{ t('pages.series.addSeries') }}
 				</SButton>
 			</template>
 		</AddMediaDialog>
 
 		<SDialog
 			v-model="massEditOpen"
-			title="Edit series"
+			:title="t('pages.series.editSeries')"
 		>
 			<div class="add-form">
-				<SField label="Monitored">
+				<SField :label="t('pages.series.monitored')">
 					<SSelect
 						v-model="massEdit.monitored"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, { value: 'true', label: 'Monitored' }, { value: 'false', label: 'Unmonitored' }]"
+						:options="[{ value: 'unchanged', label: t('pages.series.leaveUnchanged') }, { value: 'true', label: t('pages.series.monitored') }, { value: 'false', label: t('pages.series.unmonitored') }]"
 					/>
 				</SField>
-				<SField label="Series type">
+				<SField :label="t('pages.series.seriesType')">
 					<SSelect
 						v-model="massEdit.seriesType"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, ...seriesTypeOptions]"
+						:options="[{ value: 'unchanged', label: t('pages.series.leaveUnchanged') }, ...seriesTypeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))]"
 					/>
 				</SField>
-				<SField label="Move to root folder">
+				<SField :label="t('pages.series.moveToRootFolder')">
 					<SSelect
 						v-model="massEdit.rootFolderId"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, ...addRootFolderOptions]"
+						:options="[{ value: 'unchanged', label: t('pages.series.leaveUnchanged') }, ...addRootFolderOptions]"
 					/>
 				</SField>
 				<SCheckbox
 					v-if="massEdit.rootFolderId !== 'unchanged'"
 					v-model="massEdit.moveFiles"
-					label="Move files on disk"
+					:label="t('pages.series.moveFilesOnDisk')"
 				/>
-				<SField label="Tags">
+				<SField :label="t('pages.series.tags')">
 					<TagPicker v-model:tag-ids="massEdit.tagIds" />
 				</SField>
-				<SField label="Tag action">
+				<SField :label="t('pages.series.tagAction')">
 					<SSelect
 						v-model="massEdit.tagMode"
-						:options="[{ value: 'add', label: 'Add tags' }, { value: 'remove', label: 'Remove tags' }, { value: 'replace', label: 'Replace tags' }]"
+						:options="[{ value: 'add', label: t('pages.series.addTags') }, { value: 'remove', label: t('pages.series.removeTags') }, { value: 'replace', label: t('pages.series.replaceTags') }]"
 					/>
 				</SField>
 			</div>
@@ -696,44 +698,44 @@ async function confirmDelete() {
 					variant="danger"
 					@click="deleteConfirmOpen = true"
 				>
-					Delete selected
+					{{ t('pages.series.deleteSelected') }}
 				</SButton>
 				<SButton @click="massEditOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="massEditing"
 					@click="applyMassEdit"
 				>
-					Save changes
+					{{ t('pages.series.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteConfirmOpen"
-			title="Delete series"
-			:description="`This removes ${selected.length} series from the library.`"
+			:title="t('pages.series.deleteSeries')"
+			:description="t('pages.series.deleteDescription', { count: selected.length })"
 		>
 			<SCheckbox
 				v-model="deleteFiles"
-				label="Delete files on disk"
+				:label="t('pages.series.deleteFilesOnDisk')"
 			/>
 			<SCheckbox
 				v-model="deleteExclusion"
-				label="Add an import list exclusion"
+				:label="t('pages.series.addImportListExclusion')"
 			/>
 			<template #footer>
 				<SButton @click="deleteConfirmOpen = false">
-					Cancel
+					{{ t('pages.series.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="confirmDelete"
 				>
-					Delete
+					{{ t('pages.series.delete') }}
 				</SButton>
 			</template>
 		</SDialog>

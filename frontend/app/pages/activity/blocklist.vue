@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { formatDate } from '~/composables/useFormat'
 import { protocolLabel } from '~/utils/settings-labels'
 import { toApiError, useApi } from '~/composables/useApi'
@@ -7,7 +8,8 @@ import type { components } from '~/types/api'
 
 type BlocklistItem = components['schemas']['BlocklistItemDto']
 
-useHead({ title: 'Blocklist' })
+const { t } = useI18n()
+useHead({ title: t('pages.activity.blocklist.title') })
 
 const { toast } = useToast()
 
@@ -31,7 +33,7 @@ async function load() {
 	const api = useApi()
 	const result = await api.GET('/api/v1/blocklist', { params: { query: { Page: page.value, PageSize: pageSize } } })
 	if (!result.data) {
-		loadError.value = 'Could not load the blocklist. Check your connection and try again.'
+		loadError.value = t('pages.activity.blocklist.loadFailed')
 	}
 	items.value = result.data?.items ?? []
 	totalCount.value = result.data?.totalCount ?? 0
@@ -62,7 +64,7 @@ async function removeOne(id: number) {
 		await load()
 	}
 	catch (error) {
-		toast({ title: 'Could not remove blocklist entry', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('pages.activity.blocklist.removeFailed'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		removing.value = false
@@ -84,7 +86,7 @@ async function removeSelected() {
 		await load()
 	}
 	catch (error) {
-		toast({ title: 'Could not remove selected entries', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('pages.activity.blocklist.removeSelectedFailed'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		removing.value = false
@@ -105,7 +107,7 @@ async function clearAll() {
 		await load()
 	}
 	catch (error) {
-		toast({ title: 'Could not clear the blocklist', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('pages.activity.blocklist.clearFailed'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		clearing.value = false
@@ -124,12 +126,12 @@ function mediaTo(row: BlocklistItem): string | null {
 
 const columns = [
 	{ key: 'select', label: '' },
-	{ key: 'releaseTitle', label: 'Title' },
-	{ key: 'media', label: 'Media' },
-	{ key: 'protocol', label: 'Protocol' },
-	{ key: 'indexerName', label: 'Indexer' },
-	{ key: 'reason', label: 'Reason' },
-	{ key: 'date', label: 'Date' },
+	{ key: 'releaseTitle', label: t('pages.activity.blocklist.titleColumn') },
+	{ key: 'media', label: t('pages.activity.blocklist.media') },
+	{ key: 'protocol', label: t('pages.activity.blocklist.protocol') },
+	{ key: 'indexerName', label: t('pages.activity.blocklist.indexer') },
+	{ key: 'reason', label: t('pages.activity.blocklist.reason') },
+	{ key: 'date', label: t('pages.activity.blocklist.date') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -140,7 +142,7 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Blocklist">
+		<SPageHeader :title="t('pages.activity.blocklist.title')">
 			<template #actions>
 				<SButton
 					variant="danger"
@@ -148,19 +150,19 @@ onMounted(() => {
 					:disabled="items.length === 0"
 					@click="clearAllOpen = true"
 				>
-					Clear all
+					{{ t('pages.activity.blocklist.clearAll') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 		<SubNav
-			label="Activity"
+			:label="t('pages.activity.blocklist.activityNav')"
 			:items="navChildren('activity')"
 		/>
 
 		<div class="blocklist-toolbar">
 			<SCheckbox
 				:model-value="allSelected"
-				label="Select all on this page"
+				:label="t('pages.activity.blocklist.selectAll')"
 				@update:model-value="toggleAll"
 			/>
 			<SButton
@@ -170,7 +172,7 @@ onMounted(() => {
 				:loading="removing"
 				@click="removeSelected"
 			>
-				Remove selected ({{ selected.length }})
+				{{ t('pages.activity.blocklist.removeSelected', { count: selected.length }) }}
 			</SButton>
 		</div>
 
@@ -181,7 +183,7 @@ onMounted(() => {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ t('pages.activity.blocklist.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -194,14 +196,14 @@ onMounted(() => {
 		>
 			<template #empty>
 				<SEmptyState
-					message="Nothing is blocklisted."
+					:message="t('pages.activity.blocklist.emptyState')"
 					icon="lucide:shield-check"
 				/>
 			</template>
 			<template #cell-select="{ row }">
 				<SCheckbox
 					:model-value="selected.includes(row.id)"
-					:aria-label="`Select ${row.releaseTitle}`"
+					:aria-label="t('pages.activity.blocklist.selectItem', { title: row.releaseTitle })"
 					@update:model-value="value => toggleRow(row.id, value)"
 				/>
 			</template>
@@ -215,24 +217,24 @@ onMounted(() => {
 				<span
 					v-else
 					class="s-cell-muted"
-				>None</span>
+				>{{ t('pages.activity.blocklist.none') }}</span>
 			</template>
 			<template #cell-protocol="{ row }">
-				{{ protocolLabel(row.protocol) }}
+				{{ t(protocolLabel(row.protocol)) }}
 			</template>
 			<template #cell-indexerName="{ row }">
 				<span v-if="row.indexerName">{{ row.indexerName }}</span>
 				<span
 					v-else
 					class="s-cell-muted"
-				>None</span>
+				>{{ t('pages.activity.blocklist.none') }}</span>
 			</template>
 			<template #cell-date="{ row }">
 				{{ formatDate(row.date) }}
 			</template>
 			<template #cell-actions="{ row }">
 				<SIconButton
-					label="Remove from blocklist"
+					:label="t('pages.activity.blocklist.removeFromBlocklist')"
 					@click="removeOne(row.id)"
 				>
 					<Icon
@@ -253,38 +255,38 @@ onMounted(() => {
 				:disabled="page <= 1"
 				@click="setPage(page - 1)"
 			>
-				Previous
+				{{ t('pages.activity.blocklist.previous') }}
 			</SButton>
-			<span>Page {{ page }} of {{ totalPages }} ({{ totalCount }} total)</span>
+			<span>{{ t('pages.activity.blocklist.page', { page, totalPages, totalCount }) }}</span>
 			<SButton
 				variant="secondary"
 				size="sm"
 				:disabled="page >= totalPages"
 				@click="setPage(page + 1)"
 			>
-				Next
+				{{ t('pages.activity.blocklist.next') }}
 			</SButton>
 		</div>
 
 		<SDialog
 			v-model="clearAllOpen"
-			title="Clear the blocklist"
+			:title="t('pages.activity.blocklist.clearConfirmTitle')"
 		>
-			<p>Remove every blocklisted release? This cannot be undone.</p>
+			<p>{{ t('pages.activity.blocklist.clearConfirmDescription') }}</p>
 			<template #footer>
 				<SButton
 					variant="secondary"
 					:disabled="clearing"
 					@click="clearAllOpen = false"
 				>
-					Cancel
+					{{ t('pages.activity.blocklist.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="clearing"
 					@click="clearAll"
 				>
-					Clear all
+					{{ t('pages.activity.blocklist.clearAll') }}
 				</SButton>
 			</template>
 		</SDialog>

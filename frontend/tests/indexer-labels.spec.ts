@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { i18n } from '~/i18n'
 import {
 	cardigannFieldToSchemaField,
 	indexerHistoryEventTone,
@@ -25,7 +26,7 @@ describe('indexer-labels', () => {
 	it('indexerHistoryEventTone marks failures danger and grabs ok', () => {
 		expect(indexerHistoryEventTone('FAILED')).toBe('danger')
 		expect(indexerHistoryEventTone('GRAB')).toBe('ok')
-		expect(indexerHistoryEventTypeLabel('AUTH')).toBe('Sign in')
+		expect(i18n.global.t(indexerHistoryEventTypeLabel('AUTH'))).toBe('Sign in')
 	})
 
 	it('settingsFieldToSchemaField infers control type from clrType and treats api-key-like names as password', () => {

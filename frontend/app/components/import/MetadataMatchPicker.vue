@@ -58,14 +58,14 @@ function pick(result: SearchResultResource) {
 			>
 				<SPosterImage
 					:src="model?.posterUrl"
-					:alt="model?.title ?? 'No match'"
+					:alt="model?.title ?? $t('components.import.MetadataMatchPicker.noMatch')"
 				/>
 				<span class="match-picker-title">
 					<template v-if="model">{{ model.title }}<span v-if="model.year"> ({{ model.year }})</span></template>
 					<span
 						v-else
 						class="s-cell-muted"
-					>No match — search</span>
+					>{{ $t('components.import.MetadataMatchPicker.noMatchSearch') }}</span>
 				</span>
 				<Icon
 					name="lucide:chevron-down"
@@ -77,7 +77,7 @@ function pick(result: SearchResultResource) {
 			<SInput
 				v-model="term"
 				type="search"
-				placeholder="Search by title"
+				:placeholder="$t('components.import.MetadataMatchPicker.searchByTitle')"
 			/>
 			<SSpinner v-if="searching" />
 			<ul
@@ -104,7 +104,7 @@ function pick(result: SearchResultResource) {
 					v-if="term.trim().length >= 2 && results.length === 0"
 					class="s-cell-muted match-picker-empty"
 				>
-					No matches
+					{{ $t('components.import.MetadataMatchPicker.noMatches') }}
 				</li>
 			</ul>
 		</div>

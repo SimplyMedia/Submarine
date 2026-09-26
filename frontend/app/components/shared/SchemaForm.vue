@@ -1,5 +1,8 @@
 <template>
-	<div class="schema-form">
+	<form
+		class="schema-form"
+		@submit.prevent
+	>
 		<template
 			v-for="field in fields"
 			:key="field.name"
@@ -8,12 +11,35 @@
 				v-if="field.type === 'info'"
 				class="schema-form-info"
 			>
-				{{ field.helpText }}
+				{{ helpText(field) }}
 			</p>
+			<div
+				v-else-if="field.type === 'checkbox'"
+				class="schema-form-checkbox"
+			>
+				<SCheckbox
+					:label="label(field)"
+					:model-value="boolValue(field)"
+					@update:model-value="setValue(field, $event)"
+				/>
+				<p
+					v-if="helpText(field)"
+					class="s-field-hint"
+				>
+					{{ helpText(field) }}
+				</p>
+				<p
+					v-if="fieldErrors?.[field.name]?.[0]"
+					class="s-field-error"
+					role="alert"
+				>
+					{{ fieldErrors[field.name]?.[0] }}
+				</p>
+			</div>
 			<SField
 				v-else
-				:label="field.label"
-				:hint="field.helpText ?? undefined"
+				:label="label(field)"
+				:hint="helpText(field) ?? undefined"
 				:error="fieldErrors?.[field.name]?.[0]"
 				:control-id="`schema-${field.name}`"
 			>
@@ -41,11 +67,6 @@
 					:invalid="hasError(field)"
 					@update:model-value="setValue(field, $event)"
 				/>
-				<SCheckbox
-					v-else-if="field.type === 'checkbox'"
-					:model-value="boolValue(field)"
-					@update:model-value="setValue(field, $event)"
-				/>
 				<div
 					v-else-if="field.type === 'tags'"
 					class="schema-form-tags"
@@ -58,8 +79,7 @@
 						{{ tag }}
 						<button
 							type="button"
-							class="schema-form-tag-remove"
-							:aria-label="`Remove ${tag}`"
+							:aria-label="t('components.shared.SchemaForm.removeTag', { tag })"
 							@click="removeTag(field, index)"
 						>
 							<Icon
@@ -72,23 +92,27 @@
 						:id="`schema-${field.name}`"
 						type="text"
 						class="schema-form-tag-input"
-						:placeholder="tagsValue(field).length === 0 ? 'Type and press enter' : ''"
+						:placeholder="tagsValue(field).length === 0 ? t('components.shared.SchemaForm.tagsPlaceholder') : ''"
 						@keydown.enter.prevent="addTag(field, $event)"
 						@keydown="onTagKeydown(field, $event)"
 					>
 				</div>
 			</SField>
 		</template>
-	</div>
+	</form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { humanizeEnumValue } from '~/utils/settings-labels'
 import type { SchemaField } from '~/types/schema-form'
+
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
 	fields: SchemaField[]
 	modelValue: Record<string, unknown>
+	providerType: string
 	fieldErrors?: Record<string, string[]>
 	/** Overrides the default humanized label for a select option value. */
 	optionLabel?: (field: SchemaField, value: string) => string
@@ -98,6 +122,16 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{ 'update:modelValue': [Record<string, unknown>] }>()
+
+function label(field: SchemaField): string {
+	return t(`schema.${props.providerType}.${field.name}.label`, field.label)
+}
+
+function helpText(field: SchemaField): string | null {
+	return field.helpText
+		? t(`schema.${props.providerType}.${field.name}.helpText`, field.helpText)
+		: null
+}
 
 function rawValue(field: SchemaField): unknown {
 	const value = props.modelValue[field.name]

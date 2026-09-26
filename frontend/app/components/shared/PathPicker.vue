@@ -1,16 +1,19 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 /**
  * Text input for an absolute path plus a folder browser backed by
  * GET /api/v1/filesystem. The path may not exist yet (recycle bin, a new
  * root folder), so typing is always allowed regardless of browse results.
  */
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
 	controlId?: string
 	placeholder?: string
 }>(), {
 	controlId: undefined,
-	placeholder: '/path/to/folder',
+	placeholder: undefined,
 })
+
+const { t } = useI18n()
 
 const path = defineModel<string>({ default: '' })
 
@@ -34,11 +37,11 @@ async function browse(target: string) {
 			browsePath.value = target
 		}
 		else {
-			error.value = 'Could not read that folder.'
+			error.value = t('components.shared.PathPicker.readError')
 		}
 	}
 	catch {
-		error.value = 'Could not read that folder.'
+		error.value = t('components.shared.PathPicker.readError')
 	}
 	finally {
 		loading.value = false
@@ -61,12 +64,12 @@ function useCurrent() {
 			v-model="path"
 			type="text"
 			class="s-input"
-			:placeholder="placeholder"
+			:placeholder="props.placeholder ?? t('components.shared.PathPicker.placeholder')"
 		>
 		<SPopover>
 			<template #trigger>
 				<SIconButton
-					label="Browse folders"
+					:label="t('components.shared.PathPicker.browseFolders')"
 					@click="onOpen"
 				>
 					<Icon
@@ -119,7 +122,7 @@ function useCurrent() {
 					</li>
 					<li v-if="directories.length === 0 && parent === null">
 						<p class="path-picker-empty">
-							No subfolders
+							{{ $t('components.shared.PathPicker.noSubfolders') }}
 						</p>
 					</li>
 				</ul>
@@ -128,7 +131,7 @@ function useCurrent() {
 					size="sm"
 					@click="useCurrent"
 				>
-					Use this folder
+					{{ $t('components.shared.PathPicker.useThisFolder') }}
 				</SButton>
 			</div>
 		</SPopover>

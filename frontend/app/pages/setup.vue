@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ApiError } from '~/composables/useApi'
+import { useI18n } from 'vue-i18n'
 
 definePageMeta({
 	layout: 'auth',
 	public: true,
 })
 
-useHead({ title: 'Set up Submarine' })
+const { t } = useI18n()
+
+useHead({ title: t('pages.setup.title') })
 
 const auth = useAuthStore()
 
@@ -22,10 +25,10 @@ async function submit() {
 
 	const errors: Record<string, string[]> = {}
 	if (username.value.trim().length === 0) {
-		errors.username = ['Choose a username']
+		errors.username = [t('pages.setup.usernameRequired')]
 	}
 	if (password.value.length === 0) {
-		errors.password = ['Choose a password']
+		errors.password = [t('pages.setup.passwordRequired')]
 	}
 	fieldErrors.value = errors
 	if (Object.keys(errors).length > 0) {
@@ -43,7 +46,7 @@ async function submit() {
 			fieldErrors.value = error.fieldErrors
 		}
 		else {
-			formError.value = 'Could not create the account. Check your connection and try again.'
+			formError.value = t('pages.setup.accountCreationFailed')
 		}
 	}
 	finally {
@@ -55,7 +58,7 @@ async function submit() {
 <template>
 	<div>
 		<h1 class="auth-title">
-			Set up Submarine
+			{{ t('pages.setup.title') }}
 		</h1>
 		<form
 			class="auth-form"
@@ -63,8 +66,8 @@ async function submit() {
 			@submit.prevent="submit"
 		>
 			<SField
-				label="Username"
-				hint="This is the account you use to sign in."
+				:label="t('pages.setup.username')"
+				:hint="t('pages.setup.usernameHint')"
 				control-id="setup-username"
 				:error="fieldErrors.username?.[0]"
 			>
@@ -77,7 +80,7 @@ async function submit() {
 				/>
 			</SField>
 			<SField
-				label="Password"
+				:label="t('pages.setup.password')"
 				control-id="setup-password"
 				:error="fieldErrors.password?.[0]"
 			>
@@ -102,7 +105,7 @@ async function submit() {
 				class="auth-submit"
 				:loading="busy"
 			>
-				Create account
+				{{ t('pages.setup.createAccount') }}
 			</SButton>
 		</form>
 	</div>

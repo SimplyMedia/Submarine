@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { i18n } from '~/i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import { useEvents } from '~/composables/useEvents'
 import type { components } from '~/types/api'
@@ -28,7 +29,7 @@ export const useActivityStore = defineStore('activity', () => {
 				api.GET('/api/v1/queue', { params: { query: { PageSize: pageSize } } }),
 				api.GET('/api/v1/queue/status'),
 			])
-			loadError.value = itemsResult.data && statusResult.data ? '' : 'Could not load the queue. Check your connection and try again.'
+			loadError.value = itemsResult.data && statusResult.data ? '' : i18n.global.t('utils.stores.activity.couldNotLoadQueue')
 			items.value = itemsResult.data?.items ?? []
 			status.value = statusResult.data ?? null
 		}

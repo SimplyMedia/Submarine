@@ -13,7 +13,7 @@
 			</div>
 			<div class="reorder-actions">
 				<SIconButton
-					label="Move up"
+					:label="$t('components.shared.ReorderList.moveUp')"
 					size="sm"
 					:disabled="index === 0"
 					@click="move(index, -1)"
@@ -24,7 +24,7 @@
 					/>
 				</SIconButton>
 				<SIconButton
-					label="Move down"
+					:label="$t('components.shared.ReorderList.moveDown')"
 					size="sm"
 					:disabled="index === modelValue.length - 1"
 					@click="move(index, 1)"
@@ -36,7 +36,7 @@
 				</SIconButton>
 				<SIconButton
 					v-if="removable"
-					label="Remove"
+					:label="$t('components.shared.ReorderList.remove')"
 					size="sm"
 					@click="remove(index)"
 				>

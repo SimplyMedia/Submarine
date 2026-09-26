@@ -23,6 +23,10 @@ async function deleteIndexerByName(request: APIRequestContext, name: string) {
 	}
 }
 
+test.afterEach(async ({ page }) => {
+	await deleteIndexerByName(page.request, LIMITS_TRACKER_NAME)
+})
+
 test('indexers: add a Torznab tracker, test it, then search and grab a release', async ({ page }) => {
 	await signIn(page)
 	await ensureLibrary(page.request)
@@ -47,7 +51,7 @@ test('indexers: add a Torznab tracker, test it, then search and grab a release',
 	await addDialog.getByLabel('Limits unit').click()
 	await page.getByRole('option', { name: 'Per hour' }).click()
 	await addDialog.getByLabel('Season search maximum single episode age (days)').fill('14')
-	await addDialog.getByRole('checkbox', { name: 'freeleech', exact: true }).check()
+	await addDialog.getByRole('checkbox', { name: 'Freeleech', exact: true }).check()
 	await addDialog.getByRole('button', { name: 'Add indexer' }).click()
 	await expect(page.locator('.s-toast-title', { hasText: 'Indexer added' })).toBeVisible()
 
@@ -63,7 +67,7 @@ test('indexers: add a Torznab tracker, test it, then search and grab a release',
 	await expect(editDialog.getByLabel('Query limit')).toHaveValue('100')
 	await expect(editDialog.getByLabel('Grab limit')).toHaveValue('10')
 	await expect(editDialog.getByLabel('Season search maximum single episode age (days)')).toHaveValue('14')
-	await expect(editDialog.getByRole('checkbox', { name: 'freeleech', exact: true })).toBeChecked()
+	await expect(editDialog.getByRole('checkbox', { name: 'Freeleech', exact: true })).toBeChecked()
 	await editDialog.getByRole('button', { name: 'Cancel' }).click()
 	await deleteIndexerByName(page.request, LIMITS_TRACKER_NAME)
 
@@ -101,4 +105,36 @@ test('indexers: add a Torznab tracker, test it, then search and grab a release',
 	await page.getByRole('button', { name: 'Grab selected' }).click()
 	await expect(page.locator('.s-toast-title', { hasText: '1 releases grabbed' })).toBeVisible()
 	await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+})
+
+test('interactive search: shows rejected releases with decision reasons', async ({ page }) => {
+	await signIn(page)
+	await ensureLibrary(page.request)
+	await ensureStubTrackerIndexer(page.request)
+	await resetGrabState(page.request)
+	const name = 'E2E search rejection profile'
+	const profileResponse = await page.request.get('/api/v1/release-profiles')
+	const profiles = (await profileResponse.json() as { items: { id: number, name: string }[] }).items
+	for (const profile of profiles.filter(item => item.name === name)) await page.request.delete(`/api/v1/release-profiles/${profile.id}`)
+	const created = await page.request.post('/api/v1/release-profiles', {
+		data: { name, enabled: true, required: ['E2E-NOT-FOUND'], ignored: [], indexerId: null, tags: [] },
+	})
+	expect(created.ok(), await created.text()).toBe(true)
+	const releaseProfile = await created.json() as { id: number }
+	try {
+		await page.goto('/indexers/search')
+		await page.getByPlaceholder('Release title, e.g. Harbour Lights S02E06').fill('Harbour Lights')
+		await page.getByRole('button', { name: 'Search', exact: true }).click()
+
+		const results = page.getByRole('table')
+		const rejected = results.getByRole('row').filter({ hasText: TARGET_RELEASE_FRAGMENT })
+		await expect(rejected).toBeVisible()
+		const score = rejected.locator('.release-score-rejected')
+		await expect(score).toBeVisible()
+		await score.hover()
+		await expect(page.locator('.s-tooltip')).toContainText('E2E-NOT-FOUND')
+	}
+	finally {
+		await page.request.delete(`/api/v1/release-profiles/${releaseProfile.id}`)
+	}
 })

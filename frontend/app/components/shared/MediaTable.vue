@@ -59,12 +59,12 @@ function toggleRow(id: number) {
 					>
 						<SCheckbox
 							:model-value="allSelected"
-							aria-label="Select all"
+							:aria-label="$t('components.shared.MediaTable.selectAll')"
 							@update:model-value="toggleAll"
 						/>
 					</th>
 					<th scope="col">
-						Title
+						{{ $t('components.shared.MediaTable.title') }}
 					</th>
 					<th
 						v-for="column in columns"
@@ -93,11 +93,11 @@ function toggleRow(id: number) {
 					>
 						<SCheckbox
 							:model-value="selectedSet.has(row.id)"
-							:aria-label="`Select ${row.title}`"
+							:aria-label="$t('components.shared.MediaTable.selectItem', { title: row.title })"
 							@update:model-value="toggleRow(row.id)"
 						/>
 					</td>
-					<td data-label="Title">
+					<td :data-label="$t('components.shared.MediaTable.title')">
 						<NuxtLink
 							:to="row.to"
 							class="media-table-title"
@@ -135,7 +135,7 @@ function toggleRow(id: number) {
 		v-else
 		name="empty"
 	>
-		<SEmptyState message="Nothing here yet" />
+		<SEmptyState :message="$t('components.shared.MediaTable.nothingHereYet')" />
 	</slot>
 </template>
 

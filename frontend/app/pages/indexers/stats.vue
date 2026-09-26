@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { navChildren } from '~/navigation'
 import { useApi } from '~/composables/useApi'
 import type { components } from '~/types/api'
@@ -7,7 +8,8 @@ type IndexerStatEntry = components['schemas']['IndexerStatEntry']
 type UserAgentStatEntry = components['schemas']['UserAgentStatEntry']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Stats' })
+const { t } = useI18n()
+useHead({ title: t('pages.indexers.stats.title') })
 
 const api = useApi()
 
@@ -28,7 +30,7 @@ async function load() {
 		params: { query: { start: start.toISOString(), end: end.toISOString() } },
 	})
 	if (!result.data) {
-		loadError.value = 'Could not load stats. Check your connection and try again.'
+		loadError.value = t('pages.indexers.stats.loadFailed')
 	}
 	indexers.value = result.data?.indexers ?? []
 	userAgents.value = result.data?.userAgents ?? []
@@ -41,17 +43,17 @@ function setRange(days: number) {
 }
 
 const columns = [
-	{ key: 'indexerName', label: 'Indexer' },
-	{ key: 'queries', label: 'Queries' },
-	{ key: 'grabCount', label: 'Grabs', align: 'right' as const },
-	{ key: 'failureCount', label: 'Failures', align: 'right' as const },
-	{ key: 'averageResponseMs', label: 'Avg response', align: 'right' as const },
+	{ key: 'indexerName', label: t('pages.indexers.stats.indexer') },
+	{ key: 'queries', label: t('pages.indexers.stats.queries') },
+	{ key: 'grabCount', label: t('pages.indexers.stats.grabs'), align: 'right' as const },
+	{ key: 'failureCount', label: t('pages.indexers.stats.failures'), align: 'right' as const },
+	{ key: 'averageResponseMs', label: t('pages.indexers.stats.averageResponse'), align: 'right' as const },
 ]
 
 const userAgentColumns = [
-	{ key: 'userAgent', label: 'Caller' },
-	{ key: 'queryCount', label: 'Queries', align: 'right' as const },
-	{ key: 'grabCount', label: 'Grabs', align: 'right' as const },
+	{ key: 'userAgent', label: t('pages.indexers.stats.caller') },
+	{ key: 'queryCount', label: t('pages.indexers.stats.queries'), align: 'right' as const },
+	{ key: 'grabCount', label: t('pages.indexers.stats.grabs'), align: 'right' as const },
 ]
 
 onMounted(() => {
@@ -61,9 +63,9 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Stats" />
+		<SPageHeader :title="t('pages.indexers.stats.title')" />
 		<SubNav
-			label="Indexers"
+			:label="t('pages.indexers.stats.indexersNav')"
 			:items="navChildren('indexers')"
 		/>
 
@@ -75,7 +77,7 @@ onMounted(() => {
 				:variant="rangeDays === preset ? 'primary' : 'secondary'"
 				@click="setRange(preset)"
 			>
-				{{ preset }} days
+				{{ t('pages.indexers.stats.days', { days: preset }) }}
 			</SButton>
 		</div>
 
@@ -86,20 +88,20 @@ onMounted(() => {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ t('pages.indexers.stats.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
 		<SSpinner v-else-if="loading" />
 		<template v-else>
-			<SSection title="Indexers">
+			<SSection :title="t('pages.indexers.stats.indexers')">
 				<STable
 					:columns="columns"
 					:rows="indexers"
 					:row-key="(row) => row.indexerId"
 				>
 					<template #empty>
-						<SEmptyState message="No indexer activity in this range yet." />
+						<SEmptyState :message="t('pages.indexers.stats.noIndexerActivity')" />
 					</template>
 					<template #cell-queries="{ row }">
 						<div class="stats-bar-cell">
@@ -113,19 +115,19 @@ onMounted(() => {
 						</div>
 					</template>
 					<template #cell-averageResponseMs="{ row }">
-						{{ Math.round(row.averageResponseMs) }} ms
+						{{ t('pages.indexers.stats.responseMs', { value: Math.round(row.averageResponseMs) }) }}
 					</template>
 				</STable>
 			</SSection>
 
-			<SSection title="Outbound Newznab API callers">
+			<SSection :title="t('pages.indexers.stats.apiCallers')">
 				<STable
 					:columns="userAgentColumns"
 					:rows="userAgents"
 					:row-key="(row) => row.userAgent"
 				>
 					<template #empty>
-						<SEmptyState message="No external app has queried this instance yet." />
+						<SEmptyState :message="t('pages.indexers.stats.noExternalQueries')" />
 					</template>
 				</STable>
 			</SSection>

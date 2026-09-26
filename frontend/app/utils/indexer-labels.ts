@@ -17,9 +17,9 @@ type SettingsFieldSchema = components['schemas']['SettingsFieldSchema']
 type IndexerSettingField = components['schemas']['IndexerSettingField']
 
 const IMPLEMENTATION: Record<IndexerImplementation, string> = {
-	TORZNAB: 'Torznab',
-	NEWZNAB: 'Newznab',
-	CARDIGANN: 'Cardigann',
+	TORZNAB: 'utils.indexerLabels.implementation.torznab',
+	NEWZNAB: 'utils.indexerLabels.implementation.newznab',
+	CARDIGANN: 'utils.indexerLabels.implementation.cardigann',
 }
 const IMPLEMENTATION_ICON: Record<IndexerImplementation, string> = {
 	TORZNAB: 'lucide:magnet',
@@ -38,10 +38,10 @@ export function indexerImplementationIcon(value: IndexerImplementation): string 
 export const indexerImplementationOptions = toOptions(IMPLEMENTATION)
 
 const PROXY_TYPE: Record<IndexerProxyType, string> = {
-	HTTP: 'HTTP',
-	SOCKS4: 'SOCKS4',
-	SOCKS5: 'SOCKS5',
-	FLARESOLVERR: 'FlareSolverr',
+	HTTP: 'utils.indexerLabels.proxyType.http',
+	SOCKS4: 'utils.indexerLabels.proxyType.socks4',
+	SOCKS5: 'utils.indexerLabels.proxyType.socks5',
+	FLARESOLVERR: 'utils.indexerLabels.proxyType.flareSolverr',
 }
 
 export function indexerProxyTypeLabel(value: IndexerProxyType): string {
@@ -51,11 +51,11 @@ export function indexerProxyTypeLabel(value: IndexerProxyType): string {
 export const indexerProxyTypeOptions = toOptions(PROXY_TYPE)
 
 const HISTORY_EVENT: Record<IndexerHistoryEventType, string> = {
-	QUERY: 'Query',
-	RSS: 'RSS sync',
-	GRAB: 'Grab',
-	AUTH: 'Sign in',
-	FAILED: 'Failed',
+	QUERY: 'utils.indexerLabels.historyEvent.query',
+	RSS: 'utils.indexerLabels.historyEvent.rss',
+	GRAB: 'utils.indexerLabels.historyEvent.grab',
+	AUTH: 'utils.indexerLabels.historyEvent.auth',
+	FAILED: 'utils.indexerLabels.historyEvent.failed',
 }
 
 const HISTORY_EVENT_TONE: Record<IndexerHistoryEventType, SBadgeTone> = {
@@ -121,7 +121,7 @@ export function cardigannFieldToSchemaField(field: IndexerSettingField): { field
 			label: field.label ?? humanizeFieldName(field.name),
 			type: CARDIGANN_TYPE[field.type] ?? 'text',
 			options: field.options ? Object.keys(field.options) : undefined,
-			helpText: isCaptcha ? 'This tracker requires solving a captcha. Not supported yet; grabs may fail until this is fixed manually.' : (field.type === 'INFO' ? field.label : undefined),
+			helpText: isCaptcha ? 'utils.indexerLabels.captchaHelp' : (field.type === 'INFO' ? field.label : undefined),
 			default: field.default,
 		},
 		optionLabels: field.options ?? undefined,

@@ -8,32 +8,32 @@
 export type SBadgeTone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral'
 
 const COMMAND_LABELS: Record<string, string> = {
-	RefreshSeries: 'Refresh series',
-	RefreshMovie: 'Refresh movie',
-	RefreshMetadata: 'Refresh metadata',
-	RescanSeries: 'Rescan series',
-	RescanMovie: 'Rescan movie',
-	RenameSeries: 'Rename series',
-	RenameMovie: 'Rename movie',
-	MoveSeries: 'Move series',
-	MoveMovie: 'Move movie',
-	SeriesSearch: 'Series search',
-	SeasonSearch: 'Season search',
-	EpisodeSearch: 'Episode search',
-	MovieSearch: 'Movie search',
-	MissingSearch: 'Missing search',
-	CutoffUnmetSearch: 'Cutoff unmet search',
-	RssSync: 'RSS sync',
-	DownloadMonitor: 'Download monitor',
-	ProcessPendingReleases: 'Process pending releases',
-	ImportListSync: 'Import list sync',
-	Backup: 'Back up library',
-	HealthCheck: 'Health check',
-	IndexerDefinitionSync: 'Indexer definition sync',
-	RecycleBinCleanup: 'Recycle bin cleanup',
-	CheckForUpdate: 'Check for update',
-	ClearBlocklist: 'Clear blocklist',
-	CommandCleanup: 'Command cleanup',
+	RefreshSeries: 'utils.systemLabels.commands.refreshSeries',
+	RefreshMovie: 'utils.systemLabels.commands.refreshMovie',
+	RefreshMetadata: 'utils.systemLabels.commands.refreshMetadata',
+	RescanSeries: 'utils.systemLabels.commands.rescanSeries',
+	RescanMovie: 'utils.systemLabels.commands.rescanMovie',
+	RenameSeries: 'utils.systemLabels.commands.renameSeries',
+	RenameMovie: 'utils.systemLabels.commands.renameMovie',
+	MoveSeries: 'utils.systemLabels.commands.moveSeries',
+	MoveMovie: 'utils.systemLabels.commands.moveMovie',
+	SeriesSearch: 'utils.systemLabels.commands.seriesSearch',
+	SeasonSearch: 'utils.systemLabels.commands.seasonSearch',
+	EpisodeSearch: 'utils.systemLabels.commands.episodeSearch',
+	MovieSearch: 'utils.systemLabels.commands.movieSearch',
+	MissingSearch: 'utils.systemLabels.commands.missingSearch',
+	CutoffUnmetSearch: 'utils.systemLabels.commands.cutoffUnmetSearch',
+	RssSync: 'utils.systemLabels.commands.rssSync',
+	DownloadMonitor: 'utils.systemLabels.commands.downloadMonitor',
+	ProcessPendingReleases: 'utils.systemLabels.commands.processPendingReleases',
+	ImportListSync: 'utils.systemLabels.commands.importListSync',
+	Backup: 'utils.systemLabels.commands.backup',
+	HealthCheck: 'utils.systemLabels.commands.healthCheck',
+	IndexerDefinitionSync: 'utils.systemLabels.commands.indexerDefinitionSync',
+	RecycleBinCleanup: 'utils.systemLabels.commands.recycleBinCleanup',
+	CheckForUpdate: 'utils.systemLabels.commands.checkForUpdate',
+	ClearBlocklist: 'utils.systemLabels.commands.clearBlocklist',
+	CommandCleanup: 'utils.systemLabels.commands.commandCleanup',
 }
 
 /** Sentence-case label for a command or scheduled task registry name. */
@@ -48,11 +48,11 @@ export function commandLabel(name: string): string {
 }
 
 const COMMAND_STATUS_LABELS: Record<string, string> = {
-	QUEUED: 'Queued',
-	RUNNING: 'Running',
-	COMPLETED: 'Completed',
-	FAILED: 'Failed',
-	CANCELLED: 'Cancelled',
+	QUEUED: 'utils.systemLabels.commandStatus.queued',
+	RUNNING: 'utils.systemLabels.commandStatus.running',
+	COMPLETED: 'utils.systemLabels.commandStatus.completed',
+	FAILED: 'utils.systemLabels.commandStatus.failed',
+	CANCELLED: 'utils.systemLabels.commandStatus.cancelled',
 }
 
 export function commandStatusLabel(status: string): string {
@@ -72,9 +72,9 @@ export function commandStatusTone(status: string): SBadgeTone {
 }
 
 const COMMAND_TRIGGER_LABELS: Record<string, string> = {
-	MANUAL: 'Manual',
-	SCHEDULED: 'Scheduled',
-	SYSTEM: 'System',
+	MANUAL: 'utils.systemLabels.commandTrigger.manual',
+	SCHEDULED: 'utils.systemLabels.commandTrigger.scheduled',
+	SYSTEM: 'utils.systemLabels.commandTrigger.system',
 }
 
 export function commandTriggerLabel(trigger: string): string {
@@ -82,10 +82,10 @@ export function commandTriggerLabel(trigger: string): string {
 }
 
 const HEALTH_TYPE_LABELS: Record<string, string> = {
-	OK: 'OK',
-	NOTICE: 'Notice',
-	WARNING: 'Warning',
-	ERROR: 'Error',
+	OK: 'utils.systemLabels.healthType.ok',
+	NOTICE: 'utils.systemLabels.healthType.notice',
+	WARNING: 'utils.systemLabels.healthType.warning',
+	ERROR: 'utils.systemLabels.healthType.error',
 }
 
 export function healthTypeLabel(type: string): string {
@@ -112,6 +112,19 @@ const LOG_LEVEL_TONES: Record<string, SBadgeTone> = {
 	Fatal: 'danger',
 }
 
+const LOG_LEVEL_LABELS: Record<string, string> = {
+	Verbose: 'utils.systemLabels.logLevel.verbose',
+	Debug: 'utils.systemLabels.logLevel.debug',
+	Information: 'utils.systemLabels.logLevel.information',
+	Warning: 'utils.systemLabels.logLevel.warning',
+	Error: 'utils.systemLabels.logLevel.error',
+	Fatal: 'utils.systemLabels.logLevel.fatal',
+}
+
+export function logLevelLabel(level: string): string {
+	return LOG_LEVEL_LABELS[level] ?? level
+}
+
 export function logLevelTone(level: string): SBadgeTone {
 	return LOG_LEVEL_TONES[level] ?? 'neutral'
 }
@@ -122,10 +135,10 @@ export const LOG_LEVELS = ['Verbose', 'Debug', 'Information', 'Warning', 'Error'
 /** Backup file names end in `_MANUAL.zip` or `_SCHEDULED.zip` (see BackupService.CreateAsync). */
 export function backupKindLabel(name: string): string {
 	if (name.endsWith('_MANUAL.zip')) {
-		return 'Manual'
+		return 'utils.systemLabels.backupKind.manual'
 	}
 	if (name.endsWith('_SCHEDULED.zip')) {
-		return 'Scheduled'
+		return 'utils.systemLabels.backupKind.scheduled'
 	}
-	return 'Unknown'
+	return 'utils.systemLabels.backupKind.unknown'
 }

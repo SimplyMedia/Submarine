@@ -5,6 +5,7 @@
  * indexer, client, size, progress and row actions). Owns remove/import/retry
  * against the activity store so both callers get the same behaviour for free.
  */
+import { useI18n } from 'vue-i18n'
 import { formatBytes } from '~/composables/useFormat'
 import { protocolLabel } from '~/utils/settings-labels'
 import { trackedDownloadStateLabel, trackedDownloadStateTone } from '~/utils/activity-labels'
@@ -23,17 +24,18 @@ withDefaults(defineProps<{
 const selectedIds = defineModel<number[]>('selectedIds', { default: () => [] })
 
 const activity = useActivityStore()
+const { t } = useI18n()
 const { toast } = useToast()
 
 const columns = [
 	{ key: 'select', label: '' },
-	{ key: 'title', label: 'Title' },
-	{ key: 'status', label: 'Status' },
-	{ key: 'protocol', label: 'Protocol' },
-	{ key: 'indexer', label: 'Indexer' },
-	{ key: 'client', label: 'Client' },
-	{ key: 'size', label: 'Size', align: 'right' as const },
-	{ key: 'progress', label: 'Progress' },
+	{ key: 'title', label: t('components.shared.QueueTable.title') },
+	{ key: 'status', label: t('components.shared.QueueTable.status') },
+	{ key: 'protocol', label: t('components.shared.QueueTable.protocol') },
+	{ key: 'indexer', label: t('components.shared.QueueTable.indexer') },
+	{ key: 'client', label: t('components.shared.QueueTable.client') },
+	{ key: 'size', label: t('components.shared.QueueTable.size'), align: 'right' as const },
+	{ key: 'progress', label: t('components.shared.QueueTable.progress') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -116,7 +118,7 @@ async function confirmRemove() {
 		removeTarget.value = null
 	}
 	catch (error) {
-		toast({ title: 'Could not remove queue item', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('components.shared.QueueTable.couldNotRemove'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		removing.value = false
@@ -127,10 +129,10 @@ async function importNow(item: QueueItem) {
 	actionBusyId.value = item.id
 	try {
 		await activity.importNow(item.id)
-		toast({ title: `Importing "${item.title}"`, tone: 'ok' })
+		toast({ title: t('components.shared.QueueTable.importing', { title: item.title }), tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Could not start import', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('components.shared.QueueTable.couldNotStartImport'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		actionBusyId.value = null
@@ -141,10 +143,10 @@ async function retry(item: QueueItem) {
 	actionBusyId.value = item.id
 	try {
 		await activity.retry(item.id)
-		toast({ title: `Retrying "${item.title}"`, tone: 'ok' })
+		toast({ title: t('components.shared.QueueTable.retrying', { title: item.title }), tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Could not retry', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('components.shared.QueueTable.couldNotRetry'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		actionBusyId.value = null
@@ -159,7 +161,7 @@ async function retry(item: QueueItem) {
 	>
 		<SEmptyState
 			v-if="items.length === 0"
-			message="Nothing downloading right now"
+			:message="t('components.shared.QueueTable.nothingDownloading')"
 		/>
 		<ul
 			v-else
@@ -182,7 +184,7 @@ async function retry(item: QueueItem) {
 				>{{ item.title }}</span>
 				<SProgress
 					:value="progressPercent(item)"
-					:label="`${item.title} download progress`"
+					:label="t('components.shared.QueueTable.downloadProgress', { title: item.title })"
 				/>
 			</li>
 		</ul>
@@ -196,14 +198,14 @@ async function retry(item: QueueItem) {
 		>
 			<template #empty>
 				<SEmptyState
-					message="Nothing in the queue right now."
+					:message="$t('components.shared.QueueTable.nothingInQueue')"
 					icon="lucide:download"
 				/>
 			</template>
 			<template #cell-select="{ row }">
 				<SCheckbox
 					:model-value="selectedIds.includes(row.id)"
-					:aria-label="`Select ${row.title}`"
+					:aria-label="t('components.shared.QueueTable.selectItem', { title: row.title })"
 					@update:model-value="value => toggleRow(row.id, value)"
 				/>
 			</template>
@@ -234,7 +236,7 @@ async function retry(item: QueueItem) {
 							class="queue-status-trigger"
 						>
 							<SBadge :tone="trackedDownloadStateTone(row.trackedDownloadState)">
-								{{ trackedDownloadStateLabel(row.trackedDownloadState) }}
+								{{ t(trackedDownloadStateLabel(row.trackedDownloadState)) }}
 							</SBadge>
 							<Icon
 								name="lucide:info"
@@ -255,18 +257,18 @@ async function retry(item: QueueItem) {
 					v-else
 					:tone="trackedDownloadStateTone(row.trackedDownloadState)"
 				>
-					{{ trackedDownloadStateLabel(row.trackedDownloadState) }}
+					{{ t(trackedDownloadStateLabel(row.trackedDownloadState)) }}
 				</SBadge>
 			</template>
 			<template #cell-protocol="{ row }">
-				{{ protocolLabel(row.protocol) }}
+				{{ t(protocolLabel(row.protocol)) }}
 			</template>
 			<template #cell-indexer="{ row }">
 				<span v-if="row.indexer">{{ row.indexer }}</span>
 				<span
 					v-else
 					class="s-cell-muted"
-				>None</span>
+				>{{ $t('components.shared.QueueTable.none') }}</span>
 			</template>
 			<template #cell-client="{ row }">
 				{{ row.downloadClient }}
@@ -277,22 +279,22 @@ async function retry(item: QueueItem) {
 			<template #cell-progress="{ row }">
 				<SProgress
 					:value="progressPercent(row)"
-					:label="`${row.title} download progress`"
+					:label="t('components.shared.QueueTable.downloadProgress', { title: row.title })"
 				/>
-				<span class="queue-progress-remaining">{{ formatBytes(row.sizeLeft) }} left</span>
+				<span class="queue-progress-remaining">{{ formatBytes(row.sizeLeft) }} {{ $t('components.shared.QueueTable.left') }}</span>
 			</template>
 			<template #cell-actions="{ row }">
 				<SDropdownMenu
 					:items="[
-						{ label: 'Import now', icon: 'lucide:folder-input', onSelect: () => importNow(row) },
-						...(canImportManually(row) ? [{ label: 'Import manually', icon: 'lucide:folder-open', onSelect: () => importManually(row) }] : []),
-						...(isRetryable(row) ? [{ label: 'Retry', icon: 'lucide:refresh-cw', onSelect: () => retry(row) }] : []),
-						{ label: 'Remove', icon: 'lucide:trash-2', danger: true, onSelect: () => openRemove(row) },
+						{ label: t('components.shared.QueueTable.importNow'), icon: 'lucide:folder-input', onSelect: () => importNow(row) },
+						...(canImportManually(row) ? [{ label: t('components.shared.QueueTable.importManually'), icon: 'lucide:folder-open', onSelect: () => importManually(row) }] : []),
+						...(isRetryable(row) ? [{ label: t('components.shared.QueueTable.retry'), icon: 'lucide:refresh-cw', onSelect: () => retry(row) }] : []),
+						{ label: t('components.shared.QueueTable.remove'), icon: 'lucide:trash-2', danger: true, onSelect: () => openRemove(row) },
 					]"
 				>
 					<template #trigger>
 						<SIconButton
-							label="Queue item actions"
+							:label="$t('components.shared.QueueTable.itemActions')"
 							:disabled="actionBusyId === row.id"
 						>
 							<Icon
@@ -307,23 +309,23 @@ async function retry(item: QueueItem) {
 
 		<SDialog
 			v-model="removeTargetOpen"
-			title="Remove from queue"
+			:title="$t('components.shared.QueueTable.removeFromQueue')"
 		>
 			<p v-if="removeTarget">
-				Remove "{{ removeTarget.title }}" from the queue?
+				{{ $t('components.shared.QueueTable.confirmRemove', { title: removeTarget.title }) }}
 			</p>
 			<div class="queue-remove-options">
 				<SCheckbox
 					v-model="removeFromClient"
-					label="Remove from the download client"
+					:label="$t('components.shared.QueueTable.removeFromDownloadClient')"
 				/>
 				<SCheckbox
 					v-model="blocklist"
-					label="Add to blocklist"
+					:label="$t('components.shared.QueueTable.addToBlocklist')"
 				/>
 				<SCheckbox
 					v-model="skipRedownload"
-					label="Skip redownload"
+					:label="$t('components.shared.QueueTable.skipRedownload')"
 				/>
 			</div>
 			<template #footer>
@@ -332,14 +334,14 @@ async function retry(item: QueueItem) {
 					:disabled="removing"
 					@click="removeTarget = null"
 				>
-					Cancel
+					{{ $t('components.shared.QueueTable.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="removing"
 					@click="confirmRemove"
 				>
-					Remove
+					{{ $t('components.shared.QueueTable.remove') }}
 				</SButton>
 			</template>
 		</SDialog>

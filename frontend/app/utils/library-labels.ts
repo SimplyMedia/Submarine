@@ -3,6 +3,7 @@
  * member names; these maps are the only place that turns them into copy.
  */
 import type { components } from '~/types/api'
+import { i18n } from '~/i18n'
 
 type SeriesStatus = components['schemas']['SeriesStatus']
 type SeriesType = components['schemas']['SeriesType']
@@ -16,67 +17,67 @@ type HistoryEventType = NonNullable<components['schemas']['HistoryEventType']>
 type QualityModel = components['schemas']['QualityModel']
 
 const seriesStatusLabels: Record<SeriesStatus, string> = {
-	CONTINUING: 'Continuing',
-	ENDED: 'Ended',
-	UPCOMING: 'Upcoming',
-	UNKNOWN: 'Unknown',
+	CONTINUING: 'utils.libraryLabels.seriesStatus.continuing',
+	ENDED: 'utils.libraryLabels.seriesStatus.ended',
+	UPCOMING: 'utils.libraryLabels.seriesStatus.upcoming',
+	UNKNOWN: 'utils.libraryLabels.seriesStatus.unknown',
 }
 
 const seriesTypeLabels: Record<SeriesType, string> = {
-	STANDARD: 'Standard',
-	DAILY: 'Daily',
-	ANIME: 'Anime',
+	STANDARD: 'utils.libraryLabels.seriesType.standard',
+	DAILY: 'utils.libraryLabels.seriesType.daily',
+	ANIME: 'utils.libraryLabels.seriesType.anime',
 }
 
 const seriesNumberingLabels: Record<SeriesNumbering, string> = {
-	AIRED: 'Aired order',
-	DVD: 'DVD order',
-	ABSOLUTE: 'Absolute order',
+	AIRED: 'utils.libraryLabels.seriesNumbering.aired',
+	DVD: 'utils.libraryLabels.seriesNumbering.dvd',
+	ABSOLUTE: 'utils.libraryLabels.seriesNumbering.absolute',
 }
 
 const monitorNewItemsLabels: Record<MonitorNewItems, string> = {
-	ALL: 'All new seasons',
-	NONE: 'No new seasons',
+	ALL: 'utils.libraryLabels.monitorNewItems.all',
+	NONE: 'utils.libraryLabels.monitorNewItems.none',
 }
 
 const movieStatusLabels: Record<MovieStatus, string> = {
-	ANNOUNCED: 'Announced',
-	IN_CINEMAS: 'In cinemas',
-	RELEASED: 'Released',
+	ANNOUNCED: 'utils.libraryLabels.movieStatus.announced',
+	IN_CINEMAS: 'utils.libraryLabels.movieStatus.inCinemas',
+	RELEASED: 'utils.libraryLabels.movieStatus.released',
 }
 
 const minimumAvailabilityLabels: Record<MinimumAvailability, string> = {
-	ANNOUNCED: 'Announced',
-	IN_CINEMAS: 'In cinemas',
-	RELEASED: 'Released',
+	ANNOUNCED: 'utils.libraryLabels.minimumAvailability.announced',
+	IN_CINEMAS: 'utils.libraryLabels.minimumAvailability.inCinemas',
+	RELEASED: 'utils.libraryLabels.minimumAvailability.released',
 }
 
 const addMonitorOptionLabels: Record<AddMonitorOption, string> = {
-	ALL: 'All episodes',
-	FUTURE: 'Future episodes',
-	MISSING: 'Missing episodes',
-	EXISTING: 'Existing episodes',
-	PILOT: 'Pilot only',
-	FIRST_SEASON: 'First season',
-	LATEST_SEASON: 'Latest season',
-	NONE: 'None',
-	RECENT: 'Recent and future episodes',
-	SKIP: 'Skip (leave unchanged)',
+	ALL: 'utils.libraryLabels.addMonitorOption.all',
+	FUTURE: 'utils.libraryLabels.addMonitorOption.future',
+	MISSING: 'utils.libraryLabels.addMonitorOption.missing',
+	EXISTING: 'utils.libraryLabels.addMonitorOption.existing',
+	PILOT: 'utils.libraryLabels.addMonitorOption.pilot',
+	FIRST_SEASON: 'utils.libraryLabels.addMonitorOption.firstSeason',
+	LATEST_SEASON: 'utils.libraryLabels.addMonitorOption.latestSeason',
+	NONE: 'utils.libraryLabels.addMonitorOption.none',
+	RECENT: 'utils.libraryLabels.addMonitorOption.recent',
+	SKIP: 'utils.libraryLabels.addMonitorOption.skip',
 }
 
 const metadataProviderLabels: Record<MetadataProvider, string> = {
-	TVDB: 'TheTVDB',
-	TMDB: 'TMDB',
+	TVDB: 'utils.libraryLabels.metadataProvider.tvdb',
+	TMDB: 'utils.libraryLabels.metadataProvider.tmdb',
 }
 
 const historyEventTypeLabels: Record<HistoryEventType, string> = {
-	GRABBED: 'Grabbed',
-	IMPORTED: 'Imported',
-	RENAMED: 'Renamed',
-	DELETED: 'Deleted',
-	FAILED: 'Failed',
-	IGNORED: 'Ignored',
-	UPGRADED: 'Upgraded',
+	GRABBED: 'utils.libraryLabels.historyEventType.grabbed',
+	IMPORTED: 'utils.libraryLabels.historyEventType.imported',
+	RENAMED: 'utils.libraryLabels.historyEventType.renamed',
+	DELETED: 'utils.libraryLabels.historyEventType.deleted',
+	FAILED: 'utils.libraryLabels.historyEventType.failed',
+	IGNORED: 'utils.libraryLabels.historyEventType.ignored',
+	UPGRADED: 'utils.libraryLabels.historyEventType.upgraded',
 }
 
 export function seriesStatusLabel(value: SeriesStatus): string {
@@ -135,18 +136,18 @@ export const addMonitorOptionOptions: Array<{ value: AddMonitorOption, label: st
 /** Display name for a file's quality, e.g. "WebDL-1080p Proper". */
 export function qualityLabel(quality: QualityModel | null | undefined): string {
 	if (!quality) {
-		return 'Unknown'
+		return i18n.global.t('utils.libraryLabels.quality.unknown')
 	}
-	const name = quality.resolution?.name ?? 'Unknown'
+	const name = quality.resolution?.name ?? i18n.global.t('utils.libraryLabels.quality.unknown')
 	const suffixes: string[] = []
 	if (quality.revision?.isRepack) {
-		suffixes.push('Repack')
+		suffixes.push(i18n.global.t('utils.libraryLabels.quality.repack'))
 	}
 	if (quality.revision?.isProper) {
-		suffixes.push('Proper')
+		suffixes.push(i18n.global.t('utils.libraryLabels.quality.proper'))
 	}
 	if (quality.revision?.isReal) {
-		suffixes.push('Real')
+		suffixes.push(i18n.global.t('utils.libraryLabels.quality.real'))
 	}
 	return suffixes.length > 0 ? `${name} ${suffixes.join(' ')}` : name
 }

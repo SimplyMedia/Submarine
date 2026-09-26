@@ -1,3 +1,4 @@
+import { useI18n } from 'vue-i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import type { components } from '~/types/api'
 
@@ -9,8 +10,9 @@ export type WantedItem = components['schemas']['WantedItemDto']
  * search actions (per selection and search-all).
  */
 export function useWantedTable(bucket: 'missing' | 'cutoff') {
+	const { t } = useI18n()
 	const { toast } = useToast()
-	const bucketLabel = bucket === 'missing' ? 'missing' : 'cut off'
+	const bucketLabel = t(bucket === 'missing' ? 'utils.wantedTable.missing' : 'utils.wantedTable.cutoff', bucket === 'missing' ? 'missing' : 'cut off')
 	const listPath = bucket === 'missing' ? '/api/v1/wanted/missing' as const : '/api/v1/wanted/cutoff' as const
 	const searchAllPath = bucket === 'missing' ? '/api/v1/wanted/missing/search' as const : '/api/v1/wanted/cutoff/search' as const
 
@@ -65,7 +67,7 @@ export function useWantedTable(bucket: 'missing' | 'cutoff') {
 			totalCount.value = result.data.totalCount
 		}
 		else {
-			toast({ title: `Could not load ${bucketLabel} items`, tone: 'danger' })
+			toast({ title: t('utils.wantedTable.couldNotLoad', { bucket: bucketLabel }, 'Could not load {bucket} items'), tone: 'danger' })
 		}
 		loading.value = false
 	}
@@ -99,11 +101,11 @@ export function useWantedTable(bucket: 'missing' | 'cutoff') {
 			if (movieIds.length > 0) {
 				await enqueue('MovieSearch', { movieIds })
 			}
-			toast({ title: 'Search started', tone: 'ok' })
+			toast({ title: t('utils.wantedTable.searchStarted', 'Search started'), tone: 'ok' })
 			selected.value = []
 		}
 		catch {
-			toast({ title: 'Could not start the search', tone: 'danger' })
+			toast({ title: t('utils.wantedTable.couldNotStartSearch', 'Could not start the search'), tone: 'danger' })
 		}
 		finally {
 			searching.value = false
@@ -118,10 +120,10 @@ export function useWantedTable(bucket: 'missing' | 'cutoff') {
 			if (!result.data) {
 				throw toApiError(result.error, result.response)
 			}
-			toast({ title: `Searching all ${bucketLabel} items`, tone: 'ok' })
+			toast({ title: t('utils.wantedTable.searchingAll', { bucket: bucketLabel }, 'Searching all {bucket} items'), tone: 'ok' })
 		}
 		catch {
-			toast({ title: 'Could not start the search', tone: 'danger' })
+			toast({ title: t('utils.wantedTable.couldNotStartSearch', 'Could not start the search'), tone: 'danger' })
 		}
 		finally {
 			searchingAll.value = false

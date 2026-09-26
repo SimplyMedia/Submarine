@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import { useCommandsStore } from '~/stores/commands'
 import { navChildren } from '~/navigation'
@@ -7,7 +8,8 @@ import type { components } from '~/types/api'
 type IndexerDefinitionDto = components['schemas']['IndexerDefinitionDto']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Definitions' })
+const { t } = useI18n()
+useHead({ title: t('pages.indexers.definitions.title') })
 
 const api = useApi()
 const commandsStore = useCommandsStore()
@@ -25,7 +27,7 @@ async function load() {
 	loadError.value = ''
 	const result = await api.GET('/api/v1/indexer-definitions')
 	if (!result.data) {
-		loadError.value = 'Could not load definitions. Check your connection and try again.'
+		loadError.value = t('pages.indexers.definitions.loadFailed')
 	}
 	definitions.value = result.data ?? []
 	loading.value = false
@@ -50,10 +52,10 @@ async function sync() {
 		}
 		commandsStore.upsert(result.data)
 		syncCommandId.value = result.data.id ?? null
-		toast({ title: 'Syncing definitions', tone: 'ok' })
+		toast({ title: t('pages.indexers.definitions.syncing'), tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Could not sync definitions', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.definitions.syncFailed'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		syncing.value = false
@@ -67,11 +69,11 @@ watch(() => syncCommand.value?.status, (status) => {
 })
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'type', label: 'Type' },
-	{ key: 'language', label: 'Language' },
-	{ key: 'protocol', label: 'Protocol' },
-	{ key: 'installed', label: 'Status' },
+	{ key: 'name', label: t('pages.indexers.definitions.name') },
+	{ key: 'type', label: t('pages.indexers.definitions.type') },
+	{ key: 'language', label: t('pages.indexers.definitions.language') },
+	{ key: 'protocol', label: t('pages.indexers.definitions.protocol') },
+	{ key: 'installed', label: t('pages.indexers.definitions.status') },
 ]
 
 onMounted(() => {
@@ -81,19 +83,19 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Definitions">
+		<SPageHeader :title="t('pages.indexers.definitions.title')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					:loading="syncing"
 					@click="sync"
 				>
-					Sync definitions
+					{{ t('pages.indexers.definitions.sync') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 		<SubNav
-			label="Indexers"
+			:label="t('pages.indexers.definitions.indexersNav')"
 			:items="navChildren('indexers')"
 		/>
 
@@ -106,7 +108,7 @@ onMounted(() => {
 		<SInput
 			v-model="search"
 			type="search"
-			placeholder="Search definitions"
+			:placeholder="t('pages.indexers.definitions.searchPlaceholder')"
 			class="definitions-search"
 		/>
 
@@ -117,7 +119,7 @@ onMounted(() => {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ t('pages.indexers.definitions.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -129,7 +131,7 @@ onMounted(() => {
 			:row-key="(row) => row.id"
 		>
 			<template #empty>
-				<SEmptyState message="No definitions found. Sync to pull the latest set." />
+				<SEmptyState :message="t('pages.indexers.definitions.emptyState')" />
 			</template>
 			<template #cell-type="{ row }">
 				<SBadge :tone="row.type === 'public' ? 'ok' : 'neutral'">
@@ -141,7 +143,7 @@ onMounted(() => {
 			</template>
 			<template #cell-installed="{ row }">
 				<SBadge :tone="row.installed ? 'info' : 'neutral'">
-					{{ row.installed ? 'In use' : 'Available' }}
+					{{ t(row.installed ? 'pages.indexers.definitions.inUse' : 'pages.indexers.definitions.available') }}
 				</SBadge>
 			</template>
 		</STable>

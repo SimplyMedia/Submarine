@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useReferenceStore } from '~/stores/reference'
 import { languageLabel, languageOptions } from '~/utils/settings-labels'
@@ -10,6 +11,7 @@ type Language = components['schemas']['Language']
 const api = useApi()
 const reference = useReferenceStore()
 const { toast } = useToast()
+const { t } = useI18n()
 
 const loading = ref(true)
 const loadError = computed(() => reference.loadError)
@@ -45,7 +47,9 @@ async function load() {
 
 void load()
 
-const availableLanguages = computed(() => languageOptions.filter(option => !languages.value.includes(option.value as Language)))
+const availableLanguages = computed(() => languageOptions
+	.filter(option => !languages.value.includes(option.value as Language))
+	.map(option => ({ ...option, label: t(option.label) })))
 
 function addSelectedLanguage() {
 	if (!addLanguage.value) {
@@ -81,7 +85,7 @@ function openEdit(profile: LanguageProfileResource) {
 async function save() {
 	nameError.value = ''
 	if (languages.value.length === 0) {
-		nameError.value = 'Add at least one language'
+		nameError.value = t('components.settings.LanguageProfilesPanel.addAtLeastOneLanguage')
 		return
 	}
 	saving.value = true
@@ -98,7 +102,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('components.settings.LanguageProfilesPanel.saved'), tone: 'ok' })
 		editorOpen.value = false
 		await reference.load(true)
 	}
@@ -128,16 +132,16 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Language profile deleted', tone: 'ok' })
+	toast({ title: t('components.settings.LanguageProfilesPanel.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await reference.load(true)
 }
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'languages', label: 'Languages' },
-	{ key: 'cutoff', label: 'Cutoff' },
+	{ key: 'name', label: t('components.settings.LanguageProfilesPanel.name') },
+	{ key: 'languages', label: t('components.settings.LanguageProfilesPanel.languages') },
+	{ key: 'cutoff', label: t('components.settings.LanguageProfilesPanel.cutoff') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 </script>
@@ -149,7 +153,7 @@ const columns = [
 				variant="primary"
 				@click="openCreate"
 			>
-				Add language profile
+				{{ $t('components.settings.LanguageProfilesPanel.addLanguageProfile') }}
 			</SButton>
 		</div>
 
@@ -160,7 +164,7 @@ const columns = [
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ $t('components.settings.LanguageProfilesPanel.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -172,20 +176,20 @@ const columns = [
 			:row-key="(row) => row.id"
 		>
 			<template #cell-languages="{ row }">
-				{{ row.languages.map(l => languageLabel(l)).join(', ') }}
+				{{ row.languages.map(l => t(languageLabel(l))).join(', ') }}
 			</template>
 			<template #cell-cutoff="{ row }">
-				{{ languageLabel(row.cutoff) }}
+				{{ t(languageLabel(row.cutoff)) }}
 			</template>
 			<template #cell-actions="{ row }">
 				<SDropdownMenu
 					:items="[
-						{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-						{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
+						{ label: t('components.settings.LanguageProfilesPanel.edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+						{ label: t('components.settings.LanguageProfilesPanel.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
 					]"
 				>
 					<template #trigger>
-						<SIconButton label="Profile actions">
+						<SIconButton :label="$t('components.settings.LanguageProfilesPanel.profileActions')">
 							<Icon
 								name="lucide:more-horizontal"
 								aria-hidden="true"
@@ -195,13 +199,13 @@ const columns = [
 				</SDropdownMenu>
 			</template>
 			<template #empty>
-				<SEmptyState message="No language profiles yet. Add one to control which languages are wanted.">
+				<SEmptyState :message="$t('components.settings.LanguageProfilesPanel.emptyMessage')">
 					<template #action>
 						<SButton
 							variant="primary"
 							@click="openCreate"
 						>
-							Add language profile
+							{{ $t('components.settings.LanguageProfilesPanel.addLanguageProfile') }}
 						</SButton>
 					</template>
 				</SEmptyState>
@@ -210,10 +214,10 @@ const columns = [
 
 		<SDialog
 			v-model="editorOpen"
-			:title="editingId === null ? 'Add language profile' : 'Edit language profile'"
+			:title="editingId === null ? $t('components.settings.LanguageProfilesPanel.addLanguageProfile') : $t('components.settings.LanguageProfilesPanel.editLanguageProfile')"
 		>
 			<SField
-				label="Name"
+				:label="$t('components.settings.LanguageProfilesPanel.name')"
 				:error="nameError"
 				control-id="lang-profile-name"
 			>
@@ -224,50 +228,50 @@ const columns = [
 				/>
 			</SField>
 
-			<SField label="Add a language">
+			<SField :label="$t('components.settings.LanguageProfilesPanel.addLanguage')">
 				<div class="add-row">
 					<SSelect
 						v-model="addLanguage"
 						:options="availableLanguages"
-						placeholder="Choose a language"
+						:placeholder="$t('components.settings.LanguageProfilesPanel.chooseLanguage')"
 					/>
 					<SButton
 						variant="secondary"
 						:disabled="!addLanguage"
 						@click="addSelectedLanguage"
 					>
-						Add
+						{{ $t('components.settings.LanguageProfilesPanel.add') }}
 					</SButton>
 				</div>
 			</SField>
 
-			<SField label="Wanted languages, best first">
+			<SField :label="$t('components.settings.LanguageProfilesPanel.wantedLanguages')">
 				<ReorderList
 					v-model="languages"
 					removable
 					:item-key="(item) => item"
 				>
 					<template #default="{ item }">
-						{{ languageLabel(item) }}
+						{{ t(languageLabel(item)) }}
 					</template>
 				</ReorderList>
 			</SField>
 
 			<SField
-				label="Cutoff"
-				hint="Upgrades stop once this language is reached"
+				:label="$t('components.settings.LanguageProfilesPanel.cutoff')"
+				:hint="$t('components.settings.LanguageProfilesPanel.cutoffHint')"
 				control-id="lang-cutoff"
 			>
 				<SSelect
 					v-model="cutoff"
 					control-id="lang-cutoff"
-					:options="languages.map(l => ({ value: l, label: languageLabel(l) }))"
+					:options="languages.map(l => ({ value: l, label: t(languageLabel(l)) }))"
 				/>
 			</SField>
 
 			<SSwitch
 				v-model="upgradeAllowed"
-				label="Allow upgrades beyond the cutoff"
+				:label="$t('components.settings.LanguageProfilesPanel.allowUpgrades')"
 			/>
 
 			<template #footer>
@@ -275,24 +279,24 @@ const columns = [
 					variant="secondary"
 					@click="editorOpen = false"
 				>
-					Cancel
+					{{ $t('components.settings.LanguageProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					Save changes
+					{{ $t('components.settings.LanguageProfilesPanel.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete language profile"
+			:title="$t('components.settings.LanguageProfilesPanel.deleteTitle')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ $t('components.settings.LanguageProfilesPanel.confirmDelete', { name: deleteTarget.name }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -307,14 +311,14 @@ const columns = [
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ $t('components.settings.LanguageProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete
+					{{ $t('components.settings.LanguageProfilesPanel.delete') }}
 				</SButton>
 			</template>
 		</SDialog>

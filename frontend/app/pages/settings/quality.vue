@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
 import type { components } from '~/types/api'
@@ -9,7 +10,8 @@ type QualityDefinitionImportResult = components['schemas']['QualityDefinitionImp
 type SizeField = 'minSizeMbPerMinute' | 'maxSizeMbPerMinute' | 'preferredSizeMbPerMinute'
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Quality' })
+const { t } = useI18n()
+useHead({ title: t('pages.settings.quality.title') })
 
 const api = useApi()
 const { toast } = useToast()
@@ -27,7 +29,7 @@ async function load() {
 		dirty.markSaved(result.data)
 	}
 	else {
-		loadError.value = 'Could not load quality definitions. Check your connection and try again.'
+		loadError.value = t('pages.settings.quality.loadFailed')
 	}
 }
 
@@ -52,7 +54,7 @@ async function save() {
 	}))
 	const result = await api.PUT('/api/v1/quality-definitions', { body })
 	if (!result.response.ok) {
-		toast({ title: 'Could not save', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.quality.saveFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		saving.value = false
 		return
 	}
@@ -61,14 +63,14 @@ async function save() {
 	if (refreshed.data) {
 		dirty.markSaved(refreshed.data)
 	}
-	toast({ title: 'Saved', tone: 'ok' })
+	toast({ title: t('pages.settings.quality.saved'), tone: 'ok' })
 }
 
 const columns = [
-	{ key: 'title', label: 'Title' },
-	{ key: 'minSizeMbPerMinute', label: 'Min (MB/min)', align: 'right' as const },
-	{ key: 'preferredSizeMbPerMinute', label: 'Preferred (MB/min)', align: 'right' as const },
-	{ key: 'maxSizeMbPerMinute', label: 'Max (MB/min)', align: 'right' as const },
+	{ key: 'title', label: t('pages.settings.quality.titleColumn') },
+	{ key: 'minSizeMbPerMinute', label: t('pages.settings.quality.minimumSize'), align: 'right' as const },
+	{ key: 'preferredSizeMbPerMinute', label: t('pages.settings.quality.preferredSize'), align: 'right' as const },
+	{ key: 'maxSizeMbPerMinute', label: t('pages.settings.quality.maximumSize'), align: 'right' as const },
 ]
 
 // --- Import ------------------------------------------------------------------
@@ -90,7 +92,7 @@ async function runImport() {
 		parsed = JSON.parse(importText.value)
 	}
 	catch {
-		importError.value = 'That is not valid JSON.'
+		importError.value = t('pages.settings.quality.invalidJson')
 		return
 	}
 	importing.value = true
@@ -102,8 +104,8 @@ async function runImport() {
 	}
 	const imported = result.data as QualityDefinitionImportResult
 	toast({
-		title: `Updated ${imported.updated.length} quality definition${imported.updated.length === 1 ? '' : 's'}`,
-		description: imported.skipped.length > 0 ? `Skipped unrecognised: ${imported.skipped.join(', ')}` : undefined,
+		title: imported.updated.length === 1 ? t('pages.settings.quality.updatedOne', { count: imported.updated.length }) : t('pages.settings.quality.updatedMany', { count: imported.updated.length }),
+		description: imported.skipped.length > 0 ? t('pages.settings.quality.skippedUnrecognised', { values: imported.skipped.join(', ') }) : undefined,
 		tone: 'ok',
 	})
 	importOpen.value = false
@@ -115,13 +117,13 @@ async function runImport() {
 
 <template>
 	<div>
-		<SPageHeader title="Quality">
+		<SPageHeader :title="t('pages.settings.quality.title')">
 			<template #actions>
 				<SButton
 					variant="secondary"
 					@click="openImport"
 				>
-					Import
+					{{ t('pages.settings.quality.import') }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -133,14 +135,14 @@ async function runImport() {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ t('pages.settings.quality.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
 		<SSpinner v-else-if="loading" />
 
 		<template v-else>
-			<SSection title="Quality definitions">
+			<SSection :title="t('pages.settings.quality.definitions')">
 				<STable
 					:columns="columns"
 					:rows="draft"
@@ -171,7 +173,7 @@ async function runImport() {
 						>
 					</template>
 					<template #empty>
-						<SEmptyState message="Quality definitions load automatically once the backend seeds them." />
+						<SEmptyState :message="t('pages.settings.quality.emptyState')" />
 					</template>
 				</STable>
 			</SSection>
@@ -186,18 +188,18 @@ async function runImport() {
 
 		<SDialog
 			v-model="importOpen"
-			title="Import quality sizes"
-			description="Paste a TRaSH Guides quality-size JSON document, or an array of quality entries."
+			:title="t('pages.settings.quality.importDialogTitle')"
+			:description="t('pages.settings.quality.importDialogDescription')"
 		>
 			<SField
-				label="TRaSH JSON"
+				:label="t('pages.settings.quality.trashJson')"
 				:error="importError"
 			>
 				<STextarea
 					v-model="importText"
 					:rows="10"
 					:invalid="!!importError"
-					placeholder="{&quot;qualities&quot;: [...] }"
+					:placeholder="t('pages.settings.quality.jsonPlaceholder')"
 				/>
 			</SField>
 			<template #footer>
@@ -205,14 +207,14 @@ async function runImport() {
 					variant="secondary"
 					@click="importOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.quality.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="importing"
 					@click="runImport"
 				>
-					Import
+					{{ t('pages.settings.quality.import') }}
 				</SButton>
 			</template>
 		</SDialog>

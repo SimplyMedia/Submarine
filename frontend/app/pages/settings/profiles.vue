@@ -1,23 +1,26 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Profiles' })
+const { t } = useI18n()
+useHead({ title: t('pages.settings.profiles.title') })
 
 const tab = ref('quality')
 const tabs = [
-	{ value: 'quality', label: 'Quality' },
-	{ value: 'language', label: 'Language' },
-	{ value: 'delay', label: 'Delay' },
-	{ value: 'release', label: 'Release' },
+	{ value: 'quality', label: t('pages.settings.profiles.quality') },
+	{ value: 'language', label: t('pages.settings.profiles.language') },
+	{ value: 'delay', label: t('pages.settings.profiles.delay') },
+	{ value: 'release', label: t('pages.settings.profiles.release') },
 ]
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Profiles" />
+		<SPageHeader :title="t('pages.settings.profiles.title')" />
 		<STabs
 			v-model="tab"
 			:tabs="tabs"
-			label="Profile types"
+			:label="t('pages.settings.profiles.profileTypes')"
 		>
 			<template #panel-quality>
 				<QualityProfilesPanel />
