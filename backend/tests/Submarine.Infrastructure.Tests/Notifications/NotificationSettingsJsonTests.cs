@@ -37,6 +37,7 @@ public sealed class NotificationSettingsJsonTests
 	[InlineData(NotificationType.SIMPLEPUSH, """{"key":"spk"}""")]
 	[InlineData(NotificationType.SYNOLOGY_INDEXER, """{}""")]
 	[InlineData(NotificationType.TWITTER, """{"consumerKey":"ck","consumerSecret":"cs","accessToken":"at","accessTokenSecret":"ats","directMessage":false}""")]
+	[InlineData(NotificationType.TRAKT, """{"accessToken":"at","refreshToken":"rt","expiresAt":"2030-01-01T00:00:00"}""")]
 	public void Validate_ShouldPass_WhenRequiredFieldsAreSet(NotificationType type, string json)
 	{
 		var result = NotificationSettingsJson.Validate(type, json);

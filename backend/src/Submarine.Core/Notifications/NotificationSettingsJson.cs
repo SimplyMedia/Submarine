@@ -323,6 +323,11 @@ public static class NotificationSettingsJson
 				Text("mention", "Mention", false, "Screen name to mention or message"),
 				Checkbox("directMessage", "Send as direct message", true)
 			],
+			NotificationType.TRAKT =>
+			[
+				Text("clientId", "Client id", false, "Trakt app client id, falls back to the Trakt:ClientId setting"),
+				Password("clientSecret", "Client secret", false, "Trakt app client secret, falls back to the Trakt:ClientSecret setting")
+			],
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown notification type")
 		};
 
@@ -361,6 +366,7 @@ public static class NotificationSettingsJson
 			NotificationType.SIMPLEPUSH => typeof(SimplepushSettings),
 			NotificationType.SYNOLOGY_INDEXER => typeof(SynologyIndexerSettings),
 			NotificationType.TWITTER => typeof(TwitterSettings),
+			NotificationType.TRAKT => typeof(TraktSettings),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown notification type")
 		};
 
@@ -535,6 +541,15 @@ public static class NotificationSettingsJson
 				if (s.DirectMessage)
 				{
 					Require(errors, s.Mention, "mention");
+				}
+
+				break;
+			case TraktSettings s:
+				Require(errors, s.AccessToken, "accessToken");
+				Require(errors, s.RefreshToken, "refreshToken");
+				if (s.ExpiresAt == default)
+				{
+					Add(errors, "expiresAt", "is required");
 				}
 
 				break;

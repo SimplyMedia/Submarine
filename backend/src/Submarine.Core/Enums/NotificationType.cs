@@ -81,5 +81,8 @@ public enum NotificationType
 	SYNOLOGY_INDEXER,
 
 	/// <summary>Twitter/X status update or direct message.</summary>
-	TWITTER
+	TWITTER,
+
+	/// <summary>Trakt collection sync, authenticated via OAuth device code flow.</summary>
+	TRAKT
 }

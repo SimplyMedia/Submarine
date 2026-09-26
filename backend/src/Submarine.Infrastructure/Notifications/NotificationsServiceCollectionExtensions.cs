@@ -43,7 +43,10 @@ public static class NotificationsServiceCollectionExtensions
 		services.AddSingleton<ISynologyIndexerProcess, SynologyIndexerProcess>();
 		services.AddSingleton<INotificationSender, SynologyIndexerSender>();
 		services.AddSingleton<INotificationSender, TwitterSender>();
-		services.AddSingleton<INotificationSenderFactory, NotificationSenderFactory>();
+		services.AddScoped<INotificationSender, TraktSender>();
+		services.AddSingleton<ITraktAuthService, TraktAuthService>();
+		services.AddScoped<ITraktTokenRefresher, TraktTokenRefresher>();
+		services.AddScoped<INotificationSenderFactory, NotificationSenderFactory>();
 		services.AddScoped<INotificationStatusService, NotificationStatusService>();
 		services.AddScoped<NotificationDispatcher>();
 

@@ -188,12 +188,100 @@ function openCreate() {
 	tagInput.value = ''
 	fieldErrors.value = {}
 	generalError.value = ''
+	resetTraktAuth()
 	dialogOpen.value = true
 }
 
 function selectType(type: string) {
 	selectedType.value = type
 	settingsDraft.value = defaultSettings(type)
+	resetTraktAuth()
+}
+
+type TraktAuthStatus = 'idle' | 'starting' | 'pending' | 'authorized' | 'denied' | 'expired' | 'error'
+
+const traktAuthStatus = ref<TraktAuthStatus>('idle')
+const traktUserCode = ref('')
+const traktVerificationUrl = ref('')
+const traktError = ref('')
+let traktDeviceCode = ''
+let traktPollHandle: ReturnType<typeof setTimeout> | null = null
+
+const traktConnected = computed(() => typeof settingsDraft.value.accessToken === 'string' && settingsDraft.value.accessToken.length > 0)
+
+function stopTraktPolling() {
+	if (traktPollHandle !== null) {
+		clearTimeout(traktPollHandle)
+		traktPollHandle = null
+	}
+}
+
+function resetTraktAuth() {
+	stopTraktPolling()
+	traktAuthStatus.value = 'idle'
+	traktUserCode.value = ''
+	traktVerificationUrl.value = ''
+	traktError.value = ''
+	traktDeviceCode = ''
+}
+
+onUnmounted(stopTraktPolling)
+
+function traktDraftString(key: string): string | null {
+	const value = settingsDraft.value[key]
+	return typeof value === 'string' && value.length > 0 ? value : null
+}
+
+async function startTraktAuth() {
+	traktAuthStatus.value = 'starting'
+	traktError.value = ''
+	const result = await api.POST('/api/v1/notifications/trakt/authorize', {
+		body: { clientId: traktDraftString('clientId') },
+	})
+	if (!result.data) {
+		traktAuthStatus.value = 'error'
+		traktError.value = toApiError(result.error, result.response).message
+		return
+	}
+	traktDeviceCode = result.data.deviceCode
+	traktUserCode.value = result.data.userCode
+	traktVerificationUrl.value = result.data.verificationUrl
+	traktAuthStatus.value = 'pending'
+	schedulePoll(result.data.interval)
+}
+
+function schedulePoll(interval: number) {
+	traktPollHandle = setTimeout(() => void pollTraktAuth(interval), interval * 1000)
+}
+
+async function pollTraktAuth(interval: number) {
+	const result = await api.POST('/api/v1/notifications/trakt/poll', {
+		body: {
+			clientId: traktDraftString('clientId'),
+			clientSecret: traktDraftString('clientSecret'),
+			deviceCode: traktDeviceCode,
+		},
+	})
+	if (!result.data) {
+		traktAuthStatus.value = 'error'
+		traktError.value = toApiError(result.error, result.response).message
+		return
+	}
+	if (result.data.status === 'AUTHORIZED') {
+		settingsDraft.value = {
+			...settingsDraft.value,
+			accessToken: result.data.accessToken,
+			refreshToken: result.data.refreshToken,
+			expiresAt: result.data.expiresAt,
+		}
+		traktAuthStatus.value = 'authorized'
+		return
+	}
+	if (result.data.status === 'PENDING') {
+		schedulePoll(interval)
+		return
+	}
+	traktAuthStatus.value = result.data.status === 'DENIED' ? 'denied' : 'expired'
 }
 
 function openEdit(row: NotificationDto) {
@@ -216,6 +304,7 @@ function openEdit(row: NotificationDto) {
 	}
 	settingsDraft.value = row.settingsJson ? fromBackendSettings(row.type, JSON.parse(row.settingsJson) as Record<string, unknown>) : {}
 	tagInput.value = ''
+	resetTraktAuth()
 	fieldErrors.value = {}
 	generalError.value = ''
 	dialogOpen.value = true
@@ -470,6 +559,61 @@ const columns = [
 					:field-errors="fieldErrors"
 					@update:model-value="settingsDraft = $event"
 				/>
+
+				<template v-if="selectedType === 'TRAKT'">
+					<p class="connect-subheading">
+						Trakt authorization
+					</p>
+					<SBadge
+						v-if="traktConnected"
+						tone="ok"
+					>
+						Connected
+					</SBadge>
+					<template v-else>
+						<SButton
+							v-if="traktAuthStatus === 'idle' || traktAuthStatus === 'error'"
+							variant="secondary"
+							@click="startTraktAuth"
+						>
+							Authenticate with Trakt
+						</SButton>
+						<SSpinner v-else-if="traktAuthStatus === 'starting'" />
+						<div v-else-if="traktAuthStatus === 'pending'">
+							<p>
+								Go to
+								<a
+									:href="traktVerificationUrl"
+									target="_blank"
+									rel="noopener noreferrer"
+								>{{ traktVerificationUrl }}</a>
+								and enter code <strong>{{ traktUserCode }}</strong>
+							</p>
+							<SSpinner />
+						</div>
+						<p
+							v-else-if="traktAuthStatus === 'denied'"
+							class="s-field-error"
+							role="alert"
+						>
+							Authorization was denied. Try again.
+						</p>
+						<p
+							v-else-if="traktAuthStatus === 'expired'"
+							class="s-field-error"
+							role="alert"
+						>
+							The code expired before it was used. Try again.
+						</p>
+						<p
+							v-if="traktError"
+							class="s-field-error"
+							role="alert"
+						>
+							{{ traktError }}
+						</p>
+					</template>
+				</template>
 
 				<p class="connect-subheading">
 					Notify on

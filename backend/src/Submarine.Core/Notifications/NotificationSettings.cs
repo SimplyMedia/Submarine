@@ -516,3 +516,28 @@ public sealed record TwitterSettings : NotificationSettings
 	/// <summary>Send a direct message to <see cref="Mention" /> instead of posting a tweet.</summary>
 	public bool DirectMessage { get; init; } = true;
 }
+
+/// <summary>
+///     Trakt collection sync settings. Authenticated via an OAuth device code flow started and polled through
+///     the notifications API using a user supplied (or instance default) Trakt developer app.
+/// </summary>
+public sealed record TraktSettings : NotificationSettings
+{
+	/// <summary>Trakt app client id, falls back to the Trakt:ClientId setting when empty.</summary>
+	public string? ClientId { get; init; }
+
+	/// <summary>Trakt app client secret, falls back to the Trakt:ClientSecret setting when empty.</summary>
+	public string? ClientSecret { get; init; }
+
+	/// <summary>OAuth access token, obtained through the device code flow.</summary>
+	public string AccessToken { get; init; } = string.Empty;
+
+	/// <summary>OAuth refresh token, obtained through the device code flow.</summary>
+	public string RefreshToken { get; init; } = string.Empty;
+
+	/// <summary>UTC expiration of <see cref="AccessToken" />.</summary>
+	public DateTime ExpiresAt { get; init; }
+
+	/// <summary>Trakt username the tokens authorize, for display only.</summary>
+	public string? AuthUser { get; init; }
+}

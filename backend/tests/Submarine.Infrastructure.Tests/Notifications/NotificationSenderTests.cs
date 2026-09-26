@@ -411,6 +411,17 @@ public sealed class NotificationSenderTests
 	}
 
 	[Fact]
+	public async Task Notifiarr_ShouldRouteMovieEvents_ToRadarrIntegration()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new NotifiarrSender(factory);
+
+		await sender.SendAsync(Message() with { SeriesId = null, MovieId = 5 }, """{"apiKey":"nr-key"}""", TestContext.Current.CancellationToken);
+
+		stub.Requests.Single().Url.ShouldBe("https://notifiarr.com/api/v1/notification/radarr");
+	}
+
+	[Fact]
 	public async Task Prowl_ShouldPostFormWithApiKeyAndPriority()
 	{
 		var (factory, stub) = CreateFactory();

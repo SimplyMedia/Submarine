@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Submarine.Api.Modules;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
@@ -27,6 +28,52 @@ public sealed class NotificationsModule : IEndpointModule
 		group.MapPut("/{id:int}", UpdateAsync);
 		group.MapPost("/{id:int}/test", TestSavedAsync);
 		group.MapDelete("/{id:int}", DeleteAsync);
+		group.MapPost("/trakt/authorize", TraktAuthorizeAsync);
+		group.MapPost("/trakt/poll", TraktPollAsync);
+	}
+
+	private static async Task<Results<Ok<TraktAuthorizeResponse>, ProblemHttpResult>> TraktAuthorizeAsync(
+		TraktAuthorizeRequest request,
+		ITraktAuthService authService,
+		IConfiguration configuration,
+		CancellationToken cancellationToken)
+	{
+		try
+		{
+			var clientId = TraktCredentials.RequireClientId(request.ClientId, configuration);
+			var code = await authService.StartDeviceFlowAsync(clientId, cancellationToken);
+			return TypedResults.Ok(new TraktAuthorizeResponse(code.DeviceCode, code.UserCode, code.VerificationUrl, code.ExpiresIn, code.Interval));
+		}
+		catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or TaskCanceledException)
+		{
+			return TypedResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Could not start Trakt authorization", detail: ex.Message);
+		}
+	}
+
+	private static async Task<Results<Ok<TraktPollResponse>, ProblemHttpResult>> TraktPollAsync(
+		TraktPollRequest request,
+		ITraktAuthService authService,
+		IConfiguration configuration,
+		TimeProvider timeProvider,
+		CancellationToken cancellationToken)
+	{
+		try
+		{
+			var clientId = TraktCredentials.RequireClientId(request.ClientId, configuration);
+			var clientSecret = TraktCredentials.RequireClientSecret(request.ClientSecret, configuration);
+			var result = await authService.PollDeviceFlowAsync(clientId, clientSecret, request.DeviceCode, cancellationToken);
+			if (result.Status != TraktPollStatus.AUTHORIZED || result.Tokens is not { } tokens)
+			{
+				return TypedResults.Ok(new TraktPollResponse(result.Status.ToString(), null, null, null));
+			}
+
+			var expiresAt = timeProvider.GetUtcNow().UtcDateTime.AddSeconds(tokens.ExpiresIn);
+			return TypedResults.Ok(new TraktPollResponse(result.Status.ToString(), tokens.AccessToken, tokens.RefreshToken, expiresAt));
+		}
+		catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or TaskCanceledException)
+		{
+			return TypedResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Could not poll Trakt authorization", detail: ex.Message);
+		}
 	}
 
 	private static async Task<Ok<List<NotificationDto>>> ListAsync(SubmarineDbContext db, CancellationToken cancellationToken)
@@ -224,6 +271,22 @@ public sealed record SaveNotificationRequest(
 /// <param name="Type">Notification implementation.</param>
 /// <param name="SettingsJson">Implementation settings as JSON.</param>
 public sealed record TestNotificationRequest(NotificationType Type, string SettingsJson);
+
+/// <summary>Starts a Trakt OAuth device code flow.</summary>
+/// <param name="ClientId">Trakt app client id, falls back to the instance's Trakt:ClientId setting.</param>
+public sealed record TraktAuthorizeRequest(string? ClientId);
+
+/// <summary>The device code the user must enter at the verification url.</summary>
+public sealed record TraktAuthorizeResponse(string DeviceCode, string UserCode, string VerificationUrl, int ExpiresIn, int Interval);
+
+/// <summary>Polls once for the outcome of a previously started device code flow.</summary>
+/// <param name="ClientId">Trakt app client id, falls back to the instance's Trakt:ClientId setting.</param>
+/// <param name="ClientSecret">Trakt app client secret, falls back to the instance's Trakt:ClientSecret setting.</param>
+/// <param name="DeviceCode">Device code returned by <see cref="TraktAuthorizeResponse" />.</param>
+public sealed record TraktPollRequest(string? ClientId, string? ClientSecret, string DeviceCode);
+
+/// <summary>Outcome of a device code poll: PENDING, AUTHORIZED, DENIED or EXPIRED. Tokens are set only when AUTHORIZED.</summary>
+public sealed record TraktPollResponse(string Status, string? AccessToken, string? RefreshToken, DateTime? ExpiresAt);
 
 /// <summary>A saved notification.</summary>
 public sealed record NotificationDto(

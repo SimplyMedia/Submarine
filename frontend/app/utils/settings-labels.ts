@@ -175,6 +175,7 @@ const NOTIFICATION_TYPE: Record<string, string> = {
 	SIMPLEPUSH: 'Simplepush',
 	SYNOLOGY_INDEXER: 'Synology Indexer',
 	TWITTER: 'Twitter',
+	TRAKT: 'Trakt',
 }
 
 const STREAMING_PROVIDER: Record<string, string> = {
@@ -297,6 +298,7 @@ export function notificationTypeIcon(type: string): string {
 		SIMPLEPUSH: 'lucide:bell',
 		SYNOLOGY_INDEXER: 'lucide:hard-drive',
 		TWITTER: 'lucide:at-sign',
+		TRAKT: 'lucide:clapperboard',
 	}
 	return icons[type] ?? 'lucide:bell'
 }

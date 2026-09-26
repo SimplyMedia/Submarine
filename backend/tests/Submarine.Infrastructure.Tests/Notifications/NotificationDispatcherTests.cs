@@ -51,7 +51,7 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 
 	private SubmarineDbContext Db => _provider.GetRequiredService<SubmarineDbContext>();
 
-	private NotificationDispatcher Dispatcher => new(Db, _senders, new NotificationStatusService(Db, TimeProvider.System, Substitute.For<IEventBus>()), NullLogger<NotificationDispatcher>.Instance);
+	private NotificationDispatcher Dispatcher => new(Db, _senders, new NotificationStatusService(Db, TimeProvider.System, Substitute.For<IEventBus>()), new PassthroughTraktTokenRefresher(), NullLogger<NotificationDispatcher>.Instance);
 
 	private async Task<Notification> SeedNotificationAsync(Action<Notification> configure)
 	{
@@ -217,7 +217,7 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 		_senders.Register(sender);
 		var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero));
 		var statusService = new NotificationStatusService(Db, clock, Substitute.For<IEventBus>());
-		var dispatcher = new NotificationDispatcher(Db, _senders, statusService, NullLogger<NotificationDispatcher>.Instance);
+		var dispatcher = new NotificationDispatcher(Db, _senders, statusService, new PassthroughTraktTokenRefresher(), NullLogger<NotificationDispatcher>.Instance);
 
 		await dispatcher.HandleAsync(GrabEvent(1, [1]), TestContext.Current.CancellationToken);
 		(await statusService.IsAvailableAsync(notification.Id, TestContext.Current.CancellationToken)).ShouldBeTrue();
@@ -373,5 +373,11 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 
 		public Task TestAsync(string settingsJson, CancellationToken cancellationToken = default)
 			=> Task.CompletedTask;
+	}
+
+	private sealed class PassthroughTraktTokenRefresher : ITraktTokenRefresher
+	{
+		public Task<string> EnsureFreshTokensAsync(Notification notification, CancellationToken cancellationToken = default)
+			=> Task.FromResult(notification.SettingsJson);
 	}
 }

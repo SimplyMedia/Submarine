@@ -197,13 +197,13 @@ public sealed class WebhookSender(IHttpClientFactory httpClientFactory) : INotif
 
 /// <summary>
 ///     Notifiarr relay sender. Posts the same generic webhook payload as <see cref="WebhookSender" /> to
-///     Notifiarr's per-application ingest endpoint, authenticated with an API key header.
+///     Notifiarr's per-application ingest endpoint, authenticated with an API key header. Notifiarr routes
+///     webhooks per source application, so movie events report under the radarr integration and everything
+///     else (series events, health, application update, ...) reports under the sonarr integration.
 /// </summary>
 public sealed class NotifiarrSender(IHttpClientFactory httpClientFactory) : INotificationSender
 {
-	// Notifiarr routes webhooks per source application; Submarine reports under the Sonarr integration
-	// until Notifiarr ships a dedicated Submarine integration.
-	private const string ApiUrl = "https://notifiarr.com/api/v1/notification/sonarr";
+	private const string BaseUrl = "https://notifiarr.com/api/v1/notification";
 
 	/// <inheritdoc />
 	public NotificationType Type => NotificationType.NOTIFIARR;
@@ -212,7 +212,8 @@ public sealed class NotifiarrSender(IHttpClientFactory httpClientFactory) : INot
 	public async Task SendAsync(NotificationMessage message, string settingsJson, CancellationToken cancellationToken = default)
 	{
 		var settings = (NotifiarrSettings)NotificationSettingsJson.Parse(Type, settingsJson);
-		using var request = new HttpRequestMessage(HttpMethod.Post, ApiUrl)
+		var integration = message.MovieId is not null && message.SeriesId is null ? "radarr" : "sonarr";
+		using var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/{integration}")
 		{
 			Content = new StringContent(JsonSerializer.Serialize(message, SubmarineJson.Default), Encoding.UTF8, "application/json")
 		};

@@ -35,6 +35,13 @@ public static class NotificationCapabilities
 		NotificationEventType.DELETE
 	];
 
+	private static readonly NotificationEventType[] ImportUpgradeDeleteOnly =
+	[
+		NotificationEventType.IMPORT,
+		NotificationEventType.UPGRADE,
+		NotificationEventType.DELETE
+	];
+
 	private static readonly NotificationEventType[] MediaServerRich =
 	[
 		NotificationEventType.GRAB,
@@ -80,6 +87,7 @@ public static class NotificationCapabilities
 			NotificationType.SIMPLEPUSH => AllExceptRename,
 			NotificationType.SYNOLOGY_INDEXER => MediaImportOnly,
 			NotificationType.TWITTER => AllExceptRename,
+			NotificationType.TRAKT => ImportUpgradeDeleteOnly,
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown notification type")
 		};
 

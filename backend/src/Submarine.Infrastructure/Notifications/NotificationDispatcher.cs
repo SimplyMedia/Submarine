@@ -19,6 +19,7 @@ public sealed class NotificationDispatcher(
 	SubmarineDbContext db,
 	INotificationSenderFactory senderFactory,
 	INotificationStatusService statusService,
+	ITraktTokenRefresher traktTokenRefresher,
 	ILogger<NotificationDispatcher> logger) :
 	IEventHandler<ReleaseGrabbedEvent>,
 	IEventHandler<EpisodeFileImportedEvent>,
@@ -297,7 +298,8 @@ public sealed class NotificationDispatcher(
 
 			try
 			{
-				await sender.SendAsync(message, notification.SettingsJson, cancellationToken);
+				var settingsJson = await traktTokenRefresher.EnsureFreshTokensAsync(notification, cancellationToken);
+				await sender.SendAsync(message, settingsJson, cancellationToken);
 				await statusService.RecordSuccessAsync(notification.Id, cancellationToken);
 			}
 			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
