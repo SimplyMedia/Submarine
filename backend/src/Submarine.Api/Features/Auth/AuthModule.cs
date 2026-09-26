@@ -1,3 +1,5 @@
+using System.Data;
+using System.Data.Common;
 using System.Security.Claims;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
@@ -58,19 +60,38 @@ public sealed class AuthModule : IEndpointModule
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		if (await db.Users.AnyAsync(cancellationToken))
-		{
-			return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "Setup already completed");
-		}
 
-		var user = new User { Username = request.Username };
-		user.PasswordHash = hasher.HashPassword(user, request.Password);
-		db.Users.Add(user);
-		await db.SaveChangesAsync(cancellationToken);
-		// The first user continues straight into the app, so sign them in here.
-		await SignInAsync(httpContext, user, isPersistent: true, timeProvider);
-		return TypedResults.Created($"/api/v1/users/{user.Id}", new UserDto(user.Id, user.Username));
+		// Serializable isolation makes two concurrent setups conflict instead of both succeeding:
+		// Sqlite's WAL mode already gives the reader a snapshot that a later writer cannot silently
+		// invalidate (raises SQLITE_BUSY_SNAPSHOT), and Postgres needs Serializable explicitly to
+		// detect the same read-then-insert race (raises a 40001 serialization failure). Either way
+		// only the first insert commits; the loser's SaveChanges/Commit throws and gets mapped to 409.
+		await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+		try
+		{
+			if (await db.Users.AnyAsync(cancellationToken))
+			{
+				return SetupConflict();
+			}
+
+			var user = new User { Username = request.Username };
+			user.PasswordHash = hasher.HashPassword(user, request.Password);
+			db.Users.Add(user);
+			await db.SaveChangesAsync(cancellationToken);
+			await transaction.CommitAsync(cancellationToken);
+
+			// The first user continues straight into the app, so sign them in here.
+			await SignInAsync(httpContext, user, isPersistent: true, timeProvider);
+			return TypedResults.Created($"/api/v1/users/{user.Id}", new UserDto(user.Id, user.Username));
+		}
+		catch (Exception exception) when (exception is DbUpdateException or DbException)
+		{
+			return SetupConflict();
+		}
 	}
+
+	private static ProblemHttpResult SetupConflict()
+		=> TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "Setup already completed");
 
 	private static async Task<Results<Ok<UserDto>, ProblemHttpResult>> LoginAsync(
 		SubmarineDbContext db,
@@ -171,7 +192,7 @@ public sealed class SetupRequestValidator : AbstractValidator<SetupRequest>
 	public SetupRequestValidator()
 	{
 		RuleFor(x => x.Username).NotEmpty().MaximumLength(256);
-		RuleFor(x => x.Password).NotEmpty().MaximumLength(256);
+		RuleFor(x => x.Password).NotEmpty().MinimumLength(8).MaximumLength(256);
 	}
 }
 

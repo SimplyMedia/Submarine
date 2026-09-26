@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Xunit;
 
@@ -46,6 +47,37 @@ public sealed class AuthFlowTests
 		var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 		problem!.Errors.ShouldNotBeNull();
 		problem.Errors.Keys.ShouldNotBeEmpty();
+	}
+
+	[Fact]
+	public async Task Setup_ShouldRejectShortPassword()
+	{
+		await using var factory = new SubmarineApiFactory();
+		var client = factory.CreateClient();
+
+		var response = await client.PostAsJsonAsync("/api/v1/setup", new { username = "admin", password = "short1" });
+
+		response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+		var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
+		problem!.Errors.ShouldContainKey("password");
+	}
+
+	[Fact]
+	public async Task Setup_ShouldBeAtomic_WhenTwoRequestsRaceForTheFirstUser()
+	{
+		await using var factory = new SubmarineApiFactory();
+		var clientA = factory.CreateClient();
+		var clientB = factory.CreateClient();
+
+		var requestA = clientA.PostAsJsonAsync("/api/v1/setup", new { username = "admin", password = "correct-horse" });
+		var requestB = clientB.PostAsJsonAsync("/api/v1/setup", new { username = "other", password = "correct-horse" });
+		var responses = await Task.WhenAll(requestA, requestB);
+
+		responses.Count(r => r.StatusCode == HttpStatusCode.Created).ShouldBe(1);
+		responses.Count(r => r.StatusCode == HttpStatusCode.Conflict).ShouldBe(1);
+
+		var userCount = await factory.WithDbAsync(db => db.Users.CountAsync());
+		userCount.ShouldBe(1);
 	}
 
 	[Fact]
