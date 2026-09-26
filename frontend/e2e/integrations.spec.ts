@@ -28,7 +28,6 @@ test.afterEach(async ({ page }) => {
 	}
 })
 
-
 test('connect: add and test a webhook, then preserve its enabled event selections', async ({ page }) => {
 	await signIn(page)
 	const name = 'E2E webhook connection'

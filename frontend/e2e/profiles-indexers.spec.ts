@@ -30,7 +30,6 @@ test.afterEach(async ({ page }) => {
 	}
 })
 
-
 test('profiles: create language, delay with protocol switches, and release profiles', async ({ page }) => {
 	await signIn(page)
 	await page.goto('/settings/profiles')

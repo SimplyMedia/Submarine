@@ -116,7 +116,6 @@ test('quality profiles: create from template, then edit and save', async ({ page
 	const format = formats.find(item => item.name === 'E2E release modifier format')
 	expect(format).toBeDefined()
 	expect(savedProfile?.formatItems).toContainEqual({ customFormatId: format!.id, score: 37 })
-
 })
 
 test('general settings: regenerate the API key', async ({ page }) => {

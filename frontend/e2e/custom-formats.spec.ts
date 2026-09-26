@@ -13,7 +13,6 @@ test.afterEach(async ({ page }) => {
 	}
 })
 
-
 test('custom formats: create every spec type, export and re-import TRaSH JSON', async ({ page }) => {
 	await signIn(page)
 	const name = 'E2E release modifier format'

@@ -43,7 +43,6 @@ async function assertPortAvailable(port) {
 	})
 }
 
-
 function detach(name, command, args, options) {
 	const log = openSync(path.join(stateDir, `${name}.log`), 'a')
 	const child = spawn(command, args, { ...options, detached: true, stdio: ['ignore', log, log] })
@@ -58,7 +57,7 @@ async function start() {
 		}
 		catch (error) {
 			if (error?.code !== 'EADDRINUSE') throw error
-			throw new Error(`E2E port ${port} is already in use; select a free E2E_API_PORT/E2E_MOCK_PORT_BASE`)
+			throw new Error(`E2E port ${port} is already in use; select a free E2E_API_PORT/E2E_MOCK_PORT_BASE`, { cause: error })
 		}
 	}
 	rmSync(stateDir, { recursive: true, force: true })
