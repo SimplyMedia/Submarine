@@ -1,0 +1,17 @@
+namespace Submarine.Core.Download;
+
+public enum DownloadClientType
+{
+	QBITTORRENT,
+	TRANSMISSION,
+	DELUGE,
+	RTORRENT,
+	UTORRENT,
+	ARIA2,
+	FLOOD,
+	DOWNLOAD_STATION,
+	SABNZBD,
+	NZBGET,
+	TORRENT_BLACKHOLE,
+	USENET_BLACKHOLE
+}
