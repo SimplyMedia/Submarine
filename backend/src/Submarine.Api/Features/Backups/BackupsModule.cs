@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Modules;
 using Submarine.Core.Commands;
 using Submarine.Infrastructure.Backups;
 using Submarine.Infrastructure.Commands;
+using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.Backups;
 
@@ -24,8 +26,11 @@ public sealed class BackupsModule : IEndpointModule
 		group.MapPost("/{name}/restore", RestoreFileAsync);
 	}
 
-	private static Ok<IReadOnlyList<BackupEntry>> ListAsync(BackupService backups)
-		=> TypedResults.Ok(backups.List());
+	private static async Task<Ok<IReadOnlyList<BackupEntry>>> ListAsync(SubmarineDbContext db, BackupService backups, CancellationToken cancellationToken)
+	{
+		var folder = await db.GeneralConfig.AsNoTracking().Select(x => x.BackupFolder).SingleAsync(cancellationToken);
+		return TypedResults.Ok(backups.List(folder));
+	}
 
 	private static async Task<Created<EnqueueResultDto>> CreateAsync(ICommandQueue queue, CancellationToken cancellationToken)
 	{
@@ -33,11 +38,12 @@ public sealed class BackupsModule : IEndpointModule
 		return TypedResults.Created($"/api/v1/commands/{row.Id}", new EnqueueResultDto(row.Id));
 	}
 
-	private static IResult DownloadAsync(string name, BackupService backups)
+	private static async Task<IResult> DownloadAsync(string name, SubmarineDbContext db, BackupService backups, CancellationToken cancellationToken)
 	{
 		try
 		{
-			var stream = backups.Open(name);
+			var folder = await db.GeneralConfig.AsNoTracking().Select(x => x.BackupFolder).SingleAsync(cancellationToken);
+			var stream = backups.Open(name, folder);
 			return Results.File(stream, "application/zip", fileDownloadName: name);
 		}
 		catch (KeyNotFoundException)
@@ -50,11 +56,12 @@ public sealed class BackupsModule : IEndpointModule
 		}
 	}
 
-	private static Results<NoContent, ProblemHttpResult> DeleteAsync(string name, BackupService backups)
+	private static async Task<Results<NoContent, ProblemHttpResult>> DeleteAsync(string name, SubmarineDbContext db, BackupService backups, CancellationToken cancellationToken)
 	{
 		try
 		{
-			backups.Delete(name);
+			var folder = await db.GeneralConfig.AsNoTracking().Select(x => x.BackupFolder).SingleAsync(cancellationToken);
+			backups.Delete(name, folder);
 			return TypedResults.NoContent();
 		}
 		catch (KeyNotFoundException)
@@ -69,6 +76,7 @@ public sealed class BackupsModule : IEndpointModule
 
 	private static async Task<Results<Accepted<RestartRequiredDto>, ProblemHttpResult>> RestoreFileAsync(
 		string name,
+		SubmarineDbContext db,
 		BackupService backups,
 		IHostApplicationLifetime lifetime,
 		HttpContext httpContext,
@@ -81,8 +89,9 @@ public sealed class BackupsModule : IEndpointModule
 
 		try
 		{
-			await using var stream = backups.Open(name);
-			await backups.RestoreAsync(stream, cancellationToken);
+			var folder = await db.GeneralConfig.AsNoTracking().Select(x => x.BackupFolder).SingleAsync(cancellationToken);
+			await using var stream = backups.Open(name, folder);
+			await backups.RestoreAsync(stream, folder, cancellationToken);
 		}
 		catch (NotSupportedException ex)
 		{
@@ -101,6 +110,7 @@ public sealed class BackupsModule : IEndpointModule
 	}
 
 	private static async Task<Results<Accepted<RestartRequiredDto>, ProblemHttpResult>> RestoreUploadAsync(
+		SubmarineDbContext db,
 		BackupService backups,
 		IHostApplicationLifetime lifetime,
 		HttpContext httpContext,
@@ -127,8 +137,9 @@ public sealed class BackupsModule : IEndpointModule
 
 		try
 		{
+			var folder = await db.GeneralConfig.AsNoTracking().Select(x => x.BackupFolder).SingleAsync(cancellationToken);
 			await using var stream = file.OpenReadStream();
-			await backups.RestoreAsync(stream, cancellationToken);
+			await backups.RestoreAsync(stream, folder, cancellationToken);
 		}
 		catch (NotSupportedException ex)
 		{

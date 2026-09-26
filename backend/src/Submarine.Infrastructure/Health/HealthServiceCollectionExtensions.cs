@@ -43,6 +43,7 @@ public static class HealthServiceCollectionExtensions
 		services.AddScoped<IHealthCheck, UpdateHealthCheck>();
 		services.AddScoped<IHealthCheck, ImportListStatusCheck>();
 		services.AddScoped<IHealthCheck, NotificationStatusCheck>();
+		services.AddScoped<IHealthCheck, ProxyHealthCheck>();
 		services.AddHostedService<StartupHealthCheckHostedService>();
 
 		return services;

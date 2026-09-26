@@ -691,13 +691,35 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("ApplicationUrl")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
                     b.Property<int>("AuthMethod")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("AuthenticationRequired")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BackupFolder")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<int>("BackupIntervalDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BackupRetention")
                         .HasColumnType("integer");
 
                     b.Property<string>("Branch")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<int>("CertificateValidation")
+                        .HasColumnType("integer");
 
                     b.Property<string>("FeedToken")
                         .IsRequired()
@@ -714,8 +736,40 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
-                    b.Property<bool?>("UpdateAutomatically")
+                    b.Property<string>("ProxyBypassFilter")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<bool>("ProxyBypassLocalAddresses")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("ProxyEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ProxyHost")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("ProxyPassword")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("ProxyPort")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProxyType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProxyUsername")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("TrustedProxies")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

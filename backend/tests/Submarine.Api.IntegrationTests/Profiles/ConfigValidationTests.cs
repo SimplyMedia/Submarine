@@ -3,7 +3,9 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Submarine.Infrastructure.Backups;
 using Submarine.Infrastructure.Persistence;
 using Xunit;
 
@@ -90,6 +92,46 @@ public sealed class ConfigValidationTests : IClassFixture<SubmarineApiFactory>
 		interval.ShouldBe(15);
 
 		await PutJson(client, "/api/v1/config/download", current!);
+	}
+
+	[Fact]
+	public async Task GeneralConfig_Put_ShouldWireBackupScheduleAndUseFolderAndRetention()
+	{
+		var client = ApiClient();
+		var current = await GetJson(client, "/api/v1/config/general");
+		var folder = Path.Combine(Path.GetTempPath(), "submarine-backup-it", Guid.NewGuid().ToString("N"));
+		var updated = current!.DeepClone();
+		updated["backupFolder"] = folder;
+		updated["backupIntervalDays"] = 3;
+		updated["backupRetention"] = 2;
+
+		try
+		{
+			var response = await PutJson(client, "/api/v1/config/general", updated);
+			response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+			var task = await _factory.WithDbAsync(db => db.ScheduledTasks.SingleAsync(x => x.Name == "Backup"));
+			task.IntervalMinutes.ShouldBe(3 * 24 * 60);
+
+			await using var scope = _factory.Services.CreateAsyncScope();
+			var backups = scope.ServiceProvider.GetRequiredService<BackupService>();
+			await backups.CreateAsync(BackupKind.SCHEDULED, folder, retention: 2);
+			await Task.Delay(TimeSpan.FromSeconds(1));
+			await backups.CreateAsync(BackupKind.SCHEDULED, folder, retention: 2);
+			await Task.Delay(TimeSpan.FromSeconds(1));
+			await backups.CreateAsync(BackupKind.SCHEDULED, folder, retention: 2);
+
+			var responseBackups = await JsonNode.ParseAsync(await client.GetStreamAsync("/api/v1/backups"));
+			responseBackups!.AsArray().Count.ShouldBe(2);
+			Directory.GetFiles(folder, "*.zip").Length.ShouldBe(2);
+		}
+		finally
+		{
+			await PutJson(client, "/api/v1/config/general", current);
+			if (Directory.Exists(folder))
+			{
+				Directory.Delete(folder, recursive: true);
+			}
+		}
 	}
 
 	[Fact]

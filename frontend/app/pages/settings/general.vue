@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
-import { authMethodOptions } from '~/utils/settings-labels'
+import { indexerProxyTypeOptions } from '~/utils/indexer-labels'
+import { authenticationRequiredOptions, authMethodOptions, certificateValidationOptions } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
 
 type GeneralConfig = components['schemas']['GeneralConfig']
@@ -11,9 +12,12 @@ definePageMeta({ layout: 'default' })
 useHead({ title: 'General' })
 
 const api = useApi()
+const system = useSystemStore()
 const { toast } = useToast()
 
 const logLevelOptions = ['Verbose', 'Debug', 'Information', 'Warning', 'Error', 'Fatal'].map(value => ({ value, label: value }))
+// FlareSolverr is a per-indexer proxy kind only, not a valid outbound proxy for every request.
+const outboundProxyTypeOptions = indexerProxyTypeOptions.filter(option => option.value !== 'FLARESOLVERR')
 
 // ---- General config ----
 
@@ -37,18 +41,35 @@ async function save() {
 	try {
 		const body: GeneralConfig = {
 			authMethod: draft.value.authMethod,
+			authenticationRequired: draft.value.authenticationRequired,
+			trustedProxies: draft.value.trustedProxies,
 			feedToken: draft.value.feedToken,
 			urlBase: draft.value.urlBase,
 			instanceName: draft.value.instanceName,
 			logLevel: draft.value.logLevel,
 			branch: draft.value.branch,
-			updateAutomatically: draft.value.updateAutomatically,
+			certificateValidation: draft.value.certificateValidation,
+			proxyEnabled: draft.value.proxyEnabled,
+			proxyType: draft.value.proxyType,
+			proxyHost: draft.value.proxyHost,
+			proxyPort: draft.value.proxyPort,
+			proxyUsername: draft.value.proxyUsername,
+			proxyPassword: draft.value.proxyPassword,
+			proxyBypassFilter: draft.value.proxyBypassFilter,
+			proxyBypassLocalAddresses: draft.value.proxyBypassLocalAddresses,
+			backupFolder: draft.value.backupFolder,
+			backupIntervalDays: draft.value.backupIntervalDays,
+			backupRetention: draft.value.backupRetention,
+			applicationUrl: draft.value.applicationUrl,
 		}
 		const result = await api.PUT('/api/v1/config/general', { body })
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
 		markSaved(result.data)
+		if (system.status) {
+			system.status.instanceName = result.data.instanceName ?? 'Submarine'
+		}
 		toast({ title: 'Saved', tone: 'ok' })
 	}
 	catch (error) {
@@ -329,6 +350,16 @@ async function doDeleteUser() {
 					/>
 				</SField>
 				<SField
+					label="Application URL"
+					hint="Externally reachable URL of this instance, used in notification links."
+					control-id="general-application-url"
+				>
+					<SInput
+						id="general-application-url"
+						v-model="draft.applicationUrl"
+					/>
+				</SField>
+				<SField
 					label="Log level"
 					control-id="general-log-level"
 				>
@@ -397,6 +428,174 @@ async function doDeleteUser() {
 						</SIconButton>
 					</div>
 				</SField>
+			</div>
+		</SSection>
+
+		<SSection title="Security">
+			<SSpinner v-if="loading" />
+			<div
+				v-else
+				class="settings-form"
+			>
+				<SField
+					label="Authentication required"
+					hint="Disabling for local addresses skips the login for loopback, private network and link-local clients."
+					control-id="general-auth-required"
+				>
+					<SSelect
+						v-model="draft.authenticationRequired"
+						control-id="general-auth-required"
+						:options="authenticationRequiredOptions"
+					/>
+				</SField>
+				<SField
+					label="Trusted proxies"
+					hint="Comma separated CIDR ranges allowed to set X-Forwarded-For, e.g. 10.0.0.0/8. Forwarded headers from any other peer are ignored."
+					control-id="general-trusted-proxies"
+				>
+					<SInput
+						id="general-trusted-proxies"
+						v-model="draft.trustedProxies"
+					/>
+				</SField>
+				<SField
+					label="Certificate validation"
+					hint="Whether outbound HTTPS requests reject invalid TLS certificates."
+					control-id="general-cert-validation"
+				>
+					<SSelect
+						v-model="draft.certificateValidation"
+						control-id="general-cert-validation"
+						:options="certificateValidationOptions"
+					/>
+				</SField>
+			</div>
+		</SSection>
+
+		<SSection title="Proxy">
+			<SSpinner v-if="loading" />
+			<div
+				v-else
+				class="settings-form"
+			>
+				<SSwitch
+					v-model="draft.proxyEnabled"
+					label="Use an outbound proxy"
+				/>
+				<template v-if="draft.proxyEnabled">
+					<SField
+						label="Type"
+						control-id="general-proxy-type"
+					>
+						<SSelect
+							v-model="draft.proxyType"
+							control-id="general-proxy-type"
+							:options="outboundProxyTypeOptions"
+						/>
+					</SField>
+					<div class="field-grid">
+						<SField
+							label="Host"
+							control-id="general-proxy-host"
+						>
+							<SInput
+								id="general-proxy-host"
+								v-model="draft.proxyHost"
+							/>
+						</SField>
+						<SField
+							label="Port"
+							control-id="general-proxy-port"
+						>
+							<SInput
+								id="general-proxy-port"
+								type="number"
+								:model-value="String(draft.proxyPort)"
+								@update:model-value="draft!.proxyPort = Number($event) || 0"
+							/>
+						</SField>
+					</div>
+					<div class="field-grid">
+						<SField
+							label="Username"
+							control-id="general-proxy-username"
+						>
+							<SInput
+								id="general-proxy-username"
+								:model-value="draft.proxyUsername ?? ''"
+								@update:model-value="draft!.proxyUsername = $event"
+							/>
+						</SField>
+						<SField
+							label="Password"
+							control-id="general-proxy-password"
+						>
+							<SInput
+								id="general-proxy-password"
+								type="password"
+								:model-value="draft.proxyPassword ?? ''"
+								@update:model-value="draft!.proxyPassword = $event"
+							/>
+						</SField>
+					</div>
+					<SField
+						label="Bypass filter"
+						hint="Comma separated hosts, *.domain wildcards or CIDR ranges that skip the proxy."
+						control-id="general-proxy-bypass"
+					>
+						<SInput
+							id="general-proxy-bypass"
+							v-model="draft.proxyBypassFilter"
+						/>
+					</SField>
+					<SSwitch
+						v-model="draft.proxyBypassLocalAddresses"
+						label="Bypass the proxy for local addresses"
+					/>
+				</template>
+			</div>
+		</SSection>
+
+		<SSection title="Backup">
+			<SSpinner v-if="loading" />
+			<div
+				v-else
+				class="settings-form"
+			>
+				<SField
+					label="Backup folder"
+					hint="Relative to the app data directory when not an absolute path; empty uses &quot;backups&quot;."
+					control-id="general-backup-folder"
+				>
+					<SInput
+						id="general-backup-folder"
+						v-model="draft.backupFolder"
+					/>
+				</SField>
+				<div class="field-grid">
+					<SField
+						label="Backup interval (days)"
+						control-id="general-backup-interval"
+					>
+						<SInput
+							id="general-backup-interval"
+							type="number"
+							:model-value="String(draft.backupIntervalDays)"
+							@update:model-value="draft!.backupIntervalDays = Number($event) || 0"
+						/>
+					</SField>
+					<SField
+						label="Retention (backups to keep)"
+						control-id="general-backup-retention"
+					>
+						<SInput
+							id="general-backup-retention"
+							type="number"
+							:model-value="String(draft.backupRetention)"
+							@update:model-value="draft!.backupRetention = Number($event) || 0"
+						/>
+					</SField>
+				</div>
 			</div>
 		</SSection>
 
@@ -650,6 +849,12 @@ async function doDeleteUser() {
 	display: grid;
 	gap: 16px;
 	max-width: 480px;
+}
+
+.field-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
 }
 
 .key-row {

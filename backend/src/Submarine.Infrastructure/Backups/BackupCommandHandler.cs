@@ -15,14 +15,15 @@ public sealed class BackupCommandHandler(
 	/// <inheritdoc />
 	public async Task ExecuteAsync(BackupCommand command, ICommandContext context, CancellationToken cancellationToken = default)
 	{
-		var trigger = await db.Commands.AsNoTracking()
+		var commandRow = await db.Commands.AsNoTracking()
 			.Where(x => x.Id == context.CommandId)
 			.Select(x => x.Trigger)
 			.FirstOrDefaultAsync(cancellationToken);
-		var kind = trigger == CommandTrigger.SCHEDULED ? BackupKind.SCHEDULED : BackupKind.MANUAL;
+		var kind = commandRow == CommandTrigger.SCHEDULED ? BackupKind.SCHEDULED : BackupKind.MANUAL;
+		var config = await db.GeneralConfig.AsNoTracking().SingleAsync(cancellationToken);
 
 		await context.ReportProgressAsync(10, "Creating backup", cancellationToken);
-		var entry = await backupService.CreateAsync(kind, cancellationToken);
+		var entry = await backupService.CreateAsync(kind, config.BackupFolder, config.BackupRetention, cancellationToken);
 		await context.ReportProgressAsync(100, entry.Name, cancellationToken);
 	}
 }

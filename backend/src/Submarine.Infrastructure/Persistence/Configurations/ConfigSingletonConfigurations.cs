@@ -16,6 +16,13 @@ internal sealed class GeneralConfigConfiguration : SingletonEntityConfiguration<
 		builder.Property(x => x.InstanceName).HasMaxLength(256);
 		builder.Property(x => x.LogLevel).HasMaxLength(32);
 		builder.Property(x => x.Branch).HasMaxLength(64);
+		builder.Property(x => x.TrustedProxies).HasMaxLength(2048);
+		builder.Property(x => x.ProxyHost).HasMaxLength(512);
+		builder.Property(x => x.ProxyUsername).HasMaxLength(256);
+		builder.Property(x => x.ProxyPassword).HasMaxLength(256);
+		builder.Property(x => x.ProxyBypassFilter).HasMaxLength(2048);
+		builder.Property(x => x.BackupFolder).HasMaxLength(1024);
+		builder.Property(x => x.ApplicationUrl).HasMaxLength(512);
 	}
 }
 

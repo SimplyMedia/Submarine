@@ -22,6 +22,7 @@ public static class AuthServiceCollectionExtensions
 		services.TryAddSingleton<IAuthConfigProvider, AuthConfigProvider>();
 		services.TryAddSingleton<ICookiePrincipalValidator, CookiePrincipalValidator>();
 		services.TryAddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+		services.TryAddScoped<IUserCredentialVerifier, UserCredentialVerifier>();
 		return services;
 	}
 }

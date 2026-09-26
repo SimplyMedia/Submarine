@@ -6,8 +6,10 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Submarine.Core.Indexers;
+using Submarine.Infrastructure.Http;
 
 namespace Submarine.Infrastructure.Indexers;
 
@@ -15,8 +17,12 @@ namespace Submarine.Infrastructure.Indexers;
 ///     Creates configured http clients for indexers
 /// </summary>
 /// <param name="httpClientFactory">The application http client factory, used for stateless clients</param>
+/// <param name="outboundProxyProvider">Supplies the certificate validation mode for outbound requests</param>
 /// <param name="logger">The logger</param>
-public sealed class IndexerHttpClientFactory(IHttpClientFactory httpClientFactory, ILogger<IndexerHttpClientFactory> logger)
+public sealed class IndexerHttpClientFactory(
+	IHttpClientFactory httpClientFactory,
+	IOutboundProxyProvider outboundProxyProvider,
+	ILogger<IndexerHttpClientFactory> logger)
 {
 	/// <summary>
 	///     Creates a client for one indexer instance
@@ -39,6 +45,9 @@ public sealed class IndexerHttpClientFactory(IHttpClientFactory httpClientFactor
 			proxy,
 			userAgent,
 			timeoutSeconds,
+			// Cached for 30 seconds, so the blocking wait completes synchronously; Create is
+			// called from synchronous indexer construction paths.
+			outboundProxyProvider.GetSnapshotAsync().GetAwaiter().GetResult().CertificateValidation,
 			logger,
 			httpClientFactory);
 }
@@ -63,6 +72,7 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 		IndexerProxySettings? proxy,
 		string? userAgent,
 		int timeoutSeconds,
+		Submarine.Core.Enums.CertificateValidationType certificateValidation,
 		ILogger logger,
 		IHttpClientFactory httpClientFactory,
 		TimeProvider? timeProvider = null)
@@ -77,11 +87,11 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 				proxy.RequestTimeoutSeconds,
 				_cookies,
 				logger);
-			_client = CreateHandlerChain(proxy: null, userAgent, timeoutSeconds);
+			_client = CreateHandlerChain(proxy: null, userAgent, timeoutSeconds, certificateValidation);
 			return;
 		}
 
-		_client = CreateHandlerChain(proxy, userAgent, timeoutSeconds);
+		_client = CreateHandlerChain(proxy, userAgent, timeoutSeconds, certificateValidation);
 	}
 
 	public CookieContainer Cookies => _cookies;
@@ -160,7 +170,11 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 		return cloned;
 	}
 
-	private HttpClient CreateHandlerChain(IndexerProxySettings? proxy, string? userAgent, int timeoutSeconds)
+	private HttpClient CreateHandlerChain(
+		IndexerProxySettings? proxy,
+		string? userAgent,
+		int timeoutSeconds,
+		Submarine.Core.Enums.CertificateValidationType certificateValidation)
 	{
 		_ = userAgent; // user agent is applied per request so proxied flows keep it too
 
@@ -170,7 +184,12 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 			UseCookies = true,
 			AllowAutoRedirect = true,
 			AutomaticDecompression = System.Net.DecompressionMethods.All,
-			ConnectTimeout = TimeSpan.FromSeconds(15)
+			ConnectTimeout = TimeSpan.FromSeconds(15),
+			SslOptions = new System.Net.Security.SslClientAuthenticationOptions
+			{
+				RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+					Submarine.Infrastructure.Http.OutboundProxyResolver.ValidateCertificate(certificateValidation, sender, certificate, chain, errors)
+			}
 		};
 
 		if (proxy is { } direct)

@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Core.Entities;
 using Submarine.Core.Indexers;
+using Submarine.Infrastructure.Http;
 using Submarine.Infrastructure.Indexers;
 using Submarine.Infrastructure.Indexers.Cardigann;
 using Submarine.Infrastructure.Persistence;
@@ -17,12 +18,14 @@ namespace Submarine.Infrastructure.IndexerManagement;
 /// <param name="factory">Builds live indexer clients from an implementation and settings.</param>
 /// <param name="definitionLoader">Loads Cardigann definitions for informational metadata.</param>
 /// <param name="capabilityCache">The shared capability cache.</param>
+/// <param name="outboundProxyProvider">Global outbound proxy, used when the indexer has none of its own.</param>
 /// <param name="timeProvider">The time source, used to evaluate backoff windows.</param>
 public sealed class IndexerProvider(
 	SubmarineDbContext db,
 	IIndexerFactory factory,
 	IndexerDefinitionLoader definitionLoader,
 	IndexerCapabilityCache capabilityCache,
+	IOutboundProxyProvider outboundProxyProvider,
 	TimeProvider timeProvider) : IIndexerProvider
 {
 	/// <inheritdoc />
@@ -106,9 +109,30 @@ public sealed class IndexerProvider(
 				.FirstOrDefaultAsync(candidate => candidate.Tags.Any(tag => tagIds.Contains(tag.Id)), cancellationToken);
 		}
 
-		return proxy is null
-			? null
-			: new IndexerProxySettings(MapProxyType(proxy.Type), proxy.Host, proxy.Port, proxy.Username, proxy.Password, proxy.RequestTimeoutSeconds);
+		if (proxy is not null)
+		{
+			return new IndexerProxySettings(MapProxyType(proxy.Type), proxy.Host, proxy.Port, proxy.Username, proxy.Password, proxy.RequestTimeoutSeconds);
+		}
+
+		return await ResolveGlobalProxyAsync(entity, cancellationToken);
+	}
+
+	/// <summary>
+	///     Falls back to the global outbound proxy setting when the indexer has none configured
+	///     of its own, unless the indexer's base URL is bypassed (local address or bypass list).
+	/// </summary>
+	private async Task<IndexerProxySettings?> ResolveGlobalProxyAsync(Indexer entity, CancellationToken cancellationToken)
+	{
+		var snapshot = await outboundProxyProvider.GetSnapshotAsync(cancellationToken);
+		if (!snapshot.Enabled
+			|| snapshot.Type == Core.Enums.IndexerProxyType.FLARESOLVERR
+			|| !Uri.TryCreate(entity.BaseUrl, UriKind.Absolute, out var baseUri)
+			|| OutboundProxyResolver.ShouldBypass(snapshot, baseUri))
+		{
+			return null;
+		}
+
+		return new IndexerProxySettings(MapProxyType(snapshot.Type), snapshot.Host, snapshot.Port, snapshot.Username, snapshot.Password, RequestTimeoutSeconds: 100);
 	}
 
 	private static IndexerProxyType MapProxyType(Core.Enums.IndexerProxyType type)

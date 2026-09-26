@@ -165,7 +165,7 @@ public sealed class NotificationDispatcher(
 			.ToListAsync(cancellationToken);
 		foreach (var (issue, eventType, flag) in items)
 		{
-			var message = new NotificationMessage(
+			var message = await ApplyInstanceSettingsAsync(new NotificationMessage(
 				eventType,
 				eventType == NotificationEventType.HEALTH ? "Health issue" : "Health restored",
 				$"{issue.Source}: {issue.Message}",
@@ -183,7 +183,7 @@ public sealed class NotificationDispatcher(
 				null,
 				null,
 				[],
-				issue.WikiUrl is null ? [] : [new NotificationLink("Wiki", issue.WikiUrl)]);
+				issue.WikiUrl is null ? [] : [new NotificationLink("Wiki", issue.WikiUrl)]), cancellationToken);
 			await SendAsync(notifications.Where(flag), message, cancellationToken);
 		}
 	}
@@ -266,8 +266,32 @@ public sealed class NotificationDispatcher(
 			return;
 		}
 
-		var message = await buildMessage();
+		var message = await ApplyInstanceSettingsAsync(await buildMessage(), cancellationToken);
 		await SendAsync(matching, message, cancellationToken);
+	}
+
+	private async Task<NotificationMessage> ApplyInstanceSettingsAsync(
+		NotificationMessage message,
+		CancellationToken cancellationToken)
+	{
+		var config = await db.GeneralConfig.AsNoTracking().SingleAsync(cancellationToken);
+		var title = string.IsNullOrWhiteSpace(config.InstanceName)
+			? message.Title
+			: $"{config.InstanceName} - {message.Title}";
+		if (!Uri.TryCreate(config.ApplicationUrl, UriKind.Absolute, out _))
+		{
+			return message with { Title = title };
+		}
+
+		var relativePath = message.SeriesId is { } seriesId
+			? $"series/{seriesId}"
+			: message.MovieId is { } movieId
+				? $"movies/{movieId}"
+				: string.Empty;
+		var applicationLink = new NotificationLink(
+			string.IsNullOrWhiteSpace(config.InstanceName) ? "Open application" : $"Open {config.InstanceName}",
+			new Uri(new Uri(config.ApplicationUrl.TrimEnd('/') + "/", UriKind.Absolute), relativePath).AbsoluteUri);
+		return message with { Title = title, Links = [.. message.Links, applicationLink] };
 	}
 
 	private async Task SendAsync(IEnumerable<Notification> notifications, NotificationMessage message, CancellationToken cancellationToken)

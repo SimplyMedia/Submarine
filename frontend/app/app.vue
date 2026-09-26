@@ -8,7 +8,13 @@
 </template>
 
 <script setup lang="ts">
-useHead({
-	titleTemplate: (title?: string) => (title && title !== 'Submarine' ? `${title} - Submarine` : 'Submarine'),
+const system = useSystemStore()
+
+useHead(() => {
+	const instanceName = system.status?.instanceName || 'Submarine'
+	return {
+		titleTemplate: (title?: string) =>
+			title && title !== 'Submarine' ? `${title} - ${instanceName}` : instanceName,
+	}
 })
 </script>

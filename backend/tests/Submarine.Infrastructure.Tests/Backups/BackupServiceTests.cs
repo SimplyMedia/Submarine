@@ -39,15 +39,15 @@ public sealed class BackupServiceTests : IDisposable
 		Directory.Delete(_root, recursive: true);
 	}
 
-	private BackupService CreateService(int retention = 7)
+	private string Folder => Path.Combine(_root, "backups");
+
+	private BackupService CreateService()
 	{
 		var configuration = new ConfigurationBuilder()
 			.AddInMemoryCollection(new Dictionary<string, string?>
 			{
 				["Database:Provider"] = "Sqlite",
-				["ConnectionStrings:Sqlite"] = $"Data Source={_dbPath}",
-				["Backup:Path"] = Path.Combine(_root, "backups"),
-				["Backup:Retention"] = retention.ToString()
+				["ConnectionStrings:Sqlite"] = $"Data Source={_dbPath}"
 			})
 			.Build();
 		return new BackupService(configuration, new DataDirectory(Path.GetDirectoryName(_dbPath)!), _clock, NullLogger<BackupService>.Instance);
@@ -81,11 +81,11 @@ public sealed class BackupServiceTests : IDisposable
 	{
 		var service = CreateService();
 
-		var entry = await service.CreateAsync(BackupKind.MANUAL, TestContext.Current.CancellationToken);
+		var entry = await service.CreateAsync(BackupKind.MANUAL, Folder, retention: 7, TestContext.Current.CancellationToken);
 
 		entry.Name.ShouldStartWith("submarine_backup_v2_");
 		entry.Name.ShouldEndWith("_MANUAL.zip");
-		var path = Path.Combine(_root, "backups", entry.Name);
+		var path = Path.Combine(Folder, entry.Name);
 		File.Exists(path).ShouldBeTrue();
 
 		using var archive = ZipFile.OpenRead(path);
@@ -117,9 +117,9 @@ public sealed class BackupServiceTests : IDisposable
 		await File.WriteAllTextAsync(Path.Combine(definitionsDir, "custom.yml"), "id: custom", TestContext.Current.CancellationToken);
 		var service = CreateService();
 
-		var entry = await service.CreateAsync(BackupKind.MANUAL, TestContext.Current.CancellationToken);
+		var entry = await service.CreateAsync(BackupKind.MANUAL, Folder, retention: 7, TestContext.Current.CancellationToken);
 
-		using var archive = ZipFile.OpenRead(Path.Combine(_root, "backups", entry.Name));
+		using var archive = ZipFile.OpenRead(Path.Combine(Folder, entry.Name));
 		archive.GetEntry("definitions/custom.yml").ShouldNotBeNull();
 		archive.GetEntry("appsettings.json").ShouldBeNull();
 	}
@@ -127,15 +127,15 @@ public sealed class BackupServiceTests : IDisposable
 	[Fact]
 	public async Task Create_ShouldApplyRetention_KeepingNewest()
 	{
-		var service = CreateService(retention: 2);
+		var service = CreateService();
 
-		await service.CreateAsync(BackupKind.SCHEDULED, TestContext.Current.CancellationToken);
+		await service.CreateAsync(BackupKind.SCHEDULED, Folder, retention: 2, TestContext.Current.CancellationToken);
 		_clock.Advance(TimeSpan.FromSeconds(1));
-		await service.CreateAsync(BackupKind.SCHEDULED, TestContext.Current.CancellationToken);
+		await service.CreateAsync(BackupKind.SCHEDULED, Folder, retention: 2, TestContext.Current.CancellationToken);
 		_clock.Advance(TimeSpan.FromSeconds(1));
-		await service.CreateAsync(BackupKind.MANUAL, TestContext.Current.CancellationToken);
+		await service.CreateAsync(BackupKind.MANUAL, Folder, retention: 2, TestContext.Current.CancellationToken);
 
-		var remaining = service.List();
+		var remaining = service.List(Folder);
 		remaining.Count.ShouldBe(2);
 		remaining.Select(x => x.Name).ShouldContain(n => n.EndsWith("_MANUAL.zip"));
 	}
@@ -143,35 +143,34 @@ public sealed class BackupServiceTests : IDisposable
 	[Fact]
 	public void List_ShouldOnlyContainValidBackupNames()
 	{
-		var directory = Path.Combine(_root, "backups");
-		Directory.CreateDirectory(directory);
-		File.WriteAllText(Path.Combine(directory, "submarine_backup_v2_20200101000000_MANUAL.zip"), "fake");
-		File.WriteAllText(Path.Combine(directory, "other.zip"), "fake");
-		File.WriteAllText(Path.Combine(directory, "../evil.zip"), "fake");
+		Directory.CreateDirectory(Folder);
+		File.WriteAllText(Path.Combine(Folder, "submarine_backup_v2_20200101000000_MANUAL.zip"), "fake");
+		File.WriteAllText(Path.Combine(Folder, "other.zip"), "fake");
+		File.WriteAllText(Path.Combine(Folder, "../evil.zip"), "fake");
 
 		var service = CreateService();
 
-		service.List().Select(x => x.Name).ShouldBe(["submarine_backup_v2_20200101000000_MANUAL.zip"]);
+		service.List(Folder).Select(x => x.Name).ShouldBe(["submarine_backup_v2_20200101000000_MANUAL.zip"]);
 	}
 
 	[Fact]
 	public async Task Delete_ShouldRemoveArchive_AndRejectBadNames()
 	{
 		var service = CreateService();
-		var entry = await service.CreateAsync(BackupKind.MANUAL, TestContext.Current.CancellationToken);
+		var entry = await service.CreateAsync(BackupKind.MANUAL, Folder, retention: 7, TestContext.Current.CancellationToken);
 
-		service.Delete(entry.Name);
-		service.List().ShouldBeEmpty();
+		service.Delete(entry.Name, Folder);
+		service.List(Folder).ShouldBeEmpty();
 
-		Should.Throw<InvalidOperationException>(() => service.Delete("../evil.zip"));
-		Should.Throw<KeyNotFoundException>(() => service.Delete(entry.Name));
+		Should.Throw<InvalidOperationException>(() => service.Delete("../evil.zip", Folder));
+		Should.Throw<KeyNotFoundException>(() => service.Delete(entry.Name, Folder));
 	}
 
 	[Fact]
 	public async Task Restore_ShouldStageValidatedDatabase_WithoutTouchingTheLiveFile()
 	{
 		var service = CreateService();
-		var entry = await service.CreateAsync(BackupKind.MANUAL, TestContext.Current.CancellationToken);
+		var entry = await service.CreateAsync(BackupKind.MANUAL, Folder, retention: 7, TestContext.Current.CancellationToken);
 
 		// Modify the live database after the backup.
 		using (var connection = new SqliteConnection($"Data Source={_dbPath}"))
@@ -182,8 +181,8 @@ public sealed class BackupServiceTests : IDisposable
 
 		CountRows(_dbPath).ShouldBe(2);
 
-		await using var stream = service.Open(entry.Name);
-		await service.RestoreAsync(stream, TestContext.Current.CancellationToken);
+		await using var stream = service.Open(entry.Name, Folder);
+		await service.RestoreAsync(stream, Folder, TestContext.Current.CancellationToken);
 
 		// The live database is untouched: connections may still be open against it. The validated
 		// backup is staged next to it, to be swapped in on the next application start.
@@ -206,7 +205,7 @@ public sealed class BackupServiceTests : IDisposable
 		}
 
 		await Should.ThrowAsync<InvalidOperationException>(async () =>
-			await service.RestoreAsync(File.OpenRead(invalidZip), TestContext.Current.CancellationToken));
+			await service.RestoreAsync(File.OpenRead(invalidZip), Folder, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -227,7 +226,7 @@ public sealed class BackupServiceTests : IDisposable
 		}
 
 		await Should.ThrowAsync<InvalidOperationException>(async () =>
-			await service.RestoreAsync(File.OpenRead(maliciousZip), TestContext.Current.CancellationToken));
+			await service.RestoreAsync(File.OpenRead(maliciousZip), Folder, TestContext.Current.CancellationToken));
 		File.Exists(Path.Combine(_root, "..", "..", "evil.txt")).ShouldBeFalse();
 	}
 
@@ -244,7 +243,7 @@ public sealed class BackupServiceTests : IDisposable
 		}
 
 		var exception = await Should.ThrowAsync<InvalidOperationException>(async () =>
-			await service.RestoreAsync(File.OpenRead(corruptZip), TestContext.Current.CancellationToken));
+			await service.RestoreAsync(File.OpenRead(corruptZip), Folder, TestContext.Current.CancellationToken));
 		exception.Message.ShouldContain("not a valid Sqlite database");
 		File.Exists(_dbPath + ".restore").ShouldBeFalse();
 	}
@@ -254,8 +253,8 @@ public sealed class BackupServiceTests : IDisposable
 	{
 		var service = CreateService();
 
-		Should.Throw<KeyNotFoundException>(() => service.Open("submarine_backup_v2_20200101000000_MANUAL.zip"));
-		Should.Throw<InvalidOperationException>(() => service.Open("../evil.zip"));
+		Should.Throw<KeyNotFoundException>(() => service.Open("submarine_backup_v2_20200101000000_MANUAL.zip", Folder));
+		Should.Throw<InvalidOperationException>(() => service.Open("../evil.zip", Folder));
 		await Task.CompletedTask;
 	}
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Submarine.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using Submarine.Infrastructure.Persistence;
 namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
 {
     [DbContext(typeof(SqliteSubmarineDbContext))]
-    partial class SqliteSubmarineDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926175320_ParitySystem")]
+    partial class ParitySystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
@@ -414,16 +417,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("EnableTorrent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("EnableUsenet")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
-
                     b.Property<int>("MinimumCustomFormatScore")
                         .HasColumnType("INTEGER");
 
@@ -473,14 +466,10 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("RemoveCompleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("RemoveFailed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SettingsJson")
                         .IsRequired()
@@ -919,22 +908,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.ToTable("ImportLists");
                 });
 
-            modelBuilder.Entity("Submarine.Core.Entities.ImportListConfig", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CleanLibraryLevel")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ImportListConfig");
-                });
-
             modelBuilder.Entity("Submarine.Core.Entities.ImportListExclusion", b =>
                 {
                     b.Property<int>("Id")
@@ -964,44 +937,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.ToTable("ImportListExclusions");
-                });
-
-            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("DisabledUntil")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("EscalationLevel")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ImportListId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("InitialFailure")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("LastSyncAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("MostRecentFailure")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ImportListId")
-                        .IsUnique();
-
-                    b.ToTable("ImportListStatuses");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>
@@ -1064,14 +999,7 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<int?>("ProxyId")
                         .HasColumnType("INTEGER");
 
-                    b.PrimitiveCollection<string>("RequiredFlags")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<int?>("SeasonPackSeedTimeMinutes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SeasonSearchMaximumSingleEpisodeAge")
                         .HasColumnType("INTEGER");
 
                     b.Property<double?>("SeedRatio")
@@ -1101,9 +1029,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<int>("Id")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("AllowHardcodedSubs")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("AvailabilityDelayDays")
                         .HasColumnType("INTEGER");
 
@@ -1120,10 +1045,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("WhitelistedHardcodedSubs")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -1749,41 +1670,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.ToTable("Notifications");
-                });
-
-            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("DisabledUntil")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("EscalationLevel")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("InitialFailure")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("MostRecentFailure")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("NotificationId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NotificationId")
-                        .IsUnique();
-
-                    b.ToTable("NotificationStatuses");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>
@@ -2677,17 +2563,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Navigation("Series");
                 });
 
-            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
-                {
-                    b.HasOne("Submarine.Core.Entities.ImportList", "ImportList")
-                        .WithMany()
-                        .HasForeignKey("ImportListId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ImportList");
-                });
-
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>
                 {
                     b.HasOne("Submarine.Core.Entities.DownloadClient", "DownloadClient")
@@ -2761,17 +2636,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Navigation("MediaVersion");
 
                     b.Navigation("Movie");
-                });
-
-            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
-                {
-                    b.HasOne("Submarine.Core.Entities.Notification", "Notification")
-                        .WithMany()
-                        .HasForeignKey("NotificationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Notification");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>
