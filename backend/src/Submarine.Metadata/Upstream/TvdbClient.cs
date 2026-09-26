@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Submarine.Contracts.Metadata;
 using Submarine.Metadata.Options;
@@ -14,11 +16,19 @@ namespace Submarine.Metadata.Upstream;
 ///     token for 28 days (their token lifetime), serialises logins through a
 ///     semaphore and retries a request once after a 401 forced re-login.
 /// </summary>
-public sealed class TvdbClient(IHttpClientFactory httpClientFactory, HybridCache cache, IOptions<TvdbOptions> options)
+public sealed class TvdbClient(
+	IHttpClientFactory httpClientFactory,
+	HybridCache cache,
+	IOptions<TvdbOptions> options,
+	ILogger<TvdbClient> logger)
 {
 	public const string ClientName = "tvdb";
 
 	private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+	private static readonly JsonSerializerOptions LoginJsonOptions = new(JsonSerializerDefaults.Web)
+	{
+		DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+	};
 	private static readonly HybridCacheEntryOptions TokenCacheOptions = new() { Expiration = TimeSpan.FromDays(28) };
 	private const string TokenCacheKey = "tvdb:token";
 	private const int MaxEpisodePages = 50;
@@ -76,10 +86,17 @@ public sealed class TvdbClient(IHttpClientFactory httpClientFactory, HybridCache
 		{
 			if (response.StatusCode == HttpStatusCode.NotFound) return null;
 			if (!response.IsSuccessStatusCode)
+			{
+				logger.LogWarning(
+					"TVDB request to '{Path}' failed with status {Status}.",
+					UpstreamPath.WithoutQuery(path),
+					(int)response.StatusCode);
 				throw new UpstreamException(
 					"tvdb",
 					(int)response.StatusCode,
-					$"TVDB request to '{path}' failed with status {(int)response.StatusCode}.");
+					$"TVDB request failed with status {(int)response.StatusCode}.");
+			}
+
 			return await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
 		}
 	}
@@ -115,16 +132,21 @@ public sealed class TvdbClient(IHttpClientFactory httpClientFactory, HybridCache
 	private async Task<string> LoginAsync(CancellationToken cancellationToken)
 	{
 		var client = httpClientFactory.CreateClient(ClientName);
+		var tvdbOptions = options.Value;
 		using var response = await client.PostAsJsonAsync(
 			"login",
-			new TvdbLoginRequest(options.Value.ApiKey),
-			JsonOptions,
+			new TvdbLoginRequest(tvdbOptions.ApiKey, string.IsNullOrEmpty(tvdbOptions.Pin) ? null : tvdbOptions.Pin),
+			LoginJsonOptions,
 			cancellationToken);
 		if (!response.IsSuccessStatusCode)
+		{
+			logger.LogWarning("TVDB login failed with status {Status}.", (int)response.StatusCode);
 			throw new UpstreamException(
 				"tvdb",
 				(int)response.StatusCode,
 				$"TVDB login failed with status {(int)response.StatusCode}.");
+		}
+
 		var payload = await response.Content.ReadFromJsonAsync<TvdbEnvelope<TvdbLoginData>>(JsonOptions, cancellationToken);
 		return payload?.Data?.Token
 			?? throw new UpstreamException("tvdb", (int)response.StatusCode, "TVDB login returned no token.");

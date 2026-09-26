@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Submarine.Contracts.Metadata;
 using Submarine.Metadata.Options;
@@ -11,7 +12,11 @@ namespace Submarine.Metadata.Upstream;
 ///     TMDB v3 access. Authenticates with a Bearer access token when
 ///     configured, otherwise with the v3 api_key query parameter.
 /// </summary>
-public sealed class TmdbClient(IHttpClientFactory httpClientFactory, IOptions<TmdbOptions> options, TimeProvider timeProvider)
+public sealed class TmdbClient(
+	IHttpClientFactory httpClientFactory,
+	IOptions<TmdbOptions> options,
+	TimeProvider timeProvider,
+	ILogger<TmdbClient> logger)
 {
 	public const string ClientName = "tmdb";
 	public const int MaxFanOutConcurrency = 4;
@@ -335,10 +340,17 @@ public sealed class TmdbClient(IHttpClientFactory httpClientFactory, IOptions<Tm
 		using var response = await client.GetAsync(path, cancellationToken);
 		if (response.StatusCode == HttpStatusCode.NotFound) return null;
 		if (!response.IsSuccessStatusCode)
+		{
+			logger.LogWarning(
+				"TMDB request to '{Path}' failed with status {Status}.",
+				UpstreamPath.WithoutQuery(path),
+				(int)response.StatusCode);
 			throw new UpstreamException(
 				"tmdb",
 				(int)response.StatusCode,
-				$"TMDB request to '{path}' failed with status {(int)response.StatusCode}.");
+				$"TMDB request failed with status {(int)response.StatusCode}.");
+		}
+
 		return await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
 	}
 

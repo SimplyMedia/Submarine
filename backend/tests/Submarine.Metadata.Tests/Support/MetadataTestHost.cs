@@ -21,7 +21,7 @@ public sealed class MetadataTestHost : IDisposable
 
 	public TvdbClient Tvdb => _provider.GetRequiredService<TvdbClient>();
 
-	public static MetadataTestHost Create(StubHttpMessageHandler handler, DateTimeOffset? now = null)
+	public static MetadataTestHost Create(StubHttpMessageHandler handler, DateTimeOffset? now = null, string? tvdbPin = null)
 	{
 		var services = new ServiceCollection();
 		services.AddHttpClient(TmdbClient.ClientName, client => client.BaseAddress = new Uri("https://tmdb.test/3/"))
@@ -29,9 +29,14 @@ public sealed class MetadataTestHost : IDisposable
 		services.AddHttpClient(TvdbClient.ClientName, client => client.BaseAddress = new Uri("https://tvdb.test/v4/"))
 			.ConfigurePrimaryHttpMessageHandler(() => handler);
 		services.AddHybridCache();
+		services.AddLogging();
 		services.AddSingleton<TimeProvider>(new FakeTimeProvider(now ?? new DateTimeOffset(2026, 9, 26, 12, 0, 0, TimeSpan.Zero)));
 		services.AddOptions<TmdbOptions>();
-		services.AddOptions<TvdbOptions>().Configure(o => o.ApiKey = "tvdb-key");
+		services.AddOptions<TvdbOptions>().Configure(o =>
+		{
+			o.ApiKey = "tvdb-key";
+			o.Pin = tvdbPin;
+		});
 		services.AddOptions<CacheOptions>();
 		services.AddSingleton<TmdbClient>();
 		services.AddSingleton<TvdbClient>();

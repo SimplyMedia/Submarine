@@ -23,6 +23,9 @@ public sealed class TvdbOptions
 
 	/// <summary>Project API key used for the v4 login.</summary>
 	public string ApiKey { get; set; } = string.Empty;
+
+	/// <summary>Optional subscriber PIN, sent as `pin` in the login body when set.</summary>
+	public string? Pin { get; set; }
 }
 
 public sealed class CacheOptions

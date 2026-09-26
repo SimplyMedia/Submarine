@@ -228,7 +228,7 @@ internal sealed record TmdbList(int Id, string? Name, string? Overview, IReadOnl
 
 // TVDB v4 shapes. Upstream is camelCase which matches the web serializer defaults.
 
-internal sealed record TvdbLoginRequest(string ApiKey);
+internal sealed record TvdbLoginRequest(string ApiKey, string? Pin = null);
 
 internal sealed record TvdbEnvelope<T>(T? Data);
 

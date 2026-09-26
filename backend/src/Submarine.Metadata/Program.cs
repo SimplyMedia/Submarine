@@ -98,6 +98,16 @@ app.Use(async (context, next) =>
 app.UseRateLimiter();
 app.MapMetadataEndpoints();
 app.MapGet("/_status/healthz", () => Results.Json(new { status = "ok" }));
+app.MapGet("/_status/ready", (IOptions<TmdbOptions> tmdbOptions, IOptions<TvdbOptions> tvdbOptions) =>
+{
+	var tmdb = tmdbOptions.Value;
+	var tvdb = tvdbOptions.Value;
+	return Results.Json(new
+	{
+		tmdb = !string.IsNullOrEmpty(tmdb.AccessToken) || !string.IsNullOrEmpty(tmdb.ApiKey),
+		tvdb = !string.IsNullOrEmpty(tvdb.ApiKey)
+	});
+});
 
 if (app.Configuration.GetValue("Swagger:Enabled", app.Environment.IsDevelopment()))
 {

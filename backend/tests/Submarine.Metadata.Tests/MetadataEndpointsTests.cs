@@ -81,6 +81,48 @@ public class MetadataEndpointsTests
 	}
 
 	[Fact]
+	public async Task GetMovie_ShouldNotLeakApiKeyOrQueryString_WhenUpstreamFailsWithApiKeyConfigured()
+	{
+		var handler = new StubHttpMessageHandler().Respond(HttpStatusCode.InternalServerError, "{}");
+		using var factory = new MetadataFactory(handler, new Dictionary<string, string?> { ["Tmdb:ApiKey"] = "super-secret" });
+
+		var response = await factory.CreateClient().GetAsync("/api/v1/movie/27205", TestContext.Current.CancellationToken);
+
+		response.StatusCode.ShouldBe(HttpStatusCode.BadGateway);
+		var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+		body.ShouldNotContain("super-secret");
+		body.ShouldNotContain("?");
+		body.ShouldContain("TMDB request failed with status 500.");
+	}
+
+	[Fact]
+	public async Task GetReady_ShouldReportConfiguredProviders()
+	{
+		using var factory = new MetadataFactory(
+			new StubHttpMessageHandler(),
+			new Dictionary<string, string?> { ["Tmdb:ApiKey"] = "secret", ["Tvdb:ApiKey"] = "" });
+
+		var response = await factory.CreateClient().GetAsync("/_status/ready", TestContext.Current.CancellationToken);
+
+		response.StatusCode.ShouldBe(HttpStatusCode.OK);
+		var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+		body.ShouldContain("\"tmdb\":true");
+		body.ShouldContain("\"tvdb\":false");
+	}
+
+	[Fact]
+	public async Task GetReady_ShouldBeAnonymous_WhenApiKeyIsConfigured()
+	{
+		using var factory = new MetadataFactory(
+			new StubHttpMessageHandler(),
+			new Dictionary<string, string?> { ["Auth:ApiKey"] = "secret" });
+
+		var response = await factory.CreateClient().GetAsync("/_status/ready", TestContext.Current.CancellationToken);
+
+		response.StatusCode.ShouldBe(HttpStatusCode.OK);
+	}
+
+	[Fact]
 	public async Task GetSeriesByTvdb_ShouldSerializeOrderingAndStatusAsStrings()
 	{
 		var handler = new StubHttpMessageHandler()
