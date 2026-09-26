@@ -69,7 +69,7 @@ watch(open, (value) => {
 <template>
 	<SDialog
 		v-model="open"
-		title="Interactive search"
+		:title="$t('components.shared.InteractiveSearchDialog.title')"
 		wide
 	>
 		<div class="interactive-search">
@@ -80,7 +80,7 @@ watch(open, (value) => {
 					:loading="loading"
 					@click="search"
 				>
-					Search again
+					{{ $t('components.shared.InteractiveSearchDialog.searchAgain') }}
 				</SButton>
 			</div>
 			<SSpinner v-if="loading && releases.length === 0" />

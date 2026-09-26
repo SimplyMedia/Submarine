@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useReferenceStore } from '~/stores/reference'
 import { protocolLabel, protocolOptions } from '~/utils/settings-labels'
@@ -10,6 +11,7 @@ type Protocol = components['schemas']['Protocol']
 const api = useApi()
 const reference = useReferenceStore()
 const { toast } = useToast()
+const { t } = useI18n()
 
 const loading = ref(true)
 const loadError = ref('')
@@ -49,7 +51,7 @@ async function load() {
 	loadError.value = ''
 	const [result] = await Promise.all([api.GET('/api/v1/delay-profiles'), reference.load()])
 	if (!result.data) {
-		loadError.value = 'Could not load delay profiles. Check your connection and try again.'
+		loadError.value = t('components.settings.DelayProfilesPanel.loadError')
 	}
 	profiles.value = result.data ?? []
 	loading.value = false
@@ -63,7 +65,7 @@ async function reorder(next: DelayProfileResource[]) {
 	const result = await api.PUT('/api/v1/delay-profiles/reorder', { body: next.map(p => p.id) })
 	reordering.value = false
 	if (!result.response.ok) {
-		toast({ title: 'Could not reorder', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('components.settings.DelayProfilesPanel.couldNotReorder'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		await load()
 	}
 }
@@ -122,7 +124,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('components.settings.DelayProfilesPanel.saved'), tone: 'ok' })
 		editorOpen.value = false
 		await load()
 	}
@@ -152,7 +154,7 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Delay profile deleted', tone: 'ok' })
+	toast({ title: t('components.settings.DelayProfilesPanel.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await load()
@@ -166,7 +168,7 @@ async function doDelete() {
 				variant="primary"
 				@click="openCreate"
 			>
-				Add delay profile
+				{{ $t('components.settings.DelayProfilesPanel.addDelayProfile') }}
 			</SButton>
 		</div>
 
@@ -177,14 +179,14 @@ async function doDelete() {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ $t('components.settings.DelayProfilesPanel.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
 		<SSpinner v-else-if="loading" />
 		<template v-else-if="profiles.length > 0">
 			<p class="hint">
-				Earlier profiles match first. Reorder to change priority.
+				{{ $t('components.settings.DelayProfilesPanel.reorderHint') }}
 			</p>
 			<ReorderList
 				:model-value="profiles"
@@ -194,12 +196,12 @@ async function doDelete() {
 				<template #default="{ item }">
 					<div class="delay-row">
 						<span class="delay-name">{{ item.name }}</span>
-						<span class="delay-detail">{{ protocolLabel(item.preferredProtocol) }} preferred</span>
-						<span class="delay-detail">Usenet {{ item.usenetDelayMinutes }}m</span>
-						<span class="delay-detail">Torrent {{ item.torrentDelayMinutes }}m</span>
+						<span class="delay-detail">{{ t(protocolLabel(item.preferredProtocol)) }} {{ $t('components.settings.DelayProfilesPanel.preferred') }}</span>
+						<span class="delay-detail">{{ $t('components.settings.DelayProfilesPanel.usenetDelay', { minutes: item.usenetDelayMinutes }) }}</span>
+						<span class="delay-detail">{{ $t('components.settings.DelayProfilesPanel.torrentDelay', { minutes: item.torrentDelayMinutes }) }}</span>
 						<div class="delay-actions">
 							<SIconButton
-								label="Edit delay profile"
+								:label="t('components.settings.DelayProfilesPanel.editProfile')"
 								@click="openEdit(item)"
 							>
 								<Icon
@@ -208,7 +210,7 @@ async function doDelete() {
 								/>
 							</SIconButton>
 							<SIconButton
-								label="Delete delay profile"
+								:label="t('components.settings.DelayProfilesPanel.deleteProfile')"
 								:disabled="item.name === 'Default'"
 								@click="confirmDelete(item)"
 							>
@@ -224,24 +226,24 @@ async function doDelete() {
 		</template>
 		<SEmptyState
 			v-else
-			message="No delay profiles yet. Add one to hold back grabs for a preferred protocol."
+			:message="$t('components.settings.DelayProfilesPanel.emptyMessage')"
 		>
 			<template #action>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add delay profile
+					{{ $t('components.settings.DelayProfilesPanel.addDelayProfile') }}
 				</SButton>
 			</template>
 		</SEmptyState>
 
 		<SDialog
 			v-model="editorOpen"
-			:title="editingId === null ? 'Add delay profile' : 'Edit delay profile'"
+			:title="editingId === null ? $t('components.settings.DelayProfilesPanel.addDelayProfile') : $t('components.settings.DelayProfilesPanel.editDelayProfile')"
 		>
 			<SField
-				label="Name"
+				:label="$t('components.settings.DelayProfilesPanel.name')"
 				:error="nameError"
 				control-id="delay-name"
 			>
@@ -252,28 +254,28 @@ async function doDelete() {
 				/>
 			</SField>
 			<SField
-				label="Preferred protocol"
+				:label="$t('components.settings.DelayProfilesPanel.preferredProtocol')"
 				control-id="delay-protocol"
 			>
 				<SSelect
 					v-model="preferredProtocol"
 					control-id="delay-protocol"
-					:options="protocolOptions"
+					:options="protocolOptions.map(option => ({ ...option, label: t(option.label) }))"
 				/>
 			</SField>
 			<div class="field-grid">
 				<SSwitch
 					v-model="enableUsenet"
-					label="Enable usenet"
+					:label="$t('components.settings.DelayProfilesPanel.enableUsenet')"
 				/>
 				<SSwitch
 					v-model="enableTorrent"
-					label="Enable torrent"
+					:label="$t('components.settings.DelayProfilesPanel.enableTorrent')"
 				/>
 			</div>
 			<div class="field-grid">
 				<SField
-					label="Usenet delay (minutes)"
+					:label="$t('components.settings.DelayProfilesPanel.usenetDelayMinutes')"
 					control-id="delay-usenet"
 				>
 					<SInput
@@ -284,7 +286,7 @@ async function doDelete() {
 					/>
 				</SField>
 				<SField
-					label="Torrent delay (minutes)"
+					:label="$t('components.settings.DelayProfilesPanel.torrentDelayMinutes')"
 					control-id="delay-torrent"
 				>
 					<SInput
@@ -297,15 +299,15 @@ async function doDelete() {
 			</div>
 			<SSwitch
 				v-model="bypassIfHighestQuality"
-				label="Bypass delay when already at the highest allowed quality"
+				:label="$t('components.settings.DelayProfilesPanel.bypassHighestQuality')"
 			/>
 			<SSwitch
 				v-model="bypassIfAboveCustomFormatScore"
-				label="Bypass delay above a custom format score"
+				:label="$t('components.settings.DelayProfilesPanel.bypassCustomFormatScore')"
 			/>
 			<SField
 				v-if="bypassIfAboveCustomFormatScore"
-				label="Minimum custom format score"
+				:label="$t('components.settings.DelayProfilesPanel.minimumCustomFormatScore')"
 				control-id="delay-min-score"
 			>
 				<SInput
@@ -315,7 +317,7 @@ async function doDelete() {
 					@update:model-value="minimumCustomFormatScore = Number($event) || 0"
 				/>
 			</SField>
-			<SField label="Tags">
+			<SField :label="$t('components.settings.DelayProfilesPanel.tags')">
 				<TagPicker v-model:tag-ids="tagIds" />
 			</SField>
 			<template #footer>
@@ -323,24 +325,24 @@ async function doDelete() {
 					variant="secondary"
 					@click="editorOpen = false"
 				>
-					Cancel
+					{{ $t('components.settings.DelayProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					Save changes
+					{{ $t('components.settings.DelayProfilesPanel.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete delay profile"
+			:title="$t('components.settings.DelayProfilesPanel.deleteTitle')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ $t('components.settings.DelayProfilesPanel.confirmDelete', { name: deleteTarget.name }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -355,14 +357,14 @@ async function doDelete() {
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ $t('components.settings.DelayProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete
+					{{ $t('components.settings.DelayProfilesPanel.delete') }}
 				</SButton>
 			</template>
 		</SDialog>

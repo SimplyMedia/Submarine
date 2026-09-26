@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 import { formatBytes, formatDate, formatDateTime, formatDuration } from '~/composables/useFormat'
 import {
@@ -7,6 +8,8 @@ import {
 	movieStatusLabel,
 	qualityLabel,
 } from '~/utils/library-labels'
+
+const { t } = useI18n()
 
 type MovieDetail = components['schemas']['MovieDetailDto']
 type MovieFile = components['schemas']['MovieFileDto']
@@ -29,7 +32,7 @@ const loadError = ref('')
 const movie = computed(() => detail.value?.movie ?? null)
 const files = computed<MovieFile[]>(() => detail.value?.files ?? [])
 
-useHead({ title: computed(() => movie.value?.title ?? 'Movie') })
+useHead({ title: computed(() => movie.value?.title ?? t('pages.movies.movie')) })
 
 function languageLabel(language: string): string {
 	return language.charAt(0) + language.slice(1).toLowerCase()
@@ -46,7 +49,7 @@ async function load() {
 		detail.value = detailResult.data
 	}
 	else {
-		loadError.value = 'Could not load this movie. Check your connection and try again.'
+		loadError.value = t('pages.movies.detailLoadError')
 	}
 	if (historyResult.data) {
 		history.value = historyResult.data
@@ -68,7 +71,7 @@ onMounted(async () => {
 	stopHandlers.push(events.on('MovieDeletedEvent', (payload) => {
 		const id = (payload as { movieId?: number }).movieId
 		if (id === movieId) {
-			toast.toast({ title: 'This movie was deleted', tone: 'info' })
+			toast.toast({ title: t('pages.movies.deleted'), tone: 'info' })
 			void navigateTo('/movies', { replace: true })
 		}
 	}))
@@ -137,27 +140,27 @@ watch(tagIds, async (value, previous) => {
 })
 
 const actionItems = computed(() => [
-	{ label: 'Refresh metadata', icon: 'lucide:refresh-cw', onSelect: () => void refresh() },
-	{ label: 'Rescan files', icon: 'lucide:folder-search', onSelect: () => void rescan() },
-	{ label: 'Search', icon: 'lucide:search', onSelect: () => void searchMovie() },
-	{ label: 'Interactive search', icon: 'lucide:search-check', onSelect: () => { interactiveSearchOpen.value = true } },
-	{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit() },
-	{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => { deleteOpen.value = true } },
+	{ label: t('pages.movies.actions.refreshMetadata'), icon: 'lucide:refresh-cw', onSelect: () => void refresh() },
+	{ label: t('pages.movies.actions.rescanFiles'), icon: 'lucide:folder-search', onSelect: () => void rescan() },
+	{ label: t('pages.movies.actions.search'), icon: 'lucide:search', onSelect: () => void searchMovie() },
+	{ label: t('pages.movies.actions.interactiveSearch'), icon: 'lucide:search-check', onSelect: () => { interactiveSearchOpen.value = true } },
+	{ label: t('pages.movies.actions.edit'), icon: 'lucide:pencil', onSelect: () => openEdit() },
+	{ label: t('pages.movies.actions.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => { deleteOpen.value = true } },
 ])
 
 async function refresh() {
 	const result = await api.POST('/api/v1/movies/{id}/refresh', { params: { path: { id: movieId } } })
-	toast.toast({ title: result.data ? 'Refresh queued' : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
+	toast.toast({ title: result.data ? t('pages.movies.refreshQueued') : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
 }
 
 async function rescan() {
 	const result = await api.POST('/api/v1/movies/{id}/rescan', { params: { path: { id: movieId } } })
-	toast.toast({ title: result.data ? 'Rescan queued' : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
+	toast.toast({ title: result.data ? t('pages.movies.rescanQueued') : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
 }
 
 async function searchMovie() {
 	const result = await api.POST('/api/v1/movies/{id}/search', { params: { path: { id: movieId } } })
-	toast.toast({ title: result.data ? 'Search queued' : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
+	toast.toast({ title: result.data ? t('pages.movies.searchQueued') : toApiError(result.error, result.response).message, tone: result.data ? 'ok' : 'danger' })
 }
 
 const interactiveSearchOpen = ref(false)
@@ -203,7 +206,7 @@ async function saveEdit() {
 		if (result.data) {
 			detail.value = result.data
 			editOpen.value = false
-			toast.toast({ title: 'Movie updated', tone: 'ok' })
+			toast.toast({ title: t('pages.movies.movieUpdated'), tone: 'ok' })
 		}
 		else {
 			toast.toast({ title: toApiError(result.error, result.response).message, tone: 'danger' })
@@ -226,7 +229,7 @@ async function confirmDelete() {
 			params: { path: { id: movieId }, query: { deleteFiles: deleteFiles.value, addImportListExclusion: deleteExclusion.value } },
 		})
 		if (result.response.ok) {
-			toast.toast({ title: `${movie.value?.title ?? 'Movie'} deleted`, tone: 'ok' })
+			toast.toast({ title: t('pages.movies.movieDeleted', { title: movie.value?.title ?? t('pages.movies.movie') }), tone: 'ok' })
 			await navigateTo('/movies', { replace: true })
 		}
 		else {
@@ -257,7 +260,7 @@ async function submitAddVersion() {
 		if (result.data && detail.value) {
 			detail.value.movie.versions = [...detail.value.movie.versions, result.data]
 			addVersionOpen.value = false
-			toast.toast({ title: 'Version added', tone: 'ok' })
+			toast.toast({ title: t('pages.movies.versionAdded'), tone: 'ok' })
 		}
 		else {
 			toast.toast({ title: toApiError(result.error, result.response).message, tone: 'danger' })
@@ -311,7 +314,7 @@ async function confirmDeleteVersion() {
 	})
 	if (result.response.ok) {
 		detail.value.movie.versions = detail.value.movie.versions.filter(version => version.id !== deleteVersionTarget.value?.id)
-		toast.toast({ title: 'Version removed', tone: 'ok' })
+		toast.toast({ title: t('pages.movies.versionRemoved'), tone: 'ok' })
 	}
 	else {
 		toast.toast({ title: toApiError(result.error, result.response).message, tone: 'danger' })
@@ -325,14 +328,14 @@ async function confirmDeleteVersion() {
 		<SSpinner v-if="loading && !movie" />
 		<SEmptyState
 			v-else-if="!movie"
-			:message="loadError || 'This movie could not be found.'"
+			:message="loadError || t('pages.movies.movieNotFound')"
 		>
 			<template #action>
 				<SButton
 					variant="primary"
 					@click="navigateTo('/movies')"
 				>
-					Back to movies
+					{{ t('pages.movies.backToMovies') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -353,19 +356,19 @@ async function confirmDeleteVersion() {
 						<h1>{{ movie.title }}<span v-if="movie.year"> ({{ movie.year }})</span></h1>
 						<MonitorToggle
 							:model-value="movie.monitored"
-							:label="`Toggle monitored for ${movie.title}`"
+							:label="t('pages.movies.toggleMonitored', { title: movie.title })"
 							@update:model-value="toggleMonitored"
 						/>
 					</div>
 					<div class="movie-badges">
 						<SBadge :tone="movie.hasFile ? 'ok' : 'neutral'">
-							{{ movieStatusLabel(movie.status) }}
+							{{ t(movieStatusLabel(movie.status)) }}
 						</SBadge>
 						<SBadge
 							v-if="movie.isAnime"
 							tone="neutral"
 						>
-							Anime
+							{{ t('pages.movies.anime') }}
 						</SBadge>
 						<SBadge
 							v-if="movie.certification"
@@ -383,9 +386,9 @@ async function confirmDeleteVersion() {
 						v-if="movie.inCinemasDate || movie.digitalReleaseDate || movie.physicalReleaseDate"
 						class="movie-meta"
 					>
-						<span v-if="movie.inCinemasDate">In cinemas {{ formatDate(movie.inCinemasDate) }}</span>
-						<span v-if="movie.digitalReleaseDate"> · Digital {{ formatDate(movie.digitalReleaseDate) }}</span>
-						<span v-if="movie.physicalReleaseDate"> · Physical {{ formatDate(movie.physicalReleaseDate) }}</span>
+						<span v-if="movie.inCinemasDate">{{ t('pages.movies.inCinemas', { date: formatDate(movie.inCinemasDate) }) }}</span>
+						<span v-if="movie.digitalReleaseDate"> · {{ t('pages.movies.digital', { date: formatDate(movie.digitalReleaseDate) }) }}</span>
+						<span v-if="movie.physicalReleaseDate"> · {{ t('pages.movies.physical', { date: formatDate(movie.physicalReleaseDate) }) }}</span>
 					</p>
 					<p
 						v-if="movie.overview"
@@ -398,10 +401,10 @@ async function confirmDeleteVersion() {
 						:to="`/movies/collections/${movie.tmdbCollectionId}`"
 						class="movie-collection-link"
 					>
-						Part of {{ movie.collectionTitle ?? 'a collection' }}
+						{{ t('pages.movies.partOfCollection', { title: movie.collectionTitle ?? t('pages.movies.aCollection') }) }}
 					</NuxtLink>
 					<SField
-						label="Tags"
+						:label="t('pages.movies.tags')"
 						class="movie-tags-field"
 					>
 						<TagPicker v-model:tag-ids="tagIds" />
@@ -411,14 +414,14 @@ async function confirmDeleteVersion() {
 					<SDropdownMenu :items="actionItems">
 						<template #trigger>
 							<SButton variant="secondary">
-								Actions
+								{{ t('pages.movies.actionsLabel') }}
 							</SButton>
 						</template>
 					</SDropdownMenu>
 				</div>
 			</div>
 
-			<SSection title="Versions">
+			<SSection :title="t('pages.movies.versions')">
 				<template #default>
 					<div class="version-list">
 						<div
@@ -440,11 +443,11 @@ async function confirmDeleteVersion() {
 							<span class="version-path">{{ version.rootFolderPath }}/{{ version.path }}</span>
 							<MonitorToggle
 								:model-value="version.monitored"
-								:label="`Toggle monitored for version ${version.name}`"
+								:label="t('pages.movies.toggleVersionMonitored', { name: version.name })"
 								@update:model-value="updateVersion(version, { monitored: $event })"
 							/>
 							<SIconButton
-								label="Remove version"
+								:label="t('pages.movies.removeVersion')"
 								:disabled="movie.versions.length <= 1"
 								@click="deleteVersionTarget = version"
 							>
@@ -459,25 +462,25 @@ async function confirmDeleteVersion() {
 						size="sm"
 						@click="addVersionOpen = true"
 					>
-						Add version
+						{{ t('pages.movies.addVersion') }}
 					</SButton>
 				</template>
 			</SSection>
 
-			<SSection title="Files">
+			<SSection :title="t('pages.movies.files')">
 				<STable
 					v-if="files.length > 0"
 					:columns="[
-						{ key: 'quality', label: 'Quality' },
-						{ key: 'size', label: 'Size', align: 'right' },
-						{ key: 'releaseGroup', label: 'Release group' },
-						{ key: 'languages', label: 'Languages' },
+						{ key: 'quality', label: t('pages.movies.quality') },
+						{ key: 'size', label: t('pages.movies.size'), align: 'right' },
+						{ key: 'releaseGroup', label: t('pages.movies.releaseGroup') },
+						{ key: 'languages', label: t('pages.movies.languages') },
 					]"
 					:rows="files"
 					:row-key="(row) => row.id"
 				>
 					<template #cell-quality="{ row }">
-						{{ qualityLabel(row.quality) }}
+						{{ t(qualityLabel(row.quality)) }}
 					</template>
 					<template #cell-size="{ row }">
 						{{ formatBytes(row.size) }}
@@ -487,44 +490,44 @@ async function confirmDeleteVersion() {
 						<span
 							v-else
 							class="s-cell-muted"
-						>None</span>
+						>{{ t('pages.movies.none') }}</span>
 					</template>
 					<template #cell-languages="{ row }">
 						<span v-if="row.languages.length > 0">{{ row.languages.map(languageLabel).join(', ') }}</span>
 						<span
 							v-else
 							class="s-cell-muted"
-						>None</span>
+						>{{ t('pages.movies.none') }}</span>
 					</template>
 				</STable>
 				<SEmptyState
 					v-else
-					message="No files yet. Run a search to find a release."
+					:message="t('pages.movies.noFiles')"
 				>
 					<template #action>
 						<SButton
 							variant="primary"
 							@click="searchMovie"
 						>
-							Search
+							{{ t('pages.movies.search') }}
 						</SButton>
 					</template>
 				</SEmptyState>
 			</SSection>
 
-			<SSection title="History">
+			<SSection :title="t('pages.movies.history')">
 				<STable
 					v-if="history.length > 0"
 					:columns="[
-						{ key: 'type', label: 'Event' },
-						{ key: 'sourceTitle', label: 'Release' },
-						{ key: 'date', label: 'Date' },
+						{ key: 'type', label: t('pages.movies.event') },
+						{ key: 'sourceTitle', label: t('pages.movies.release') },
+						{ key: 'date', label: t('pages.movies.date') },
 					]"
 					:rows="history"
 					:row-key="(row) => row.id"
 				>
 					<template #cell-type="{ row }">
-						{{ historyEventTypeLabel(row.type as never) }}
+						{{ t(historyEventTypeLabel(row.type as never)) }}
 					</template>
 					<template #cell-date="{ row }">
 						{{ formatDateTime(row.date) }}
@@ -532,27 +535,27 @@ async function confirmDeleteVersion() {
 				</STable>
 				<SEmptyState
 					v-else
-					message="No activity yet"
+					:message="t('pages.movies.noActivity')"
 				/>
 			</SSection>
 		</template>
 
 		<SDialog
 			v-model="editOpen"
-			title="Edit movie"
+			:title="t('pages.movies.editTitle')"
 		>
 			<div class="add-form">
-				<SField label="Minimum availability">
+				<SField :label="t('pages.movies.minimumAvailability')">
 					<SSelect
 						v-model="editForm.minimumAvailability"
-						:options="minimumAvailabilityOptions"
+						:options="minimumAvailabilityOptions.map(option => ({ ...option, label: t(option.label) }))"
 					/>
 				</SField>
 				<SCheckbox
 					v-model="editForm.isAnime"
-					label="This is an anime"
+					:label="t('pages.movies.thisIsAnime')"
 				/>
-				<SField label="Root folder">
+				<SField :label="t('pages.movies.rootFolder')">
 					<SSelect
 						v-model="editForm.rootFolderId"
 						:options="rootFolderOptions"
@@ -560,115 +563,115 @@ async function confirmDeleteVersion() {
 				</SField>
 				<SCheckbox
 					v-model="editForm.moveFiles"
-					label="Move files on disk"
+					:label="t('pages.movies.moveFilesOnDisk')"
 				/>
 			</div>
 			<template #footer>
 				<SButton @click="editOpen = false">
-					Cancel
+					{{ t('pages.movies.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="savingEdit"
 					@click="saveEdit"
 				>
-					Save changes
+					{{ t('pages.movies.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteOpen"
-			title="Delete movie"
-			:description="`This removes ${movie?.title} from the library.`"
+			:title="t('pages.movies.deleteTitle')"
+			:description="t('pages.movies.deleteMovieDescription', { title: movie?.title })"
 		>
 			<SCheckbox
 				v-model="deleteFiles"
-				label="Delete files on disk"
+				:label="t('pages.movies.deleteFiles')"
 			/>
 			<SCheckbox
 				v-model="deleteExclusion"
-				label="Add an import list exclusion"
+				:label="t('pages.movies.importListExclusion')"
 			/>
 			<template #footer>
 				<SButton @click="deleteOpen = false">
-					Cancel
+					{{ t('pages.movies.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="confirmDelete"
 				>
-					Delete
+					{{ t('pages.movies.delete') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="addVersionOpen"
-			title="Add version"
+			:title="t('pages.movies.addVersion')"
 		>
 			<div class="add-form">
-				<SField label="Name">
+				<SField :label="t('pages.movies.name')">
 					<SInput
 						v-model="addVersionForm.name"
-						placeholder="Main"
+						:placeholder="t('pages.movies.mainPlaceholder')"
 					/>
 				</SField>
-				<SField label="Quality profile">
+				<SField :label="t('pages.movies.qualityProfile')">
 					<SSelect
 						v-model="addVersionForm.qualityProfileId"
 						:options="qualityOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.movies.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Language profile">
+				<SField :label="t('pages.movies.languageProfile')">
 					<SSelect
 						v-model="addVersionForm.languageProfileId"
 						:options="languageOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.movies.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Root folder">
+				<SField :label="t('pages.movies.rootFolder')">
 					<SSelect
 						v-model="addVersionForm.rootFolderId"
 						:options="rootFolderOptions"
-						placeholder="Use the movie's root folder"
+						:placeholder="t('pages.movies.movieRootFolder')"
 					/>
 				</SField>
 			</div>
 			<template #footer>
 				<SButton @click="addVersionOpen = false">
-					Cancel
+					{{ t('pages.movies.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="addingVersion"
 					@click="submitAddVersion"
 				>
-					Add version
+					{{ t('pages.movies.addVersion') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteVersionOpen"
-			title="Remove version"
-			description="This removes the version and, if selected, its files."
+			:title="t('pages.movies.removeVersion')"
+			:description="t('pages.movies.removeVersionDescription')"
 		>
 			<SCheckbox
 				v-model="deleteVersionFiles"
-				label="Delete files on disk"
+				:label="t('pages.movies.deleteFiles')"
 			/>
 			<template #footer>
 				<SButton @click="deleteVersionTarget = null">
-					Cancel
+					{{ t('pages.movies.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					@click="confirmDeleteVersion"
 				>
-					Remove
+					{{ t('pages.movies.remove') }}
 				</SButton>
 			</template>
 		</SDialog>

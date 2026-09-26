@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { i18n } from '~/i18n'
 import {
 	authMethodLabel,
 	authMethodOptions,
@@ -28,7 +29,7 @@ describe('settings-labels', () => {
 	it('qualityResolutionLabel converts R###_P members to a plain resolution string', () => {
 		expect(qualityResolutionLabel('R1080_P')).toBe('1080p')
 		expect(qualityResolutionLabel('R2160_P')).toBe('2160p')
-		expect(qualityResolutionLabel(null)).toBe('Unknown')
+		expect(i18n.global.t(qualityResolutionLabel(null))).toBe('Unknown')
 	})
 
 	it('every *Options list has a *Label lookup that resolves each of its own values', () => {

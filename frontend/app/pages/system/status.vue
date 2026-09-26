@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { healthTypeLabel, healthTypeTone } from '~/utils/system-labels'
 import { formatBytes, formatDateTime } from '~/composables/useFormat'
 import { navChildren } from '~/navigation'
 import type { components } from '~/types/api'
 
-useHead({ title: 'System' })
+const { t } = useI18n()
+useHead({ title: t('pages.system.status.title') })
 
 type DiskSpaceReport = components['schemas']['DiskSpaceReportDto']
 type HealthIssue = components['schemas']['HealthIssueDto']
@@ -44,7 +46,7 @@ async function loadAll() {
 		healthIssues.value = healthResult.data
 	}
 	if (!statusResult.data || !diskResult.data || !healthResult.data) {
-		loadError.value = 'Could not load system status. Check your connection and try again.'
+		loadError.value = t('pages.system.status.loadFailed')
 	}
 	loading.value = false
 }
@@ -59,12 +61,12 @@ const uptimeText = computed(() => {
 	const minutes = totalMinutes % 60
 	const parts: string[] = []
 	if (days > 0) {
-		parts.push(`${days}d`)
+		parts.push(t('pages.system.status.daysShort', { count: days }))
 	}
 	if (days > 0 || hours > 0) {
-		parts.push(`${hours}h`)
+		parts.push(t('pages.system.status.hoursShort', { count: hours }))
 	}
-	parts.push(`${minutes}m`)
+	parts.push(t('pages.system.status.minutesShort', { count: minutes }))
 	return parts.join(' ')
 })
 
@@ -72,7 +74,7 @@ const diskRows = computed(() => {
 	if (!diskSpace.value) {
 		return []
 	}
-	const rows = [{ label: 'Application data', ...diskSpace.value.appData }]
+	const rows = [{ label: t('pages.system.status.applicationData'), ...diskSpace.value.appData }]
 	for (const folder of diskSpace.value.rootFolders) {
 		rows.push({ label: folder.path, ...folder })
 	}
@@ -87,16 +89,16 @@ function usagePercent(freeBytes: number | null, totalBytes: number | null): numb
 }
 
 const diskColumns = [
-	{ key: 'label', label: 'Location' },
-	{ key: 'free', label: 'Free', align: 'right' as const },
-	{ key: 'total', label: 'Total', align: 'right' as const },
-	{ key: 'usage', label: 'Usage' },
+	{ key: 'label', label: t('pages.system.status.location') },
+	{ key: 'free', label: t('pages.system.status.free'), align: 'right' as const },
+	{ key: 'total', label: t('pages.system.status.total'), align: 'right' as const },
+	{ key: 'usage', label: t('pages.system.status.usage') },
 ]
 
 const healthColumns = [
-	{ key: 'type', label: 'Type' },
-	{ key: 'source', label: 'Source' },
-	{ key: 'message', label: 'Message' },
+	{ key: 'type', label: t('pages.system.status.type') },
+	{ key: 'source', label: t('pages.system.status.source') },
+	{ key: 'message', label: t('pages.system.status.message') },
 	{ key: 'wiki', label: '' },
 ]
 
@@ -129,12 +131,12 @@ async function confirmRestart() {
 			window.location.reload()
 		}
 		else {
-			toast({ title: 'Restart is taking longer than expected', tone: 'danger' })
+			toast({ title: t('pages.system.status.restartSlow'), tone: 'danger' })
 			restarting.value = false
 		}
 	}
 	catch {
-		toast({ title: 'Could not restart the application', tone: 'danger' })
+		toast({ title: t('pages.system.status.restartFailed'), tone: 'danger' })
 		restarting.value = false
 	}
 }
@@ -145,10 +147,10 @@ async function confirmShutdown() {
 		const api = useApi()
 		await api.POST('/api/v1/system/shutdown')
 		shutdownOpen.value = false
-		toast({ title: 'Shutting down', description: 'Start the application again to continue.', tone: 'info' })
+		toast({ title: t('pages.system.status.shuttingDown'), description: t('pages.system.status.startAgain'), tone: 'info' })
 	}
 	catch {
-		toast({ title: 'Could not shut down the application', tone: 'danger' })
+		toast({ title: t('pages.system.status.shutdownFailed'), tone: 'danger' })
 		shuttingDown.value = false
 	}
 }
@@ -167,25 +169,25 @@ onUnmounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="System">
+		<SPageHeader :title="t('pages.system.status.title')">
 			<template #actions>
 				<SButton
 					variant="secondary"
 					@click="restartOpen = true"
 				>
-					Restart
+					{{ t('pages.system.status.restart') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					@click="shutdownOpen = true"
 				>
-					Shut down
+					{{ t('pages.system.status.shutDown') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="System"
+			:label="t('pages.system.status.systemNav')"
 			:items="navChildren('system')"
 		/>
 
@@ -194,7 +196,7 @@ onUnmounted(() => {
 			class="status-restarting"
 		>
 			<SSpinner :size="16" />
-			<span>Restarting, waiting for the application to come back…</span>
+			<span>{{ t('pages.system.status.restarting') }}</span>
 		</div>
 
 		<template v-else-if="loadError">
@@ -204,7 +206,7 @@ onUnmounted(() => {
 			>
 				<template #action>
 					<SButton @click="loadAll">
-						Retry
+						{{ t('pages.system.status.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -214,78 +216,78 @@ onUnmounted(() => {
 			<SSkeleton height="200px" />
 		</template>
 		<template v-else-if="status">
-			<SSection title="Overview">
+			<SSection :title="t('pages.system.status.overview')">
 				<dl class="fact-grid">
 					<div class="fact-row">
-						<dt>Version</dt>
+						<dt>{{ t('pages.system.status.version') }}</dt>
 						<dd>{{ status.version }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Uptime</dt>
+						<dt>{{ t('pages.system.status.uptime') }}</dt>
 						<dd>{{ uptimeText }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Started</dt>
+						<dt>{{ t('pages.system.status.started') }}</dt>
 						<dd>{{ formatDateTime(status.startTime) }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Operating system</dt>
+						<dt>{{ t('pages.system.status.operatingSystem') }}</dt>
 						<dd>{{ status.os }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Runtime</dt>
+						<dt>{{ t('pages.system.status.runtime') }}</dt>
 						<dd>{{ status.runtime }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Application data</dt>
+						<dt>{{ t('pages.system.status.applicationData') }}</dt>
 						<dd>{{ status.appData }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Database provider</dt>
+						<dt>{{ t('pages.system.status.databaseProvider') }}</dt>
 						<dd>{{ status.databaseProvider }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>URL base</dt>
+						<dt>{{ t('pages.system.status.urlBase') }}</dt>
 						<dd>{{ status.urlBase || '/' }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Authentication</dt>
-						<dd>{{ status.authMethod === 'NONE' ? 'API key only' : 'Sign-in required' }}</dd>
+						<dt>{{ t('pages.system.status.authentication') }}</dt>
+						<dd>{{ status.authMethod === 'NONE' ? t('pages.system.status.apiKeyOnly') : t('pages.system.status.signInRequired') }}</dd>
 					</div>
 					<div class="fact-row">
-						<dt>Running in Docker</dt>
-						<dd>{{ status.isDocker ? 'Yes' : 'No' }}</dd>
+						<dt>{{ t('pages.system.status.runningInDocker') }}</dt>
+						<dd>{{ status.isDocker ? t('pages.system.status.yes') : t('pages.system.status.no') }}</dd>
 					</div>
 				</dl>
 			</SSection>
 
-			<SSection title="Disk space">
+			<SSection :title="t('pages.system.status.diskSpace')">
 				<STable
 					:columns="diskColumns"
 					:rows="diskRows"
 					:row-key="row => row.label"
 				>
 					<template #cell-free="{ row }">
-						{{ row.freeBytes != null ? formatBytes(row.freeBytes) : 'Unknown' }}
+						{{ row.freeBytes != null ? formatBytes(row.freeBytes) : t('pages.system.status.unknown') }}
 					</template>
 					<template #cell-total="{ row }">
-						{{ row.totalBytes != null ? formatBytes(row.totalBytes) : 'Unknown' }}
+						{{ row.totalBytes != null ? formatBytes(row.totalBytes) : t('pages.system.status.unknown') }}
 					</template>
 					<template #cell-usage="{ row }">
 						<SProgress
 							v-if="row.freeBytes != null && row.totalBytes != null"
 							:value="usagePercent(row.freeBytes, row.totalBytes)"
-							:label="`${row.label} usage`"
+							:label="t('pages.system.status.usageLabel', { label: row.label })"
 						/>
 						<span
 							v-else
 							class="s-cell-muted"
-						>Unknown</span>
+						>{{ t('pages.system.status.unknown') }}</span>
 					</template>
 				</STable>
 			</SSection>
 
-			<SSection title="Health issues">
+			<SSection :title="t('pages.system.status.healthIssues')">
 				<STable
 					:columns="healthColumns"
 					:rows="healthIssues"
@@ -293,13 +295,13 @@ onUnmounted(() => {
 				>
 					<template #empty>
 						<SEmptyState
-							message="No health issues. Everything looks healthy."
+							:message="t('pages.system.status.noHealthIssues')"
 							icon="lucide:heart-pulse"
 						/>
 					</template>
 					<template #cell-type="{ row }">
 						<SBadge :tone="healthTypeTone(row.type)">
-							{{ healthTypeLabel(row.type) }}
+							{{ t(healthTypeLabel(row.type)) }}
 						</SBadge>
 					</template>
 					<template #cell-wiki="{ row }">
@@ -310,7 +312,7 @@ onUnmounted(() => {
 							rel="noopener"
 							class="status-wiki-link"
 						>
-							Learn more
+							{{ t('pages.system.status.learnMore') }}
 						</a>
 					</template>
 				</STable>
@@ -319,18 +321,17 @@ onUnmounted(() => {
 
 		<ConfirmDialog
 			v-model="restartOpen"
-			title="Restart Submarine?"
-			description="The application will stop and start again. This takes a few seconds."
-			confirm-label="Restart"
+			:title="t('pages.system.status.restartConfirmTitle')"
+			:description="t('pages.system.status.restartConfirmDescription')"
+			:confirm-label="t('pages.system.status.restart')"
 			:busy="restarting"
 			@confirm="confirmRestart"
 		/>
 		<ConfirmDialog
 			v-model="shutdownOpen"
-			title="Shut down Submarine?"
-			description="The application will stop and will not restart on its own. You will need to start it again manually."
-			confirm-label="Shut down"
-			danger
+			:title="t('pages.system.status.shutdownConfirmTitle')"
+			:description="t('pages.system.status.shutdownConfirmDescription')"
+			:confirm-label="t('pages.system.status.shutDown')"
 			:busy="shuttingDown"
 			@confirm="confirmShutdown"
 		/>

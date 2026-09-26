@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
 import { useReferenceStore } from '~/stores/reference'
@@ -6,9 +7,13 @@ import {
 	colonReplacementOptions,
 	downloadPropersAndRepacksOptions,
 	fileDateOptions,
-	multiEpisodeStyleOptions, mediaKindOptions,
+	humanizeEnumValue,
+	mediaKindOptions,
+	multiEpisodeStyleOptions,
 } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
+
+const { t } = useI18n()
 
 type MediaManagementConfigResource = components['schemas']['MediaManagementConfigResource']
 type NamingConfigResource = components['schemas']['NamingConfigResource']
@@ -16,7 +21,7 @@ type RootFolderDto = components['schemas']['RootFolderDto']
 type NamingSample = components['schemas']['NamingSample']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Media management' })
+useHead({ title: t('pages.settings.mediaManagement.title', 'Media management') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -35,6 +40,16 @@ const examples = ref<NamingSample[]>([])
 const namingStatus = ref<'idle' | 'saving' | 'error'>('idle')
 
 const NAMING_SAMPLE_LABELS: Record<string, string> = {
+	StandardEpisodeFormat: 'pages.settings.mediaManagement.samples.standardEpisode',
+	DailyEpisodeFormat: 'pages.settings.mediaManagement.samples.dailyEpisode',
+	AnimeEpisodeFormat: 'pages.settings.mediaManagement.samples.animeEpisode',
+	SeriesFolderFormat: 'pages.settings.mediaManagement.samples.seriesFolder',
+	SeasonFolderFormat: 'pages.settings.mediaManagement.samples.seasonFolder',
+	SpecialsFolderFormat: 'pages.settings.mediaManagement.samples.specialsFolder',
+	MovieFormat: 'pages.settings.mediaManagement.samples.movie',
+	MovieFolderFormat: 'pages.settings.mediaManagement.samples.movieFolder',
+}
+const NAMING_SAMPLE_FALLBACKS: Record<string, string> = {
 	StandardEpisodeFormat: 'Standard episode',
 	DailyEpisodeFormat: 'Daily episode',
 	AnimeEpisodeFormat: 'Anime episode',
@@ -92,7 +107,7 @@ const deleteFolderTargetOpen = computed({
 
 function formatBytesGb(bytes: number | null): string {
 	if (bytes === null) {
-		return 'Unknown'
+		return t('pages.settings.mediaManagement.unknown', 'Unknown')
 	}
 	return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
 }
@@ -114,7 +129,7 @@ async function saveRootFolder() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Root folder added', tone: 'ok' })
+		toast({ title: t('pages.settings.mediaManagement.rootFolderAdded', 'Root folder added'), tone: 'ok' })
 		rootFolderDialogOpen.value = false
 		await reference.load(true)
 	}
@@ -139,7 +154,7 @@ async function deleteRootFolder() {
 		deletingFolder.value = false
 		return
 	}
-	toast({ title: 'Root folder removed', tone: 'ok' })
+	toast({ title: t('pages.settings.mediaManagement.rootFolderRemoved', 'Root folder removed'), tone: 'ok' })
 	deleteFolderTarget.value = null
 	deletingFolder.value = false
 	await reference.load(true)
@@ -153,17 +168,22 @@ async function saveMediaConfig() {
 	const result = await api.PUT('/api/v1/config/media-management', { body: mediaDraft.value })
 	mediaSaving.value = false
 	if (!result.data) {
-		toast({ title: 'Could not save', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.mediaManagement.saveError', 'Could not save'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
 	mediaDirty.markSaved(result.data)
-	toast({ title: 'Saved', tone: 'ok' })
+	toast({ title: t('pages.settings.mediaManagement.saved', 'Saved'), tone: 'ok' })
+}
+
+function namingSampleLabel(name: string): string {
+	const key = NAMING_SAMPLE_LABELS[name]
+	return key ? t(key, NAMING_SAMPLE_FALLBACKS[name] ?? name) : name
 }
 
 const rootFolderColumns = [
-	{ key: 'path', label: 'Path' },
-	{ key: 'mediaKind', label: 'Kind' },
-	{ key: 'free', label: 'Free space', align: 'right' as const },
+	{ key: 'path', label: t('pages.settings.mediaManagement.path', 'Path') },
+	{ key: 'mediaKind', label: t('pages.settings.mediaManagement.kind', 'Kind') },
+	{ key: 'free', label: t('pages.settings.mediaManagement.freeSpace', 'Free space'), align: 'right' as const },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -187,47 +207,47 @@ onMounted(async () => {
 
 <template>
 	<div>
-		<SPageHeader title="Media management" />
+		<SPageHeader :title="t('pages.settings.mediaManagement.title', 'Media management')" />
 
 		<SSpinner v-if="loading" />
 
 		<template v-else-if="mediaDraft">
-			<SSection title="File management">
+			<SSection :title="t('pages.settings.mediaManagement.fileManagement', 'File management')">
 				<div class="field-grid">
 					<SSwitch
 						v-model="mediaDraft.useHardlinks"
-						label="Use hardlinks instead of copying"
+						:label="t('pages.settings.mediaManagement.useHardlinks', 'Use hardlinks instead of copying')"
 					/>
 					<SSwitch
 						v-model="mediaDraft.enableMediaInfo"
-						label="Extract media info on import"
+						:label="t('pages.settings.mediaManagement.extractMediaInfo', 'Extract media info on import')"
 					/>
 					<SSwitch
 						v-model="mediaDraft.importExtraFiles"
-						label="Import extra files (subtitles, NFO)"
+						:label="t('pages.settings.mediaManagement.importExtraFiles', 'Import extra files (subtitles, NFO)')"
 					/>
 				</div>
 				<SField
-					label="File date"
-					hint="Sets the file's modified timestamp on import and rescan."
+					:label="t('pages.settings.mediaManagement.fileDate', 'File date')"
+					:hint="t('pages.settings.mediaManagement.fileDateHint', 'Sets the file\'s modified timestamp on import and rescan.')"
 					control-id="file-date"
 				>
 					<SSelect
 						v-model="mediaDraft.fileDate"
 						control-id="file-date"
-						:options="fileDateOptions"
+						:options="fileDateOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 				<p class="nfo-hint">
-					NFO and image files are written by
+					{{ t('pages.settings.mediaManagement.nfoHintPrefix', 'NFO and image files are written by') }}
 					<NuxtLink to="/settings/metadata-consumers">
-						metadata consumers
+						{{ t('pages.settings.mediaManagement.metadataConsumersLink', 'metadata consumers') }}
 					</NuxtLink>.
 				</p>
 				<SField
 					v-if="mediaDraft.importExtraFiles"
-					label="Extra file extensions"
-					hint="Comma separated, for example srt,nfo,jpg"
+					:label="t('pages.settings.mediaManagement.extraFileExtensions', 'Extra file extensions')"
+					:hint="t('pages.settings.mediaManagement.extraFileExtensionsHint', 'Comma separated, for example srt,nfo,jpg')"
 					control-id="extra-extensions"
 				>
 					<SInput
@@ -237,10 +257,10 @@ onMounted(async () => {
 				</SField>
 			</SSection>
 
-			<SSection title="Free space">
+			<SSection :title="t('pages.settings.mediaManagement.freeSpaceSection', 'Free space')">
 				<div class="field-grid">
 					<SField
-						label="Minimum free space (MB)"
+						:label="t('pages.settings.mediaManagement.minimumFreeSpace', 'Minimum free space (MB)')"
 						control-id="min-free-space"
 					>
 						<SInput
@@ -252,37 +272,37 @@ onMounted(async () => {
 					</SField>
 					<SSwitch
 						v-model="mediaDraft.skipFreeSpaceCheck"
-						label="Skip the free space check"
+						:label="t('pages.settings.mediaManagement.skipFreeSpaceCheck', 'Skip the free space check')"
 					/>
 				</div>
 			</SSection>
 
-			<SSection title="Folders">
+			<SSection :title="t('pages.settings.mediaManagement.folders', 'Folders')">
 				<div class="field-grid">
 					<SSwitch
 						v-model="mediaDraft.createEmptySeriesFolders"
-						label="Create empty series folders on add"
+						:label="t('pages.settings.mediaManagement.createEmptySeriesFolders', 'Create empty series folders on add')"
 					/>
 					<SSwitch
 						v-model="mediaDraft.createEmptyMovieFolders"
-						label="Create empty movie folders on add"
+						:label="t('pages.settings.mediaManagement.createEmptyMovieFolders', 'Create empty movie folders on add')"
 					/>
 					<SSwitch
 						v-model="mediaDraft.deleteEmptyFolders"
-						label="Delete empty folders after moves"
+						:label="t('pages.settings.mediaManagement.deleteEmptyFolders', 'Delete empty folders after moves')"
 					/>
 					<SSwitch
 						v-model="mediaDraft.unmonitorDeletedFiles"
-						label="Unmonitor deleted files found during scans"
+						:label="t('pages.settings.mediaManagement.unmonitorDeletedFiles', 'Unmonitor deleted files found during scans')"
 					/>
 				</div>
 			</SSection>
 
-			<SSection title="Recycle bin">
+			<SSection :title="t('pages.settings.mediaManagement.recycleBin', 'Recycle bin')">
 				<div class="field-grid">
 					<SField
-						label="Recycle bin path"
-						hint="Empty deletes files immediately instead of moving them here"
+						:label="t('pages.settings.mediaManagement.recycleBinPath', 'Recycle bin path')"
+						:hint="t('pages.settings.mediaManagement.recycleBinPathHint', 'Empty deletes files immediately instead of moving them here')"
 						control-id="recycle-path"
 					>
 						<PathPicker
@@ -291,7 +311,7 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="Cleanup after (days)"
+						:label="t('pages.settings.mediaManagement.cleanupAfterDays', 'Cleanup after (days)')"
 						control-id="recycle-days"
 					>
 						<SInput
@@ -304,11 +324,11 @@ onMounted(async () => {
 				</div>
 			</SSection>
 
-			<SSection title="Permissions">
+			<SSection :title="t('pages.settings.mediaManagement.permissions', 'Permissions')">
 				<div class="field-grid">
 					<SField
-						label="Folder mode"
-						hint="Octal, for example 755. Empty to skip."
+						:label="t('pages.settings.mediaManagement.folderMode', 'Folder mode')"
+						:hint="t('pages.settings.mediaManagement.folderModeHint', 'Octal, for example 755. Empty to skip.')"
 						control-id="chmod-folder"
 					>
 						<SInput
@@ -318,8 +338,8 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="File mode"
-						hint="Octal, for example 644. Empty to skip."
+						:label="t('pages.settings.mediaManagement.fileMode', 'File mode')"
+						:hint="t('pages.settings.mediaManagement.fileModeHint', 'Octal, for example 644. Empty to skip.')"
 						control-id="chmod-file"
 					>
 						<SInput
@@ -329,8 +349,8 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="Group owner"
-						hint="Empty to skip."
+						:label="t('pages.settings.mediaManagement.groupOwner', 'Group owner')"
+						:hint="t('pages.settings.mediaManagement.groupOwnerHint', 'Empty to skip.')"
 						control-id="chown-group"
 					>
 						<SInput
@@ -341,15 +361,15 @@ onMounted(async () => {
 				</div>
 			</SSection>
 
-			<SSection title="Propers and repacks">
+			<SSection :title="t('pages.settings.mediaManagement.propersAndRepacks', 'Propers and repacks')">
 				<SField
-					label="On grab"
+					:label="t('pages.settings.mediaManagement.onGrab', 'On grab')"
 					control-id="propers"
 				>
 					<SSelect
 						v-model="mediaDraft.downloadPropersAndRepacks"
 						control-id="propers"
-						:options="downloadPropersAndRepacksOptions"
+						:options="downloadPropersAndRepacksOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 			</SSection>
@@ -362,21 +382,21 @@ onMounted(async () => {
 			/>
 		</template>
 
-		<SSection title="Root folders">
+		<SSection :title="t('pages.settings.mediaManagement.rootFolders', 'Root folders')">
 			<STable
 				:columns="rootFolderColumns"
 				:rows="reference.rootFolders"
 				:row-key="(row) => row.id"
 			>
 				<template #cell-mediaKind="{ row }">
-					{{ row.mediaKind === 'SERIES' ? 'Series' : 'Movies' }}
+					{{ row.mediaKind === 'SERIES' ? t('pages.settings.mediaManagement.series', 'Series') : t('pages.settings.mediaManagement.movies', 'Movies') }}
 				</template>
 				<template #cell-free="{ row }">
-					{{ row.accessible ? formatBytesGb(row.freeSpace) : 'Not accessible' }}
+					{{ row.accessible ? formatBytesGb(row.freeSpace) : t('pages.settings.mediaManagement.notAccessible', 'Not accessible') }}
 				</template>
 				<template #cell-actions="{ row }">
 					<SIconButton
-						label="Remove root folder"
+						:label="t('pages.settings.mediaManagement.removeRootFolder', 'Remove root folder')"
 						@click="deleteFolderTarget = row"
 					>
 						<Icon
@@ -386,13 +406,13 @@ onMounted(async () => {
 					</SIconButton>
 				</template>
 				<template #empty>
-					<SEmptyState message="No root folders yet. Add one to tell Submarine where your library lives.">
+					<SEmptyState :message="t('pages.settings.mediaManagement.emptyRootFolders', 'No root folders yet. Add one to tell Submarine where your library lives.')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openAddRootFolder"
 							>
-								Add root folder
+								{{ t('pages.settings.mediaManagement.addRootFolder', 'Add root folder') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -406,63 +426,63 @@ onMounted(async () => {
 					variant="secondary"
 					@click="openAddRootFolder"
 				>
-					Add root folder
+					{{ t('pages.settings.mediaManagement.addRootFolder', 'Add root folder') }}
 				</SButton>
 			</div>
 		</SSection>
 
 		<SSection
 			v-if="namingDraft"
-			title="Naming"
+			:title="t('pages.settings.mediaManagement.naming', 'Naming')"
 		>
 			<p class="naming-status">
-				Changes save automatically.
-				<span v-if="namingStatus === 'saving'">Saving…</span>
-				<span v-else-if="namingStatus === 'error'">Could not save the last change.</span>
+				{{ t('pages.settings.mediaManagement.autosaveHint', 'Changes save automatically.') }}
+				<span v-if="namingStatus === 'saving'">{{ t('pages.settings.mediaManagement.saving', 'Saving…') }}</span>
+				<span v-else-if="namingStatus === 'error'">{{ t('pages.settings.mediaManagement.lastChangeError', 'Could not save the last change.') }}</span>
 			</p>
 
 			<div class="field-grid">
 				<SSwitch
 					v-model="namingDraft.renameEpisodes"
-					label="Rename episode files"
+					:label="t('pages.settings.mediaManagement.renameEpisodes', 'Rename episode files')"
 				/>
 				<SSwitch
 					v-model="namingDraft.renameMovies"
-					label="Rename movie files"
+					:label="t('pages.settings.mediaManagement.renameMovies', 'Rename movie files')"
 				/>
 				<SSwitch
 					v-model="namingDraft.replaceIllegalCharacters"
-					label="Replace illegal characters"
+					:label="t('pages.settings.mediaManagement.replaceIllegalCharacters', 'Replace illegal characters')"
 				/>
 			</div>
 
 			<div class="field-grid">
 				<SField
-					label="Colon replacement"
+					:label="t('pages.settings.mediaManagement.colonReplacement', 'Colon replacement')"
 					control-id="colon-replacement"
 				>
 					<SSelect
 						v-model="namingDraft.colonReplacement"
 						control-id="colon-replacement"
-						:options="colonReplacementOptions"
+						:options="colonReplacementOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 				<SField
-					label="Multi-episode style"
+					:label="t('pages.settings.mediaManagement.multiEpisodeStyle', 'Multi-episode style')"
 					control-id="multi-episode-style"
 				>
 					<SSelect
 						v-model="namingDraft.multiEpisodeStyle"
 						control-id="multi-episode-style"
-						:options="multiEpisodeStyleOptions"
+						:options="multiEpisodeStyleOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 					/>
 				</SField>
 			</div>
 
-			<SSection title="Episodes">
+			<SSection :title="t('pages.settings.mediaManagement.episodes', 'Episodes')">
 				<div class="field-grid">
 					<SField
-						label="Standard episode format"
+						:label="t('pages.settings.mediaManagement.standardEpisodeFormat', 'Standard episode format')"
 						control-id="standard-format"
 					>
 						<SInput
@@ -471,7 +491,7 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="Daily episode format"
+						:label="t('pages.settings.mediaManagement.dailyEpisodeFormat', 'Daily episode format')"
 						control-id="daily-format"
 					>
 						<SInput
@@ -480,7 +500,7 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="Anime episode format"
+						:label="t('pages.settings.mediaManagement.animeEpisodeFormat', 'Anime episode format')"
 						control-id="anime-format"
 					>
 						<SInput
@@ -491,10 +511,10 @@ onMounted(async () => {
 				</div>
 			</SSection>
 
-			<SSection title="Series folders">
+			<SSection :title="t('pages.settings.mediaManagement.seriesFolders', 'Series folders')">
 				<div class="field-grid">
 					<SField
-						label="Series folder format"
+						:label="t('pages.settings.mediaManagement.seriesFolderFormat', 'Series folder format')"
 						control-id="series-folder-format"
 					>
 						<SInput
@@ -503,7 +523,7 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="Season folder format"
+						:label="t('pages.settings.mediaManagement.seasonFolderFormat', 'Season folder format')"
 						control-id="season-folder-format"
 					>
 						<SInput
@@ -512,7 +532,7 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="Specials folder format"
+						:label="t('pages.settings.mediaManagement.specialsFolderFormat', 'Specials folder format')"
 						control-id="specials-folder-format"
 					>
 						<SInput
@@ -523,10 +543,10 @@ onMounted(async () => {
 				</div>
 			</SSection>
 
-			<SSection title="Movies">
+			<SSection :title="t('pages.settings.mediaManagement.movies', 'Movies')">
 				<div class="field-grid">
 					<SField
-						label="Movie file format"
+						:label="t('pages.settings.mediaManagement.movieFileFormat', 'Movie file format')"
 						control-id="movie-format"
 					>
 						<SInput
@@ -535,7 +555,7 @@ onMounted(async () => {
 						/>
 					</SField>
 					<SField
-						label="Movie folder format"
+						:label="t('pages.settings.mediaManagement.movieFolderFormat', 'Movie folder format')"
 						control-id="movie-folder-format"
 					>
 						<SInput
@@ -546,14 +566,14 @@ onMounted(async () => {
 				</div>
 			</SSection>
 
-			<SSection title="Examples">
+			<SSection :title="t('pages.settings.mediaManagement.examples', 'Examples')">
 				<ul class="examples-list">
 					<li
 						v-for="sample in examples"
 						:key="sample.name"
 						class="examples-row"
 					>
-						<span class="examples-label">{{ NAMING_SAMPLE_LABELS[sample.name] ?? sample.name }}</span>
+						<span class="examples-label">{{ namingSampleLabel(sample.name) }}</span>
 						<span class="examples-preview">{{ sample.preview }}</span>
 					</li>
 				</ul>
@@ -562,10 +582,10 @@ onMounted(async () => {
 
 		<SDialog
 			v-model="rootFolderDialogOpen"
-			title="Add root folder"
+			:title="t('pages.settings.mediaManagement.addRootFolderDialog', 'Add root folder')"
 		>
 			<SField
-				label="Path"
+				:label="t('pages.settings.mediaManagement.pathLabel', 'Path')"
 				:error="rootFolderError"
 				control-id="new-root-path"
 			>
@@ -575,13 +595,13 @@ onMounted(async () => {
 				/>
 			</SField>
 			<SField
-				label="Contains"
+				:label="t('pages.settings.mediaManagement.contains', 'Contains')"
 				control-id="new-root-kind"
 			>
 				<SSelect
 					v-model="rootFolderKind"
 					control-id="new-root-kind"
-					:options="mediaKindOptions"
+					:options="mediaKindOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))"
 				/>
 			</SField>
 			<template #footer>
@@ -589,24 +609,24 @@ onMounted(async () => {
 					variant="secondary"
 					@click="rootFolderDialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.mediaManagement.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="rootFolderSaving"
 					@click="saveRootFolder"
 				>
-					Add root folder
+					{{ t('pages.settings.mediaManagement.addRootFolder', 'Add root folder') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteFolderTargetOpen"
-			title="Remove root folder"
+			:title="t('pages.settings.mediaManagement.removeRootFolderDialog', 'Remove root folder')"
 		>
 			<p v-if="deleteFolderTarget">
-				Remove "{{ deleteFolderTarget.path }}"? Files already imported from it are not deleted.
+				{{ t('pages.settings.mediaManagement.confirmRemoveRootFolder', { path: deleteFolderTarget.path }, 'Remove "{path}"? Files already imported from it are not deleted.') }}
 			</p>
 			<p
 				v-if="deleteFolderError"
@@ -621,14 +641,14 @@ onMounted(async () => {
 					:disabled="deletingFolder"
 					@click="deleteFolderTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.mediaManagement.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deletingFolder"
 					@click="deleteRootFolder"
 				>
-					Remove
+					{{ t('pages.settings.mediaManagement.remove', 'Remove') }}
 				</SButton>
 			</template>
 		</SDialog>

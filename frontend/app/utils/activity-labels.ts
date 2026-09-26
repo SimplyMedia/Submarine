@@ -9,12 +9,12 @@ import { toOptions } from '~/utils/library-labels'
 import type { SBadgeTone } from '~/utils/system-labels'
 
 const TRACKED_DOWNLOAD_STATUS: Record<string, string> = {
-	QUEUED: 'Queued',
-	DOWNLOADING: 'Downloading',
-	PAUSED: 'Paused',
-	COMPLETED: 'Completed',
-	FAILED: 'Failed',
-	WARNING: 'Warning',
+	QUEUED: 'utils.activityLabels.trackedDownloadStatus.queued',
+	DOWNLOADING: 'utils.activityLabels.trackedDownloadStatus.downloading',
+	PAUSED: 'utils.activityLabels.trackedDownloadStatus.paused',
+	COMPLETED: 'utils.activityLabels.trackedDownloadStatus.completed',
+	FAILED: 'utils.activityLabels.trackedDownloadStatus.failed',
+	WARNING: 'utils.activityLabels.trackedDownloadStatus.warning',
 }
 
 const TRACKED_DOWNLOAD_STATUS_TONE: Record<string, SBadgeTone> = {
@@ -27,13 +27,13 @@ const TRACKED_DOWNLOAD_STATUS_TONE: Record<string, SBadgeTone> = {
 }
 
 const TRACKED_DOWNLOAD_STATE: Record<string, string> = {
-	DOWNLOADING: 'Downloading',
-	IMPORT_PENDING: 'Waiting to import',
-	IMPORTING: 'Importing',
-	IMPORTED: 'Imported',
-	FAILED_PENDING: 'Waiting to retry',
-	FAILED: 'Import failed',
-	IGNORED: 'Ignored',
+	DOWNLOADING: 'utils.activityLabels.trackedDownloadState.downloading',
+	IMPORT_PENDING: 'utils.activityLabels.trackedDownloadState.importPending',
+	IMPORTING: 'utils.activityLabels.trackedDownloadState.importing',
+	IMPORTED: 'utils.activityLabels.trackedDownloadState.imported',
+	FAILED_PENDING: 'utils.activityLabels.trackedDownloadState.failedPending',
+	FAILED: 'utils.activityLabels.trackedDownloadState.failed',
+	IGNORED: 'utils.activityLabels.trackedDownloadState.ignored',
 }
 
 const TRACKED_DOWNLOAD_STATE_TONE: Record<string, SBadgeTone> = {
@@ -47,8 +47,8 @@ const TRACKED_DOWNLOAD_STATE_TONE: Record<string, SBadgeTone> = {
 }
 
 const PENDING_RELEASE_REASON: Record<string, string> = {
-	DELAY: 'Delay profile',
-	AVAILABILITY: 'Availability',
+	DELAY: 'utils.activityLabels.pendingReleaseReason.delay',
+	AVAILABILITY: 'utils.activityLabels.pendingReleaseReason.availability',
 }
 
 export function trackedDownloadStatusLabel(value: string): string {
@@ -72,11 +72,11 @@ export function pendingReleaseReasonLabel(value: string): string {
 }
 
 export const historyEventTypeOptions = toOptions({
-	GRABBED: 'Grabbed',
-	IMPORTED: 'Imported',
-	RENAMED: 'Renamed',
-	DELETED: 'Deleted',
-	FAILED: 'Failed',
-	IGNORED: 'Ignored',
-	UPGRADED: 'Upgraded',
+	GRABBED: 'utils.libraryLabels.historyEventType.grabbed',
+	IMPORTED: 'utils.libraryLabels.historyEventType.imported',
+	RENAMED: 'utils.libraryLabels.historyEventType.renamed',
+	DELETED: 'utils.libraryLabels.historyEventType.deleted',
+	FAILED: 'utils.libraryLabels.historyEventType.failed',
+	IGNORED: 'utils.libraryLabels.historyEventType.ignored',
+	UPGRADED: 'utils.libraryLabels.historyEventType.upgraded',
 })

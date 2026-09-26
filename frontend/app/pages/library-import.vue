@@ -5,6 +5,7 @@
  * proposes a metadata match per folder (re-searchable), then adds the
  * selected folders with the folder itself as the new version's path.
  */
+import { useI18n } from 'vue-i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import { seriesTypeOptions } from '~/utils/library-labels'
 import { useReferenceStore } from '~/stores/reference'
@@ -21,7 +22,8 @@ interface FolderRow {
 	monitor: boolean
 }
 
-useHead({ title: 'Import existing library' })
+const { t } = useI18n()
+useHead({ title: t('pages.libraryImport.title') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -54,12 +56,12 @@ const languageOptions = computed(() => reference.languageProfiles.map(profile =>
 
 const columns = computed(() => [
 	{ key: 'select', label: '' },
-	{ key: 'folder', label: 'Folder' },
-	{ key: 'match', label: 'Match' },
-	{ key: 'quality', label: 'Quality profile' },
-	{ key: 'language', label: 'Language profile' },
-	...(mediaKind.value === 'SERIES' ? [{ key: 'seriesType', label: 'Series type' }] : []),
-	{ key: 'monitor', label: 'Monitor', align: 'right' as const },
+	{ key: 'folder', label: t('pages.libraryImport.folder') },
+	{ key: 'match', label: t('pages.libraryImport.match') },
+	{ key: 'quality', label: t('pages.libraryImport.qualityProfile') },
+	{ key: 'language', label: t('pages.libraryImport.languageProfile') },
+	...(mediaKind.value === 'SERIES' ? [{ key: 'seriesType', label: t('pages.libraryImport.seriesType') }] : []),
+	{ key: 'monitor', label: t('pages.libraryImport.monitor'), align: 'right' as const },
 ])
 
 function initRow(): FolderRow {
@@ -73,7 +75,7 @@ function initRow(): FolderRow {
 
 async function scan() {
 	if (!rootFolderId.value) {
-		toast({ title: 'Choose a root folder', tone: 'danger' })
+		toast({ title: t('pages.libraryImport.chooseRootFolder'), tone: 'danger' })
 		return
 	}
 	scanning.value = true
@@ -115,12 +117,12 @@ function toggleRow(folder: string, value: boolean) {
 
 async function runImport() {
 	if (selected.value.length === 0) {
-		toast({ title: 'Select at least one folder to import', tone: 'danger' })
+		toast({ title: t('pages.libraryImport.selectFolderToImport'), tone: 'danger' })
 		return
 	}
 	const missing = selected.value.filter(folder => !matches[folder])
 	if (missing.length > 0) {
-		toast({ title: `${missing.length} selected folder(s) have no match. Search for one or deselect them.`, tone: 'danger' })
+		toast({ title: t('pages.libraryImport.selectedFoldersUnmatched', { count: missing.length }), tone: 'danger' })
 		return
 	}
 
@@ -142,10 +144,10 @@ async function runImport() {
 		})
 		const result = await api.POST('/api/v1/library-import', { body: { items } })
 		if (!result.data) {
-			toast({ title: 'Could not import selected folders', description: toApiError(result.error, result.response).message, tone: 'danger' })
+			toast({ title: t('pages.libraryImport.importFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 			return
 		}
-		toast({ title: `${result.data.added} folder(s) added`, tone: 'ok' })
+		toast({ title: t('pages.libraryImport.foldersAdded', { count: result.data.added }), tone: 'ok' })
 		const importedFolders = new Set(selected.value)
 		folders.value = folders.value.filter(folder => !importedFolders.has(folder.folder))
 		for (const folder of importedFolders) {
@@ -162,7 +164,7 @@ async function runImport() {
 
 <template>
 	<div>
-		<SPageHeader title="Import existing library">
+		<SPageHeader :title="t('pages.libraryImport.title')">
 			<template #actions>
 				<SButton
 					variant="primary"
@@ -170,7 +172,7 @@ async function runImport() {
 					:disabled="selected.length === 0"
 					@click="runImport"
 				>
-					Import selected ({{ selected.length }})
+					{{ t('pages.libraryImport.importSelected', { count: selected.length }) }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -178,7 +180,7 @@ async function runImport() {
 		<SSection>
 			<div class="library-import-scan-bar">
 				<SField
-					label="Root folder"
+					:label="t('pages.libraryImport.rootFolder')"
 					control-id="library-import-root"
 					class="library-import-root-field"
 				>
@@ -186,14 +188,14 @@ async function runImport() {
 						v-model="rootFolderId"
 						control-id="library-import-root"
 						:options="rootFolderOptions"
-						placeholder="Choose a root folder"
+						:placeholder="t('pages.libraryImport.chooseRootFolder')"
 					/>
 				</SField>
 				<SButton
 					:loading="scanning"
 					@click="scan"
 				>
-					Scan
+					{{ t('pages.libraryImport.scan') }}
 				</SButton>
 			</div>
 			<p
@@ -208,13 +210,13 @@ async function runImport() {
 		<SSpinner v-if="scanning && !scanned" />
 		<SEmptyState
 			v-else-if="scanned && folders.length === 0"
-			message="No unmapped folders found under that root folder."
+			:message="t('pages.libraryImport.noUnmappedFolders')"
 			icon="lucide:folder-search"
 		/>
 		<template v-else-if="folders.length > 0">
 			<SCheckbox
 				:model-value="allSelected"
-				label="Select all"
+				:label="t('pages.libraryImport.selectAll')"
 				class="library-import-select-all"
 				@update:model-value="toggleAll"
 			/>
@@ -226,7 +228,7 @@ async function runImport() {
 				<template #cell-select="{ row }">
 					<SCheckbox
 						:model-value="selected.includes(row.folder)"
-						:aria-label="`Select ${row.folder}`"
+						:aria-label="t('pages.libraryImport.selectFolder', { folder: row.folder })"
 						@update:model-value="value => toggleRow(row.folder, value)"
 					/>
 				</template>
@@ -254,7 +256,7 @@ async function runImport() {
 						v-if="rows[row.folder]"
 						:model-value="rows[row.folder]!.qualityProfileId != null ? String(rows[row.folder]!.qualityProfileId) : undefined"
 						:options="qualityOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.libraryImport.chooseProfile')"
 						@update:model-value="value => { rows[row.folder]!.qualityProfileId = Number(value) }"
 					/>
 				</template>
@@ -263,7 +265,7 @@ async function runImport() {
 						v-if="rows[row.folder]"
 						:model-value="rows[row.folder]!.languageProfileId != null ? String(rows[row.folder]!.languageProfileId) : undefined"
 						:options="languageOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.libraryImport.chooseProfile')"
 						@update:model-value="value => { rows[row.folder]!.languageProfileId = Number(value) }"
 					/>
 				</template>
@@ -271,14 +273,14 @@ async function runImport() {
 					<SSelect
 						v-if="rows[row.folder]"
 						v-model="rows[row.folder]!.seriesType"
-						:options="seriesTypeOptions"
+						:options="seriesTypeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 					/>
 				</template>
 				<template #cell-monitor="{ row }">
 					<SCheckbox
 						v-if="rows[row.folder]"
 						v-model="rows[row.folder]!.monitor"
-						:aria-label="`Monitor ${row.folder}`"
+						:aria-label="t('pages.libraryImport.monitorFolder', { folder: row.folder })"
 					/>
 				</template>
 			</STable>

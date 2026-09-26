@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { i18n } from '~/i18n'
 import {
 	backupKindLabel,
 	commandLabel,
@@ -21,8 +22,8 @@ describe('commandStatusLabel and commandStatusTone', () => {
 
 describe('backupKindLabel', () => {
 	it('reads the kind embedded in the backup file name', () => {
-		expect(backupKindLabel('submarine_backup_v2_20260101000000_MANUAL.zip')).toBe('Manual')
-		expect(backupKindLabel('submarine_backup_v2_20260101000000_SCHEDULED.zip')).toBe('Scheduled')
-		expect(backupKindLabel('not-a-backup.zip')).toBe('Unknown')
+		expect(i18n.global.t(backupKindLabel('submarine_backup_v2_20260101000000_MANUAL.zip'))).toBe('Manual')
+		expect(i18n.global.t(backupKindLabel('submarine_backup_v2_20260101000000_SCHEDULED.zip'))).toBe('Scheduled')
+		expect(i18n.global.t(backupKindLabel('not-a-backup.zip'))).toBe('Unknown')
 	})
 })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 import type { MediaLookupResult, MediaTableColumn, PosterCardBadge, PosterCardItem } from '~/types/ui'
 import { formatBytes } from '~/composables/useFormat'
@@ -8,9 +9,11 @@ import {
 	movieStatusOptions,
 } from '~/utils/library-labels'
 
+const { t } = useI18n()
+
 type MovieListItem = components['schemas']['MovieListItemDto']
 
-useHead({ title: 'Movies' })
+useHead({ title: t('pages.movies.title') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -41,31 +44,31 @@ const selected = ref<number[]>([])
 const addOpen = ref(false)
 
 const monitoredOptions = [
-	{ value: 'any', label: 'Any monitor state' },
-	{ value: 'true', label: 'Monitored' },
-	{ value: 'false', label: 'Unmonitored' },
+	{ value: 'any', label: t('pages.movies.filters.anyMonitorState') },
+	{ value: 'true', label: t('pages.movies.monitored') },
+	{ value: 'false', label: t('pages.movies.unmonitored') },
 ]
-const statusOptions = [{ value: 'any', label: 'Any status' }, ...movieStatusOptions]
+const statusOptions = [{ value: 'any', label: t('pages.movies.filters.anyStatus') }, ...movieStatusOptions.map(option => ({ ...option, label: t(option.label) }))]
 const hasFileOptions = [
-	{ value: 'any', label: 'Any file state' },
-	{ value: 'true', label: 'Has file' },
-	{ value: 'false', label: 'Missing file' },
+	{ value: 'any', label: t('pages.movies.filters.anyFileState') },
+	{ value: 'true', label: t('pages.movies.hasFile') },
+	{ value: 'false', label: t('pages.movies.missingFile') },
 ]
 const isAnimeOptions = [
-	{ value: 'any', label: 'Any type' },
-	{ value: 'true', label: 'Anime' },
-	{ value: 'false', label: 'Not anime' },
+	{ value: 'any', label: t('pages.movies.filters.anyType') },
+	{ value: 'true', label: t('pages.movies.anime') },
+	{ value: 'false', label: t('pages.movies.notAnime') },
 ]
 const sortOptions = [
-	{ value: 'SortTitle', label: 'Title' },
-	{ value: 'Added', label: 'Added' },
-	{ value: 'Year', label: 'Year' },
-	{ value: 'Status', label: 'Status' },
+	{ value: 'SortTitle', label: t('pages.movies.titleColumn') },
+	{ value: 'Added', label: t('pages.movies.added') },
+	{ value: 'Year', label: t('pages.movies.year') },
+	{ value: 'Status', label: t('pages.movies.status') },
 ]
 
-const tagOptions = computed(() => [{ value: 'any', label: 'Any tag' }, ...reference.tags.map(tag => ({ value: String(tag.id), label: tag.label }))])
+const tagOptions = computed(() => [{ value: 'any', label: t('pages.movies.filters.anyTag') }, ...reference.tags.map(tag => ({ value: String(tag.id), label: tag.label }))])
 const rootFolderOptions = computed(() => [
-	{ value: 'any', label: 'Any root folder' },
+	{ value: 'any', label: t('pages.movies.filters.anyRootFolder') },
 	...reference.rootFolders.filter(folder => folder.mediaKind === 'MOVIES').map(folder => ({ value: String(folder.id), label: folder.path })),
 ])
 const addRootFolderOptions = computed(() =>
@@ -79,10 +82,10 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageS
 const apiSortDirection = computed(() => (sortDirection.value === 'desc' ? 'descending' : 'ascending'))
 
 const cards = computed<PosterCardItem[]>(() => items.value.map((movie) => {
-	const badges: PosterCardBadge[] = [{ label: movieStatusLabel(movie.status), tone: movie.hasFile ? 'ok' : 'neutral' }]
-	badges.push({ label: movie.hasFile ? formatBytes(movie.sizeOnDisk) : 'No file', tone: 'neutral' as const })
+	const badges: PosterCardBadge[] = [{ label: t(movieStatusLabel(movie.status)), tone: movie.hasFile ? 'ok' : 'neutral' }]
+	badges.push({ label: movie.hasFile ? formatBytes(movie.sizeOnDisk) : t('pages.movies.noFile'), tone: 'neutral' as const })
 	if (!movie.monitored) {
-		badges.push({ label: 'Unmonitored', tone: 'neutral' as const })
+		badges.push({ label: t('pages.movies.unmonitored'), tone: 'neutral' as const })
 	}
 	return {
 		id: movie.id,
@@ -105,9 +108,9 @@ interface MovieRow {
 }
 
 const tableColumns: MediaTableColumn[] = [
-	{ key: 'status', label: 'Status' },
-	{ key: 'size', label: 'Size' },
-	{ key: 'monitored', label: 'Monitored', align: 'right' },
+	{ key: 'status', label: t('pages.movies.status') },
+	{ key: 'size', label: t('pages.movies.size') },
+	{ key: 'monitored', label: t('pages.movies.monitored'), align: 'right' },
 ]
 
 const rows = computed<MovieRow[]>(() => items.value.map(movie => ({
@@ -195,7 +198,7 @@ async function load() {
 		totalCount.value = result.data.totalCount
 	}
 	else {
-		loadError.value = 'Could not load movies. Check your connection and try again.'
+		loadError.value = t('pages.movies.loadError')
 	}
 	loading.value = false
 }
@@ -277,11 +280,11 @@ watch(() => reference.languageProfiles, (profiles) => {
 
 async function submitAdd(result: MediaLookupResult) {
 	if (!addForm.rootFolderId) {
-		toast.toast({ title: 'Choose a root folder', tone: 'danger' })
+		toast.toast({ title: t('pages.movies.chooseRootFolder'), tone: 'danger' })
 		return
 	}
 	if (result.tmdbId == null) {
-		toast.toast({ title: 'This title has no TMDB id and cannot be added', tone: 'danger' })
+		toast.toast({ title: t('pages.movies.noTmdbId'), tone: 'danger' })
 		return
 	}
 	adding.value = true
@@ -306,7 +309,7 @@ async function submitAdd(result: MediaLookupResult) {
 		})
 		if (created.data) {
 			addOpen.value = false
-			toast.toast({ title: `${result.title} added`, tone: 'ok' })
+			toast.toast({ title: t('pages.movies.addToast', { title: result.title }), tone: 'ok' })
 			await navigateTo(`/movies/${created.data.movie.id}`)
 		}
 		else {
@@ -350,7 +353,7 @@ async function applyMassEdit() {
 			},
 		})
 		if (result.data) {
-			toast.toast({ title: `${result.data.updated} movies updated`, tone: 'ok' })
+			toast.toast({ title: t('pages.movies.updatedCount', { count: result.data.updated }), tone: 'ok' })
 			massEditOpen.value = false
 			selectMode.value = false
 			selected.value = []
@@ -377,7 +380,7 @@ async function confirmDelete() {
 			body: { ids: selected.value, deleteFiles: deleteFiles.value, addImportListExclusion: deleteExclusion.value },
 		})
 		if (result.response.ok) {
-			toast.toast({ title: `${selected.value.length} movies removed`, tone: 'ok' })
+			toast.toast({ title: t('pages.movies.removedCount', { count: selected.value.length }), tone: 'ok' })
 			deleteConfirmOpen.value = false
 			massEditOpen.value = false
 			selectMode.value = false
@@ -396,7 +399,7 @@ async function confirmDelete() {
 
 <template>
 	<div>
-		<SPageHeader title="Movies">
+		<SPageHeader :title="t('pages.movies.title')">
 			<template #actions>
 				<SButton
 					v-if="selectMode"
@@ -404,25 +407,25 @@ async function confirmDelete() {
 					:disabled="selected.length === 0"
 					@click="massEditOpen = true"
 				>
-					Edit {{ selected.length }} selected
+					{{ t('pages.movies.editSelected', { count: selected.length }) }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					@click="toggleSelectMode"
 				>
-					{{ selectMode ? 'Cancel' : 'Mass edit' }}
+					{{ selectMode ? t('pages.movies.cancel') : t('pages.movies.massEdit') }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					@click="navigateTo('/library-import')"
 				>
-					Import existing library
+					{{ t('pages.movies.importExistingLibrary') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					@click="addOpen = true"
 				>
-					Add movie
+					{{ t('pages.movies.addMovie') }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -431,7 +434,7 @@ async function confirmDelete() {
 			<SInput
 				v-model="term"
 				type="search"
-				placeholder="Search movies"
+				:placeholder="t('pages.movies.searchPlaceholder')"
 			/>
 			<SSelect
 				v-model="monitoredFilter"
@@ -462,7 +465,7 @@ async function confirmDelete() {
 				:options="sortOptions"
 			/>
 			<SIconButton
-				:label="sortDirection === 'asc' ? 'Sort descending' : 'Sort ascending'"
+				:label="sortDirection === 'asc' ? t('pages.movies.sortDescending') : t('pages.movies.sortAscending')"
 				@click="sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'"
 			>
 				<Icon
@@ -475,7 +478,7 @@ async function confirmDelete() {
 					type="button"
 					class="library-view-btn"
 					:class="{ 'library-view-btn-active': view === 'grid' }"
-					aria-label="Poster grid view"
+					:aria-label="t('pages.movies.posterGridView')"
 					@click="view = 'grid'"
 				>
 					<Icon
@@ -487,7 +490,7 @@ async function confirmDelete() {
 					type="button"
 					class="library-view-btn"
 					:class="{ 'library-view-btn-active': view === 'table' }"
-					aria-label="Table view"
+					:aria-label="t('pages.movies.tableView')"
 					@click="view = 'table'"
 				>
 					<Icon
@@ -507,13 +510,13 @@ async function confirmDelete() {
 			{{ loadError }}
 		</p>
 		<template v-else-if="items.length === 0">
-			<SEmptyState message="No movies match yet. Add a movie to start building your library.">
+			<SEmptyState :message="t('pages.movies.empty')">
 				<template #action>
 					<SButton
 						variant="primary"
 						@click="addOpen = true"
 					>
-						Add movie
+						{{ t('pages.movies.addMovie') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -539,26 +542,26 @@ async function confirmDelete() {
 			>
 				<template #cell-status="{ row }">
 					<SBadge :tone="row.movie.hasFile ? 'ok' : 'neutral'">
-						{{ movieStatusLabel(row.movie.status) }}
+						{{ t(movieStatusLabel(row.movie.status)) }}
 					</SBadge>
 				</template>
 				<template #cell-size="{ row }">
-					{{ row.movie.hasFile ? formatBytes(row.movie.sizeOnDisk) : 'No file' }}
+					{{ row.movie.hasFile ? formatBytes(row.movie.sizeOnDisk) : t('pages.movies.noFile') }}
 				</template>
 				<template #cell-monitored="{ row }">
 					<MonitorToggle
 						:model-value="row.movie.monitored"
-						:label="`Toggle monitored for ${row.movie.title}`"
+						:label="t('pages.movies.toggleMonitored', { title: row.movie.title })"
 						@update:model-value="toggleMonitored(row.movie, $event)"
 					/>
 				</template>
 			</MediaTable>
 
 			<div class="library-pager">
-				<span>{{ totalCount }} movies</span>
+				<span>{{ t('pages.movies.movieCount', { count: totalCount }) }}</span>
 				<SSelect
 					class="library-pager-size"
-					:options="[{ value: '40', label: '40 per page' }, { value: '100', label: '100 per page' }]"
+					:options="[{ value: '40', label: t('pages.movies.perPage', { count: 40 }) }, { value: '100', label: t('pages.movies.perPage', { count: 100 }) }]"
 					:model-value="String(pageSize)"
 					@update:model-value="pageSize = Number($event)"
 				/>
@@ -567,15 +570,15 @@ async function confirmDelete() {
 					:disabled="page <= 1"
 					@click="page = page - 1"
 				>
-					Previous
+					{{ t('pages.movies.previous') }}
 				</SButton>
-				<span>Page {{ page }} of {{ totalPages }}</span>
+				<span>{{ t('pages.movies.pageOf', { page, total: totalPages }) }}</span>
 				<SButton
 					size="sm"
 					:disabled="page >= totalPages"
 					@click="page = page + 1"
 				>
-					Next
+					{{ t('pages.movies.next') }}
 				</SButton>
 			</div>
 		</template>
@@ -583,35 +586,35 @@ async function confirmDelete() {
 		<AddMediaDialog
 			ref="addDialogRef"
 			v-model:open="addOpen"
-			title="Add movie"
-			search-placeholder="Search by title"
+			:title="t('pages.movies.addMovie')"
+			:search-placeholder="t('pages.movies.searchByTitle')"
 			:search="searchMovies"
 		>
 			<template #details>
 				<div class="add-form">
-					<SField label="Root folder">
+					<SField :label="t('pages.movies.rootFolder')">
 						<SSelect
 							v-model="addForm.rootFolderId"
 							:options="addRootFolderOptions"
-							placeholder="Choose a root folder"
+							:placeholder="t('pages.movies.chooseRootFolder')"
 						/>
 					</SField>
-					<SField label="Minimum availability">
+					<SField :label="t('pages.movies.minimumAvailability')">
 						<SSelect
 							v-model="addForm.minimumAvailability"
-							:options="minimumAvailabilityOptions"
+							:options="minimumAvailabilityOptions.map(option => ({ ...option, label: t(option.label) }))"
 						/>
 					</SField>
-					<SField label="Tags">
+					<SField :label="t('pages.movies.tags')">
 						<TagPicker v-model:tag-ids="addForm.tagIds" />
 					</SField>
 					<SCheckbox
 						v-model="addForm.isAnime"
-						label="This is an anime"
+						:label="t('pages.movies.thisIsAnime')"
 					/>
 					<SCheckbox
 						v-model="addForm.searchOnAdd"
-						label="Search for a release on add"
+						:label="t('pages.movies.searchOnAdd')"
 					/>
 					<VersionEditor
 						v-model="addVersions"
@@ -621,65 +624,65 @@ async function confirmDelete() {
 			</template>
 			<template #footer="{ result }">
 				<SButton @click="addOpen = false">
-					Cancel
+					{{ t('pages.movies.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="adding"
 					@click="submitAdd(result)"
 				>
-					Add movie
+					{{ t('pages.movies.addMovie') }}
 				</SButton>
 			</template>
 		</AddMediaDialog>
 
 		<SDialog
 			v-model="massEditOpen"
-			title="Edit movies"
+			:title="t('pages.movies.editMoviesTitle')"
 		>
 			<div class="add-form">
-				<SField label="Monitored">
+				<SField :label="t('pages.movies.monitored')">
 					<SSelect
 						v-model="massEdit.monitored"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, { value: 'true', label: 'Monitored' }, { value: 'false', label: 'Unmonitored' }]"
+						:options="[{ value: 'unchanged', label: t('pages.movies.leaveUnchanged') }, { value: 'true', label: t('pages.movies.monitored') }, { value: 'false', label: t('pages.movies.unmonitored') }]"
 					/>
 				</SField>
-				<SField label="Minimum availability">
+				<SField :label="t('pages.movies.minimumAvailability')">
 					<SSelect
 						v-model="massEdit.minimumAvailability"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, ...minimumAvailabilityOptions]"
+						:options="[{ value: 'unchanged', label: t('pages.movies.leaveUnchanged') }, ...minimumAvailabilityOptions.map(option => ({ ...option, label: t(option.label) }))]"
 					/>
 				</SField>
-				<SField label="Quality profile">
+				<SField :label="t('pages.movies.qualityProfile')">
 					<SSelect
 						v-model="massEdit.qualityProfileId"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, ...qualityOptions]"
+						:options="[{ value: 'unchanged', label: t('pages.movies.leaveUnchanged') }, ...qualityOptions]"
 					/>
 				</SField>
-				<SField label="Language profile">
+				<SField :label="t('pages.movies.languageProfile')">
 					<SSelect
 						v-model="massEdit.languageProfileId"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, ...languageOptions]"
+						:options="[{ value: 'unchanged', label: t('pages.movies.leaveUnchanged') }, ...languageOptions]"
 					/>
 				</SField>
-				<SField label="Move to root folder">
+				<SField :label="t('pages.movies.moveToRootFolder')">
 					<SSelect
 						v-model="massEdit.rootFolderId"
-						:options="[{ value: 'unchanged', label: 'Leave unchanged' }, ...addRootFolderOptions]"
+						:options="[{ value: 'unchanged', label: t('pages.movies.leaveUnchanged') }, ...addRootFolderOptions]"
 					/>
 				</SField>
 				<SCheckbox
 					v-if="massEdit.rootFolderId !== 'unchanged'"
 					v-model="massEdit.moveFiles"
-					label="Move files on disk"
+					:label="t('pages.movies.moveFilesOnDisk')"
 				/>
-				<SField label="Tags">
+				<SField :label="t('pages.movies.tags')">
 					<TagPicker v-model:tag-ids="massEdit.tagIds" />
 				</SField>
-				<SField label="Tag action">
+				<SField :label="t('pages.movies.tagAction')">
 					<SSelect
 						v-model="massEdit.tagMode"
-						:options="[{ value: 'add', label: 'Add tags' }, { value: 'remove', label: 'Remove tags' }, { value: 'replace', label: 'Replace tags' }]"
+						:options="[{ value: 'add', label: t('pages.movies.addTags') }, { value: 'remove', label: t('pages.movies.removeTags') }, { value: 'replace', label: t('pages.movies.replaceTags') }]"
 					/>
 				</SField>
 			</div>
@@ -688,44 +691,44 @@ async function confirmDelete() {
 					variant="danger"
 					@click="deleteConfirmOpen = true"
 				>
-					Delete selected
+					{{ t('pages.movies.deleteSelected') }}
 				</SButton>
 				<SButton @click="massEditOpen = false">
-					Cancel
+					{{ t('pages.movies.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="massEditing"
 					@click="applyMassEdit"
 				>
-					Save changes
+					{{ t('pages.movies.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteConfirmOpen"
-			title="Delete movies"
-			:description="`This removes ${selected.length} movies from the library.`"
+			:title="t('pages.movies.deleteMoviesTitle')"
+			:description="t('pages.movies.deleteDescription', { count: selected.length })"
 		>
 			<SCheckbox
 				v-model="deleteFiles"
-				label="Delete files on disk"
+				:label="t('pages.movies.deleteFiles')"
 			/>
 			<SCheckbox
 				v-model="deleteExclusion"
-				label="Add an import list exclusion"
+				:label="t('pages.movies.importListExclusion')"
 			/>
 			<template #footer>
 				<SButton @click="deleteConfirmOpen = false">
-					Cancel
+					{{ t('pages.movies.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="confirmDelete"
 				>
-					Delete
+					{{ t('pages.movies.delete') }}
 				</SButton>
 			</template>
 		</SDialog>

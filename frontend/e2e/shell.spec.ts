@@ -8,6 +8,7 @@ test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine AP
 
 const username = 'submarine-e2e'
 const password = 'submarine-e2e-password'
+const untranslatedKey = /\b(?:utils|pages|components|nav|navigation|settings|common)\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+\b/
 
 function collectConsoleIssues(page: Page): string[] {
 	const issues: string[] = []
@@ -45,6 +46,10 @@ test('shell: first run, sign in, visit every page', async ({ page }) => {
 		for (const path of [item.to, ...(item.children?.map(child => child.to) ?? [])]) {
 			await page.goto(path)
 			await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+			expect(
+				await page.locator('body').innerText(),
+				`raw i18n key at ${path}`,
+			).not.toMatch(untranslatedKey)
 			const overflow = await page.evaluate(
 				() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
 			)

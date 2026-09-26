@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch'
 import type { Middleware } from 'openapi-fetch'
 import type { paths } from '~/types/api'
+import { i18n } from '~/i18n'
 
 /** Error carrying RFC 9457 ProblemDetails fields for forms and toasts. */
 export class ApiError extends Error {
@@ -33,10 +34,12 @@ export function toApiError(error: unknown, response?: Response): ApiError {
 		// failed: -- Name: ... Severity: Error" dump in `detail`; prefer `title`
 		// ("One or more validation errors occurred.") in that case. Otherwise
 		// `detail` carries the specific message (e.g. a 409 conflict's "in use by" list).
-		const message = (problem.errors ? problem.title : undefined) || problem.detail || problem.title || response?.statusText || 'Request failed'
+		const fallback = i18n.global.t('utils.useApi.requestFailed')
+		const message = (problem.errors ? problem.title : undefined) || problem.detail || problem.title || response?.statusText || fallback
 		return new ApiError(message, status, problem.errors ?? {})
 	}
-	const text = typeof error === 'string' && error ? error : response?.statusText || 'Request failed'
+	const fallback = i18n.global.t('utils.useApi.requestFailed')
+	const text = typeof error === 'string' && error ? error : response?.statusText || fallback
 	return new ApiError(text, status)
 }
 

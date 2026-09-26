@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
 import { useReferenceStore } from '~/stores/reference'
@@ -7,10 +8,13 @@ import {
 	downloadClientTypeIcon,
 	downloadClientTypeLabel,
 	downloadClientTypeOptions,
+	humanizeEnumValue,
 	humanizeFieldName,
 } from '~/utils/settings-labels'
 import type { SchemaField } from '~/types/schema-form'
 import type { components } from '~/types/api'
+
+const { t } = useI18n()
 
 type DownloadConfigResource = components['schemas']['DownloadConfigResource']
 type DownloadClientDto = components['schemas']['DownloadClientDto']
@@ -18,7 +22,7 @@ type DownloadClientType = components['schemas']['DownloadClientType']
 type DownloadClientFieldSchema = components['schemas']['DownloadClientFieldSchema']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Download clients' })
+useHead({ title: t('pages.settings.downloadClients.title', 'Download clients') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -40,11 +44,11 @@ async function saveConfig() {
 	const result = await api.PUT('/api/v1/config/download', { body: configDraft.value })
 	configSaving.value = false
 	if (!result.data) {
-		toast({ title: 'Could not save', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.downloadClients.saveError', 'Could not save'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
 	configDirty.markSaved(result.data)
-	toast({ title: 'Saved', tone: 'ok' })
+	toast({ title: t('pages.settings.downloadClients.saved', 'Saved'), tone: 'ok' })
 }
 
 // --- Clients list ------------------------------------------------------------
@@ -57,18 +61,18 @@ async function loadClients() {
 	clientsLoadError.value = ''
 	const result = await api.GET('/api/v1/download-clients', { params: { query: { PageSize: 200 } } })
 	if (!result.data) {
-		clientsLoadError.value = 'Could not load download clients. Check your connection and try again.'
+		clientsLoadError.value = t('pages.settings.downloadClients.loadError', 'Could not load download clients. Check your connection and try again.')
 	}
 	clients.value = result.data?.items ?? []
 	clientsLoading.value = false
 }
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'type', label: 'Type' },
-	{ key: 'enable', label: 'Enable' },
-	{ key: 'priority', label: 'Priority', align: 'right' as const },
-	{ key: 'tags', label: 'Tags' },
+	{ key: 'name', label: t('pages.settings.downloadClients.name', 'Name') },
+	{ key: 'type', label: t('pages.settings.downloadClients.type', 'Type') },
+	{ key: 'enable', label: t('pages.settings.downloadClients.enable', 'Enable') },
+	{ key: 'priority', label: t('pages.settings.downloadClients.priority', 'Priority'), align: 'right' as const },
+	{ key: 'tags', label: t('pages.settings.downloadClients.tags', 'Tags') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -94,9 +98,9 @@ const testing = ref(false)
 
 const dialogTitle = computed(() => {
 	if (editingId.value !== null) {
-		return 'Edit download client'
+		return t('pages.settings.downloadClients.dialog.edit', 'Edit download client')
 	}
-	return selectedType.value ? `Add ${downloadClientTypeLabel(selectedType.value)}` : 'Add download client'
+	return selectedType.value ? t('pages.settings.downloadClients.dialog.addType', { type: t(downloadClientTypeLabel(selectedType.value), humanizeEnumValue(selectedType.value)) }, 'Add {type}') : t('pages.settings.downloadClients.dialog.add', 'Add download client')
 })
 
 function toSchemaField(field: DownloadClientFieldSchema): SchemaField {
@@ -115,7 +119,7 @@ function toSchemaField(field: DownloadClientFieldSchema): SchemaField {
 	}
 	return {
 		name: field.name,
-		label: humanizeFieldName(field.name),
+		label: t(`schema.${selectedType.value}.${field.name}.label`, humanizeFieldName(field.name)),
 		type,
 		options: field.enumValues,
 		required: field.required,
@@ -124,6 +128,10 @@ function toSchemaField(field: DownloadClientFieldSchema): SchemaField {
 	}
 }
 
+const localizedClientTypeOptions = computed(() => downloadClientTypeOptions.map(option => ({
+	...option,
+	label: t(option.label, humanizeEnumValue(option.value)),
+})))
 const normalizedFields = computed<SchemaField[]>(() => {
 	const schema = settings.downloadClientSchemas.find(s => s.type === selectedType.value)
 	return (schema?.fields ?? []).map(toSchemaField)
@@ -211,7 +219,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: editingId.value === null ? 'Download client added' : 'Download client saved', tone: 'ok' })
+		toast({ title: t('pages.settings.downloadClients.added', 'Download client added'), tone: 'ok' })
 		dialogOpen.value = false
 		await loadClients()
 	}
@@ -231,7 +239,7 @@ async function save() {
 		}
 		schemaFieldErrors.value = settingsErrors
 		if (!matched) {
-			toast({ title: 'Could not save', description: apiError.message, tone: 'danger' })
+			toast({ title: t('pages.settings.downloadClients.saveError', 'Could not save'), description: apiError.message, tone: 'danger' })
 		}
 	}
 	finally {
@@ -256,15 +264,15 @@ async function testConnection() {
 			schemaFieldErrors.value = { ...schemaFieldErrors.value, ...testResult.fieldErrors }
 		}
 		if (testResult.isValid) {
-			toast({ title: 'Connection successful', tone: 'ok' })
+			toast({ title: t('pages.settings.downloadClients.connectionSuccessful', 'Connection successful'), tone: 'ok' })
 		}
 		else {
-			toast({ title: 'Connection failed', description: testResult.message ?? undefined, tone: 'danger' })
+			toast({ title: t('pages.settings.downloadClients.connectionFailed', 'Connection failed'), description: testResult.message ?? undefined, tone: 'danger' })
 		}
 	}
 	catch (error) {
 		const apiError = error instanceof ApiError ? error : toApiError(error)
-		toast({ title: 'Connection failed', description: apiError.message, tone: 'danger' })
+		toast({ title: t('pages.settings.downloadClients.connectionFailed', 'Connection failed'), description: apiError.message, tone: 'danger' })
 	}
 	finally {
 		testing.value = false
@@ -304,7 +312,7 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Download client deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.downloadClients.deleted', 'Download client deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await loadClients()
@@ -327,13 +335,13 @@ onMounted(async () => {
 
 <template>
 	<div>
-		<SPageHeader title="Download clients">
+		<SPageHeader :title="t('pages.settings.downloadClients.title', 'Download clients')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add download client
+					{{ t('pages.settings.downloadClients.add', 'Add download client') }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -343,32 +351,32 @@ onMounted(async () => {
 		<template v-else>
 			<SSection
 				v-if="configDraft"
-				title="Download handling"
+				:title="t('pages.settings.downloadClients.handling', 'Download handling')"
 			>
 				<div class="field-grid">
 					<SSwitch
 						v-model="configDraft.enableCompletedDownloadHandling"
-						label="Import completed downloads automatically"
+						:label="t('pages.settings.downloadClients.importAutomatically', 'Import completed downloads automatically')"
 					/>
 					<SSwitch
 						v-model="configDraft.removeCompletedDownloads"
-						label="Remove imported downloads from the client"
+						:label="t('pages.settings.downloadClients.removeImported', 'Remove imported downloads from the client')"
 					/>
 					<SSwitch
 						v-model="configDraft.enableFailedDownloadHandling"
-						label="Handle failed downloads"
+						:label="t('pages.settings.downloadClients.handleFailed', 'Handle failed downloads')"
 					/>
 					<SSwitch
 						v-model="configDraft.redownloadFailedReleases"
-						label="Automatically redownload failed releases"
+						:label="t('pages.settings.downloadClients.redownloadFailed', 'Automatically redownload failed releases')"
 					/>
 					<SSwitch
 						v-model="configDraft.removeFailedDownloads"
-						label="Remove failed downloads from the client"
+						:label="t('pages.settings.downloadClients.removeFailed', 'Remove failed downloads from the client')"
 					/>
 				</div>
 				<SField
-					label="Check for finished downloads every (minutes)"
+					:label="t('pages.settings.downloadClients.checkFinishedInterval', 'Check for finished downloads every (minutes)')"
 					control-id="check-interval"
 				>
 					<SInput
@@ -387,7 +395,7 @@ onMounted(async () => {
 				@discard="configDirty.revert()"
 			/>
 
-			<SSection title="Clients">
+			<SSection :title="t('pages.settings.downloadClients.clients', 'Clients')">
 				<SEmptyState
 					v-if="clientsLoadError"
 					:message="clientsLoadError"
@@ -395,7 +403,7 @@ onMounted(async () => {
 				>
 					<template #action>
 						<SButton @click="loadClients">
-							Retry
+							{{ t('pages.settings.downloadClients.retry', 'Retry') }}
 						</SButton>
 					</template>
 				</SEmptyState>
@@ -407,11 +415,11 @@ onMounted(async () => {
 					:row-key="(row) => row.id"
 				>
 					<template #cell-type="{ row }">
-						{{ downloadClientTypeLabel(row.type) }}
+						{{ t(downloadClientTypeLabel(row.type), humanizeEnumValue(row.type)) }}
 					</template>
 					<template #cell-enable="{ row }">
 						<SBadge :tone="row.enable ? 'ok' : 'neutral'">
-							{{ row.enable ? 'Enabled' : 'Disabled' }}
+							{{ row.enable ? t('pages.settings.downloadClients.enabled', 'Enabled') : t('pages.settings.downloadClients.disabled', 'Disabled') }}
 						</SBadge>
 					</template>
 					<template #cell-tags="{ row }">
@@ -419,18 +427,18 @@ onMounted(async () => {
 						<span
 							v-else
 							class="s-cell-muted"
-						>None</span>
+						>{{ t('pages.settings.downloadClients.none', 'None') }}</span>
 					</template>
 					<template #cell-actions="{ row }">
 						<SDropdownMenu
 							:items="[
-								{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-								{ label: 'Test', icon: 'lucide:plug-zap', onSelect: () => testExistingClient(row) },
-								{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => (deleteTarget = row) },
+								{ label: t('pages.settings.downloadClients.edit', 'Edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+								{ label: t('pages.settings.downloadClients.test', 'Test'), icon: 'lucide:plug-zap', onSelect: () => testExistingClient(row) },
+								{ label: t('pages.settings.downloadClients.delete', 'Delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => (deleteTarget = row) },
 							]"
 						>
 							<template #trigger>
-								<SIconButton label="Download client actions">
+								<SIconButton :label="t('pages.settings.downloadClients.actions', 'Download client actions')">
 									<Icon
 										name="lucide:more-horizontal"
 										aria-hidden="true"
@@ -440,13 +448,13 @@ onMounted(async () => {
 						</SDropdownMenu>
 					</template>
 					<template #empty>
-						<SEmptyState message="Add a download client to send releases from search and RSS.">
+						<SEmptyState :message="t('pages.settings.downloadClients.emptyHint', 'Add a download client to send releases from search and RSS.')">
 							<template #action>
 								<SButton
 									variant="primary"
 									@click="openCreate"
 								>
-									Add download client
+									{{ t('pages.settings.downloadClients.add', 'Add download client') }}
 								</SButton>
 							</template>
 						</SEmptyState>
@@ -465,7 +473,7 @@ onMounted(async () => {
 				class="provider-grid"
 			>
 				<ProviderCard
-					v-for="option in downloadClientTypeOptions"
+					v-for="option in localizedClientTypeOptions"
 					:key="option.value"
 					:icon="downloadClientTypeIcon(option.value)"
 					:label="option.label"
@@ -474,7 +482,7 @@ onMounted(async () => {
 			</div>
 			<div v-else>
 				<SField
-					label="Name"
+					:label="t('pages.settings.downloadClients.name', 'Name')"
 					:error="nameError"
 					control-id="dc-name"
 				>
@@ -487,11 +495,11 @@ onMounted(async () => {
 				<div class="field-grid">
 					<SSwitch
 						v-model="clientEnable"
-						label="Enable"
+						:label="t('pages.settings.downloadClients.enable', 'Enable')"
 					/>
 					<SField
-						label="Priority"
-						hint="1-50, lower is tried first"
+						:label="t('pages.settings.downloadClients.priority', 'Priority')"
+						:hint="t('pages.settings.downloadClients.priorityHint', '1-50, lower is tried first')"
 						control-id="dc-priority"
 					>
 						<SInput
@@ -507,21 +515,22 @@ onMounted(async () => {
 					v-model="settingsDraft"
 					:fields="normalizedFields"
 					:field-errors="schemaFieldErrors"
+					:provider-type="selectedType"
 				/>
 
 				<div class="field-grid">
 					<SSwitch
 						v-model="removeCompleted"
-						label="Remove completed downloads"
+						:label="t('pages.settings.downloadClients.removeCompletedDownloads', 'Remove completed downloads')"
 					/>
 					<SSwitch
 						v-model="removeFailed"
-						label="Remove failed downloads"
+						:label="t('pages.settings.downloadClients.removeFailedDownloads', 'Remove failed downloads')"
 					/>
 				</div>
 
 				<SField
-					label="Tags"
+					:label="t('pages.settings.downloadClients.tags', 'Tags')"
 					control-id="dc-tags"
 				>
 					<TagPicker
@@ -536,7 +545,7 @@ onMounted(async () => {
 					variant="secondary"
 					@click="dialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.downloadClients.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					v-if="selectedType"
@@ -544,7 +553,7 @@ onMounted(async () => {
 					:loading="testing"
 					@click="testConnection"
 				>
-					Test connection
+					{{ t('pages.settings.downloadClients.testConnection', 'Test connection') }}
 				</SButton>
 				<SButton
 					v-if="selectedType"
@@ -552,17 +561,17 @@ onMounted(async () => {
 					:loading="saving"
 					@click="save"
 				>
-					{{ editingId === null ? 'Add download client' : 'Save changes' }}
+					{{ editingId === null ? t('pages.settings.downloadClients.add', 'Add download client') : t('pages.settings.downloadClients.saveChanges', 'Save changes') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete download client"
+			:title="t('pages.settings.downloadClients.deleteClient', 'Delete download client')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ t('pages.settings.downloadClients.confirmDelete', { name: deleteTarget.name }, 'Delete &quot;{name}&quot;? This cannot be undone.') }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -577,14 +586,14 @@ onMounted(async () => {
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.downloadClients.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete download client
+					{{ t('pages.settings.downloadClients.deleteClient', 'Delete download client') }}
 				</SButton>
 			</template>
 		</SDialog>

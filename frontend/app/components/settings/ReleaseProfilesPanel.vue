@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import type { components } from '~/types/api'
 
@@ -6,6 +7,7 @@ type ReleaseProfileResource = components['schemas']['ReleaseProfileResource']
 
 const api = useApi()
 const { toast } = useToast()
+const { t } = useI18n()
 
 const loading = ref(true)
 const loadError = ref('')
@@ -46,7 +48,7 @@ async function load() {
 		api.GET('/api/v1/indexers', { params: { query: { PageSize: 200 } } }),
 	])
 	if (!profilesResult.data) {
-		loadError.value = 'Could not load release profiles. Check your connection and try again.'
+		loadError.value = t('components.settings.ReleaseProfilesPanel.loadError')
 	}
 	profiles.value = profilesResult.data?.items ?? []
 	indexerOptions.value = (indexersResult.data?.items ?? []).map(indexer => ({ value: String(indexer.id), label: indexer.name }))
@@ -57,9 +59,9 @@ void load()
 
 function indexerName(id: number | null) {
 	if (id == null) {
-		return 'All indexers'
+		return t('components.settings.ReleaseProfilesPanel.allIndexers')
 	}
-	return indexerOptions.value.find(option => option.value === String(id))?.label ?? `Indexer ${id}`
+	return indexerOptions.value.find(option => option.value === String(id))?.label ?? t('components.settings.ReleaseProfilesPanel.indexerNumber', { number: id })
 }
 
 function openCreate() {
@@ -126,7 +128,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('components.settings.ReleaseProfilesPanel.saved'), tone: 'ok' })
 		editorOpen.value = false
 		await load()
 	}
@@ -156,18 +158,18 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Release profile deleted', tone: 'ok' })
+	toast({ title: t('components.settings.ReleaseProfilesPanel.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await load()
 }
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'enabled', label: 'Enabled' },
-	{ key: 'required', label: 'Required', align: 'right' as const },
-	{ key: 'ignored', label: 'Ignored', align: 'right' as const },
-	{ key: 'indexer', label: 'Indexer' },
+	{ key: 'name', label: t('components.settings.ReleaseProfilesPanel.name') },
+	{ key: 'enabled', label: t('components.settings.ReleaseProfilesPanel.enabled') },
+	{ key: 'required', label: t('components.settings.ReleaseProfilesPanel.required'), align: 'right' as const },
+	{ key: 'ignored', label: t('components.settings.ReleaseProfilesPanel.ignored'), align: 'right' as const },
+	{ key: 'indexer', label: t('components.settings.ReleaseProfilesPanel.indexer') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 </script>
@@ -179,7 +181,7 @@ const columns = [
 				variant="primary"
 				@click="openCreate"
 			>
-				Add release profile
+				{{ $t('components.settings.ReleaseProfilesPanel.addProfile') }}
 			</SButton>
 		</div>
 
@@ -190,7 +192,7 @@ const columns = [
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ $t('components.settings.ReleaseProfilesPanel.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -203,7 +205,7 @@ const columns = [
 		>
 			<template #cell-enabled="{ row }">
 				<SBadge :tone="row.enabled ? 'ok' : 'neutral'">
-					{{ row.enabled ? 'Enabled' : 'Disabled' }}
+					{{ row.enabled ? $t('components.settings.ReleaseProfilesPanel.enabled') : $t('components.settings.ReleaseProfilesPanel.disabled') }}
 				</SBadge>
 			</template>
 			<template #cell-required="{ row }">
@@ -218,12 +220,12 @@ const columns = [
 			<template #cell-actions="{ row }">
 				<SDropdownMenu
 					:items="[
-						{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-						{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
+						{ label: t('components.settings.ReleaseProfilesPanel.edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+						{ label: t('components.settings.ReleaseProfilesPanel.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
 					]"
 				>
 					<template #trigger>
-						<SIconButton label="Profile actions">
+						<SIconButton :label="$t('components.settings.ReleaseProfilesPanel.profileActions')">
 							<Icon
 								name="lucide:more-horizontal"
 								aria-hidden="true"
@@ -233,13 +235,13 @@ const columns = [
 				</SDropdownMenu>
 			</template>
 			<template #empty>
-				<SEmptyState message="No release profiles yet. Add one to require or block terms in release titles.">
+				<SEmptyState :message="$t('components.settings.ReleaseProfilesPanel.emptyMessage')">
 					<template #action>
 						<SButton
 							variant="primary"
 							@click="openCreate"
 						>
-							Add release profile
+							{{ $t('components.settings.ReleaseProfilesPanel.addProfile') }}
 						</SButton>
 					</template>
 				</SEmptyState>
@@ -248,10 +250,10 @@ const columns = [
 
 		<SDialog
 			v-model="editorOpen"
-			:title="editingId === null ? 'Add release profile' : 'Edit release profile'"
+			:title="editingId === null ? $t('components.settings.ReleaseProfilesPanel.addProfile') : $t('components.settings.ReleaseProfilesPanel.editProfile')"
 		>
 			<SField
-				label="Name"
+				:label="$t('components.settings.ReleaseProfilesPanel.name')"
 				:error="nameError"
 				control-id="release-profile-name"
 			>
@@ -263,12 +265,12 @@ const columns = [
 			</SField>
 			<SSwitch
 				v-model="enabled"
-				label="Active"
+				:label="$t('components.settings.ReleaseProfilesPanel.active')"
 			/>
 
 			<SField
-				label="Required terms"
-				hint="Substring or /regex/. A release must match at least one to be considered."
+				:label="$t('components.settings.ReleaseProfilesPanel.requiredTerms')"
+				:hint="$t('components.settings.ReleaseProfilesPanel.requiredTermsHint')"
 			>
 				<div class="term-list">
 					<span
@@ -279,7 +281,7 @@ const columns = [
 						{{ term }}
 						<button
 							type="button"
-							:aria-label="`Remove ${term}`"
+							:aria-label="$t('components.settings.ReleaseProfilesPanel.removeTerm', { term })"
 							@click="required = required.filter((_, i) => i !== index)"
 						>
 							<Icon
@@ -292,15 +294,15 @@ const columns = [
 						v-model="requiredTerm"
 						type="text"
 						class="term-input"
-						placeholder="Type and press enter"
+						:placeholder="$t('components.settings.ReleaseProfilesPanel.typePressEnter')"
 						@keydown.enter.prevent="addRequired"
 					>
 				</div>
 			</SField>
 
 			<SField
-				label="Ignored terms"
-				hint="Substring or /regex/. A release matching any of these is skipped."
+				:label="$t('components.settings.ReleaseProfilesPanel.ignoredTerms')"
+				:hint="$t('components.settings.ReleaseProfilesPanel.ignoredTermsHint')"
 			>
 				<div class="term-list">
 					<span
@@ -311,7 +313,7 @@ const columns = [
 						{{ term }}
 						<button
 							type="button"
-							:aria-label="`Remove ${term}`"
+							:aria-label="$t('components.settings.ReleaseProfilesPanel.removeTerm', { term })"
 							@click="ignored = ignored.filter((_, i) => i !== index)"
 						>
 							<Icon
@@ -324,24 +326,24 @@ const columns = [
 						v-model="ignoredTerm"
 						type="text"
 						class="term-input"
-						placeholder="Type and press enter"
+						:placeholder="$t('components.settings.ReleaseProfilesPanel.typePressEnter')"
 						@keydown.enter.prevent="addIgnored"
 					>
 				</div>
 			</SField>
 
 			<SField
-				label="Restrict to one indexer"
+				:label="$t('components.settings.ReleaseProfilesPanel.restrictToIndexer')"
 				control-id="release-profile-indexer"
 			>
 				<SSelect
 					v-model="indexerId"
 					control-id="release-profile-indexer"
-					:options="[{ value: 'ALL', label: 'All indexers' }, ...indexerOptions]"
+					:options="[{ value: 'ALL', label: t('components.settings.ReleaseProfilesPanel.allIndexers') }, ...indexerOptions]"
 				/>
 			</SField>
 
-			<SField label="Tags">
+			<SField :label="$t('components.settings.ReleaseProfilesPanel.tags')">
 				<TagPicker v-model:tag-ids="tagIds" />
 			</SField>
 
@@ -350,24 +352,24 @@ const columns = [
 					variant="secondary"
 					@click="editorOpen = false"
 				>
-					Cancel
+					{{ $t('components.settings.ReleaseProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					Save changes
+					{{ $t('components.settings.ReleaseProfilesPanel.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete release profile"
+			:title="$t('components.settings.ReleaseProfilesPanel.deleteTitle')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ $t('components.settings.ReleaseProfilesPanel.confirmDelete', { name: deleteTarget.name }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -382,14 +384,14 @@ const columns = [
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ $t('components.settings.ReleaseProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete
+					{{ $t('components.settings.ReleaseProfilesPanel.delete') }}
 				</SButton>
 			</template>
 		</SDialog>

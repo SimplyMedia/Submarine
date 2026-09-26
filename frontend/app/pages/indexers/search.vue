@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { navChildren } from '~/navigation'
 import { toApiError, useApi } from '~/composables/useApi'
 import { useIndexersStore } from '~/stores/indexers'
 import { filterAndSortReleases } from '~/composables/useReleaseFilters'
-import { protocolOptions } from '~/utils/settings-labels'
+import { protocolOptions, humanizeEnumValue } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
+
+const { t } = useI18n()
 
 type ReleaseResource = components['schemas']['ReleaseResource']
 type SeriesListItemDto = components['schemas']['SeriesListItemDto']
@@ -14,7 +17,7 @@ type EpisodeDto = components['schemas']['EpisodeDto']
 type Protocol = components['schemas']['Protocol']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Search' })
+useHead({ title: t('pages.indexers.search.title', 'Search') })
 
 const api = useApi()
 const indexersStore = useIndexersStore()
@@ -177,7 +180,7 @@ const filterMinSeeders = ref(0)
 const sortKey = ref<'age' | 'size' | 'seeders' | 'score'>('age')
 
 const indexerFilterOptions = computed(() => [
-	{ value: 'ALL', label: 'All indexers' },
+	{ value: 'ALL', label: t('pages.indexers.search.allIndexers', 'All indexers') },
 	...indexersStore.indexers.map(indexer => ({ value: String(indexer.id), label: indexer.name })),
 ])
 const categoryOptions = computed(() => indexersStore.categories)
@@ -228,11 +231,11 @@ async function grabSelected() {
 			})
 			if (result.response.ok) grabbed++
 		}
-		toast({ title: `${grabbed} releases grabbed`, tone: grabbed ? 'ok' : 'danger' })
+		toast({ title: t('pages.indexers.search.releasesGrabbed', { count: grabbed }, '{count} releases grabbed'), tone: grabbed ? 'ok' : 'danger' })
 		selectedGuids.value = []
 	}
 	catch (error) {
-		toast({ title: 'Could not grab selected releases', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.search.grabSelectedError', 'Could not grab selected releases'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		bulkGrabbing.value = false
@@ -258,27 +261,27 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Search" />
+		<SPageHeader :title="t('pages.indexers.search.title', 'Search')" />
 		<SubNav
-			label="Indexers"
+			:label="t('pages.indexers.index.title', 'Indexers')"
 			:items="navChildren('indexers')"
 		/>
 
-		<SSection title="Search for releases">
+		<SSection :title="t('pages.indexers.search.searchForReleases', 'Search for releases')">
 			<STabs
 				:model-value="mode"
-				:tabs="[{ value: 'term', label: 'Search by title' }, { value: 'library', label: 'Search a library item' }]"
+				:tabs="[{ value: 'term', label: t('pages.indexers.search.byTitle', 'Search by title') }, { value: 'library', label: t('pages.indexers.search.libraryItem', 'Search a library item') }]"
 				@update:model-value="switchMode($event as 'term' | 'library')"
 			>
 				<template #panel-term>
 					<SField
-						label="Search type"
+						:label="t('pages.indexers.search.searchType', 'Search type')"
 						control-id="search-type"
 					>
 						<SSelect
 							control-id="search-type"
 							:model-value="searchType"
-							:options="[{ value: 'search', label: 'Search' }, { value: 'tv', label: 'TV' }, { value: 'movie', label: 'Movie' }, { value: 'music', label: 'Music' }, { value: 'book', label: 'Book' }]"
+							:options="[{ value: 'search', label: t('pages.indexers.search.types.search', 'Search') }, { value: 'tv', label: t('pages.indexers.search.types.tv', 'TV') }, { value: 'movie', label: t('pages.indexers.search.types.movie', 'Movie') }, { value: 'music', label: t('pages.indexers.search.types.music', 'Music') }, { value: 'book', label: t('pages.indexers.search.types.book', 'Book') }]"
 							@update:model-value="searchType = $event as typeof searchType"
 						/>
 					</SField>
@@ -286,7 +289,7 @@ onMounted(() => {
 						<SInput
 							v-model="term"
 							type="search"
-							placeholder="Release title, e.g. Harbour Lights S02E06"
+							:placeholder="t('pages.indexers.search.releaseTitlePlaceholder', 'Release title, e.g. Harbour Lights S02E06')"
 							@keydown.enter="runSearch"
 						/>
 						<SButton
@@ -294,7 +297,7 @@ onMounted(() => {
 							:loading="searching"
 							@click="runSearch"
 						>
-							Search
+							{{ t('pages.indexers.search.searchButton', 'Search') }}
 						</SButton>
 					</div>
 				</template>
@@ -306,7 +309,7 @@ onMounted(() => {
 						<SInput
 							v-model="librarySearch"
 							type="search"
-							placeholder="Search your series and movies"
+							:placeholder="t('pages.indexers.search.libraryPlaceholder', 'Search your series and movies')"
 						/>
 						<ul
 							v-if="librarySeriesResults.length > 0 || libraryMovieResults.length > 0"
@@ -319,7 +322,7 @@ onMounted(() => {
 								@click="pickSeries(series)"
 							>
 								<SBadge tone="info">
-									Series
+									{{ t('pages.indexers.search.series', 'Series') }}
 								</SBadge>
 								<span>{{ series.title }}<span v-if="series.year"> ({{ series.year }})</span></span>
 							</li>
@@ -330,7 +333,7 @@ onMounted(() => {
 								@click="pickMovie(movie)"
 							>
 								<SBadge tone="ok">
-									Movie
+									{{ t('pages.indexers.search.movie', 'Movie') }}
 								</SBadge>
 								<span>{{ movie.title }}<span v-if="movie.year"> ({{ movie.year }})</span></span>
 							</li>
@@ -347,27 +350,27 @@ onMounted(() => {
 								size="sm"
 								@click="clearLibrarySelection"
 							>
-								Change
+								{{ t('pages.indexers.search.changeSelection', 'Change') }}
 							</SButton>
 						</div>
 						<div
 							v-if="selectedSeries"
 							class="field-grid"
 						>
-							<SField label="Season">
+							<SField :label="t('pages.indexers.search.season', 'Season')">
 								<SSelect
 									:model-value="selectedSeasonNumber == null ? 'all' : String(selectedSeasonNumber)"
-									:options="[{ value: 'all', label: 'Whole series' }, ...seasons.map(s => ({ value: String(s.seasonNumber), label: s.seasonNumber === 0 ? 'Specials' : `Season ${s.seasonNumber}` }))]"
+									:options="[{ value: 'all', label: t('pages.indexers.search.wholeSeries', 'Whole series') }, ...seasons.map(s => ({ value: String(s.seasonNumber), label: s.seasonNumber === 0 ? t('pages.indexers.search.specials', 'Specials') : t('pages.indexers.search.seasonNumber', { number: s.seasonNumber }, 'Season {number}') }))]"
 									@update:model-value="selectedSeasonNumber = $event === 'all' ? null : Number($event)"
 								/>
 							</SField>
 							<SField
 								v-if="selectedSeasonNumber != null"
-								label="Episode"
+								:label="t('pages.indexers.search.episode', 'Episode')"
 							>
 								<SSelect
 									:model-value="selectedEpisodeId == null ? 'all' : String(selectedEpisodeId)"
-									:options="[{ value: 'all', label: 'Whole season' }, ...episodes.map(e => ({ value: String(e.id), label: `${e.episodeNumber}. ${e.title ?? ''}` }))]"
+									:options="[{ value: 'all', label: t('pages.indexers.search.wholeSeason', 'Whole season') }, ...episodes.map(e => ({ value: String(e.id), label: `${e.episodeNumber}. ${e.title ?? ''}` }))]"
 									@update:model-value="selectedEpisodeId = $event === 'all' ? null : Number($event)"
 								/>
 							</SField>
@@ -377,7 +380,7 @@ onMounted(() => {
 							:loading="searching"
 							@click="runSearch"
 						>
-							Search
+							{{ t('pages.indexers.search.searchButton', 'Search') }}
 						</SButton>
 					</div>
 				</template>
@@ -386,61 +389,61 @@ onMounted(() => {
 
 		<SSection
 			v-if="hasSearched"
-			title="Results"
+			:title="t('pages.indexers.search.results', 'Results')"
 		>
 			<div
 				v-if="selectedGuids.length > 0"
 				class="search-bulk-toolbar"
 			>
-				<span>{{ selectedGuids.length }} selected</span>
+				<span>{{ t('pages.indexers.search.selectedCount', { count: selectedGuids.length }, '{count} selected') }}</span>
 				<SButton
 					size="sm"
 					variant="primary"
 					:loading="bulkGrabbing"
 					@click="grabSelected"
 				>
-					Grab selected
+					{{ t('pages.indexers.search.grabSelected', 'Grab selected') }}
 				</SButton>
 				<SButton
 					size="sm"
 					variant="secondary"
 					@click="downloadSelected"
 				>
-					Download selected
+					{{ t('pages.indexers.search.downloadSelected', 'Download selected') }}
 				</SButton>
 				<SButton
 					size="sm"
 					variant="ghost"
 					@click="selectedGuids = []"
 				>
-					Clear selection
+					{{ t('pages.indexers.search.clearSelection', 'Clear selection') }}
 				</SButton>
 			</div>
 			<div class="search-filters">
 				<SField
-					label="Protocol"
+					:label="t('pages.indexers.search.protocol', 'Protocol')"
 					control-id="protocol-filter"
 				>
 					<SSelect
 						:model-value="filterProtocol"
 						control-id="protocol-filter"
-						:options="[{ value: 'ALL', label: 'All protocols' }, ...protocolOptions]"
+						:options="[{ value: 'ALL', label: t('pages.indexers.search.allProtocols', 'All protocols') }, ...protocolOptions.map(option => ({ ...option, label: t(option.label, humanizeEnumValue(option.value)) }))]"
 						@update:model-value="filterProtocol = $event as Protocol | 'ALL'"
 					/>
 				</SField>
 				<SField
-					label="Category"
+					:label="t('pages.indexers.search.category', 'Category')"
 					control-id="category-filter"
 				>
 					<SSelect
 						:model-value="categoryFilterId === 'ALL' ? 'ALL' : String(categoryFilterId)"
 						control-id="category-filter"
-						:options="[{ value: 'ALL', label: 'All categories' }, ...categoryOptions.map(category => ({ value: String(category.id), label: category.name }))]"
+						:options="[{ value: 'ALL', label: t('pages.indexers.search.allCategories', 'All categories') }, ...categoryOptions.map(category => ({ value: String(category.id), label: category.name }))]"
 						@update:model-value="categoryFilterId = $event === 'ALL' ? 'ALL' : Number($event); selectedCategoryIds = categoryFilterId === 'ALL' ? [] : [categoryFilterId]"
 					/>
 				</SField>
 				<SField
-					label="Indexer"
+					:label="t('pages.indexers.search.indexer', 'Indexer')"
 					control-id="indexer-filter"
 				>
 					<SSelect
@@ -451,7 +454,7 @@ onMounted(() => {
 					/>
 				</SField>
 				<SField
-					label="Min seeders"
+					:label="t('pages.indexers.search.minSeeders', 'Min seeders')"
 					control-id="min-seeders-filter"
 				>
 					<SInput
@@ -462,13 +465,13 @@ onMounted(() => {
 					/>
 				</SField>
 				<SField
-					label="Sort by"
+					:label="t('pages.indexers.search.sortBy', 'Sort by')"
 					control-id="sort-filter"
 				>
 					<SSelect
 						:model-value="sortKey"
 						control-id="sort-filter"
-						:options="[{ value: 'age', label: 'Age' }, { value: 'size', label: 'Size' }, { value: 'seeders', label: 'Seeders' }, { value: 'score', label: 'Score' }]"
+						:options="[{ value: 'age', label: t('pages.indexers.search.sort.age', 'Age') }, { value: 'size', label: t('pages.indexers.search.sort.size', 'Size') }, { value: 'seeders', label: t('pages.indexers.search.sort.seeders', 'Seeders') }, { value: 'score', label: t('pages.indexers.search.sort.score', 'Score') }]"
 						@update:model-value="sortKey = $event as 'age' | 'size' | 'seeders' | 'score'"
 					/>
 				</SField>
@@ -481,16 +484,16 @@ onMounted(() => {
 					:disabled="page <= 1 || searching"
 					@click="page--"
 				>
-					Previous
+					{{ t('pages.indexers.search.previous', 'Previous') }}
 				</SButton>
-				<span>Page {{ page }}</span>
+				<span>{{ t('pages.indexers.search.page', { number: page }, 'Page {number}') }}</span>
 				<SButton
 					size="sm"
 					variant="secondary"
 					:disabled="!hasMoreResults || searching"
 					@click="page++"
 				>
-					Next
+					{{ t('pages.indexers.search.next', 'Next') }}
 				</SButton>
 			</div>
 			<SSpinner v-if="searching" />

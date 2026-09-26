@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 /**
  * Draft version list editor for the add-series/add-movie forms (before the
  * item exists, so there is nothing to persist per row yet). At least one
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const reference = useReferenceStore()
+const { t } = useI18n()
 
 const qualityOptions = computed<SelectOption[]>(() =>
 	reference.qualityProfiles.map(profile => ({ value: String(profile.id), label: profile.name })),
@@ -34,7 +36,7 @@ function addVersion() {
 	emit('update:modelValue', [
 		...props.modelValue,
 		{
-			name: `Version ${props.modelValue.length + 1}`,
+			name: t('components.shared.VersionEditor.versionName', { number: props.modelValue.length + 1 }),
 			qualityProfileId: template?.qualityProfileId ?? reference.qualityProfiles[0]?.id ?? null,
 			languageProfileId: template?.languageProfileId ?? reference.languageProfiles[0]?.id ?? null,
 			rootFolderId: null,
@@ -57,39 +59,39 @@ function removeVersion(index: number) {
 			:key="index"
 			class="version-editor-row"
 		>
-			<SField :label="index === 0 ? 'Name' : undefined">
+			<SField :label="index === 0 ? t('components.shared.VersionEditor.name') : undefined">
 				<SInput
 					:model-value="version.name"
-					placeholder="Main"
+					:placeholder="t('components.shared.VersionEditor.mainPlaceholder')"
 					@update:model-value="patch(index, { name: $event })"
 				/>
 			</SField>
-			<SField :label="index === 0 ? 'Quality profile' : undefined">
+			<SField :label="index === 0 ? t('components.shared.VersionEditor.qualityProfile') : undefined">
 				<SSelect
 					:model-value="version.qualityProfileId != null ? String(version.qualityProfileId) : undefined"
 					:options="qualityOptions"
-					placeholder="Choose a profile"
+					:placeholder="t('components.shared.VersionEditor.chooseProfile')"
 					@update:model-value="patch(index, { qualityProfileId: Number($event) })"
 				/>
 			</SField>
-			<SField :label="index === 0 ? 'Language profile' : undefined">
+			<SField :label="index === 0 ? t('components.shared.VersionEditor.languageProfile') : undefined">
 				<SSelect
 					:model-value="version.languageProfileId != null ? String(version.languageProfileId) : undefined"
 					:options="languageOptions"
-					placeholder="Choose a profile"
+					:placeholder="t('components.shared.VersionEditor.chooseProfile')"
 					@update:model-value="patch(index, { languageProfileId: Number($event) })"
 				/>
 			</SField>
-			<SField :label="index === 0 ? 'Root folder' : undefined">
+			<SField :label="index === 0 ? t('components.shared.VersionEditor.rootFolder') : undefined">
 				<SSelect
 					:model-value="version.rootFolderId != null ? String(version.rootFolderId) : undefined"
 					:options="rootFolderOptions"
-					placeholder="Use the default"
+					:placeholder="t('components.shared.VersionEditor.useDefault')"
 					@update:model-value="patch(index, { rootFolderId: $event ? Number($event) : null })"
 				/>
 			</SField>
 			<SIconButton
-				label="Remove version"
+				:label="t('components.shared.VersionEditor.removeVersion')"
 				:disabled="modelValue.length <= 1"
 				@click="removeVersion(index)"
 			>
@@ -103,7 +105,7 @@ function removeVersion(index: number) {
 			size="sm"
 			@click="addVersion"
 		>
-			Add version
+			{{ t('components.shared.VersionEditor.addVersion') }}
 		</SButton>
 	</div>
 </template>

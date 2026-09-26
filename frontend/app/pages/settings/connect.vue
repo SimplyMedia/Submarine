@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useSettingsStore } from '~/stores/settings'
-import { notificationTypeIcon, notificationTypeLabel, notificationTypeOptions } from '~/utils/settings-labels'
+import { notificationTypeIcon, notificationTypeLabel, notificationTypeOptions, humanizeEnumValue } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
 import type { SchemaField } from '~/types/schema-form'
+
+const { t } = useI18n()
 
 type NotificationDto = components['schemas']['NotificationDto']
 type NotificationType = components['schemas']['NotificationType']
@@ -28,16 +31,16 @@ interface FormState {
 
 type BooleanFormKey = { [K in keyof FormState]: FormState[K] extends boolean ? K : never }[keyof FormState]
 
-const EVENT_FIELDS: ReadonlyArray<{ key: BooleanFormKey, label: string, event: string }> = [
-	{ key: 'onGrab', label: 'Grab', event: 'GRAB' },
-	{ key: 'onImport', label: 'Import', event: 'IMPORT' },
-	{ key: 'onUpgrade', label: 'Upgrade', event: 'UPGRADE' },
-	{ key: 'onRename', label: 'Rename', event: 'RENAME' },
-	{ key: 'onDelete', label: 'Delete', event: 'DELETE' },
-	{ key: 'onHealthIssue', label: 'Health issue', event: 'HEALTH' },
-	{ key: 'onHealthRestored', label: 'Health restored', event: 'HEALTH_RESTORED' },
-	{ key: 'onApplicationUpdate', label: 'Application update', event: 'APPLICATION_UPDATE' },
-	{ key: 'onManualInteractionRequired', label: 'Manual interaction required', event: 'MANUAL_INTERACTION' },
+const EVENT_FIELDS: ReadonlyArray<{ key: BooleanFormKey, labelKey: string, fallback: string, event: string }> = [
+	{ key: 'onGrab', labelKey: 'pages.settings.connect.events.grab', fallback: 'Grab', event: 'GRAB' },
+	{ key: 'onImport', labelKey: 'pages.settings.connect.events.import', fallback: 'Import', event: 'IMPORT' },
+	{ key: 'onUpgrade', labelKey: 'pages.settings.connect.events.upgrade', fallback: 'Upgrade', event: 'UPGRADE' },
+	{ key: 'onRename', labelKey: 'pages.settings.connect.events.rename', fallback: 'Rename', event: 'RENAME' },
+	{ key: 'onDelete', labelKey: 'pages.settings.connect.events.delete', fallback: 'Delete', event: 'DELETE' },
+	{ key: 'onHealthIssue', labelKey: 'pages.settings.connect.events.healthIssue', fallback: 'Health issue', event: 'HEALTH' },
+	{ key: 'onHealthRestored', labelKey: 'pages.settings.connect.events.healthRestored', fallback: 'Health restored', event: 'HEALTH_RESTORED' },
+	{ key: 'onApplicationUpdate', labelKey: 'pages.settings.connect.events.applicationUpdate', fallback: 'Application update', event: 'APPLICATION_UPDATE' },
+	{ key: 'onManualInteractionRequired', labelKey: 'pages.settings.connect.events.manualInteractionRequired', fallback: 'Manual interaction required', event: 'MANUAL_INTERACTION' },
 ]
 
 /** Event toggles the given notification type can actually deliver, per its schema's supportedEvents. */
@@ -47,7 +50,7 @@ function eventFieldsFor(type: string) {
 }
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Connect' })
+useHead({ title: t('pages.settings.connect.title', 'Connect') })
 
 const api = useApi()
 const settings = useSettingsStore()
@@ -163,8 +166,8 @@ function fromBackendSettings(type: string, parsed: Record<string, unknown>): Rec
 }
 
 function eventsSummary(row: NotificationDto): string {
-	const active = EVENT_FIELDS.filter(f => Boolean(row[f.key])).map(f => f.label)
-	return active.length > 0 ? active.join(', ') : 'None'
+	const active = EVENT_FIELDS.filter(f => Boolean(row[f.key])).map(f => t(f.labelKey, f.fallback))
+	return active.length > 0 ? active.join(', ') : t('pages.settings.connect.none', 'None')
 }
 
 async function load() {
@@ -172,7 +175,7 @@ async function load() {
 	loadError.value = ''
 	const [result] = await Promise.all([api.GET('/api/v1/notifications'), settings.ensureNotificationSchemas()])
 	if (!result.data) {
-		loadError.value = 'Could not load notifications. Check your connection and try again.'
+		loadError.value = t('pages.settings.connect.loadError', 'Could not load notifications. Check your connection and try again.')
 	}
 	notifications.value = result.data ?? []
 	loading.value = false
@@ -356,7 +359,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: editingId.value === null ? 'Connection added' : 'Connection saved', tone: 'ok' })
+		toast({ title: editingId.value === null ? t('pages.settings.connect.added', 'Connection added') : t('pages.settings.connect.saved', 'Connection saved'), tone: 'ok' })
 		dialogOpen.value = false
 		await load()
 	}
@@ -378,11 +381,11 @@ async function runTest(target: { id: number } | TestNotificationRequest): Promis
 		if (!result.response.ok) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Test succeeded', tone: 'ok' })
+		toast({ title: t('pages.settings.connect.testSucceeded', 'Test succeeded'), tone: 'ok' })
 	}
 	catch (error) {
 		const apiError = error instanceof ApiError ? error : toApiError(error)
-		toast({ title: 'Test failed', tone: 'danger', description: apiError.message })
+		toast({ title: t('pages.settings.connect.testFailed', 'Test failed'), tone: 'danger', description: apiError.message })
 	}
 }
 
@@ -423,30 +426,30 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Connection deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.connect.deleted', 'Connection deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await load()
 }
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'type', label: 'Type' },
-	{ key: 'enable', label: 'Status' },
-	{ key: 'events', label: 'Events' },
+	{ key: 'name', label: t('pages.settings.connect.name', 'Name') },
+	{ key: 'type', label: t('pages.settings.connect.type', 'Type') },
+	{ key: 'enable', label: t('pages.settings.connect.status', 'Status') },
+	{ key: 'events', label: t('pages.settings.connect.eventsColumn', 'Events') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Connect">
+		<SPageHeader :title="t('pages.settings.connect.title', 'Connect')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add connection
+					{{ t('pages.settings.connect.addConnection', 'Add connection') }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -459,7 +462,7 @@ const columns = [
 			>
 				<template #action>
 					<SButton @click="load">
-						Retry
+						{{ t('pages.settings.connect.retry', 'Retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -471,11 +474,11 @@ const columns = [
 				:row-key="(row) => row.id"
 			>
 				<template #cell-type="{ row }">
-					{{ notificationTypeLabel(row.type) }}
+					{{ t(notificationTypeLabel(row.type), humanizeEnumValue(row.type)) }}
 				</template>
 				<template #cell-enable="{ row }">
 					<SBadge :tone="row.enable ? 'ok' : 'neutral'">
-						{{ row.enable ? 'Enabled' : 'Disabled' }}
+						{{ row.enable ? t('pages.settings.connect.enabled', 'Enabled') : t('pages.settings.connect.disabled', 'Disabled') }}
 					</SBadge>
 				</template>
 				<template #cell-events="{ row }">
@@ -484,13 +487,13 @@ const columns = [
 				<template #cell-actions="{ row }">
 					<SDropdownMenu
 						:items="[
-							{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-							{ label: 'Test', icon: 'lucide:zap', disabled: testingRowId === row.id, onSelect: () => testRow(row) },
-							{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
+							{ label: t('pages.settings.connect.edit', 'Edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+							{ label: t('pages.settings.connect.test', 'Test'), icon: 'lucide:zap', disabled: testingRowId === row.id, onSelect: () => testRow(row) },
+							{ label: t('pages.settings.connect.delete', 'Delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
 						]"
 					>
 						<template #trigger>
-							<SIconButton label="Connection actions">
+							<SIconButton :label="t('pages.settings.connect.connectionActions', 'Connection actions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -500,13 +503,13 @@ const columns = [
 					</SDropdownMenu>
 				</template>
 				<template #empty>
-					<SEmptyState message="Add a connection to send notifications on events">
+					<SEmptyState :message="t('pages.settings.connect.emptyHint', 'Add a connection to send notifications on events')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openCreate"
 							>
-								Add connection
+								{{ t('pages.settings.connect.addConnection', 'Add connection') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -517,18 +520,18 @@ const columns = [
 		<SDialog
 			v-model="dialogOpen"
 			wide
-			:title="editingId === null ? 'Add connection' : 'Edit connection'"
+			:title="editingId === null ? t('pages.settings.connect.addConnection', 'Add connection') : t('pages.settings.connect.editConnection', 'Edit connection')"
 		>
 			<template v-if="editingId === null">
 				<p class="connect-subheading">
-					Choose a connection type
+					{{ t('pages.settings.connect.chooseType', 'Choose a connection type') }}
 				</p>
 				<div class="connect-grid">
 					<ProviderCard
 						v-for="opt in notificationTypeOptions"
 						:key="opt.value"
 						:icon="notificationTypeIcon(opt.value)"
-						:label="opt.label"
+						:label="t(opt.label, humanizeEnumValue(opt.value))"
 						:selected="selectedType === opt.value"
 						@click="selectType(opt.value)"
 					/>
@@ -537,23 +540,24 @@ const columns = [
 
 			<template v-if="selectedType">
 				<SField
-					label="Name"
+					:label="t('pages.settings.connect.name', 'Name')"
 					:error="fieldErrors.name?.[0]"
 					control-id="connect-name"
 				>
 					<SInput
 						id="connect-name"
 						v-model="form.name"
-						placeholder="My webhook"
+						:placeholder="t('pages.settings.connect.webhookPlaceholder', 'My webhook')"
 						:invalid="!!fieldErrors.name?.length"
 					/>
 				</SField>
 				<SSwitch
 					v-model="form.enable"
-					label="Enable"
+					:label="t('pages.settings.connect.enable', 'Enable')"
 				/>
 
 				<SchemaForm
+					:provider-type="selectedType"
 					:fields="schemaFieldsFor(selectedType)"
 					:model-value="settingsDraft"
 					:field-errors="fieldErrors"
@@ -562,13 +566,13 @@ const columns = [
 
 				<template v-if="selectedType === 'TRAKT'">
 					<p class="connect-subheading">
-						Trakt authorization
+						{{ t('pages.settings.connect.traktAuthorization', 'Trakt authorization') }}
 					</p>
 					<SBadge
 						v-if="traktConnected"
 						tone="ok"
 					>
-						Connected
+						{{ t('pages.settings.connect.connected', 'Connected') }}
 					</SBadge>
 					<template v-else>
 						<SButton
@@ -576,18 +580,18 @@ const columns = [
 							variant="secondary"
 							@click="startTraktAuth"
 						>
-							Authenticate with Trakt
+							{{ t('pages.settings.connect.authenticateTrakt', 'Authenticate with Trakt') }}
 						</SButton>
 						<SSpinner v-else-if="traktAuthStatus === 'starting'" />
 						<div v-else-if="traktAuthStatus === 'pending'">
 							<p>
-								Go to
+								{{ t('pages.settings.connect.goTo', 'Go to') }}
 								<a
 									:href="traktVerificationUrl"
 									target="_blank"
 									rel="noopener noreferrer"
 								>{{ traktVerificationUrl }}</a>
-								and enter code <strong>{{ traktUserCode }}</strong>
+								{{ t('pages.settings.connect.enterCode', 'and enter code') }} <strong>{{ traktUserCode }}</strong>
 							</p>
 							<SSpinner />
 						</div>
@@ -596,14 +600,14 @@ const columns = [
 							class="s-field-error"
 							role="alert"
 						>
-							Authorization was denied. Try again.
+							{{ t('pages.settings.connect.authDenied', 'Authorization was denied. Try again.') }}
 						</p>
 						<p
 							v-else-if="traktAuthStatus === 'expired'"
 							class="s-field-error"
 							role="alert"
 						>
-							The code expired before it was used. Try again.
+							{{ t('pages.settings.connect.authExpired', 'The code expired before it was used. Try again.') }}
 						</p>
 						<p
 							v-if="traktError"
@@ -616,22 +620,22 @@ const columns = [
 				</template>
 
 				<p class="connect-subheading">
-					Notify on
+					{{ t('pages.settings.connect.notifyOn', 'Notify on') }}
 				</p>
 				<div class="connect-events-grid">
 					<SCheckbox
 						v-for="ev in eventFieldsFor(selectedType)"
 						:key="ev.key"
 						v-model="form[ev.key]"
-						:label="ev.label"
+						:label="t(ev.labelKey, ev.fallback)"
 					/>
 				</div>
 				<SSwitch
 					v-model="form.includeHealthWarnings"
-					label="Include health warnings"
+					:label="t('pages.settings.connect.includeHealthWarnings', 'Include health warnings')"
 				/>
 
-				<SField label="Tags">
+				<SField :label="t('pages.settings.connect.tags', 'Tags')">
 					<div class="connect-tags">
 						<span
 							v-for="(tag, index) in form.tags"
@@ -642,7 +646,7 @@ const columns = [
 							<button
 								type="button"
 								class="connect-tag-remove"
-								:aria-label="`Remove ${tag}`"
+								:aria-label="t('pages.settings.connect.removeTag', { tag }, 'Remove {tag}')"
 								@click="removeTagChip(index)"
 							>
 								<Icon
@@ -655,7 +659,7 @@ const columns = [
 							v-model="tagInput"
 							type="text"
 							class="connect-tag-input"
-							:placeholder="form.tags.length === 0 ? 'Type and press enter' : ''"
+							:placeholder="form.tags.length === 0 ? t('pages.settings.connect.tagInputPlaceholder', 'Type and press enter') : ''"
 							@keydown.enter.prevent="addTagChip"
 						>
 					</div>
@@ -675,7 +679,7 @@ const columns = [
 					variant="secondary"
 					@click="dialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.connect.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					v-if="selectedType"
@@ -683,7 +687,7 @@ const columns = [
 					:loading="testing"
 					@click="testDialog"
 				>
-					Test connection
+					{{ t('pages.settings.connect.testConnection', 'Test connection') }}
 				</SButton>
 				<SButton
 					v-if="selectedType"
@@ -691,17 +695,17 @@ const columns = [
 					:loading="saving"
 					@click="save"
 				>
-					{{ editingId === null ? 'Add connection' : 'Save changes' }}
+					{{ editingId === null ? t('pages.settings.connect.addConnection', 'Add connection') : t('pages.settings.connect.saveChanges', 'Save changes') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete connection"
+			:title="t('pages.settings.connect.deleteDialog', 'Delete connection')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ t('pages.settings.connect.confirmDelete', { name: deleteTarget.name }, 'Delete &quot;{name}&quot;? This cannot be undone.') }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -716,14 +720,14 @@ const columns = [
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.connect.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete connection
+					{{ t('pages.settings.connect.deleteDialog', 'Delete connection') }}
 				</SButton>
 			</template>
 		</SDialog>

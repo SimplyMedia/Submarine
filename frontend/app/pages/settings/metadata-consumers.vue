@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { humanizeEnumValue } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
+
+const { t } = useI18n()
 
 type MetadataConsumer = components['schemas']['MetadataConsumerDto']
 type MetadataConsumerSchema = components['schemas']['MetadataConsumerSchemaDto']
@@ -15,7 +18,7 @@ interface ConsumerForm {
 }
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Metadata consumers' })
+useHead({ title: t('pages.settings.metadataConsumers.title', 'Metadata consumers') })
 
 const api = useApi()
 const { toast } = useToast()
@@ -49,7 +52,7 @@ async function load() {
 		api.GET('/api/v1/metadata-consumers/schema'),
 	])
 	if (!consumerResult.data || !schemaResult.data) {
-		loadError.value = 'Could not load metadata consumers. Check your connection and try again.'
+		loadError.value = t('pages.settings.metadataConsumers.loadError', 'Could not load metadata consumers. Check your connection and try again.')
 	}
 	consumers.value = consumerResult.data ?? []
 	schemas.value = schemaResult.data ?? []
@@ -106,7 +109,7 @@ async function save() {
 			? await api.POST('/api/v1/metadata-consumers', { body })
 			: await api.PUT('/api/v1/metadata-consumers/{id}', { params: { path: { id: editingId.value } }, body })
 		if (!result.data) throw toApiError(result.error, result.response)
-		toast({ title: editingId.value === null ? 'Metadata consumer added' : 'Metadata consumer saved', tone: 'ok' })
+		toast({ title: editingId.value === null ? t('pages.settings.metadataConsumers.added', 'Metadata consumer added') : t('pages.settings.metadataConsumers.saved', 'Metadata consumer saved'), tone: 'ok' })
 		editorOpen.value = false
 		await load()
 	}
@@ -125,10 +128,10 @@ async function removeConsumer() {
 	const result = await api.DELETE('/api/v1/metadata-consumers/{id}', { params: { path: { id: deleteTarget.value.id } } })
 	deleting.value = false
 	if (!result.response.ok) {
-		toast({ title: 'Could not delete metadata consumer', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.metadataConsumers.deleteError', 'Could not delete metadata consumer'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
-	toast({ title: 'Metadata consumer deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.metadataConsumers.deleted', 'Metadata consumer deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	await load()
 }
@@ -136,21 +139,21 @@ async function removeConsumer() {
 
 <template>
 	<div>
-		<SPageHeader title="Metadata consumers">
+		<SPageHeader :title="t('pages.settings.metadataConsumers.title', 'Metadata consumers')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					:disabled="schemas.length === 0"
 					@click="openCreate"
 				>
-					Add consumer
+					{{ t('pages.settings.metadataConsumers.addConsumer', 'Add consumer') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
-		<SSection title="Companion files">
+		<SSection :title="t('pages.settings.metadataConsumers.companionFiles', 'Companion files')">
 			<p class="section-copy">
-				Choose the media centers that receive metadata files beside your media.
+				{{ t('pages.settings.metadataConsumers.companionFilesHint', 'Choose the media centers that receive metadata files beside your media.') }}
 			</p>
 			<SEmptyState
 				v-if="loadError"
@@ -159,14 +162,14 @@ async function removeConsumer() {
 			>
 				<template #action>
 					<SButton @click="load">
-						Retry
+						{{ t('pages.settings.metadataConsumers.retry', 'Retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
 			<SSpinner v-else-if="loading" />
 			<SEmptyState
 				v-else-if="consumers.length === 0"
-				message="No metadata consumers configured."
+				:message="t('pages.settings.metadataConsumers.emptyHint', 'No metadata consumers configured.')"
 			>
 				<template #action>
 					<SButton
@@ -174,7 +177,7 @@ async function removeConsumer() {
 						:disabled="schemas.length === 0"
 						@click="openCreate"
 					>
-						Add consumer
+						{{ t('pages.settings.metadataConsumers.addConsumer', 'Add consumer') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -191,20 +194,20 @@ async function removeConsumer() {
 						<div class="consumer-title">
 							<h3>{{ consumer.name }}</h3>
 							<SBadge :tone="consumer.enable ? 'ok' : 'neutral'">
-								{{ consumer.enable ? 'Enabled' : 'Disabled' }}
+								{{ consumer.enable ? t('pages.settings.metadataConsumers.enabled', 'Enabled') : t('pages.settings.metadataConsumers.disabled', 'Disabled') }}
 							</SBadge>
 						</div>
-						<p>{{ humanizeEnumValue(consumer.type) }}</p>
+						<p>{{ t(`pages.settings.metadataConsumers.types.${consumer.type.toLowerCase()}`, humanizeEnumValue(consumer.type)) }}</p>
 					</div>
 					<div class="row-actions">
 						<SButton
 							variant="secondary"
 							@click="openEdit(consumer)"
 						>
-							Edit
+							{{ t('pages.settings.metadataConsumers.edit', 'Edit') }}
 						</SButton>
 						<SIconButton
-							label="Delete consumer"
+							:label="t('pages.settings.metadataConsumers.deleteConsumer', 'Delete consumer')"
 							@click="deleteTarget = consumer"
 						>
 							<Icon
@@ -219,11 +222,11 @@ async function removeConsumer() {
 
 		<SDialog
 			v-model="editorOpen"
-			:title="editingId === null ? 'Add metadata consumer' : 'Edit metadata consumer'"
+			:title="editingId === null ? t('pages.settings.metadataConsumers.addDialog', 'Add metadata consumer') : t('pages.settings.metadataConsumers.editDialog', 'Edit metadata consumer')"
 			wide
 		>
 			<SField
-				label="Name"
+				:label="t('pages.settings.metadataConsumers.name', 'Name')"
 				control-id="consumer-name"
 				:error="formError"
 			>
@@ -234,26 +237,26 @@ async function removeConsumer() {
 				/>
 			</SField>
 			<SField
-				label="Media center"
+				:label="t('pages.settings.metadataConsumers.mediaCenter', 'Media center')"
 				control-id="consumer-type"
 			>
 				<SSelect
 					:model-value="form.type"
-					:options="schemas.map(schema => ({ value: schema.type, label: humanizeEnumValue(schema.type) }))"
+					:options="schemas.map(schema => ({ value: schema.type, label: t(`pages.settings.metadataConsumers.types.${schema.type.toLowerCase()}`, humanizeEnumValue(schema.type)) }))"
 					:disabled="editingId !== null"
 					@update:model-value="changeType($event as MetadataConsumerType)"
 				/>
 			</SField>
 			<SSwitch
 				v-model="form.enable"
-				label="Enable this consumer"
+				:label="t('pages.settings.metadataConsumers.enableConsumer', 'Enable this consumer')"
 			/>
-			<SSection title="Files to write">
+			<SSection :title="t('pages.settings.metadataConsumers.filesToWrite', 'Files to write')">
 				<p
 					v-if="selectedSchema?.fields.length"
 					class="section-copy"
 				>
-					Choose which companion files to create for this media center.
+					{{ t('pages.settings.metadataConsumers.filesToWriteHint', 'Choose which companion files to create for this media center.') }}
 				</p>
 				<div
 					v-if="selectedSchema?.fields.length"
@@ -263,7 +266,7 @@ async function removeConsumer() {
 						v-for="field in selectedSchema.fields"
 						:key="field.name"
 						:model-value="form.settings[field.name] ?? field.default"
-						:label="field.label"
+						:label="t(`schema.${form.type}.${field.name}.label`, field.label)"
 						@update:model-value="form.settings[field.name] = $event"
 					/>
 					<p
@@ -271,14 +274,14 @@ async function removeConsumer() {
 						:key="`${field.name}-hint`"
 						class="field-help"
 					>
-						{{ field.helpText }}
+						{{ t(`schema.${form.type}.${field.name}.helpText`, field.helpText ?? '') }}
 					</p>
 				</div>
 				<p
 					v-else
 					class="field-help"
 				>
-					This media center has no file options.
+					{{ t('pages.settings.metadataConsumers.noFileOptions', 'This media center has no file options.') }}
 				</p>
 			</SSection>
 			<template #footer>
@@ -286,38 +289,38 @@ async function removeConsumer() {
 					variant="secondary"
 					@click="editorOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.metadataConsumers.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					Save changes
+					{{ t('pages.settings.metadataConsumers.saveChanges', 'Save changes') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete metadata consumer"
+			:title="t('pages.settings.metadataConsumers.deleteDialog', 'Delete metadata consumer')"
 		>
 			<p v-if="deleteTarget">
-				Delete “{{ deleteTarget.name }}”? This cannot be undone.
+				{{ t('pages.settings.metadataConsumers.confirmDelete', { name: deleteTarget.name }, 'Delete "{name}"? This cannot be undone.') }}
 			</p>
 			<template #footer>
 				<SButton
 					variant="secondary"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.metadataConsumers.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="removeConsumer"
 				>
-					Delete
+					{{ t('pages.settings.metadataConsumers.delete', 'Delete') }}
 				</SButton>
 			</template>
 		</SDialog>

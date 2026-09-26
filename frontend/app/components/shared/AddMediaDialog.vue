@@ -4,6 +4,7 @@
  * provider, pick a hit, then hand off to the caller's kind-specific form via
  * the #details slot. The caller owns the actual POST and its own busy state.
  */
+import { useI18n } from 'vue-i18n'
 import type { MediaLookupResult } from '~/types/ui'
 
 const props = withDefaults(defineProps<{
@@ -11,8 +12,10 @@ const props = withDefaults(defineProps<{
 	searchPlaceholder?: string
 	search: (term: string) => Promise<MediaLookupResult[]>
 }>(), {
-	searchPlaceholder: 'Search by title',
+	searchPlaceholder: undefined,
 })
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
 	pick: [result: MediaLookupResult]
@@ -44,7 +47,7 @@ async function runSearch(value: string) {
 		results.value = await props.search(value)
 	}
 	catch {
-		searchError.value = 'Search failed. Check your connection and try again.'
+		searchError.value = t('components.shared.AddMediaDialog.searchFailed')
 	}
 	finally {
 		searching.value = false
@@ -82,11 +85,11 @@ defineExpose({ back })
 		wide
 	>
 		<template v-if="!picked">
-			<SField label="Search">
+			<SField :label="$t('components.shared.AddMediaDialog.search')">
 				<SInput
 					v-model="term"
 					type="search"
-					:placeholder="searchPlaceholder"
+					:placeholder="props.searchPlaceholder ?? t('components.shared.AddMediaDialog.searchByTitle')"
 				/>
 			</SField>
 			<p
@@ -125,14 +128,14 @@ defineExpose({ back })
 								v-if="result.existingId != null"
 								tone="info"
 							>
-								Already in library
+								{{ $t('components.shared.AddMediaDialog.alreadyInLibrary') }}
 							</SBadge>
 						</div>
 					</button>
 				</template>
 				<SEmptyState
 					v-else-if="term.trim().length >= 2 && !searching"
-					message="No matches. Try a different title."
+					:message="$t('components.shared.AddMediaDialog.noMatches')"
 				/>
 			</div>
 		</template>
@@ -145,7 +148,7 @@ defineExpose({ back })
 				<Icon
 					name="lucide:arrow-left"
 					aria-hidden="true"
-				/> Back to search
+				/> {{ $t('components.shared.AddMediaDialog.backToSearch') }}
 			</button>
 			<slot
 				name="details"

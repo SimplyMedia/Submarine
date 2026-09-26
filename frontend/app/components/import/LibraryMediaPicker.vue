@@ -62,7 +62,7 @@ function clear() {
 			<SInput
 				v-model="term"
 				type="search"
-				placeholder="Filter"
+				:placeholder="$t('components.import.LibraryMediaPicker.filter')"
 			/>
 			<button
 				v-if="current"
@@ -70,7 +70,7 @@ function clear() {
 				class="media-picker-clear"
 				@click="clear"
 			>
-				Clear match
+				{{ $t('components.import.LibraryMediaPicker.clearMatch') }}
 			</button>
 			<ul class="media-picker-list">
 				<li
@@ -89,7 +89,7 @@ function clear() {
 					v-if="filtered.length === 0"
 					class="s-cell-muted media-picker-empty"
 				>
-					No matches
+					{{ $t('components.import.LibraryMediaPicker.noMatches') }}
 				</li>
 			</ul>
 		</div>

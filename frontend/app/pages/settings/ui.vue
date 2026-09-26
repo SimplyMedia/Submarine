@@ -1,30 +1,42 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
 import { useReferenceStore } from '~/stores/reference'
 import { applyUiFormat } from '~/composables/useFormat'
-import { themeOptions } from '~/utils/settings-labels'
+import { themeOptions as themeOptionKeys } from '~/utils/settings-labels'
+import { availableLocales } from '~/i18n'
 import type { components } from '~/types/api'
 
 type UiConfig = components['schemas']['UiConfig']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Interface' })
+const { t, locale } = useI18n()
+useHead(() => ({ title: t('settings.ui.title') }))
 
 const api = useApi()
 const { toast } = useToast()
 const colorMode = useColorMode()
 const reference = useReferenceStore()
 
-const firstDayOfWeekOptions = [
-	{ value: '0', label: 'Sunday' },
-	{ value: '1', label: 'Monday' },
-	{ value: '2', label: 'Tuesday' },
-	{ value: '3', label: 'Wednesday' },
-	{ value: '4', label: 'Thursday' },
-	{ value: '5', label: 'Friday' },
-	{ value: '6', label: 'Saturday' },
-]
+const firstDayOfWeekOptions = computed(() => [
+	{ value: '0', label: t('settings.ui.days.sunday') },
+	{ value: '1', label: t('settings.ui.days.monday') },
+	{ value: '2', label: t('settings.ui.days.tuesday') },
+	{ value: '3', label: t('settings.ui.days.wednesday') },
+	{ value: '4', label: t('settings.ui.days.thursday') },
+	{ value: '5', label: t('settings.ui.days.friday') },
+	{ value: '6', label: t('settings.ui.days.saturday') },
+])
+
+const languageOptions = availableLocales.map(language => ({
+	value: language.code,
+	label: t(language.nameKey),
+}))
+const themeOptions = computed(() => themeOptionKeys.map(option => ({
+	...option,
+	label: t(option.label),
+})))
 
 const loading = ref(true)
 const saving = ref(false)
@@ -40,12 +52,19 @@ function applyTheme(theme: UiConfig['theme']) {
 	colorMode.preference = theme === 'LIGHT' ? 'light' : theme === 'DARK' ? 'dark' : 'system'
 }
 
+function applyLanguage(language: string | undefined) {
+	locale.value = availableLocales.find(item => item.code === language?.toLowerCase())?.code ?? 'en'
+}
+
+watch(() => draft.value.language, applyLanguage)
+
 async function load() {
 	loading.value = true
 	const result = await api.GET('/api/v1/config/ui')
 	if (result.data) {
 		markSaved(result.data)
 		applyTheme(result.data.theme)
+		applyLanguage(result.data.language)
 		applyUiFormat(result.data)
 	}
 	loading.value = false
@@ -61,13 +80,14 @@ async function save() {
 		}
 		markSaved(result.data)
 		applyTheme(result.data.theme)
+		applyLanguage(result.data.language)
 		applyUiFormat(result.data)
 		reference.uiConfig = result.data
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('common.saved'), tone: 'ok' })
 	}
 	catch (error) {
 		const apiError = error instanceof ApiError ? error : toApiError(error)
-		toast({ title: 'Could not save', tone: 'danger', description: apiError.message })
+		toast({ title: t('common.couldNotSave'), tone: 'danger', description: apiError.message })
 	}
 	finally {
 		saving.value = false
@@ -77,16 +97,27 @@ async function save() {
 
 <template>
 	<div>
-		<SPageHeader title="Interface" />
+		<SPageHeader :title="t('settings.ui.title')" />
 
-		<SSection title="Appearance">
+		<SSection :title="t('settings.ui.appearance')">
 			<SSpinner v-if="loading" />
 			<div
 				v-else
 				class="settings-form"
 			>
 				<SField
-					label="Theme"
+					:label="t('settings.ui.language')"
+					:hint="t('settings.ui.languageDescription')"
+					control-id="ui-language"
+				>
+					<SSelect
+						v-model="draft.language"
+						control-id="ui-language"
+						:options="languageOptions"
+					/>
+				</SField>
+				<SField
+					:label="t('settings.ui.theme')"
 					control-id="ui-theme"
 				>
 					<SSelect
@@ -96,7 +127,7 @@ async function save() {
 					/>
 				</SField>
 				<SField
-					label="First day of week"
+					:label="t('settings.ui.firstDayOfWeek')"
 					control-id="ui-first-day"
 				>
 					<SSelect
@@ -106,8 +137,8 @@ async function save() {
 					/>
 				</SField>
 				<SField
-					label="Short date format"
-					hint="Moment.js-style tokens, e.g. MMM D, YYYY"
+					:label="t('settings.ui.shortDateFormat')"
+					:hint="t('settings.ui.shortDateFormatHint')"
 					control-id="ui-short-date"
 				>
 					<SInput
@@ -116,8 +147,8 @@ async function save() {
 					/>
 				</SField>
 				<SField
-					label="Long date format"
-					hint="Moment.js-style tokens, e.g. dddd, MMMM D, YYYY"
+					:label="t('settings.ui.longDateFormat')"
+					:hint="t('settings.ui.longDateFormatHint')"
 					control-id="ui-long-date"
 				>
 					<SInput
@@ -126,8 +157,8 @@ async function save() {
 					/>
 				</SField>
 				<SField
-					label="Time format"
-					hint="Moment.js-style tokens, e.g. h:mm A"
+					:label="t('settings.ui.timeFormat')"
+					:hint="t('settings.ui.timeFormatHint')"
 					control-id="ui-time-format"
 				>
 					<SInput
@@ -135,10 +166,10 @@ async function save() {
 						v-model="draft.timeFormat"
 					/>
 				</SField>
-				<SField label="Show relative dates">
+				<SField :label="t('settings.ui.showRelativeDates')">
 					<SCheckbox
 						v-model="draft.showRelativeDates"
-						label="Show dates like &quot;in 2 hours&quot; instead of exact timestamps"
+						:label="t('settings.ui.relativeDatesDescription')"
 					/>
 				</SField>
 			</div>

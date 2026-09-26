@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 definePageMeta({
 	layout: 'auth',
 	public: true,
 })
 
-useHead({ title: 'Sign in' })
+const { t } = useI18n()
+
+useHead({ title: t('pages.login.title') })
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -27,10 +31,10 @@ async function submit() {
 
 	const errors: Record<string, string[]> = {}
 	if (username.value.trim().length === 0) {
-		errors.username = ['Enter your username']
+		errors.username = [t('pages.login.usernameRequired')]
 	}
 	if (password.value.length === 0) {
-		errors.password = ['Enter your password']
+		errors.password = [t('pages.login.passwordRequired')]
 	}
 	fieldErrors.value = errors
 	if (Object.keys(errors).length > 0) {
@@ -48,7 +52,7 @@ async function submit() {
 			fieldErrors.value = error.fieldErrors
 		}
 		else {
-			formError.value = 'Could not sign in. Check your connection and try again.'
+			formError.value = t('pages.login.signInFailed')
 		}
 	}
 	finally {
@@ -60,7 +64,7 @@ async function submit() {
 <template>
 	<div>
 		<h1 class="auth-title">
-			Sign in
+			{{ t('pages.login.title') }}
 		</h1>
 		<form
 			class="auth-form"
@@ -68,7 +72,7 @@ async function submit() {
 			@submit.prevent="submit"
 		>
 			<SField
-				label="Username"
+				:label="t('pages.login.username')"
 				control-id="login-username"
 				:error="fieldErrors.username?.[0]"
 			>
@@ -81,7 +85,7 @@ async function submit() {
 				/>
 			</SField>
 			<SField
-				label="Password"
+				:label="t('pages.login.password')"
 				control-id="login-password"
 				:error="fieldErrors.password?.[0]"
 			>
@@ -95,7 +99,7 @@ async function submit() {
 			</SField>
 			<SCheckbox
 				v-model="rememberMe"
-				label="Remember me"
+				:label="t('pages.login.rememberMe')"
 			/>
 			<p
 				v-if="formError"
@@ -110,7 +114,7 @@ async function submit() {
 				class="auth-submit"
 				:loading="busy"
 			>
-				Sign in
+				{{ t('pages.login.signIn') }}
 			</SButton>
 		</form>
 	</div>

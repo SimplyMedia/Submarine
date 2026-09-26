@@ -51,7 +51,7 @@ test('indexers: add a Torznab tracker, test it, then search and grab a release',
 	await addDialog.getByLabel('Limits unit').click()
 	await page.getByRole('option', { name: 'Per hour' }).click()
 	await addDialog.getByLabel('Season search maximum single episode age (days)').fill('14')
-	await addDialog.getByRole('checkbox', { name: 'freeleech', exact: true }).check()
+	await addDialog.getByRole('checkbox', { name: 'Freeleech', exact: true }).check()
 	await addDialog.getByRole('button', { name: 'Add indexer' }).click()
 	await expect(page.locator('.s-toast-title', { hasText: 'Indexer added' })).toBeVisible()
 
@@ -67,7 +67,7 @@ test('indexers: add a Torznab tracker, test it, then search and grab a release',
 	await expect(editDialog.getByLabel('Query limit')).toHaveValue('100')
 	await expect(editDialog.getByLabel('Grab limit')).toHaveValue('10')
 	await expect(editDialog.getByLabel('Season search maximum single episode age (days)')).toHaveValue('14')
-	await expect(editDialog.getByRole('checkbox', { name: 'freeleech', exact: true })).toBeChecked()
+	await expect(editDialog.getByRole('checkbox', { name: 'Freeleech', exact: true })).toBeChecked()
 	await editDialog.getByRole('button', { name: 'Cancel' }).click()
 	await deleteIndexerByName(page.request, LIMITS_TRACKER_NAME)
 

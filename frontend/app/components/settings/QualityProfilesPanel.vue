@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useReferenceStore } from '~/stores/reference'
 import { useSettingsStore } from '~/stores/settings'
@@ -12,8 +13,19 @@ const api = useApi()
 const reference = useReferenceStore()
 const settings = useSettingsStore()
 const { toast } = useToast()
+const { t } = useI18n()
 
 const TEMPLATE_NAMES = ['Any', 'SD', 'HD-720p', 'HD-1080p', 'Ultra-HD', 'HD - 720p/1080p', 'Remux-1080p', 'Remux-2160p']
+const templateLabels: Record<string, string> = {
+	'Any': 'components.settings.QualityProfilesPanel.templates.any',
+	'SD': 'components.settings.QualityProfilesPanel.templates.sd',
+	'HD-720p': 'components.settings.QualityProfilesPanel.templates.hd720p',
+	'HD-1080p': 'components.settings.QualityProfilesPanel.templates.hd1080p',
+	'Ultra-HD': 'components.settings.QualityProfilesPanel.templates.ultraHd',
+	'HD - 720p/1080p': 'components.settings.QualityProfilesPanel.templates.hd720p1080p',
+	'Remux-1080p': 'components.settings.QualityProfilesPanel.templates.remux1080p',
+	'Remux-2160p': 'components.settings.QualityProfilesPanel.templates.remux2160p',
+}
 
 const loading = ref(true)
 const loadError = computed(() => reference.loadError)
@@ -67,10 +79,10 @@ async function createFromTemplate(templateName: string) {
 	const result = await api.POST('/api/v1/quality-profiles/from-template/{name}', { params: { path: { name: templateName } } })
 	creatingTemplate.value = false
 	if (!result.data) {
-		toast({ title: 'Could not create profile', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('components.settings.QualityProfilesPanel.couldNotCreate'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
-	toast({ title: `"${result.data.name}" created`, tone: 'ok' })
+	toast({ title: t('components.settings.QualityProfilesPanel.created', { name: result.data.name }), tone: 'ok' })
 	templateDialogOpen.value = false
 	await reference.load(true)
 }
@@ -78,10 +90,10 @@ async function createFromTemplate(templateName: string) {
 async function cloneProfile(profile: QualityProfileResource) {
 	const result = await api.POST('/api/v1/quality-profiles/{id}/clone', { params: { path: { id: profile.id } } })
 	if (!result.data) {
-		toast({ title: 'Could not clone profile', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('components.settings.QualityProfilesPanel.couldNotClone'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
-	toast({ title: `"${result.data.name}" created`, tone: 'ok' })
+	toast({ title: t('components.settings.QualityProfilesPanel.created', { name: result.data.name }), tone: 'ok' })
 	await reference.load(true)
 }
 
@@ -134,7 +146,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('components.settings.QualityProfilesPanel.saved'), tone: 'ok' })
 		editorOpen.value = false
 		await reference.load(true)
 	}
@@ -164,16 +176,16 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Quality profile deleted', tone: 'ok' })
+	toast({ title: t('components.settings.QualityProfilesPanel.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await reference.load(true)
 }
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'qualities', label: 'Qualities' },
-	{ key: 'formats', label: 'Custom formats' },
+	{ key: 'name', label: t('components.settings.QualityProfilesPanel.name') },
+	{ key: 'qualities', label: t('components.settings.QualityProfilesPanel.qualities') },
+	{ key: 'formats', label: t('components.settings.QualityProfilesPanel.customFormats') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 </script>
@@ -185,7 +197,7 @@ const columns = [
 				variant="primary"
 				@click="openTemplateDialog"
 			>
-				New from template
+				{{ $t('components.settings.QualityProfilesPanel.newFromTemplate') }}
 			</SButton>
 		</div>
 
@@ -196,7 +208,7 @@ const columns = [
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ $t('components.settings.QualityProfilesPanel.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -208,7 +220,7 @@ const columns = [
 			:row-key="(row) => row.id"
 		>
 			<template #cell-qualities="{ row }">
-				{{ row.items.filter(i => i.allowed).length }} of {{ row.items.length }}
+				{{ $t('components.settings.QualityProfilesPanel.qualityCount', { allowed: row.items.filter(i => i.allowed).length, total: row.items.length }) }}
 			</template>
 			<template #cell-formats="{ row }">
 				{{ row.formatItems.length }}
@@ -216,13 +228,13 @@ const columns = [
 			<template #cell-actions="{ row }">
 				<SDropdownMenu
 					:items="[
-						{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-						{ label: 'Clone', icon: 'lucide:copy', onSelect: () => cloneProfile(row) },
-						{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
+						{ label: t('components.settings.QualityProfilesPanel.edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+						{ label: t('components.settings.QualityProfilesPanel.clone'), icon: 'lucide:copy', onSelect: () => cloneProfile(row) },
+						{ label: t('components.settings.QualityProfilesPanel.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
 					]"
 				>
 					<template #trigger>
-						<SIconButton label="Profile actions">
+						<SIconButton :label="$t('components.settings.QualityProfilesPanel.profileActions')">
 							<Icon
 								name="lucide:more-horizontal"
 								aria-hidden="true"
@@ -232,13 +244,13 @@ const columns = [
 				</SDropdownMenu>
 			</template>
 			<template #empty>
-				<SEmptyState message="No quality profiles yet. Start from a template.">
+				<SEmptyState :message="$t('components.settings.QualityProfilesPanel.emptyMessage')">
 					<template #action>
 						<SButton
 							variant="primary"
 							@click="openTemplateDialog"
 						>
-							New from template
+							{{ $t('components.settings.QualityProfilesPanel.newFromTemplate') }}
 						</SButton>
 					</template>
 				</SEmptyState>
@@ -247,8 +259,8 @@ const columns = [
 
 		<SDialog
 			v-model="templateDialogOpen"
-			title="New quality profile"
-			description="Start from a template, then customize it."
+			:title="$t('components.settings.QualityProfilesPanel.newQualityProfile')"
+			:description="$t('components.settings.QualityProfilesPanel.templateDescription')"
 		>
 			<div class="template-grid">
 				<SButton
@@ -258,19 +270,19 @@ const columns = [
 					:disabled="creatingTemplate"
 					@click="createFromTemplate(templateName)"
 				>
-					{{ templateName }}
+					{{ t(templateLabels[templateName]!) }}
 				</SButton>
 			</div>
 		</SDialog>
 
 		<SDialog
 			v-model="editorOpen"
-			title="Edit quality profile"
+			:title="$t('components.settings.QualityProfilesPanel.editQualityProfile')"
 			wide
 		>
 			<template v-if="editing">
 				<SField
-					label="Name"
+					:label="$t('components.settings.QualityProfilesPanel.name')"
 					:error="nameError"
 					control-id="profile-name"
 				>
@@ -282,11 +294,11 @@ const columns = [
 				</SField>
 				<SSwitch
 					v-model="upgradeAllowed"
-					label="Allow upgrades beyond the cutoff"
+					:label="$t('components.settings.QualityProfilesPanel.allowUpgrades')"
 				/>
 				<SField
-					label="Upgrade until"
-					hint="Stops upgrading once a release at this quality is reached"
+					:label="$t('components.settings.QualityProfilesPanel.upgradeUntil')"
+					:hint="$t('components.settings.QualityProfilesPanel.upgradeUntilHint')"
 					control-id="profile-cutoff"
 				>
 					<SSelect
@@ -296,9 +308,9 @@ const columns = [
 					/>
 				</SField>
 
-				<SSection title="Qualities">
+				<SSection :title="$t('components.settings.QualityProfilesPanel.qualities')">
 					<p class="hint">
-						Reorder from lowest to highest quality; only allowed qualities are ever grabbed.
+						{{ $t('components.settings.QualityProfilesPanel.reorderQualitiesHint') }}
 					</p>
 					<ReorderList
 						v-model="items"
@@ -315,14 +327,14 @@ const columns = [
 									v-if="qualityKey(item.quality) === cutoffKey"
 									tone="info"
 								>
-									Cutoff
+									{{ $t('components.settings.QualityProfilesPanel.cutoff') }}
 								</SBadge>
 							</div>
 						</template>
 					</ReorderList>
 				</SSection>
 
-				<SSection title="Custom format scores">
+				<SSection :title="$t('components.settings.QualityProfilesPanel.customFormatScores')">
 					<div class="format-scores">
 						<div
 							v-for="format in settings.customFormats"
@@ -332,7 +344,7 @@ const columns = [
 							<span>{{ format.name }}</span>
 							<ScoreInput
 								:model-value="formatScores[format.id] ?? 0"
-								:aria-label="`Score for ${format.name}`"
+								:aria-label="t('components.settings.QualityProfilesPanel.scoreForFormat', { name: format.name })"
 								@update:model-value="formatScores[format.id] = $event"
 							/>
 						</div>
@@ -340,12 +352,12 @@ const columns = [
 							v-if="settings.customFormats.length === 0"
 							class="hint"
 						>
-							No custom formats yet.
+							{{ $t('components.settings.QualityProfilesPanel.noCustomFormats') }}
 						</p>
 					</div>
 					<div class="field-grid">
 						<SField
-							label="Minimum score to grab"
+							:label="$t('components.settings.QualityProfilesPanel.minimumScoreToGrab')"
 							control-id="min-format-score"
 						>
 							<SInput
@@ -356,7 +368,7 @@ const columns = [
 							/>
 						</SField>
 						<SField
-							label="Score to upgrade past cutoff"
+							:label="$t('components.settings.QualityProfilesPanel.scoreToUpgradePastCutoff')"
 							control-id="cutoff-format-score"
 						>
 							<SInput
@@ -367,7 +379,7 @@ const columns = [
 							/>
 						</SField>
 						<SField
-							label="Minimum score for further upgrades"
+							:label="$t('components.settings.QualityProfilesPanel.minimumScoreForFurtherUpgrades')"
 							control-id="min-upgrade-format-score"
 						>
 							<SInput
@@ -385,24 +397,24 @@ const columns = [
 					variant="secondary"
 					@click="editorOpen = false"
 				>
-					Cancel
+					{{ $t('components.settings.QualityProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					Save changes
+					{{ $t('components.settings.QualityProfilesPanel.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete quality profile"
+			:title="$t('components.settings.QualityProfilesPanel.deleteTitle')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ $t('components.settings.QualityProfilesPanel.confirmDelete', { name: deleteTarget.name }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -417,14 +429,14 @@ const columns = [
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ $t('components.settings.QualityProfilesPanel.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete
+					{{ $t('components.settings.QualityProfilesPanel.delete') }}
 				</SButton>
 			</template>
 		</SDialog>

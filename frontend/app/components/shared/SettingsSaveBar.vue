@@ -3,23 +3,23 @@
 		v-if="dirty"
 		class="save-bar"
 		role="region"
-		aria-label="Unsaved changes"
+		:aria-label="$t('components.shared.SettingsSaveBar.unsavedChanges')"
 	>
-		<span class="save-bar-text">You have unsaved changes.</span>
+		<span class="save-bar-text">{{ $t('components.shared.SettingsSaveBar.unsavedChangesMessage') }}</span>
 		<div class="save-bar-actions">
 			<SButton
 				variant="ghost"
 				:disabled="saving"
 				@click="emit('discard')"
 			>
-				Discard
+				{{ $t('components.shared.SettingsSaveBar.discard') }}
 			</SButton>
 			<SButton
 				variant="primary"
 				:loading="saving"
 				@click="emit('save')"
 			>
-				Save changes
+				{{ $t('components.shared.SettingsSaveBar.saveChanges') }}
 			</SButton>
 		</div>
 	</div>

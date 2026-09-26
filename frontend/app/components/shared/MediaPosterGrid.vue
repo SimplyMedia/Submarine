@@ -83,7 +83,7 @@ function onClick(event: MouseEvent, id: number) {
 			<SProgress
 				v-if="item.progress != null"
 				:value="item.progress"
-				:label="item.progressLabel ?? `${item.title} episodes on disk`"
+				:label="item.progressLabel ?? $t('components.shared.MediaPosterGrid.episodesOnDisk', { title: item.title })"
 			/>
 			<div class="poster-card-meta">
 				<p class="poster-card-title">
@@ -108,7 +108,7 @@ function onClick(event: MouseEvent, id: number) {
 		v-else
 		name="empty"
 	>
-		<SEmptyState message="Nothing here yet" />
+		<SEmptyState :message="$t('components.shared.MediaPosterGrid.nothingHereYet')" />
 	</slot>
 </template>
 

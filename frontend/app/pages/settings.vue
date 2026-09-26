@@ -2,7 +2,7 @@
 	<div class="settings-shell">
 		<nav
 			class="settings-nav"
-			aria-label="Settings sections"
+			:aria-label="t('pages.settings.navigationLabel')"
 		>
 			<NuxtLink
 				v-for="item in sections"
@@ -11,7 +11,7 @@
 				class="settings-nav-item"
 				:class="{ 'settings-nav-item-active': route.path === item.to }"
 			>
-				{{ item.label }}
+				{{ t(item.key) }}
 			</NuxtLink>
 		</nav>
 		<div class="settings-content">
@@ -21,8 +21,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { navigation } from '~/navigation'
 
+const { t } = useI18n()
 const route = useRoute()
 const sections = navigation.find(item => item.id === 'settings')?.children ?? []
 </script>
