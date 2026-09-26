@@ -219,7 +219,10 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: t('pages.settings.downloadClients.added', 'Download client added'), tone: 'ok' })
+		const savedMessage = editingId.value === null
+			? t('pages.settings.downloadClients.added', 'Download client added')
+			: t('pages.settings.downloadClients.savedExisting', 'Download client saved')
+		toast({ title: savedMessage, tone: 'ok' })
 		dialogOpen.value = false
 		await loadClients()
 	}
