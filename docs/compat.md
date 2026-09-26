@@ -81,6 +81,41 @@ Removing a selected version rebinds to the lowest remaining version. Deleting a 
 excludes that entry rather than exposing a sibling version; re-adding it must explicitly reactivate
 the binding.
 
+## Prowlarr facade
+
+`<UrlBase>/compat/prowlarr/api/v1` implements the routes Homepage and Notifiarr actually use:
+
+- `GET /system/status`, `GET /health` — status and health issues, same dialect rules as Sonarr/Radarr.
+- `GET /indexer`, `/indexer/{id}`, `/indexer/schema` — the configured native indexers, projected as
+  Prowlarr provider resources (`fields[]` mirror the indexer's native settings JSON).
+- `GET /indexerstats` — per-indexer query/grab/failure totals and per-user-agent totals, recomputed
+  from `IndexerHistory` for the requested date range and indexer id filter.
+- `GET /search` — a real interactive search across the enabled indexers (`query`, `type`,
+  `categories`, `indexerIds`, `limit`, `offset`), returning raw release resources (GUID, indexer,
+  protocol, size, seeders/leechers, download/magnet URLs). This is a release lookup only; it does
+  not add anything to the library.
+- `GET /notification`, `/{id}`, `/schema`; `POST`, `PUT` (collection and `/{id}`); `DELETE /{id}`;
+  `POST /notification/test` — Notifiarr and Webhook notifications only, since those are the only
+  two upstream implementations either researched consumer touches. A collection `PUT` or `POST`
+  with a matching `id` updates the existing row instead of creating a duplicate, so Notifiarr's
+  repeated self-registration converges on one notification.
+- `POST /search`, `/search/bulk`, and the `/applications` family are **not implemented**. No
+  researched Prowlarr consumer (Homepage, Notifiarr) grabs an arbitrary release or manages external
+  PVR applications through Prowlarr; both routes return a non-HTML 404 rather than a fake response.
+
+## Outbound Sonarr/Radarr-compatible webhooks
+
+The native **Webhook** notification has a `payloadFormat` field: `Native` (default, Submarine's own
+`NotificationMessage` shape) or `SonarrRadarrCompatible` (upstream Sonarr/Radarr webhook envelopes:
+`eventType`, `instanceName`, `applicationUrl`, `series`/`episodes` or `movie`, `release`, health
+fields, and so on). Set `facade` (`Sonarr` or `Radarr`) to choose which shape non-media events (health,
+test) use, and `applicationUrl` to the facade root the payload should advertise. Media events
+(series/episode/movie) pick their shape automatically from the event's own media kind.
+
+The **Notifiarr** notification always sends the Sonarr/Radarr-compatible envelope to
+`https://notifiarr.com/api/v1/notification/{sonarr|radarr}`, matching what Notifiarr's own
+receiver parses; this is unrelated to and independent of the Prowlarr notification registration
+above, which lets Notifiarr register *itself* as a listener inside Submarine.
 
 ## Limits
 

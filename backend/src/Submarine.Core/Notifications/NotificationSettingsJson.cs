@@ -135,7 +135,10 @@ public static class NotificationSettingsJson
 				Select("method", "Method", true, ["POST", "PUT"], "POST"),
 				Text("username", "Username"),
 				Password("password", "Password", false),
-				Tags("headers", "Headers", false, null, "Headers as Header:Value entries")
+				Tags("headers", "Headers", false, null, "Headers as Header:Value entries"),
+				Select("payloadFormat", "Payload format", true, ["Native", "SonarrRadarrCompatible"], "Native"),
+				Select("facade", "Facade for non-media events", true, ["Sonarr", "Radarr"], "Sonarr"),
+				Url("applicationUrl", "Application URL")
 			],
 			NotificationType.SLACK =>
 			[
@@ -391,6 +394,16 @@ public static class NotificationSettingsJson
 				if (s.Method is not ("POST" or "PUT"))
 				{
 					Add(errors, "method", "must be POST or PUT");
+				}
+
+				if (s.PayloadFormat is not ("Native" or "SonarrRadarrCompatible"))
+				{
+					Add(errors, "payloadFormat", "must be Native or SonarrRadarrCompatible");
+				}
+
+				if (s.Facade is not ("Sonarr" or "Radarr"))
+				{
+					Add(errors, "facade", "must be Sonarr or Radarr");
 				}
 
 				break;
