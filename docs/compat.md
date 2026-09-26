@@ -82,6 +82,19 @@ excludes that entry rather than exposing a sibling version; re-adding it must ex
 the binding.
 
 
+## Sonarr facade
+
+The Sonarr facade currently implements series list/get/lookup/add/update/delete and bulk editing,
+episode list/get/monitor updates, episode-file list/get, and season-pass monitoring. Series
+responses use the selected compatibility version for their path and file statistics. TVDB and IMDb
+lookup terms are passed to the metadata service in their original prefixed form.
+
+The Sonarr facade is not yet complete for Bazarr or LunaSea workflows: episode-file mutation,
+release search/grab, manual import, rename, and parse are not implemented. Selected-version title
+deletion is not implemented. Bazarr-compatible resource projection is registered, but native event
+forwarding and consumer-level SignalR synchronization are not verified. No Sonarr consumer Docker
+workflow has been run for this change.
+
 ## Limits
 
 - The compat facades implement the consumer route union researched for the versions listed above,
