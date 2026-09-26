@@ -1,0 +1,52 @@
+/*
+ * Design tokens. The only place colours and shadows are defined.
+ * Switched by the `.dark` class on <html> (set by @nuxtjs/color-mode).
+ */
+:root {
+	--bg: #F3F6F8;
+	--surface: #FFFFFF;
+	--surface-2: #E9EEF2;
+	--line: #D9E1E8;
+	--line-strong: #B9C6D2;
+	--fg: #132030;
+	--fg-muted: #5B6C7D;
+	--fg-faint: #8A98A6;
+	--accent: #137F73;
+	--accent-fg: #FFFFFF;
+	--accent-soft: #D7F0EC;
+	--ok: #137F73;
+	--warn: #B77A12;
+	--danger: #C7423E;
+	--info: #2F6FD1;
+
+	--r-control: 6px;
+	--r-panel: 10px;
+	--r-dialog: 14px;
+	--shadow-pop: 0 8px 24px rgba(19, 32, 48, 0.12);
+
+	--focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+	--control-h: 36px;
+	--row-h: 44px;
+	--gutter: 24px;
+}
+
+.dark {
+	--bg: #0E1620;
+	--surface: #152030;
+	--surface-2: #1C2A3B;
+	--line: #22334A;
+	--line-strong: #33475F;
+	--fg: #DCE6F0;
+	--fg-muted: #8CA0B5;
+	--fg-faint: #5F7288;
+	--accent: #2FB7A8;
+	--accent-fg: #06201C;
+	--accent-soft: #163D3A;
+	--ok: #2FB7A8;
+	--warn: #E0A636;
+	--danger: #E5605B;
+	--info: #6AA1F5;
+
+	--shadow-pop: none;
+}

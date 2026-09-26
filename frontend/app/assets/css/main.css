@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import "./ui.css";
+
+@theme inline {
+	--font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
+
+	/* Type scale: 12 / 13 / 14 body / 16 / 19 / 23 / 28 */
+	--text-xs: 0.75rem;
+	--text-xs--line-height: 1.5;
+	--text-sm: 0.8125rem;
+	--text-sm--line-height: 1.5;
+	--text-base: 0.875rem;
+	--text-base--line-height: 1.5;
+	--text-lg: 1rem;
+	--text-lg--line-height: 1.2;
+	--text-xl: 1.1875rem;
+	--text-xl--line-height: 1.2;
+	--text-2xl: 1.4375rem;
+	--text-2xl--line-height: 1.2;
+	--text-3xl: 1.75rem;
+	--text-3xl--line-height: 1.2;
+
+	/* Colours map to tokens.css; no other colour values exist anywhere. */
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-line: var(--line);
+	--color-line-strong: var(--line-strong);
+	--color-fg: var(--fg);
+	--color-fg-muted: var(--fg-muted);
+	--color-fg-faint: var(--fg-faint);
+	--color-accent: var(--accent);
+	--color-accent-fg: var(--accent-fg);
+	--color-accent-soft: var(--accent-soft);
+	--color-ok: var(--ok);
+	--color-warn: var(--warn);
+	--color-danger: var(--danger);
+	--color-info: var(--info);
+
+	--radius-control: var(--r-control);
+	--radius-panel: var(--r-panel);
+	--radius-dialog: var(--r-dialog);
+}
+
+@layer base {
+	html {
+		font-family: var(--font-sans);
+	}
+
+	body {
+		background-color: var(--bg);
+		color: var(--fg);
+		font-size: 0.875rem;
+		line-height: 1.5;
+		font-variant-numeric: tabular-nums;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	h1,
+	h2,
+	h3 {
+		line-height: 1.2;
+		letter-spacing: -0.01em;
+	}
+
+	:focus-visible {
+		outline: 2px solid transparent;
+		box-shadow: var(--focus-ring);
+	}
+
+	::selection {
+		background: var(--accent-soft);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
+
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--line-strong) transparent;
+	}
+
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: var(--line-strong);
+		border-radius: 5px;
+		border: 2px solid var(--bg);
+	}
+}
+
+@layer components {
+	/* Max line length for prose such as overviews. */
+	.measure {
+		max-width: 72ch;
+	}
+
+	.skip-link {
+		position: absolute;
+		left: -9999px;
+		top: 8px;
+		z-index: 100;
+		padding: 8px 12px;
+		background: var(--surface);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-control);
+		color: var(--fg);
+	}
+
+	.skip-link:focus-visible {
+		left: 8px;
+	}
+}
