@@ -1,56 +1,69 @@
 services:
-  submarine-api:
+  submarine:
+    image: ghcr.io/simplymedia/submarine:latest
     build:
-      context: backend
-      dockerfile: Submarine.Api/Dockerfile
+      context: .
+      dockerfile: backend/src/Submarine.Api/Dockerfile
     ports:
       - "8989:8080"
-    volumes:
-      - ./data/api:/app/data
     environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Etc/UTC
+      # Behind a reverse proxy only:
+      # ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       Metadata__BaseUrl: http://submarine-metadata:8080
       Mappings__BaseUrl: http://submarine-mappings:8080
+      # Postgres instead of the default SQLite:
+      # Database__Provider: Postgres
+      # ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=submarine;Username=submarine;Password=submarine
+    volumes:
+      - ./data/submarine:/config
+      # Keep downloads and the media library on one volume so imports can hardlink.
+      - /path/to/media:/media
     depends_on:
-      - submarine-metadata
-      - submarine-mappings
+      submarine-metadata:
+        condition: service_healthy
+      submarine-mappings:
+        condition: service_healthy
+    restart: unless-stopped
 
   submarine-metadata:
+    image: ghcr.io/simplymedia/submarine-metadata:latest
     build:
       context: backend
-      dockerfile: Submarine.Metadata/Dockerfile
+      dockerfile: src/Submarine.Metadata/Dockerfile
     ports:
       - "8990:8080"
     environment:
       Tmdb__ApiKey: ${TMDB_API_KEY:-}
       Tvdb__ApiKey: ${TVDB_API_KEY:-}
+    restart: unless-stopped
 
   submarine-mappings:
+    image: ghcr.io/simplymedia/submarine-mappings:latest
     build:
       context: backend
-      dockerfile: Submarine.Mappings/Dockerfile
+      dockerfile: src/Submarine.Mappings/Dockerfile
     ports:
       - "8991:8080"
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Etc/UTC
+      Auth__AdminApiKey: ${MAPPINGS_ADMIN_API_KEY:-}
     volumes:
-      - ./data/mappings:/app/data
+      - ./data/mappings:/config
+    restart: unless-stopped
 
-# Postgres variant (disabled by default; SQLite is the default provider).
-# To enable, uncomment the block below and set submarine-api's Database__Provider
-# and ConnectionStrings__PostgreSQLConnection accordingly.
-#
-#  postgres:
-#    image: postgres:16-alpine
-#    environment:
-#      POSTGRES_DB: Submarine
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
-#    volumes:
-#      - ./data/postgres:/var/lib/postgresql/data
-#
-#  submarine-api:
-#    environment:
-#      Database__Provider: Postgres
-#      ConnectionStrings__PostgreSQLConnection: Host=postgres;Port=5432;Database=Submarine;Username=postgres;Password=postgres;
-#    depends_on:
-#      - postgres
-#      - submarine-metadata
-#      - submarine-mappings
+  # Optional Postgres. Start with: docker compose --profile postgres up -d
+  postgres:
+    image: postgres:17-alpine
+    profiles: [postgres]
+    environment:
+      POSTGRES_DB: submarine
+      POSTGRES_USER: submarine
+      POSTGRES_PASSWORD: submarine
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: unless-stopped

@@ -1,0 +1,11 @@
+**/node_modules
+**/.nuxt
+**/.output
+**/bin
+**/obj
+**/data
+**/logs
+**/wwwroot
+**/.e2e
+**/.screenshots
+**/test-results

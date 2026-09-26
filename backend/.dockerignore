@@ -1,0 +1,17 @@
+# Docker build context helpers. Note: the API image is built from the repository root
+# (docker build -f backend/src/Submarine.Api/Dockerfile .), so the ignore file that
+# applies to that build lives at the repository root.
+
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.nuxt/
+**/.output/
+**/data/
+**/logs/
+**/TestResults/
+*.user
+*.db
+*.db-shm
+*.db-wal
