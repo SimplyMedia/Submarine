@@ -1,6 +1,7 @@
-import { expect, test } from '@playwright/test'
+import { type APIRequestContext, expect, test } from '@playwright/test'
 import {
 	ensureLibrary,
+	ensureStubTrackerIndexer,
 	resetGrabState,
 	signIn,
 	STUB_TRACKER_BASE_URL,
@@ -12,35 +13,46 @@ import {
 // Without it the suite compiles but skips.
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
 
+const LIMITS_TRACKER_NAME = 'Stub tracker with limits'
+
+async function deleteIndexerByName(request: APIRequestContext, name: string) {
+	const list = await request.get('/api/v1/indexers', { params: { PageSize: 200 } })
+	const { items } = await list.json() as { items: { id: number, name: string }[] }
+	for (const indexer of items.filter(item => item.name === name)) {
+		expect((await request.delete(`/api/v1/indexers/${indexer.id}`)).ok()).toBe(true)
+	}
+}
+
 test('indexers: add a Torznab tracker, test it, then search and grab a release', async ({ page }) => {
 	await signIn(page)
 	await ensureLibrary(page.request)
+
+	await ensureStubTrackerIndexer(page.request)
+	// A separate indexer carries the limits and required flags, so the shared stub tracker other specs grab from stays unrestricted.
+	await deleteIndexerByName(page.request, LIMITS_TRACKER_NAME)
 
 	await page.goto('/indexers')
 	await expect(page.getByRole('heading', { level: 1, name: 'Indexers' })).toBeVisible()
 	await page.waitForLoadState('networkidle')
 
-	const row = page.getByRole('row').filter({ hasText: STUB_TRACKER_NAME }).first()
-	if (await row.count() === 0) {
-		await page.getByRole('button', { name: 'Add indexer' }).last().click()
-		const addDialog = page.getByRole('dialog')
-		await addDialog.getByRole('button', { name: 'Torznab', exact: true }).click()
-		await addDialog.getByLabel('Name').fill(STUB_TRACKER_NAME)
-		await addDialog.getByLabel('Base URL').fill(STUB_TRACKER_BASE_URL)
-		await addDialog.getByLabel('API path').fill('/api')
-		await addDialog.getByLabel('VIP expiration').fill('2027-01-15')
-		await addDialog.getByLabel('Query limit').fill('100')
-		await addDialog.getByLabel('Grab limit').fill('10')
-		await addDialog.getByLabel('Limits unit').click()
-		await page.getByRole('option', { name: 'Per hour' }).click()
-		await addDialog.getByLabel('Season search maximum single episode age (days)').fill('14')
-		await addDialog.getByRole('checkbox', { name: 'freeleech', exact: true }).check()
-		await addDialog.getByRole('button', { name: 'Add indexer' }).click()
-		await expect(page.locator('.s-toast-title', { hasText: 'Indexer added' })).toBeVisible()
-	}
-	await expect(row).toBeVisible()
+	await page.getByRole('button', { name: 'Add indexer' }).last().click()
+	const addDialog = page.getByRole('dialog')
+	await addDialog.getByRole('button', { name: 'Torznab', exact: true }).click()
+	await addDialog.getByLabel('Name').fill(LIMITS_TRACKER_NAME)
+	await addDialog.getByLabel('Base URL').fill(STUB_TRACKER_BASE_URL)
+	await addDialog.getByLabel('API path').fill('/api')
+	await addDialog.getByLabel('VIP expiration').fill('2027-01-15')
+	await addDialog.getByLabel('Query limit').fill('100')
+	await addDialog.getByLabel('Grab limit').fill('10')
+	await addDialog.getByLabel('Limits unit').click()
+	await page.getByRole('option', { name: 'Per hour' }).click()
+	await addDialog.getByLabel('Season search maximum single episode age (days)').fill('14')
+	await addDialog.getByRole('checkbox', { name: 'freeleech', exact: true }).check()
+	await addDialog.getByRole('button', { name: 'Add indexer' }).click()
+	await expect(page.locator('.s-toast-title', { hasText: 'Indexer added' })).toBeVisible()
 
-	// Run the connection test for this indexer specifically.
+	const row = page.getByRole('row').filter({ hasText: LIMITS_TRACKER_NAME })
+	await expect(row).toBeVisible()
 	await row.getByRole('button', { name: 'Indexer actions' }).click()
 	await page.getByRole('menuitem', { name: 'Edit' }).click()
 	const editDialog = page.getByRole('dialog')
@@ -53,6 +65,7 @@ test('indexers: add a Torznab tracker, test it, then search and grab a release',
 	await expect(editDialog.getByLabel('Season search maximum single episode age (days)')).toHaveValue('14')
 	await expect(editDialog.getByRole('checkbox', { name: 'freeleech', exact: true })).toBeChecked()
 	await editDialog.getByRole('button', { name: 'Cancel' }).click()
+	await deleteIndexerByName(page.request, LIMITS_TRACKER_NAME)
 
 	await resetGrabState(page.request)
 	await page.goto('/indexers/search')
