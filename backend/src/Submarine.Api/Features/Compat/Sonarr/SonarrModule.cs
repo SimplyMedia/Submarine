@@ -138,10 +138,14 @@ public sealed class SonarrModule : IEndpointModule, IServiceModule
 		return Results.Json(ProjectSeries(refreshed, selected.Id, selectedRootPath), CompatJson.Options);
 	}
 
-	private static async Task<IResult> DeleteSeriesAsync(int id, bool deleteFiles, bool addImportListExclusion, LibraryMutator mutator, CompatVersionSelection versions, CancellationToken ct)
+	private static async Task<IResult> DeleteSeriesAsync(int id, bool deleteFiles, bool addImportListExclusion, SubmarineDbContext db, LibraryMutator mutator, CancellationToken ct)
 	{
+		var exists = await db.Series.AnyAsync(x => x.Id == id, ct);
+		if (!exists) return CompatErrors.Message($"Series {id} not found", StatusCodes.Status404NotFound);
+		var versionCount = await db.MediaVersions.CountAsync(x => x.SeriesId == id, ct);
+		if (versionCount > 1)
+			return CompatErrors.Message("Deleting a selected series version while preserving sibling versions is not supported.", StatusCodes.Status409Conflict);
 		await mutator.DeleteSeriesAsync(id, deleteFiles, addImportListExclusion, ct);
-		await versions.ExcludeSeriesAsync(id, ct);
 		return Results.Ok(new { });
 	}
 

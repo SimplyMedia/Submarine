@@ -90,10 +90,11 @@ responses use the selected compatibility version for their path and file statist
 lookup terms are passed to the metadata service in their original prefixed form.
 
 The Sonarr facade is not yet complete for Bazarr or LunaSea workflows: episode-file mutation,
-release search/grab, manual import, rename, and parse are not implemented. Selected-version title
-deletion is not implemented. Bazarr-compatible resource projection is registered, but native event
-forwarding and consumer-level SignalR synchronization are not verified. No Sonarr consumer Docker
-workflow has been run for this change.
+release search/grab, manual import, rename, and parse are not implemented. Series DELETE works when
+the title has no sibling versions; deleting only the selected version while preserving siblings
+returns 409. Bazarr-compatible resource projection is registered, but native event forwarding and
+consumer-level SignalR synchronization are not verified. No Sonarr consumer Docker workflow has
+been run for this change.
 
 ## Limits
 
