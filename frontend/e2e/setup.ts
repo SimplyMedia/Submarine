@@ -12,7 +12,7 @@ export const E2E_USERNAME = 'submarine-e2e'
 export const E2E_PASSWORD = 'submarine-e2e-password'
 
 export const STUB_TRACKER_NAME = 'Stub tracker'
-export const STUB_TRACKER_BASE_URL = 'http://localhost:5300'
+export const STUB_TRACKER_BASE_URL = `http://localhost:${process.env.E2E_MOCK_PORT_BASE ? Number(process.env.E2E_MOCK_PORT_BASE) + 2 : 5300}`
 export const HARBOUR_LIGHTS_TVDB_ID = 121361
 /** Substring unique to the release both specs grab (see e2e/mock-torznab.mjs). */
 export const TARGET_RELEASE_FRAGMENT = 'H264-GROUP'
