@@ -126,6 +126,8 @@ public sealed class CompatVersionSelection(SubmarineDbContext db)
 			.OrderBy(x => x.Id)
 			.Select(x => (int?)x.Id)
 			.FirstOrDefaultAsync(cancellationToken);
+		if (replacement is null)
+			throw new InvalidOperationException($"Cannot remove the final {facade} version bound to title {titleId}.");
 		binding.MediaVersionId = replacement;
 		await db.SaveChangesAsync(cancellationToken);
 	}

@@ -68,6 +68,20 @@ point an Overseerr Sonarr connection at `https://media.example.com:8443/compat/s
 Radarr connection at `https://media.example.com:8443/compat/radarr`. Enter the global API key in
 the same form. Do not add `/api/v3` or `/api/v1` to this URL; the client appends it.
 
+## Shared library state
+
+The two facades are views of the same native catalog, not separate Sonarr and Radarr databases.
+Quality and language profiles, tags, and root folders keep their native IDs and are shared with
+native Submarine operations; changes through one transport are visible through the others.
+
+Each Sonarr series or Radarr movie has at most one persisted compatibility binding to a native
+media version. If no binding exists, the first facade access selects the lowest-ID version and
+persists it. Adding or renaming another version does not change the facade's selected version.
+Removing a selected version rebinds to the lowest remaining version. Deleting a facade entry
+excludes that entry rather than exposing a sibling version; re-adding it must explicitly reactivate
+the binding.
+
+
 ## Limits
 
 - The compat facades implement the consumer route union researched for the versions listed above,

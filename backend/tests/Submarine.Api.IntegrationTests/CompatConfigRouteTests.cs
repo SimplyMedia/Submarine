@@ -22,8 +22,7 @@ public sealed class CompatConfigRouteTests : IClassFixture<SubmarineApiFactory>
 			var naming = await db.NamingConfig.FindAsync(1);
 			naming!.DailyEpisodeFormat = "native-daily-format";
 			var media = await db.MediaManagementConfig.FindAsync(1);
-			media!.WriteNfo = true;
-			media.EnableMediaInfo = false;
+			media!.EnableMediaInfo = false;
 			await db.SaveChangesAsync();
 			return true;
 		});
@@ -75,7 +74,6 @@ public sealed class CompatConfigRouteTests : IClassFixture<SubmarineApiFactory>
 			config.RecycleBinPath.ShouldBe("/compat-recycle");
 			config.UnmonitorDeletedFiles.ShouldBeTrue();
 			config.DownloadPropersAndRepacks.ShouldBe(DownloadPropersAndRepacks.DO_NOT_UPGRADE);
-			config.WriteNfo.ShouldBeTrue();
 			config.EnableMediaInfo.ShouldBeFalse();
 			return true;
 		});

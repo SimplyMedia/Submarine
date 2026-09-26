@@ -6,6 +6,7 @@ using Submarine.Core.Entities;
 using Submarine.Core.Enums;
 using Submarine.Core.Quality;
 using Submarine.Infrastructure.Persistence;
+using Submarine.Core.Languages;
 using Xunit;
 
 namespace Submarine.Api.IntegrationTests;
@@ -53,17 +54,12 @@ public sealed class CompatVersionSelectionTests : IClassFixture<SubmarineApiFact
 			await db.SaveChangesAsync();
 			return true;
 		});
-		await selection.RebindSeriesBeforeVersionRemovalAsync(ids.SeriesId, addedVersionId);
-		await _factory.WithDbAsync(async db =>
-		{
-			var finalVersion = await db.MediaVersions.SingleAsync(x => x.Id == addedVersionId);
-			db.MediaVersions.Remove(finalVersion);
-			await db.SaveChangesAsync();
-			return true;
-		});
+		var error = await Should.ThrowAsync<InvalidOperationException>(
+			() => selection.RebindSeriesBeforeVersionRemovalAsync(ids.SeriesId, addedVersionId));
+		error.Message.ShouldContain("final sonarr version");
 		(await _factory.WithDbAsync(db => db.CompatLibraryBindings.AsNoTracking().SingleAsync(x => x.SeriesId == ids.SeriesId)))
-			.MediaVersionId.ShouldBeNull();
-		(await selection.GetForSeriesAsync(ids.SeriesId)).ShouldBeNull();
+			.MediaVersionId.ShouldBe(addedVersionId);
+		(await selection.GetForSeriesAsync(ids.SeriesId))!.MediaVersionId.ShouldBe(addedVersionId);
 
 	}
 

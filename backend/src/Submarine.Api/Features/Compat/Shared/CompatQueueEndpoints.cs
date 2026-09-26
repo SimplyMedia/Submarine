@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Features.Queue;
 using Submarine.Api.Modules;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
 using Submarine.Core.Events;
+using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.Compat.Shared;
 
@@ -25,7 +27,7 @@ public sealed class CompatQueueEndpoints : IEndpointModule
 			=> DetailsAsync(seriesFacade, request.Query, db, selection, ct));
 		group.MapGet("/queue/status", (SubmarineDbContext db, CompatVersionSelection selection, CancellationToken ct)
 			=> StatusAsync(seriesFacade, db, selection, ct));
-		group.MapDelete("/queue/bulk", (BulkQueueDeleteRequest request, SubmarineDbContext db, CompatVersionSelection selection, QueueRemovalService removal, IEventBus events, CancellationToken ct)
+		group.MapDelete("/queue/bulk", ([FromBody] BulkQueueDeleteRequest request, SubmarineDbContext db, CompatVersionSelection selection, QueueRemovalService removal, IEventBus events, CancellationToken ct)
 			=> BulkDeleteAsync(seriesFacade, request, db, selection, removal, events, ct));
 		group.MapDelete("/queue/{id:int}", (int id, HttpRequest request, SubmarineDbContext db, CompatVersionSelection selection, QueueRemovalService removal, IEventBus events, CancellationToken ct)
 			=> DeleteAsync(seriesFacade, id, request.Query, db, selection, removal, events, ct));
@@ -111,11 +113,11 @@ public sealed class CompatQueueEndpoints : IEndpointModule
 		var selected = new Dictionary<int, int>();
 		foreach (var id in items.Select(x => seriesFacade ? x.SeriesId!.Value : x.MovieId!.Value).Distinct())
 		{
-			if (!await db.MediaVersions.AsNoTracking().AnyAsync(x => seriesFacade ? x.SeriesId == id : x.MovieId == id, ct))
-				continue;
-			var binding = seriesFacade ? await selection.GetForSeriesAsync(id, ct) : await selection.GetForMovieAsync(id, ct);
-			if (binding is not null)
-				selected[id] = binding.MediaVersionId;
+			var binding = seriesFacade
+				? await selection.GetForSeriesAsync(id, ct)
+				: await selection.GetForMovieAsync(id, ct);
+			if (binding?.MediaVersionId is { } versionId)
+				selected[id] = versionId;
 		}
 		return items.Where(x => selected.TryGetValue(seriesFacade ? x.SeriesId!.Value : x.MovieId!.Value, out var versionId) && x.MediaVersionId == versionId).ToList();
 	}

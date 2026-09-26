@@ -28,7 +28,7 @@ public sealed class CompatQualityRouteTests : IClassFixture<SubmarineApiFactory>
 
 		var update = await client.PutAsJsonAsync("/compat/sonarr/api/v3/qualitydefinition/update", new[]
 		{
-			new { id, minSize = (double?)null, maxSize = 120d, preferredSize = 35d, title = "ignored", weight = 999 },
+			(object)new { id, minSize = (double?)null, maxSize = 120d, preferredSize = 35d, title = "ignored", weight = 999 },
 			new { id = int.MaxValue, minSize = 1d, maxSize = 2d, preferredSize = 1d }
 		});
 		update.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -37,7 +37,7 @@ public sealed class CompatQualityRouteTests : IClassFixture<SubmarineApiFactory>
 
 		update = await client.PutAsJsonAsync("/compat/sonarr/api/v3/qualitydefinition/update", new[]
 		{
-			new { id, minSize = (double?)null, maxSize = 120d, preferredSize = 35d, title = "ignored", weight = 999 }
+			(object)new { id, minSize = (double?)null, maxSize = 120d, preferredSize = 35d, title = "ignored", weight = 999 }
 		});
 		update.StatusCode.ShouldBe(HttpStatusCode.OK);
 		var changed = await _factory.WithDbAsync(db => db.QualityDefinitions.Where(item => item.Source == Submarine.Core.Quality.QualitySource.TV && item.Resolution == Submarine.Core.Quality.QualityResolution.R720_P).SingleAsync());
@@ -60,13 +60,13 @@ public sealed class CompatQualityRouteTests : IClassFixture<SubmarineApiFactory>
 		var create = await client.PostAsJsonAsync("/compat/radarr/api/v3/customformat", new
 		{
 			name = "compat numeric protocol",
-			specifications = new[]
+			specifications = new object[]
 			{
-				new { name = "Protocol", implementation = "ProtocolSpecification", negate = false, required = true, fields = new[] { new { name = "value", value = 0 } } },
-				new { name = "Language", implementation = "LanguageSpecification", negate = false, required = true, fields = new[] { new { name = "value", value = 1 } } },
-				new { name = "Source", implementation = "SourceSpecification", negate = false, required = true, fields = new[] { new { name = "value", value = 6 } } },
-				new { name = "Resolution", implementation = "ResolutionSpecification", negate = false, required = true, fields = new[] { new { name = "value", value = 1080 } } },
-				new { name = "Title", implementation = "ReleaseTitleSpecification", negate = false, required = false, fields = new[] { new { name = "value", value = "(?i)remux" } } }
+				new { name = "Protocol", implementation = "ProtocolSpecification", negate = false, required = true, fields = new object[] { new { name = "value", value = 0 } } },
+				new { name = "Language", implementation = "LanguageSpecification", negate = false, required = true, fields = new object[] { new { name = "value", value = 1 } } },
+				new { name = "Source", implementation = "SourceSpecification", negate = false, required = true, fields = new object[] { new { name = "value", value = 6 } } },
+				new { name = "Resolution", implementation = "ResolutionSpecification", negate = false, required = true, fields = new object[] { new { name = "value", value = 1080 } } },
+				new { name = "Title", implementation = "ReleaseTitleSpecification", negate = false, required = false, fields = new object[] { new { name = "value", value = "(?i)remux" } } }
 			}
 		});
 		create.StatusCode.ShouldBe(HttpStatusCode.Created);

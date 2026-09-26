@@ -18,7 +18,6 @@ public static class MediaManagementConfigService
 		config.MinimumFreeSpaceMb = request.MinimumFreeSpaceMb;
 		config.FileDate = request.FileDate;
 		config.SkipFreeSpaceCheck = request.SkipFreeSpaceCheck;
-		config.WriteNfo = request.WriteNfo;
 		config.RecycleBinPath = request.RecycleBinPath;
 		config.RecycleBinCleanupDays = request.RecycleBinCleanupDays;
 		config.CreateEmptySeriesFolders = request.CreateEmptySeriesFolders;

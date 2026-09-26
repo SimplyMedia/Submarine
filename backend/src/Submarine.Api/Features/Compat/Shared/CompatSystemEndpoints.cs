@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Submarine.Core.Enums;
 using Submarine.Infrastructure.Health;
 using Submarine.Infrastructure.Persistence;
+using Submarine.Api.Modules;
 
 namespace Submarine.Api.Features.Compat.Shared;
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Common;
 using Submarine.Api.Modules;
+using Submarine.Core.Modules;
 using Submarine.Core.Commands;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
@@ -18,8 +19,11 @@ namespace Submarine.Api.Features.History;
 /// <summary>
 ///     Library history: grabs, imports, upgrades, renames, deletions and failures.
 /// </summary>
-public sealed class HistoryModule : IEndpointModule
+public sealed class HistoryModule : IEndpointModule, IServiceModule
 {
+
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<HistoryFailureService>();
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -122,88 +126,13 @@ public sealed class HistoryModule : IEndpointModule
 
 	private static async Task<Results<Ok<HistoryEventDto>, NotFound, BadRequest<string>>> MarkFailedAsync(
 		int id,
-		SubmarineDbContext db,
-		IDownloadClientProvider clientProvider,
-		ICommandQueue commandQueue,
-		IEventBus eventBus,
-		TimeProvider timeProvider,
+		HistoryFailureService failureService,
 		CancellationToken cancellationToken)
 	{
-		var grabbed = await db.HistoryEvents.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-		if (grabbed is null)
-		{
-			return TypedResults.NotFound();
-		}
-
-		if (grabbed.Type != HistoryEventType.GRABBED || grabbed.DownloadId is null)
-		{
-			return TypedResults.BadRequest("Only a grabbed history entry with a download id can be marked as failed");
-		}
-
-		var download = await db.TrackedDownloads.FirstOrDefaultAsync(x => x.DownloadId == grabbed.DownloadId, cancellationToken);
-		var now = timeProvider.GetUtcNow().UtcDateTime;
-		var episodeIds = download?.EpisodeIds ?? (grabbed.EpisodeId is { } episodeId ? [episodeId] : []);
-
-		await eventBus.PublishAsync(
-			new DownloadFailedEvent(grabbed.DownloadId, grabbed.SourceTitle, grabbed.SeriesId, grabbed.MovieId, episodeIds, grabbed.MediaVersionId, "Marked as failed"),
-			cancellationToken);
-
-		var failedEvent = new Core.Entities.HistoryEvent
-		{
-			Type = HistoryEventType.FAILED,
-			SeriesId = grabbed.SeriesId,
-			EpisodeId = grabbed.EpisodeId,
-			MovieId = grabbed.MovieId,
-			MediaVersionId = grabbed.MediaVersionId,
-			SourceTitle = grabbed.SourceTitle,
-			Quality = grabbed.Quality,
-			Languages = grabbed.Languages,
-			DownloadId = grabbed.DownloadId,
-			Date = now
-		};
-		db.HistoryEvents.Add(failedEvent);
-
-		db.BlocklistItems.Add(new BlocklistItem
-		{
-			ReleaseTitle = grabbed.SourceTitle,
-			Protocol = download?.Protocol ?? Protocol.BITTORRENT,
-			SeriesId = grabbed.SeriesId,
-			MovieId = grabbed.MovieId,
-			EpisodeIds = episodeIds,
-			Reason = "Marked as failed",
-			Date = now
-		});
-
-		if (download is not null)
-		{
-			var client = await clientProvider.GetAsync(download.DownloadClientId, cancellationToken);
-			if (client is not null)
-			{
-				try
-				{
-					await client.Instance.RemoveAsync(download.DownloadId, deleteData: true, cancellationToken);
-				}
-				catch (Core.Download.DownloadClientException)
-				{
-					// best effort
-				}
-			}
-
-			db.TrackedDownloads.Remove(download);
-		}
-
-		if (grabbed.SeriesId is not null && episodeIds.Count > 0)
-		{
-			await commandQueue.EnqueueAsync(new EpisodeSearchCommand(episodeIds), CommandTrigger.MANUAL, CommandPriority.HIGH, cancellationToken);
-		}
-		else if (grabbed.MovieId is { } movieId)
-		{
-			await commandQueue.EnqueueAsync(new MovieSearchCommand([movieId]), CommandTrigger.MANUAL, CommandPriority.HIGH, cancellationToken);
-		}
-
-		await db.SaveChangesAsync(cancellationToken);
-		await eventBus.PublishAsync(new QueueUpdatedEvent(), cancellationToken);
-		return TypedResults.Ok(ToDto(failedEvent));
+		var result = await failureService.MarkFailedAsync(id, cancellationToken);
+		if (result.FailedEvent is { } failedEvent)
+			return TypedResults.Ok(ToDto(failedEvent));
+		return result.Error is { } error ? TypedResults.BadRequest(error) : TypedResults.NotFound();
 	}
 
 

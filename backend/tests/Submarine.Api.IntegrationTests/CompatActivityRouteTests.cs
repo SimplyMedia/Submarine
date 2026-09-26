@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -86,9 +87,108 @@ public sealed class CompatActivityRouteTests : IClassFixture<SubmarineApiFactory
 		missingMovies.GetProperty("records")[0].GetProperty("lastSearchTime").ValueKind.ShouldBe(JsonValueKind.Null);
 	}
 
-	private async Task<ActivityIds> SeedActivityAsync()
+	[Fact]
+	public async Task MarkFailedRoute_ShouldOperateOnlyOnTheBoundVersionAndRecordNativeFailureEffects()
 	{
-		return await _factory.WithDbAsync(async db =>
+		using var isolatedFactory = new SubmarineApiFactory();
+		var ids = await SeedActivityAsync(isolatedFactory);
+		var downloadId = "compat-history-failure-" + Guid.NewGuid().ToString("N");
+		var grabbedId = await isolatedFactory.WithDbAsync(async db =>
+		{
+			var item = new HistoryEvent
+			{
+				Type = HistoryEventType.GRABBED,
+				SeriesId = ids.SeriesId,
+				EpisodeId = ids.EpisodeId,
+				MediaVersionId = ids.SeriesVersionId,
+				SourceTitle = "Compat failed release",
+				DownloadId = downloadId,
+				Date = DateTime.UtcNow
+			};
+			db.HistoryEvents.Add(item);
+			await db.SaveChangesAsync();
+			return item.Id;
+		});
+
+		using var anonymous = isolatedFactory.CreateClient();
+		using var unauthorized = await anonymous.PostAsync($"/compat/sonarr/api/v3/history/failed/{grabbedId}", null);
+		unauthorized.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+		(await unauthorized.Content.ReadAsStringAsync()).ShouldBeEmpty();
+
+		using var client = await isolatedFactory.CreateAuthorizedClientAsync();
+		var unselectedId = await isolatedFactory.WithDbAsync(async db =>
+		{
+			var version = await db.MediaVersions.SingleAsync(x => x.Id == ids.SeriesVersionId);
+			var sibling = new MediaVersion
+			{
+				Name = "Unselected",
+				SeriesId = ids.SeriesId,
+				QualityProfileId = version.QualityProfileId,
+				LanguageProfileId = version.LanguageProfileId,
+				RootFolderId = version.RootFolderId,
+				Path = "unselected"
+			};
+			db.MediaVersions.Add(sibling);
+			await db.SaveChangesAsync();
+			var item = new HistoryEvent
+			{
+				Type = HistoryEventType.GRABBED,
+				SeriesId = ids.SeriesId,
+				EpisodeId = ids.EpisodeId,
+				MediaVersionId = sibling.Id,
+				SourceTitle = "Unselected release",
+				DownloadId = downloadId + "-sibling",
+				Date = DateTime.UtcNow
+			};
+			db.HistoryEvents.Add(item);
+			await db.SaveChangesAsync();
+			return item.Id;
+		});
+		using (var unselected = await client.PostAsync($"/compat/sonarr/api/v3/history/failed/{unselectedId}", null))
+			unselected.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+		using var response = await client.PostAsync($"/compat/sonarr/api/v3/history/failed/{grabbedId}", null);
+		response.StatusCode.ShouldBe(HttpStatusCode.OK);
+		var failed = await response.Content.ReadFromJsonAsync<JsonElement>();
+		failed.GetProperty("eventType").GetString().ShouldBe("downloadFailed");
+		failed.GetProperty("mediaVersionId").GetInt32().ShouldBe(ids.SeriesVersionId);
+
+		var movieDownloadId = "compat-movie-failure-" + Guid.NewGuid().ToString("N");
+		var movieGrabbedId = await isolatedFactory.WithDbAsync(async db =>
+		{
+			var item = new HistoryEvent
+			{
+				Type = HistoryEventType.GRABBED,
+				MovieId = ids.MovieId,
+				MediaVersionId = ids.MovieVersionId,
+				SourceTitle = "Compat failed movie release",
+				DownloadId = movieDownloadId,
+				Date = DateTime.UtcNow
+			};
+			db.HistoryEvents.Add(item);
+			await db.SaveChangesAsync();
+			return item.Id;
+		});
+		using var movieResponse = await client.PostAsync($"/compat/radarr/api/v3/history/failed/{movieGrabbedId}", null);
+		movieResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+		var failedMovie = await movieResponse.Content.ReadFromJsonAsync<JsonElement>();
+		failedMovie.GetProperty("eventType").GetString().ShouldBe("downloadFailed");
+		failedMovie.GetProperty("mediaVersionId").GetInt32().ShouldBe(ids.MovieVersionId);
+
+		await isolatedFactory.WithDbAsync(async db =>
+		{
+			(await db.HistoryEvents.AnyAsync(x => x.Type == HistoryEventType.FAILED && x.DownloadId == downloadId)).ShouldBeTrue();
+			(await db.HistoryEvents.AnyAsync(x => x.Type == HistoryEventType.FAILED && x.DownloadId == movieDownloadId)).ShouldBeTrue();
+			(await db.BlocklistItems.AnyAsync(x => x.ReleaseTitle == "Compat failed release")).ShouldBeTrue();
+			(await db.BlocklistItems.AnyAsync(x => x.ReleaseTitle == "Compat failed movie release")).ShouldBeTrue();
+			return true;
+		});
+	}
+
+	private async Task<ActivityIds> SeedActivityAsync(SubmarineApiFactory? factory = null)
+	{
+		factory ??= _factory;
+		return await factory.WithDbAsync(async db =>
 		{
 			var quality = QualityResolutionModel.All.First(item => item.Resolution is null);
 			var profile = new QualityProfile { Name = "Activity profile", UpgradeAllowed = true, Cutoff = 0, Items = [new QualityProfileItem(quality, true)] };
@@ -118,7 +218,7 @@ public sealed class CompatActivityRouteTests : IClassFixture<SubmarineApiFactory
 				new HistoryEvent { Type = HistoryEventType.IMPORTED, Movie = movie, MediaVersionId = movieVersion.Id, SourceTitle = "Movie release", Quality = new QualityModel(quality, new Revision()), Languages = [Language.ENGLISH], Data = "{\"source\":\"native\"}", Date = eventDate },
 				new HistoryEvent { Type = HistoryEventType.IMPORTED, Movie = movie, MediaVersionId = movieVersion.Id, SourceTitle = "Movie earlier release", Quality = new QualityModel(quality, new Revision()), Languages = [Language.ENGLISH], Data = "{\"source\":\"native\"}", Date = eventDate.AddSeconds(-1) });
 			await db.SaveChangesAsync();
-			return new ActivityIds(series.Id, episode.Id, movie.Id, quality.Name);
+			return new ActivityIds(series.Id, episode.Id, movie.Id, seriesVersion.Id, movieVersion.Id, quality.Name);
 		});
 	}
 
@@ -129,5 +229,5 @@ public sealed class CompatActivityRouteTests : IClassFixture<SubmarineApiFactory
 		return (await response.Content.ReadFromJsonAsync<JsonElement>()).Clone();
 	}
 
-	private sealed record ActivityIds(int SeriesId, int EpisodeId, int MovieId, string QualityName);
+	private sealed record ActivityIds(int SeriesId, int EpisodeId, int MovieId, int SeriesVersionId, int MovieVersionId, string QualityName);
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Common;
 using Submarine.Api.Modules;
+using Submarine.Core.Modules;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
 using Submarine.Infrastructure.Persistence;

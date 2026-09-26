@@ -107,7 +107,9 @@ public sealed class CustomFormatsModule : IEndpointModule, IServiceModule
 		foreach (var trashFormat in formats)
 		{
 			var format = TrashCustomFormatJson.FromTrash(trashFormat);
-			await EnsureUniqueNameAsync(db, format.Name, null, cancellationToken);
+			if (await db.CustomFormats.AnyAsync(existing => existing.Name == format.Name, cancellationToken)
+			    || imported.Any(existing => existing.Name == format.Name))
+				throw new Submarine.Core.Common.ConflictException($"A custom format named '{format.Name}' already exists");
 
 			db.CustomFormats.Add(format);
 			imported.Add(CustomFormatResource.FromEntity(format));

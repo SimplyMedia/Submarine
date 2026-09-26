@@ -7,6 +7,7 @@ using Submarine.Core.Enums;
 using Submarine.Core.Languages;
 using Submarine.Core.Profiles;
 using Submarine.Core.Quality;
+using Submarine.Api.Features.History;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.Compat.Shared;
@@ -31,6 +32,8 @@ public sealed class CompatActivityEndpoints : IEndpointModule
 		else
 			group.MapGet("/history/movie", (HttpRequest request, SubmarineDbContext db, CompatVersionSelection selection, CancellationToken ct)
 				=> HistoryAsync(false, false, request, db, selection, ct));
+		group.MapPost("/history/failed/{id:int}", (int id, SubmarineDbContext db, CompatVersionSelection selection, HistoryFailureService failureService, CancellationToken ct)
+			=> MarkFailedAsync(seriesFacade, id, db, selection, failureService, ct));
 		group.MapGet("/calendar", (DateTime? start, DateTime? end, bool? unmonitored, bool? includeSeries, bool? includeEpisodeFile, bool? includeEpisodeImages, SubmarineDbContext db, CompatVersionSelection selection, CancellationToken ct)
 			=> CalendarAsync(seriesFacade, start, end, unmonitored ?? false, includeSeries ?? false, includeEpisodeFile ?? false, includeEpisodeImages ?? false, db, selection, ct));
 		group.MapGet("/wanted/missing", (HttpRequest request, bool? includeUnmonitored, SubmarineDbContext db, CompatVersionSelection selection, CancellationToken ct)
@@ -50,9 +53,11 @@ public sealed class CompatActivityEndpoints : IEndpointModule
 		foreach (var id in events.Where(x => seriesFacade ? x.SeriesId != null : x.MovieId != null)
 			.Select(x => seriesFacade ? x.SeriesId!.Value : x.MovieId!.Value).Distinct())
 		{
-			var binding = await GetBindingAsync(seriesFacade, id, db, selection, ct);
-			if (binding is not null)
-				selected[(seriesFacade, id)] = binding.MediaVersionId;
+			var binding = seriesFacade
+				? await selection.GetForSeriesAsync(id, ct)
+				: await selection.GetForMovieAsync(id, ct);
+			if (binding?.MediaVersionId is { } versionId)
+				selected[(seriesFacade, id)] = versionId;
 		}
 
 		var query = request.Query;
@@ -88,6 +93,31 @@ public sealed class CompatActivityEndpoints : IEndpointModule
 			return Results.Json(records.Select(x => HistoryRecord(x, seriesFacade)).ToList(), CompatJson.Options);
 		var paged = page.Apply(records);
 		return Results.Json(new CompatPagedResult<object>(paged.Records.Select(x => HistoryRecord(x, seriesFacade)).ToList(), paged.TotalRecords, paged.Page, paged.PageSize, paged.SortKey, paged.SortDirection), CompatJson.Options);
+	}
+
+	private static async Task<IResult> MarkFailedAsync(
+		bool seriesFacade,
+		int id,
+		SubmarineDbContext db,
+		CompatVersionSelection selection,
+		HistoryFailureService failureService,
+		CancellationToken ct)
+	{
+		var grabbed = await db.HistoryEvents.AsNoTracking()
+			.FirstOrDefaultAsync(x => x.Id == id && (seriesFacade ? x.SeriesId != null : x.MovieId != null), ct);
+		if (grabbed?.MediaVersionId is not { } versionId)
+			return CompatErrors.Message("History event not found.", StatusCodes.Status404NotFound);
+		var titleId = seriesFacade ? grabbed.SeriesId!.Value : grabbed.MovieId!.Value;
+		var binding = await GetBindingAsync(seriesFacade, titleId, db, selection, ct);
+		if (binding?.MediaVersionId != versionId)
+			return CompatErrors.Message("History event not found.", StatusCodes.Status404NotFound);
+
+		var result = await failureService.MarkFailedAsync(id, ct);
+		if (result.FailedEvent is { } failedEvent)
+			return Results.Json(HistoryRecord(failedEvent, seriesFacade), CompatJson.Options);
+		return result.Error is { } error
+			? CompatErrors.Message(error, StatusCodes.Status400BadRequest)
+			: CompatErrors.Message("History event not found.", StatusCodes.Status404NotFound);
 	}
 
 	private static object HistoryRecord(HistoryEvent item, bool seriesFacade)
@@ -188,7 +218,7 @@ public sealed class CompatActivityEndpoints : IEndpointModule
 				.OrderBy(x => x.AirDateUtc).ThenBy(x => x.Id).ToListAsync(ct);
 			var bindings = new Dictionary<int, int>();
 			foreach (var id in episodes.Select(x => x.SeriesId).Distinct())
-				if (await GetBindingAsync(true, id, db, selection, ct) is { } binding) bindings[id] = binding.MediaVersionId;
+				if (await GetBindingAsync(true, id, db, selection, ct) is { MediaVersionId: { } versionId }) bindings[id] = versionId;
 			foreach (var episode in episodes.Where(x => bindings.ContainsKey(x.SeriesId)))
 			{
 				var file = episode.Files.FirstOrDefault(x => x.MediaVersionId == bindings[episode.SeriesId]);

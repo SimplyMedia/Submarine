@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Submarine.Api.Auth;
+using Submarine.Api.Features.Compat.Shared.Realtime;
 using Submarine.Api.Modules;
 using Submarine.Core.Modules;
 
@@ -40,6 +41,7 @@ public sealed class CompatModule : IEndpointModule, IServiceModule
 	{
 		var group = CompatRoutes.CreateFacadeGroup(endpoints, facade);
 		group.MapGet("/api", () => Results.Json(new CompatApiDiscoveryDto(apiVersion, []), CompatJson.Options));
+		group.MapMethods("/api", ["POST", "PUT", "PATCH", "DELETE", "OPTIONS"], () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed));
 		group.MapGet("/api/system/status", StatusAsync);
 		group.MapGet($"/api/{apiVersion}/system/status", StatusAsync);
 		group.MapFallback("/{**path}", () => Results.Json(

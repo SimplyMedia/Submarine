@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Common;
 using Submarine.Core.Entities;
 using Submarine.Core.Quality;
+using Submarine.Core.Profiles;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.QualityProfiles;

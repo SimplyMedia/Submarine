@@ -53,6 +53,13 @@ public sealed class CompatAuthTests : IClassFixture<SubmarineApiFactory>
 			(await restToken.Content.ReadAsStringAsync()).ShouldBeEmpty();
 		}
 
+		using (var wrongHub = await anonymous.PostAsync(
+			"/hubs/events/negotiate?negotiateVersion=1&access_token=" + Uri.EscapeDataString(oldKey), null))
+		{
+			wrongHub.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+			(await wrongHub.Content.ReadAsStringAsync()).ShouldBeEmpty();
+		}
+
 		using var rotated = await admin.PostAsync("/api/v1/config/general/api-key", null);
 		rotated.StatusCode.ShouldBe(HttpStatusCode.OK);
 		var newKey = JsonDocument.Parse(await rotated.Content.ReadAsStringAsync()).RootElement.GetProperty("apiKey").GetString();

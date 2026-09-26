@@ -5,6 +5,7 @@ using Submarine.Api.Features.Series;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Modules;
+using Submarine.Core.Modules;
 using Submarine.Core.Entities;
 using Submarine.Infrastructure.Persistence;
 

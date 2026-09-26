@@ -432,6 +432,63 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.ToTable("Commands");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.CompatLibraryBinding", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Excluded")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Facade")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<int?>("MediaVersionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MovieId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaVersionId");
+
+                    b.HasIndex("MovieId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("Facade", "MediaVersionId")
+                        .IsUnique()
+                        .HasFilter("\"MediaVersionId\" IS NOT NULL");
+
+                    b.HasIndex("Facade", "MovieId")
+                        .IsUnique()
+                        .HasFilter("\"MovieId\" IS NOT NULL");
+
+                    b.HasIndex("Facade", "SeriesId")
+                        .IsUnique()
+                        .HasFilter("\"SeriesId\" IS NOT NULL");
+
+                    b.ToTable("CompatLibraryBindings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CompatLibraryBindings_FacadeTitle", "(\"Facade\" = 'sonarr' AND \"SeriesId\" IS NOT NULL AND \"MovieId\" IS NULL) OR (\"Facade\" = 'radarr' AND \"SeriesId\" IS NULL AND \"MovieId\" IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.CustomFormat", b =>
                 {
                     b.Property<int>("Id")
@@ -2816,6 +2873,30 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Indexer");
+
+                    b.Navigation("Movie");
+
+                    b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.CompatLibraryBinding", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.MediaVersion", "MediaVersion")
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Submarine.Core.Entities.Movie", "Movie")
+                        .WithMany()
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Submarine.Core.Entities.Series", "Series")
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("MediaVersion");
 
                     b.Navigation("Movie");
 
