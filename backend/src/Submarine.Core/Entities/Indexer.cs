@@ -71,6 +71,11 @@ public sealed class Indexer : Entity
 	/// <summary>Search standard anime episode formats.</summary>
 	public bool AnimeStandardFormatSearch { get; set; }
 
+	/// <summary>
+	///     Torrent flags at least one of which a release must carry to be grabbed, empty allows any. Ignored for usenet.
+	/// </summary>
+	public List<IndexerFlag> RequiredFlags { get; set; } = [];
+
 	/// <summary>Tags.</summary>
 	public ICollection<Tag> Tags { get; set; } = [];
 }

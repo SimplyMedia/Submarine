@@ -1,5 +1,6 @@
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
+using Submarine.Core.Indexers;
 using Submarine.Core.Languages;
 using Submarine.Core.Quality;
 
@@ -25,7 +26,7 @@ public sealed record DecisionContext
 	/// <summary>Custom format score of the currently held file, used by the upgrade rules.</summary>
 	public int ExistingCustomFormatScore { get; init; }
 
-	/// <summary>The release group already imported for the season, used for a consistency bonus, if any.</summary>
+	/// <summary>The release group of the currently held file, used for a repack/version-upgrade group check and a consistency bonus, if any.</summary>
 	public string? SeasonReleaseGroup { get; init; }
 
 	/// <summary>The delay profile applicable to the media, if any.</summary>
@@ -67,6 +68,25 @@ public sealed record DecisionContext
 
 	/// <summary>Releases already queued for the same episodes or movie on this media version.</summary>
 	public IReadOnlyCollection<QueuedRelease> QueuedReleases { get; init; } = [];
+
+	/// <summary>Whether an existing episode file covers episodes outside the candidate's set, used to reject partial re-grabs.</summary>
+	public bool ExistingFileCoversMoreEpisodes { get; init; }
+
+	/// <summary>Free space available at the media version's path, null when unknown or the check is skipped.</summary>
+	public long? AvailableFreeSpaceBytes { get; init; }
+
+	/// <summary>Minimum free space in MB required after the release would be imported.</summary>
+	public int MinimumFreeSpaceMb { get; init; } = 100;
+
+	/// <summary>Titles of releases already grabbed and imported with a different quality, held back from being re-grabbed.</summary>
+	public IReadOnlySet<string> AlreadyImportedTitles { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>Torrent info hashes of releases already grabbed and imported with a different quality.</summary>
+	public IReadOnlySet<string> AlreadyImportedInfoHashes { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>Torrent flags required per indexer id before a release from that indexer is grabbed.</summary>
+	public IReadOnlyDictionary<int, IReadOnlyList<IndexerFlag>> IndexerRequiredFlags { get; init; } =
+		new Dictionary<int, IReadOnlyList<IndexerFlag>>();
 }
 
 /// <summary>

@@ -5,6 +5,7 @@ import type { components } from '~/types/api'
 
 type QualityDefinitionResource = components['schemas']['QualityDefinitionResource']
 type QualityDefinitionUpdate = components['schemas']['QualityDefinitionUpdate']
+type QualityDefinitionImportResult = components['schemas']['QualityDefinitionImportResult']
 type SizeField = 'minSizeMbPerMinute' | 'maxSizeMbPerMinute' | 'preferredSizeMbPerMinute'
 
 definePageMeta({ layout: 'default' })
@@ -69,11 +70,61 @@ const columns = [
 	{ key: 'preferredSizeMbPerMinute', label: 'Preferred (MB/min)', align: 'right' as const },
 	{ key: 'maxSizeMbPerMinute', label: 'Max (MB/min)', align: 'right' as const },
 ]
+
+// --- Import ------------------------------------------------------------------
+const importOpen = ref(false)
+const importText = ref('')
+const importError = ref('')
+const importing = ref(false)
+
+function openImport() {
+	importText.value = ''
+	importError.value = ''
+	importOpen.value = true
+}
+
+async function runImport() {
+	importError.value = ''
+	let parsed: unknown
+	try {
+		parsed = JSON.parse(importText.value)
+	}
+	catch {
+		importError.value = 'That is not valid JSON.'
+		return
+	}
+	importing.value = true
+	const result = await api.POST('/api/v1/quality-definitions/import', { body: parsed })
+	importing.value = false
+	if (!result.data) {
+		importError.value = toApiError(result.error, result.response).message
+		return
+	}
+	const imported = result.data as QualityDefinitionImportResult
+	toast({
+		title: `Updated ${imported.updated.length} quality definition${imported.updated.length === 1 ? '' : 's'}`,
+		description: imported.skipped.length > 0 ? `Skipped unrecognised: ${imported.skipped.join(', ')}` : undefined,
+		tone: 'ok',
+	})
+	importOpen.value = false
+	loading.value = true
+	await load()
+	loading.value = false
+}
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Quality" />
+		<SPageHeader title="Quality">
+			<template #actions>
+				<SButton
+					variant="secondary"
+					@click="openImport"
+				>
+					Import
+				</SButton>
+			</template>
+		</SPageHeader>
 
 		<SEmptyState
 			v-if="loadError"
@@ -132,6 +183,39 @@ const columns = [
 				@discard="dirty.revert()"
 			/>
 		</template>
+
+		<SDialog
+			v-model="importOpen"
+			title="Import quality sizes"
+			description="Paste a TRaSH Guides quality-size JSON document, or an array of quality entries."
+		>
+			<SField
+				label="TRaSH JSON"
+				:error="importError"
+			>
+				<STextarea
+					v-model="importText"
+					:rows="10"
+					:invalid="!!importError"
+					placeholder="{&quot;qualities&quot;: [...] }"
+				/>
+			</SField>
+			<template #footer>
+				<SButton
+					variant="secondary"
+					@click="importOpen = false"
+				>
+					Cancel
+				</SButton>
+				<SButton
+					variant="primary"
+					:loading="importing"
+					@click="runImport"
+				>
+					Import
+				</SButton>
+			</template>
+		</SDialog>
 	</div>
 </template>
 

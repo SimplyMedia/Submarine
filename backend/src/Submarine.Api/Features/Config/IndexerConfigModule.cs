@@ -39,6 +39,8 @@ public sealed class IndexerConfigModule : IEndpointModule
 		config.RetentionDays = request.RetentionDays;
 		config.MaximumSizeMb = request.MaximumSizeMb;
 		config.AvailabilityDelayDays = request.AvailabilityDelayDays;
+		config.AllowHardcodedSubs = request.AllowHardcodedSubs;
+		config.WhitelistedHardcodedSubs = request.WhitelistedHardcodedSubs;
 
 		// The scheduler enqueues RssSync on this interval; 0 disables it entirely.
 		var rssSyncTask = await db.ScheduledTasks.FirstOrDefaultAsync(x => x.Name == "RssSync", cancellationToken);
@@ -59,12 +61,16 @@ public sealed class IndexerConfigModule : IEndpointModule
 /// <param name="RetentionDays">Retention in days required for usenet releases, 0 disables.</param>
 /// <param name="MaximumSizeMb">Maximum release size in MB, 0 disables.</param>
 /// <param name="AvailabilityDelayDays">Days a movie must be past its release date before grabbing, 0 disables.</param>
+/// <param name="AllowHardcodedSubs">Allow releases reporting hardcoded subtitles.</param>
+/// <param name="WhitelistedHardcodedSubs">Comma separated release groups allowed to have hardcoded subtitles even when <see cref="AllowHardcodedSubs" /> is off.</param>
 public sealed record IndexerConfigResource(
 	int RssSyncIntervalMinutes,
 	int MinimumAgeMinutes,
 	int RetentionDays,
 	int MaximumSizeMb,
-	int AvailabilityDelayDays)
+	int AvailabilityDelayDays,
+	bool AllowHardcodedSubs,
+	string WhitelistedHardcodedSubs)
 {
 	/// <summary>Maps the singleton to the resource.</summary>
 	public static IndexerConfigResource FromEntity(Core.Entities.IndexerConfig config)
@@ -73,7 +79,9 @@ public sealed record IndexerConfigResource(
 			config.MinimumAgeMinutes,
 			config.RetentionDays,
 			config.MaximumSizeMb,
-			config.AvailabilityDelayDays);
+			config.AvailabilityDelayDays,
+			config.AllowHardcodedSubs,
+			config.WhitelistedHardcodedSubs);
 }
 
 /// <summary>Validator for <see cref="IndexerConfigResource" /> PUT requests.</summary>

@@ -1,7 +1,9 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Submarine.Api.Modules;
+using Submarine.Core.Profiles;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.QualityDefinitions;
@@ -16,8 +18,65 @@ public sealed class QualityDefinitionsModule : IEndpointModule
 	{
 		var group = endpoints.MapGroup("/api/v1/quality-definitions");
 		group.MapGet("/", ListAsync);
+		group.MapPost("/import", ImportAsync);
 		group.MapPut("/", UpdateAsync);
 		group.MapPut("/{id:int}", UpdateOneAsync);
+	}
+
+	private static async Task<Ok<QualityDefinitionImportResult>> ImportAsync(
+		SubmarineDbContext db,
+		JsonDocument body,
+		CancellationToken cancellationToken)
+	{
+		var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+		List<TrashQualityDefinition> entries;
+
+		if (body.RootElement.ValueKind is JsonValueKind.Array)
+		{
+			entries = body.Deserialize<List<TrashQualityDefinition>>(options) ?? [];
+		}
+		else if (body.RootElement.ValueKind is JsonValueKind.Object && body.RootElement.TryGetProperty("qualities", out var qualitiesElement))
+		{
+			entries = qualitiesElement.Deserialize<List<TrashQualityDefinition>>(options) ?? [];
+		}
+		else
+		{
+			throw new FluentValidation.ValidationException("Expected a TRaSH quality-size document or an array of quality entries");
+		}
+
+		var definitions = await db.QualityDefinitions.ToListAsync(cancellationToken);
+		var updated = new List<QualityDefinitionResource>();
+		var skipped = new List<string>();
+
+		foreach (var entry in entries)
+		{
+			var resolved = TrashQualityDefinitionJson.Resolve(entry);
+			var definition = resolved is { } match
+				? definitions.FirstOrDefault(candidate => candidate.Source == match.Source && candidate.Resolution == match.Resolution)
+				: null;
+
+			if (resolved is not { } resolvedMatch || definition is null)
+			{
+				skipped.Add(entry.Quality);
+				continue;
+			}
+
+			definition.MinSizeMbPerMinute = resolvedMatch.Min;
+			definition.MaxSizeMbPerMinute = resolvedMatch.Max;
+			definition.PreferredSizeMbPerMinute = resolvedMatch.Preferred;
+			updated.Add(new QualityDefinitionResource(
+				definition.Id,
+				definition.Source?.ToString(),
+				definition.Resolution?.ToString(),
+				definition.Title,
+				definition.MinSizeMbPerMinute,
+				definition.MaxSizeMbPerMinute,
+				definition.PreferredSizeMbPerMinute));
+		}
+
+		await db.SaveChangesAsync(cancellationToken);
+
+		return TypedResults.Ok(new QualityDefinitionImportResult(updated, skipped));
 	}
 
 	private static async Task<Ok<List<QualityDefinitionResource>>> ListAsync(SubmarineDbContext db, CancellationToken cancellationToken)
@@ -115,3 +174,10 @@ public sealed record QualityDefinitionUpdate(
 	double? MinSizeMbPerMinute,
 	double? MaxSizeMbPerMinute,
 	double? PreferredSizeMbPerMinute);
+
+/// <summary>Result of importing TRaSH quality-size entries.</summary>
+/// <param name="Updated">Definitions updated by the import.</param>
+/// <param name="Skipped">TRaSH quality names that did not match a known Submarine quality.</param>
+public sealed record QualityDefinitionImportResult(
+	IReadOnlyList<QualityDefinitionResource> Updated,
+	IReadOnlyList<string> Skipped);

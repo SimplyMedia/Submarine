@@ -127,6 +127,8 @@ public sealed class DelayProfilesModule : IEndpointModule
 	{
 		profile.Name = request.Name;
 		profile.PreferredProtocol = request.PreferredProtocol;
+		profile.EnableUsenet = request.EnableUsenet;
+		profile.EnableTorrent = request.EnableTorrent;
 		profile.UsenetDelayMinutes = request.UsenetDelayMinutes;
 		profile.TorrentDelayMinutes = request.TorrentDelayMinutes;
 		profile.BypassIfHighestQuality = request.BypassIfHighestQuality;
@@ -160,6 +162,8 @@ public sealed class DelayProfilesModule : IEndpointModule
 /// <param name="Id">Id.</param>
 /// <param name="Name">Name.</param>
 /// <param name="PreferredProtocol">Protocol preferred when both are available.</param>
+/// <param name="EnableUsenet">Whether usenet releases are grabbed for tagged media.</param>
+/// <param name="EnableTorrent">Whether torrent releases are grabbed for tagged media.</param>
 /// <param name="UsenetDelayMinutes">Delay in minutes for usenet releases.</param>
 /// <param name="TorrentDelayMinutes">Delay in minutes for torrent releases.</param>
 /// <param name="BypassIfHighestQuality">Bypass the delay when the release is the highest allowed quality.</param>
@@ -171,6 +175,8 @@ public sealed record DelayProfileResource(
 	int Id,
 	string Name,
 	Protocol PreferredProtocol,
+	bool EnableUsenet,
+	bool EnableTorrent,
 	int UsenetDelayMinutes,
 	int TorrentDelayMinutes,
 	bool BypassIfHighestQuality,
@@ -185,6 +191,8 @@ public sealed record DelayProfileResource(
 			profile.Id,
 			profile.Name,
 			profile.PreferredProtocol,
+			profile.EnableUsenet,
+			profile.EnableTorrent,
 			profile.UsenetDelayMinutes,
 			profile.TorrentDelayMinutes,
 			profile.BypassIfHighestQuality,
@@ -197,6 +205,8 @@ public sealed record DelayProfileResource(
 /// <summary>Create or update request for a delay profile.</summary>
 /// <param name="Name">Name.</param>
 /// <param name="PreferredProtocol">Protocol preferred when both are available.</param>
+/// <param name="EnableUsenet">Whether usenet releases are grabbed for tagged media.</param>
+/// <param name="EnableTorrent">Whether torrent releases are grabbed for tagged media.</param>
 /// <param name="UsenetDelayMinutes">Delay in minutes for usenet releases.</param>
 /// <param name="TorrentDelayMinutes">Delay in minutes for torrent releases.</param>
 /// <param name="BypassIfHighestQuality">Bypass the delay when the release is the highest allowed quality.</param>
@@ -206,6 +216,8 @@ public sealed record DelayProfileResource(
 public sealed record DelayProfileRequest(
 	string Name,
 	Protocol PreferredProtocol,
+	bool EnableUsenet,
+	bool EnableTorrent,
 	int UsenetDelayMinutes,
 	int TorrentDelayMinutes,
 	bool BypassIfHighestQuality,

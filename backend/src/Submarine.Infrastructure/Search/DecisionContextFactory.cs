@@ -3,10 +3,12 @@ using Submarine.Core.CustomFormats;
 using Submarine.Core.DecisionEngine;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
+using Submarine.Core.Indexers;
 using Submarine.Core.Languages;
 using Submarine.Core.Profiles;
 using Submarine.Core.MediaFiles;
 using Submarine.Core.Quality;
+using Submarine.Infrastructure.Health;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Infrastructure.Search;
@@ -81,16 +83,23 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 		IReadOnlyList<Language>? existingLanguages = null;
 		var existingScore = 0;
 		string? seasonReleaseGroup = null;
+		var existingFileCoversMoreEpisodes = false;
 
 		if (version.SeriesId is not null)
 		{
-			var filesQuery = db.EpisodeFiles.AsNoTracking().Where(file => file.MediaVersionId == version.Id);
+			var filesQuery = db.EpisodeFiles.AsNoTracking().Include(file => file.Episodes)
+				.Where(file => file.MediaVersionId == version.Id);
 			if (episodeIds is { Count: > 0 })
 			{
 				filesQuery = filesQuery.Where(file => file.Episodes.Any(episode => episodeIds.Contains(episode.Id)));
 			}
 
 			var files = await filesQuery.ToListAsync(cancellationToken);
+
+			// an existing multi-episode file that reaches outside the candidate's episode set already covers more
+			// than a narrower release would, so re-grabbing the narrower release would lose episodes on import
+			existingFileCoversMoreEpisodes = episodeIds is { Count: > 0 }
+				&& files.Any(file => file.Episodes.Any(episode => !episodeIds.Contains(episode.Id)));
 
 			// a candidate covering episodes that are still missing a file must not be rejected because a different
 			// episode already meets the cutoff: only compare when every requested episode has a file, against the
@@ -115,8 +124,73 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 				existingQuality = file.Quality;
 				existingLanguages = file.Languages;
 				existingScore = ScoreExistingFile(qualityProfile, file.SceneName ?? file.RelativePath, file.Quality, file.Languages, file.ReleaseGroup, customFormats);
+				seasonReleaseGroup = file.ReleaseGroup;
 			}
 		}
+
+		long? availableFreeSpaceBytes = null;
+		if (mediaManagementConfig?.SkipFreeSpaceCheck != true)
+		{
+			var rootFolder = await db.RootFolders.AsNoTracking()
+				.FirstOrDefaultAsync(root => root.Id == version.RootFolderId, cancellationToken);
+			if (rootFolder is not null)
+			{
+				try
+				{
+					var versionPath = MediaVersionPathGuard.IsSingleRelativeSegment(version.Path)
+						? MediaVersionPathGuard.ResolveUnderRoot(rootFolder.Path, version.Path)
+						: rootFolder.Path;
+					availableFreeSpaceBytes = DiskSpace.Query(versionPath)?.FreeBytes;
+				}
+				catch (InvalidOperationException)
+				{
+					// the stored path escapes its root folder, skip the check rather than fail the whole decision
+				}
+			}
+		}
+
+		var alreadyImportedTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var alreadyImportedInfoHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var downloadConfig = await db.DownloadConfig.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+
+		if (downloadConfig?.EnableCompletedDownloadHandling == true && existingQuality is not null)
+		{
+			var historyQuery = db.HistoryEvents.AsNoTracking()
+				.Where(entry => entry.Type == HistoryEventType.GRABBED || entry.Type == HistoryEventType.IMPORTED);
+
+			historyQuery = version.SeriesId is not null
+				? episodeIds is { Count: > 0 }
+					? historyQuery.Where(entry => entry.EpisodeId != null && episodeIds.Contains(entry.EpisodeId.Value))
+					: historyQuery.Where(entry => false)
+				: historyQuery.Where(entry => entry.MovieId == version.MovieId);
+
+			var history = await historyQuery.ToListAsync(cancellationToken);
+			var importedEvents = history.Where(entry => entry.Type == HistoryEventType.IMPORTED).ToList();
+
+			// a grab followed by an import of a different quality means the release under-delivered: hold its title
+			// and download id back so the same release is not grabbed again for the same episode or movie
+			foreach (var grabbed in history.Where(entry => entry.Type == HistoryEventType.GRABBED))
+			{
+				var imported = importedEvents.FirstOrDefault(entry => entry.DownloadId == grabbed.DownloadId);
+				if (imported is null || Equals(imported.Quality, grabbed.Quality))
+				{
+					continue;
+				}
+
+				alreadyImportedTitles.Add(grabbed.SourceTitle);
+				if (grabbed.DownloadId is { } downloadId)
+				{
+					alreadyImportedInfoHashes.Add(downloadId);
+				}
+			}
+		}
+
+		var indexerRequiredFlags = await db.Indexers.AsNoTracking()
+			.Where(indexer => indexer.RequiredFlags.Count > 0)
+			.ToDictionaryAsync(
+				indexer => indexer.Id,
+				indexer => (IReadOnlyList<IndexerFlag>)indexer.RequiredFlags,
+				cancellationToken);
 
 		var queuedStates = new[] { TrackedDownloadState.DOWNLOADING, TrackedDownloadState.IMPORT_PENDING, TrackedDownloadState.IMPORTING };
 		var tracked = await db.TrackedDownloads.AsNoTracking()
@@ -153,7 +227,13 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 			EpisodeCount = Math.Max(episodeIds?.Count ?? 1, 1),
 			DownloadPropersAndRepacks = mediaManagementConfig?.DownloadPropersAndRepacks ?? DownloadPropersAndRepacks.PREFER_AND_UPGRADE,
 			IsBlocklisted = isBlocklisted,
-			QueuedReleases = queuedReleases
+			QueuedReleases = queuedReleases,
+			ExistingFileCoversMoreEpisodes = existingFileCoversMoreEpisodes,
+			AvailableFreeSpaceBytes = availableFreeSpaceBytes,
+			MinimumFreeSpaceMb = mediaManagementConfig?.MinimumFreeSpaceMb ?? 100,
+			AlreadyImportedTitles = alreadyImportedTitles,
+			AlreadyImportedInfoHashes = alreadyImportedInfoHashes,
+			IndexerRequiredFlags = indexerRequiredFlags
 		};
 	}
 

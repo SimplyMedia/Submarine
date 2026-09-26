@@ -6469,6 +6469,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quality-definitions/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["JsonDocument"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["QualityDefinitionImportResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quality-definitions/{id}": {
         parameters: {
             query?: never;
@@ -17765,13 +17840,17 @@ export interface components {
          * @description Type of a custom format specification.
          * @enum {unknown}
          */
-        CustomFormatSpecificationType: "RELEASE_TITLE" | "RELEASE_GROUP" | "LANGUAGE" | "QUALITY_SOURCE" | "RESOLUTION" | "STREAMING_PROVIDER" | "EDITION" | "RELEASE_FLAG" | "PROTOCOL" | "HARDCODED_SUBS" | "SIZE" | "YEAR" | "INDEXER_FLAG";
+        CustomFormatSpecificationType: "RELEASE_TITLE" | "RELEASE_GROUP" | "LANGUAGE" | "QUALITY_SOURCE" | "RESOLUTION" | "STREAMING_PROVIDER" | "EDITION" | "RELEASE_FLAG" | "PROTOCOL" | "HARDCODED_SUBS" | "SIZE" | "YEAR" | "INDEXER_FLAG" | "RELEASE_TYPE" | "QUALITY_MODIFIER";
         /** @description Create or update request for a delay profile. */
         DelayProfileRequest: {
             /** @description Name. */
             name: string;
             /** @description Protocol preferred when both are available. */
             preferredProtocol: components["schemas"]["Protocol"];
+            /** @description Whether usenet releases are grabbed for tagged media. */
+            enableUsenet: boolean;
+            /** @description Whether torrent releases are grabbed for tagged media. */
+            enableTorrent: boolean;
             /**
              * Format: int32
              * @description Delay in minutes for usenet releases.
@@ -17805,6 +17884,10 @@ export interface components {
             name: string;
             /** @description Protocol preferred when both are available. */
             preferredProtocol: components["schemas"]["Protocol"];
+            /** @description Whether usenet releases are grabbed for tagged media. */
+            enableUsenet: boolean;
+            /** @description Whether torrent releases are grabbed for tagged media. */
+            enableTorrent: boolean;
             /**
              * Format: int32
              * @description Delay in minutes for usenet releases.
@@ -18491,6 +18574,10 @@ export interface components {
              * @description Days a movie must be past its release date before grabbing, 0 disables.
              */
             availabilityDelayDays: number;
+            /** @description Allow releases reporting hardcoded subtitles. */
+            allowHardcodedSubs: boolean;
+            /** @description Comma separated release groups allowed to have hardcoded subtitles even when bool IndexerConfigResource.AllowHardcodedSubs is off. */
+            whitelistedHardcodedSubs: string;
         };
         /** @description A Cardigann indexer definition available to configure, bundled or synced from the upstream repository. */
         IndexerDefinitionDto: {
@@ -19620,6 +19707,13 @@ export interface components {
             indexer: null | string;
             /** Format: int64 */
             size: null | number;
+        };
+        /** @description Result of importing TRaSH quality-size entries. */
+        QualityDefinitionImportResult: {
+            /** @description Definitions updated by the import. */
+            updated: components["schemas"]["QualityDefinitionResource"][];
+            /** @description TRaSH quality names that did not match a known Submarine quality. */
+            skipped: string[];
         };
         /** @description A quality size definition. */
         QualityDefinitionResource: {

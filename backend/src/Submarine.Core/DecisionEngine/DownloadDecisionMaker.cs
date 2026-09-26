@@ -64,6 +64,23 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			rejections.Add(new RejectionReason("no wanted language present", RejectionType.PERMANENT));
 		}
 
+		if (IsSample(release.FullTitle, candidate.Info.Size))
+		{
+			rejections.Add(new RejectionReason("sample release", RejectionType.PERMANENT));
+		}
+
+		if (release.SeriesReleaseData?.ReleaseType == SeriesReleaseType.MULTI_SEASON)
+		{
+			rejections.Add(new RejectionReason("multi-season releases are not supported", RejectionType.PERMANENT));
+		}
+
+		if (context.ExistingFileCoversMoreEpisodes)
+		{
+			rejections.Add(new RejectionReason(
+				"the episode file on disk contains more episodes than this release contains",
+				RejectionType.PERMANENT));
+		}
+
 		var qualityUpgrade = false;
 		var qualityNotWorse = true;
 
@@ -80,6 +97,27 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 				context.DownloadPropersAndRepacks);
 
 			qualityNotWorse = qualityIndex >= existingIndex;
+
+			// a repack, proper or anime version bump replacing the held file at the same quality tier only counts as
+			// a genuine upgrade when the release group matches: a different group is likely a different encode, not
+			// a repack of the same source
+			if (qualityIndex == existingIndex
+			    && QualityProfileExtensions.IsRevisionUpgrade(existingQuality.Revision, release.Quality.Revision, context.DownloadPropersAndRepacks)
+			    && (release.Quality.Revision.IsRepack || context.SeriesType == SeriesType.ANIME))
+			{
+				if (string.IsNullOrWhiteSpace(context.SeasonReleaseGroup) || string.IsNullOrWhiteSpace(release.ReleaseGroup))
+				{
+					rejections.Add(new RejectionReason(
+						"cannot verify the repack/version release group, the existing file's or the release's release group is unknown",
+						RejectionType.PERMANENT));
+				}
+				else if (!string.Equals(context.SeasonReleaseGroup, release.ReleaseGroup, StringComparison.OrdinalIgnoreCase))
+				{
+					rejections.Add(new RejectionReason(
+						$"repack/version release group '{release.ReleaseGroup}' does not match the existing release group '{context.SeasonReleaseGroup}'",
+						RejectionType.PERMANENT));
+				}
+			}
 		}
 
 		// an upgrade in either dimension is enough, but a quality downgrade is never traded for a language gain
@@ -116,6 +154,19 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			rejections.Add(new RejectionReason("release is already in the queue", RejectionType.TEMPORARY));
 		}
 
+		if (candidate.Info.InfoHash is { } infoHash && context.AlreadyImportedInfoHashes.Contains(infoHash))
+		{
+			rejections.Add(new RejectionReason(
+				"has the same info hash as a release already grabbed and imported",
+				RejectionType.PERMANENT));
+		}
+		else if (context.AlreadyImportedTitles.Contains(release.FullTitle))
+		{
+			rejections.Add(new RejectionReason(
+				"has the same title as a release already grabbed and imported",
+				RejectionType.PERMANENT));
+		}
+
 		if (customFormatScore < context.QualityProfile.MinFormatScore)
 		{
 			rejections.Add(new RejectionReason(
@@ -132,6 +183,24 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 				RejectionType.PERMANENT));
 		}
 
+		if (context.AvailableFreeSpaceBytes is { } freeSpace)
+		{
+			var remaining = freeSpace - (candidate.Info.Size ?? 0);
+
+			if (remaining <= 0)
+			{
+				rejections.Add(new RejectionReason(
+					"importing after download would exceed the available disk space",
+					RejectionType.PERMANENT));
+			}
+			else if (remaining < context.MinimumFreeSpaceMb * 1024L * 1024)
+			{
+				rejections.Add(new RejectionReason(
+					$"not enough free space to import after download, minimum is {context.MinimumFreeSpaceMb} MB",
+					RejectionType.PERMANENT));
+			}
+		}
+
 		if (release.Protocol == Protocol.BITTORRENT
 		    && candidate.MinimumSeeders is { } minimumSeeders
 		    && candidate.Info.Seeders is { } seeders
@@ -140,9 +209,27 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			rejections.Add(new RejectionReason($"{seeders} seeders, minimum is {minimumSeeders}", RejectionType.TEMPORARY));
 		}
 
+		if (release.Protocol == Protocol.BITTORRENT
+		    && candidate.Info.IndexerId is { } requiredFlagsIndexerId
+		    && context.IndexerRequiredFlags.TryGetValue(requiredFlagsIndexerId, out var requiredFlags)
+		    && requiredFlags.Count > 0
+		    && !requiredFlags.Any(flag => candidate.Info.IndexerFlags.Contains(flag)))
+		{
+			rejections.Add(new RejectionReason(
+				$"none of the required indexer flags ({string.Join(", ", requiredFlags)}) were found",
+				RejectionType.PERMANENT));
+		}
+
 		if (IsWithinDelayWindow(candidate, context, qualityIndex, customFormatScore, evaluatedAt))
 		{
 			rejections.Add(new RejectionReason("waiting for delay window", RejectionType.TEMPORARY));
+		}
+
+		if (context.DelayProfile is { } enabledProfile
+		    && ((release.Protocol == Protocol.USENET && !enabledProfile.EnableUsenet)
+		        || (release.Protocol == Protocol.BITTORRENT && !enabledProfile.EnableTorrent)))
+		{
+			rejections.Add(new RejectionReason($"{release.Protocol} is not enabled for this media", RejectionType.PERMANENT));
 		}
 
 		foreach (var profile in context.ReleaseProfiles.Where(profile => profile.Enabled))
@@ -194,8 +281,9 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 
 		var approved = rejections.Count == 0;
 		var score = approved ? Score(candidate, context, qualityIndex, filterResult.Score, customFormatScore) : 0;
+		var sizePreferenceKey = SizePreference(definition, context.RuntimeMinutes, candidate.Info.Size);
 
-		return new DownloadDecision(candidate, approved, score, rejections, matchedFormats, customFormatScore);
+		return new DownloadDecision(candidate, approved, score, rejections, matchedFormats, customFormatScore, sizePreferenceKey);
 	}
 
 	/// <inheritdoc />
@@ -238,6 +326,20 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			rejections.Add(new RejectionReason(
 				$"size exceeds the maximum of {config.MaximumSizeMb} MB",
 				RejectionType.PERMANENT));
+		}
+
+		if (release.HardcodedSubs && !config.AllowHardcodedSubs)
+		{
+			var whitelistedGroups = config.WhitelistedHardcodedSubs
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+			var isWhitelisted = release.ReleaseGroup is { } group
+			                     && whitelistedGroups.Any(allowed => string.Equals(allowed, group, StringComparison.OrdinalIgnoreCase));
+
+			if (!isWhitelisted)
+			{
+				rejections.Add(new RejectionReason("release reports hardcoded subtitles", RejectionType.PERMANENT));
+			}
 		}
 
 		return rejections;
@@ -333,5 +435,27 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 		}
 
 		return score;
+	}
+
+	// a title containing "sample" is only rejected when its reported size is small: an unknown size is not assumed
+	// to be a sample, unlike Sonarr/Radarr's non-nullable release size which defaults to zero
+	private static bool IsSample(string title, long? sizeBytes)
+		=> title.Contains("sample", StringComparison.OrdinalIgnoreCase) && sizeBytes is { } bytes && bytes < 70L * 1024 * 1024;
+
+	// final ordering tie-break, higher is preferred: closeness to the quality definition's preferred size when known,
+	// bucketed to 200 MB like Sonarr/Radarr so near-identical releases do not reorder on tiny size differences;
+	// otherwise larger releases sort first
+	private static double SizePreference(QualityDefinition? definition, int? runtimeMinutes, long? sizeBytes)
+	{
+		const double bucketBytes = 200d * 1024 * 1024;
+		var size = sizeBytes ?? 0;
+
+		if (definition?.PreferredSizeMbPerMinute is { } preferredPerMinute && runtimeMinutes is > 0 and { } runtime)
+		{
+			var preferredBytes = preferredPerMinute * runtime * 1024d * 1024d;
+			return -Math.Round(Math.Abs(size - preferredBytes) / bucketBytes) * bucketBytes;
+		}
+
+		return Math.Round(size / bucketBytes) * bucketBytes;
 	}
 }
