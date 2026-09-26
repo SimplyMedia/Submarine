@@ -36,7 +36,7 @@ public sealed record MovieAddedEvent(int MovieId) : IDomainEvent;
 
 public sealed record MovieUpdatedEvent(int MovieId) : IDomainEvent;
 
-public sealed record MovieDeletedEvent(int MovieId, string Title, bool DeletedFiles) : IDomainEvent;
+public sealed record MovieDeletedEvent(int MovieId, string Title, bool DeletedFiles, int? TmdbId = null, int? Year = null) : IDomainEvent;
 
 public sealed record ReleaseGrabbedEvent(GrabbedRelease Release) : IDomainEvent;
 

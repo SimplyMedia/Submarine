@@ -21,6 +21,8 @@ public sealed record MoveSeriesCommand(int SeriesId, int RootFolderId, bool Move
 
 public sealed record MoveMovieCommand(int MovieId, int RootFolderId, bool MoveFiles = true) : CommandBase;
 
+public sealed record MoveMediaVersionCommand(int MediaVersionId, int RootFolderId) : CommandBase;
+
 public sealed record SeriesSearchCommand(int SeriesId) : CommandBase;
 
 public sealed record SeasonSearchCommand(int SeriesId, int SeasonNumber) : CommandBase;

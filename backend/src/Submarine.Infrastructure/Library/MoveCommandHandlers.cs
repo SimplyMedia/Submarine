@@ -120,6 +120,54 @@ public sealed class MoveMovieCommandHandler(SubmarineDbContext db, IEventBus eve
 }
 
 /// <summary>
+///     Moves a single media version's folder to a new root folder on disk and updates its row, without touching
+///     any sibling version of the same series or movie. Used by the version-scoped move operation so a
+///     multi-version title's other versions are never disturbed.
+/// </summary>
+public sealed class MoveMediaVersionCommandHandler(SubmarineDbContext db, IEventBus eventBus)
+	: ICommandHandler<MoveMediaVersionCommand>
+{
+	/// <inheritdoc />
+	public async Task ExecuteAsync(MoveMediaVersionCommand command, ICommandContext context, CancellationToken cancellationToken = default)
+	{
+		var version = await db.MediaVersions.FirstOrDefaultAsync(x => x.Id == command.MediaVersionId, cancellationToken)
+			?? throw new KeyNotFoundException($"Media version {command.MediaVersionId} not found");
+		var targetRoot = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == command.RootFolderId, cancellationToken)
+			?? throw new KeyNotFoundException($"Root folder {command.RootFolderId} not found");
+
+		if (version.RootFolderId != targetRoot.Id)
+		{
+			var oldRoot = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == version.RootFolderId, cancellationToken);
+			if (oldRoot is not null)
+			{
+				var source = MediaVersionPathGuard.ResolveUnderRoot(oldRoot.Path, version.Path);
+				var destination = MediaVersionPathGuard.ResolveUnderRoot(targetRoot.Path, version.Path);
+				if (Directory.Exists(source) && !string.Equals(source, destination, StringComparison.OrdinalIgnoreCase))
+				{
+					Directory.CreateDirectory(targetRoot.Path);
+					if (Directory.Exists(destination))
+					{
+						throw new ConflictException($"Destination folder '{destination}' already exists");
+					}
+
+					VersionFolderMove.MoveWithFallback(source, destination);
+					version.RootFolderId = targetRoot.Id;
+					await db.SaveChangesAsync(cancellationToken);
+					await eventBus.PublishAsync(new MediaRenamedEvent(version.SeriesId, version.MovieId, [new RenamedFile(source, destination)]), cancellationToken);
+					await context.ReportProgressAsync(100, null, cancellationToken);
+					return;
+				}
+			}
+
+			version.RootFolderId = targetRoot.Id;
+			await db.SaveChangesAsync(cancellationToken);
+		}
+
+		await context.ReportProgressAsync(100, null, cancellationToken);
+	}
+}
+
+/// <summary>
 ///     Moves a version folder to a new root, falling back to copy-then-delete when the root folders live on
 ///     different filesystems (Directory.Move cannot cross a filesystem boundary).
 /// </summary>

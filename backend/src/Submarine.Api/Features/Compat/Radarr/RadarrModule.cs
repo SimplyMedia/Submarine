@@ -135,7 +135,7 @@ public sealed class RadarrModule : IEndpointModule
 		return Results.Json(response, CompatJson.Options, statusCode: StatusCodes.Status201Created);
 	}
 
-	private static async Task<IResult> UpdateAsync(int id, HttpRequest request, SubmarineDbContext db, LibraryMutator mutator, CompatVersionSelection versions, CancellationToken ct)
+	private static async Task<IResult> UpdateAsync(int id, HttpRequest request, SubmarineDbContext db, LibraryMutator mutator, CompatVersionSelection versions, Submarine.Api.Features.MediaVersions.MediaVersionMover mover, CancellationToken ct, bool moveFiles = false)
 	{
 		var payload = await JsonSerializer.DeserializeAsync<RadarrMovieResource>(request.Body, CompatJson.Options, ct);
 		if (payload is null) return CompatErrors.Validation("movie", "A movie resource is required.");
@@ -149,18 +149,21 @@ public sealed class RadarrModule : IEndpointModule
 		if (payload.RootFolderPath is not null || payload.QualityProfileId is not null || payload.ProfileId is not null || payload.LanguageProfileId is not null)
 		{
 			if (version is null) return CompatErrors.Message("Movie has no selected media version.", StatusCodes.Status409Conflict);
-			var rootId = version.RootFolderId;
+			int? newRootId = null;
 			if (payload.RootFolderPath is not null)
 			{
 				var root = await db.RootFolders.SingleOrDefaultAsync(x => x.Path == payload.RootFolderPath && x.MediaKind == MediaKind.MOVIES, ct);
 				if (root is null) return CompatErrors.Validation("rootFolderPath", "The movie root folder does not exist.");
-				rootId = root.Id;
+				newRootId = root.Id;
 			}
 			if (payload.QualityProfileId is not null && payload.ProfileId is not null && payload.QualityProfileId != payload.ProfileId) return CompatErrors.Validation("qualityProfileId", "Conflicting profile ids.");
 			var profile = payload.QualityProfileId ?? payload.ProfileId ?? version.QualityProfileId;
-			if (rootId != version.RootFolderId) return CompatErrors.Validation("rootFolderPath", "Changing the selected root folder is not supported without a version-scoped move operation.");
 			await mutator.UpdateMovieAsync(id, new UpdateMovieOptions(payload.Monitored, requestedAvailability, null,
 				payload.Tags, null, false, [new UpdateVersionOptions(version.Id, version.Name, profile, payload.LanguageProfileId ?? version.LanguageProfileId, version.Path)]), ct);
+			if (newRootId is { } rootId && rootId != version.RootFolderId)
+			{
+				await mover.ChangeRootFolderAsync(version.Id, rootId, moveFiles, ct);
+			}
 		}
 		else if (payload.Monitored is not null || payload.MinimumAvailability is not null || payload.Tags is not null)
 		{
@@ -170,7 +173,7 @@ public sealed class RadarrModule : IEndpointModule
 		return Results.Json(await ProjectAsync(db, versions, saved, ct), CompatJson.Options);
 	}
 
-	private static async Task<IResult> UpdateCollectionAsync(HttpRequest request, SubmarineDbContext db, LibraryMutator mutator, CompatVersionSelection versions, CancellationToken ct)
+	private static async Task<IResult> UpdateCollectionAsync(HttpRequest request, SubmarineDbContext db, LibraryMutator mutator, CompatVersionSelection versions, Submarine.Api.Features.MediaVersions.MediaVersionMover mover, CancellationToken ct)
 	{
 		var resources = await JsonSerializer.DeserializeAsync<RadarrMovieResource[]>(request.Body, CompatJson.Options, ct);
 		if (resources is null) return CompatErrors.Validation("movies", "A movie array is required.");
@@ -178,7 +181,7 @@ public sealed class RadarrModule : IEndpointModule
 		foreach (var item in resources)
 		{
 			if (item.Id <= 0) return CompatErrors.Validation("id", "Movie ids must be local ids.");
-			var result = await UpdateAsync(item.Id, JsonRequest(item), db, mutator, versions, ct);
+			var result = await UpdateAsync(item.Id, JsonRequest(item), db, mutator, versions, mover, ct);
 			if (result is IStatusCodeHttpResult { StatusCode: >= 400 }) return result;
 			results.Add((await db.Movies.AsNoTracking().Include(x => x.Tags).SingleAsync(x => x.Id == item.Id, ct)) is { } m ? await ProjectAsync(db, versions, m, ct) : item);
 		}
@@ -211,14 +214,21 @@ public sealed class RadarrModule : IEndpointModule
 			bool.TryParse(request.Query["addImportExclusion"], out var exclusion) ? exclusion : null, null, mutator, db, versions, selectedDeletion, ct);
 	}
 
-	private static async Task<IResult> EditorAsync(HttpRequest request, SubmarineDbContext db, LibraryMutator mutator, CompatVersionSelection versions, CancellationToken ct)
+	private static async Task<IResult> EditorAsync(HttpRequest request, SubmarineDbContext db, LibraryMutator mutator, CompatVersionSelection versions, Submarine.Api.Features.MediaVersions.MediaVersionMover mover, CancellationToken ct)
 	{
 		using var document = await JsonDocument.ParseAsync(request.Body, cancellationToken: ct);
 		var root = document.RootElement;
 		var ids = root.TryGetProperty("movieIds", out var movieIds) ? movieIds.EnumerateArray().Select(x => x.GetInt32()).ToArray() : [];
 		if (ids.Length == 0 || ids.Distinct().Count() != ids.Length) return CompatErrors.Validation("movieIds", "Movie ids must be a nonempty, duplicate-free list.");
 		if (await db.Movies.CountAsync(x => ids.Contains(x.Id), ct) != ids.Length) return CompatErrors.Validation("movieIds", "One or more movies do not exist.");
-		if (root.TryGetProperty("rootFolderPath", out _)) return CompatErrors.Validation("rootFolderPath", "Root folder changes require the native version-scoped move operation.");
+		var rootFolderPath = root.TryGetProperty("rootFolderPath", out var rootFolderPathElement) ? rootFolderPathElement.GetString() : null;
+		Submarine.Core.Entities.RootFolder? newRoot = null;
+		if (rootFolderPath is not null)
+		{
+			newRoot = await db.RootFolders.SingleOrDefaultAsync(x => x.Path == rootFolderPath && x.MediaKind == MediaKind.MOVIES, ct);
+			if (newRoot is null) return CompatErrors.Validation("rootFolderPath", "The movie root folder does not exist.");
+		}
+		var moveFiles = TryBool(root, "moveFiles") ?? false;
 		var requestedAvailability = ParseMinimumAvailability(root.TryGetProperty("minimumAvailability", out var avail) ? avail.GetString() : null);
 		if (root.TryGetProperty("minimumAvailability", out _) && requestedAvailability is null) return CompatErrors.Validation("minimumAvailability", "Unsupported minimum availability value.");
 		var profileId = TryInt(root, "qualityProfileId") ?? TryInt(root, "profileId");
@@ -226,7 +236,7 @@ public sealed class RadarrModule : IEndpointModule
 		if (root.TryGetProperty("qualityProfileId", out _) && root.TryGetProperty("profileId", out _) && TryInt(root, "qualityProfileId") != TryInt(root, "profileId"))
 			return CompatErrors.Validation("qualityProfileId", "Conflicting profile ids.");
 		var selected = new Dictionary<int, MediaVersion>();
-		if (profileId is not null || languageProfileId is not null)
+		if (profileId is not null || languageProfileId is not null || newRoot is not null)
 		{
 			foreach (var id in ids)
 			{
@@ -244,6 +254,8 @@ public sealed class RadarrModule : IEndpointModule
 			await mutator.UpdateMovieAsync(id, new UpdateMovieOptions(TryBool(root, "monitored"), requestedAvailability, null, null, null, false, versionUpdates), ct);
 			if (tagOperation is not null)
 				await mutator.BulkUpdateMoviesAsync(new BulkUpdateMovieOptions([id], null, null, null, null, null, false, tagOperation), ct);
+			if (newRoot is not null && selected.TryGetValue(id, out var movedVersion) && newRoot.Id != movedVersion.RootFolderId)
+				await mover.ChangeRootFolderAsync(movedVersion.Id, newRoot.Id, moveFiles, ct);
 		}
 		return Results.Json(new { movies = ids.Length }, CompatJson.Options);
 	}
@@ -402,12 +414,16 @@ public sealed class RadarrModule : IEndpointModule
 	}
 
 	private static async Task<IResult> GrabReleaseAsync(int? movieId, HttpRequest httpRequest, CompatVersionSelection versions, ReleaseGrabOperation operation,
-		FluentValidation.IValidator<GrabReleaseRequest> validator, CancellationToken ct)
+		ReleaseResultCache cache, FluentValidation.IValidator<GrabReleaseRequest> validator, CancellationToken ct)
 	{
 		var request = await JsonSerializer.DeserializeAsync<RadarrReleaseGrabRequest>(httpRequest.Body, CompatJson.Options, ct);
 		if (request is null) return CompatErrors.Validation("release", "A release resource is required.");
 		var localMovieId = movieId ?? request.MovieId;
-		if (localMovieId is null || localMovieId <= 0) return CompatErrors.Validation("movieId", "A local movie id is required.");
+		if (localMovieId is null && cache.TryGet(request.Guid, request.IndexerId, out var cached))
+		{
+			localMovieId = cached.MatchedMovieId;
+		}
+		if (localMovieId is null || localMovieId <= 0) return CompatErrors.Validation("movieId", "The release is not associated with a known movie.");
 		var binding = await versions.GetForMovieAsync(localMovieId.Value, ct);
 		if (binding?.MediaVersionId is not { } versionId) return CompatErrors.Message("Movie not found", StatusCodes.Status404NotFound);
 		var grab = new GrabReleaseRequest(request.Guid, request.IndexerId, versionId, null, null, localMovieId.Value,
