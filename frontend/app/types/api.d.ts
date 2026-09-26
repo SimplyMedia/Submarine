@@ -22236,6 +22236,8 @@ export interface components {
             path: null | string;
             /** @description New monitored flag. */
             monitored: null | boolean;
+            /** @description Whether files move on disk when the root folder changes. */
+            moveFiles?: null | boolean;
         };
         /** @description Update movie request, null fields keep their value. */
         UpdateMovieRequest: {
