@@ -20,7 +20,8 @@ public record SeriesResource(
 	string? PosterUrl,
 	string? BackdropUrl,
 	int? Year,
-	IReadOnlyList<AlternateTitleResource> AlternateTitles);
+	IReadOnlyList<AlternateTitleResource> AlternateTitles,
+	string? OriginalLanguage = null);
 
 public record SeasonResource(
 	int SeasonNumber,

@@ -206,6 +206,8 @@ const columns = [
 			</STable>
 		</SSection>
 
+		<AutoTaggingRulesPanel />
+
 		<SDialog
 			v-model="dialogOpen"
 			:title="editingId === null ? 'Add tag' : 'Rename tag'"

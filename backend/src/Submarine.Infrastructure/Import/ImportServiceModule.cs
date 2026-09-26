@@ -5,7 +5,7 @@ using Submarine.Core.Modules;
 namespace Submarine.Infrastructure.Import;
 
 /// <summary>
-///     Registers the import pipeline: file linking, recycle bin, NFO writing and the orchestrator.
+///     Registers the import pipeline: file linking, recycle bin and the orchestrator.
 /// </summary>
 public sealed class ImportServiceModule : IServiceModule
 {
@@ -14,7 +14,7 @@ public sealed class ImportServiceModule : IServiceModule
 	{
 		services.AddSingleton<IFileLinker, FileLinker>();
 		services.AddSingleton<IRecycleBinService, RecycleBinService>();
-		services.AddSingleton<INfoWriter, NfoWriter>();
+		services.AddSingleton<IFileDateService, FileDateService>();
 		services.AddScoped<IImportService, ImportService>();
 		services.AddScoped<ILibraryImportService, LibraryImportService>();
 	}

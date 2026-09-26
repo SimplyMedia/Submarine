@@ -63,12 +63,19 @@ public class TmdbSeriesTests
 	[Fact]
 	public async Task GetSeriesByTmdb_ShouldOnlyEmitAiredOrdering_WhenNoEpisodeGroupsExist()
 	{
-		var handler = new StubHttpMessageHandler().EnqueueTmdbSeriesWithoutGroups();
+		var detail = Fixtures.TmdbSeriesDetailWithoutGroups.Replace(
+			"\"id\":1399",
+			"\"id\":1399,\"original_language\":\"en\"",
+			StringComparison.Ordinal);
+		var handler = new StubHttpMessageHandler()
+			.Respond(HttpStatusCode.OK, detail)
+			.Respond(HttpStatusCode.OK, Fixtures.TmdbSeason1);
 		using var host = MetadataTestHost.Create(handler);
 
 		var series = await host.Service.GetSeriesByTmdbAsync(1399, TestContext.Current.CancellationToken);
 
 		series.ShouldNotBeNull();
+		series.OriginalLanguage.ShouldBe("en");
 		series.Status.ShouldBe(SeriesStatus.CONTINUING);
 		series.Episodes.Count.ShouldBe(2);
 		series.Episodes[0].Numbers.ShouldBe([new EpisodeNumber(EpisodeOrdering.AIRED, 1, 1, null)]);
