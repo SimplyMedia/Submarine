@@ -28,6 +28,8 @@ test('quality profiles: create from template, then edit and save', async ({ page
 	await signIn(page)
 	await page.goto('/settings/profiles')
 	await expect(page.getByRole('button', { name: 'New from template' })).toBeVisible()
+	// The seeded profile shows once the list has loaded, so the leftover check below sees real rows.
+	await expect(page.getByRole('row').filter({ hasText: 'Any' })).toBeVisible()
 
 	// Leftovers from an interrupted run would make the template name collide.
 	for (const leftover of ['HD-720p (renamed)', 'HD-720p']) {
@@ -42,7 +44,7 @@ test('quality profiles: create from template, then edit and save', async ({ page
 
 	await page.getByRole('button', { name: 'New from template' }).click()
 	await page.getByRole('button', { name: 'HD-720p', exact: true }).click()
-	await expect(page.getByText('"HD-720p" created')).toBeVisible()
+	await expect(page.locator('.s-toast-title', { hasText: '"HD-720p" created' })).toBeVisible()
 
 	const row = page.getByRole('row').filter({ hasText: 'HD-720p' })
 	await expect(row).toBeVisible()
@@ -55,7 +57,7 @@ test('quality profiles: create from template, then edit and save', async ({ page
 	await nameInput.fill('HD-720p (renamed)')
 	await dialog.getByRole('button', { name: 'Save changes' }).click()
 
-	await expect(page.getByText('Saved')).toBeVisible()
+	await expect(page.locator('.s-toast-title', { hasText: 'Saved' })).toBeVisible()
 	await expect(page.getByRole('row').filter({ hasText: 'HD-720p (renamed)' })).toBeVisible()
 
 	// Clean up so re-runs stay idempotent.
@@ -63,6 +65,7 @@ test('quality profiles: create from template, then edit and save', async ({ page
 		.getByRole('button', { name: 'Profile actions' }).click()
 	await page.getByRole('menuitem', { name: 'Delete' }).click()
 	await page.getByRole('button', { name: 'Delete', exact: true }).click()
+	await expect(page.getByRole('row').filter({ hasText: 'HD-720p' })).toHaveCount(0)
 })
 
 test('general settings: regenerate the API key', async ({ page }) => {
@@ -70,12 +73,13 @@ test('general settings: regenerate the API key', async ({ page }) => {
 	await page.goto('/settings/general')
 
 	const apiKeyField = page.locator('.key-row input').first()
+	await expect(apiKeyField).not.toHaveValue('')
 	const originalKey = await apiKeyField.inputValue()
 	expect(originalKey.length).toBeGreaterThan(0)
 
 	await page.getByRole('button', { name: 'Regenerate' }).click()
 	await page.getByRole('dialog').getByRole('button', { name: 'Regenerate' }).click()
 
-	await expect(page.getByText('API key regenerated')).toBeVisible()
+	await expect(page.locator('.s-toast-title', { hasText: 'API key regenerated' })).toBeVisible()
 	await expect(apiKeyField).not.toHaveValue(originalKey)
 })
