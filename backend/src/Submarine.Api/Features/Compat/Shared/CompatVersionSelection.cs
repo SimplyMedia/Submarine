@@ -87,6 +87,7 @@ public sealed class CompatVersionSelection(SubmarineDbContext db)
 			throw new InvalidOperationException($"Media version {mediaVersionId} does not belong to {facade} title {titleId}.");
 
 		var binding = await FindAsync(facade, titleId, cancellationToken);
+		var created = binding is null;
 		if (binding is null)
 		{
 			binding = new CompatLibraryBinding
@@ -99,7 +100,20 @@ public sealed class CompatVersionSelection(SubmarineDbContext db)
 		}
 		binding.MediaVersionId = mediaVersionId;
 		binding.Excluded = false;
-		await db.SaveChangesAsync(cancellationToken);
+		try
+		{
+			await db.SaveChangesAsync(cancellationToken);
+		}
+		catch (DbUpdateException) when (created)
+		{
+			// A realtime or event read selected a default binding for the new title first; point it at this version.
+			db.Entry(binding).State = EntityState.Detached;
+			var concurrent = await FindAsync(facade, titleId, cancellationToken) ?? throw new InvalidOperationException(
+				$"Compatibility binding for {facade} title {titleId} failed to save and does not exist.");
+			concurrent.MediaVersionId = mediaVersionId;
+			concurrent.Excluded = false;
+			await db.SaveChangesAsync(cancellationToken);
+		}
 	}
 
 	private async Task SetExcludedAsync(string facade, int titleId, CancellationToken cancellationToken)
