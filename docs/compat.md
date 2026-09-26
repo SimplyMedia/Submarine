@@ -12,21 +12,21 @@ nothing extra to run and no separate credentials to manage.
 
 ## Supported consumers
 
-| Consumer | Version |
-| --- | --- |
-| Overseerr | 1.35.0 |
-| Jellyseerr | 2.7.3 |
-| Seerr | 3.4.1 |
-| Bazarr | 1.6.1 |
-| Recyclarr | 8.7.0 |
-| Unpackerr | 0.16.1 |
-| Homepage | 2.4.0 |
-| Notifiarr | 0.9.7 |
-| Maintainerr | 2.5.0 |
-| Kometa | 2.5.0 |
-| ArrAPI | 1.4.14 |
-| Decluttarr | 2.0.0 |
-| LunaSea | 11.0.0 |
+| Consumer | Version | Facade | URL Base |
+| --- | --- | --- | --- |
+| Overseerr | 1.35.0 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Jellyseerr | 2.7.3 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Seerr | 3.4.1 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Bazarr | 1.6.1 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Recyclarr | 8.7.0 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Unpackerr | 0.16.1 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Homepage | 2.4.0 | Radarr + Prowlarr | `<UrlBase>/compat/radarr`; `<UrlBase>/compat/prowlarr` |
+| Notifiarr | 0.9.7 | Prowlarr | `<UrlBase>/compat/prowlarr` |
+| Maintainerr | 2.5.0 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Kometa | 2.5.0 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| ArrAPI | 1.4.14 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| Decluttarr | 2.0.0 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
+| LunaSea | 11.0.0 | Sonarr + Radarr | `<UrlBase>/compat/sonarr`; `<UrlBase>/compat/radarr` |
 
 ## Configuring a client
 
@@ -119,17 +119,13 @@ above, which lets Notifiarr register *itself* as a listener inside Submarine.
 
 ## Sonarr facade
 
-The Sonarr facade currently implements series list/get/lookup/add/update/delete and bulk editing,
-episode list/get/monitor updates, episode-file list/get, and season-pass monitoring. Series
-responses use the selected compatibility version for their path and file statistics. TVDB and IMDb
-lookup terms are passed to the metadata service in their original prefixed form.
-
-The Sonarr facade is not yet complete for Bazarr or LunaSea workflows: episode-file mutation,
-release search/grab, manual import, rename, and parse are not implemented. Series DELETE works when
-the title has no sibling versions; deleting only the selected version while preserving siblings
-returns 409. Bazarr-compatible resource projection is registered, but native event forwarding and
-consumer-level SignalR synchronization are not verified. No Sonarr consumer Docker workflow has
-been run for this change.
+The Sonarr facade implements series list/get/lookup/add/update/delete and bulk editing; episode
+list/get/monitor updates; episode-file list/get/delete and bulk delete; and season-pass monitoring.
+It also supports release search/grab, manual import, rename preview/command, parse, and realtime
+series/episode updates for Bazarr. Series and episode responses use the selected compatibility
+version for paths and file statistics. TVDB and IMDb lookup terms are passed to the metadata service
+in their original prefixed form. Bazarr's legacy SignalR protocol is not advertised: the reported
+Sonarr dialect is 4.x and the supported hub uses the modern SignalR transport.
 
 ## Radarr facade
 
@@ -164,8 +160,10 @@ renames, matching the shape Bazarr's realtime client expects. File- and rename-s
 filtered to the facade's currently bound version so an unselected version's changes are never
 published as the facade movie's changes.
 
-Real Docker workflows with Overseerr, Bazarr, and Recyclarr have not been run in this worktree; the
-consumer-version table is the target contract, not runtime smoke.
+Real Docker checks run independently from the HTTP consumer-contract tests. The current check proves
+the API image starts, Bazarr 1.6.1 reads the Radarr dialect and connects to its realtime hub; it does
+not prove Bazarr's library sync, Sonarr sync, or a Recyclarr two-pass no-drift workflow. Overseerr
+1.35.0 still needs an external Plex onboarding account and a TMDB API key to request a live title.
 
 ## Limits
 

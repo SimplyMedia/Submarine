@@ -69,6 +69,12 @@ Set a URL base in Settings > General to serve Submarine under a sub path. Data, 
 | `v1.5.5`, `v1.5`, `v1` | Versioned releases, once they are tagged |
 
 The same tags exist for `submarine-metadata` and `submarine-mappings`. Images build for `linux/amd64` and `linux/arm64` after all tests pass.
+## Documentation
+
+| Doc | What it covers |
+|---|---|
+| [Compatibility](docs/compat.md) | Sonarr, Radarr, and Prowlarr facade URLs, supported consumers, and known limits |
+
 
 ## Development
 

@@ -1,21 +1,19 @@
-# Real Docker smoke for the Radarr v3 compatibility facade: builds Submarine from source and runs
-# it alongside pinned Overseerr 1.35.0 and Bazarr 1.6.1 on an isolated network. Throwaway
-# config/database/media volumes; not for production use.
-#   docker compose -f docker-compose.compat-smoke.yml -p compat-radarr-smoke up -d --build
-name: compat-radarr-smoke
+# Disposable integration smoke: run from the repository root with
+# docker compose -f tests/compat-smoke/docker-compose.yml -p compat-smoke up -d --build
+name: compat-smoke
 
 services:
   submarine:
     build:
-      context: .
+      context: ../..
       dockerfile: backend/src/Submarine.Api/Dockerfile
-    container_name: compat-radarr-submarine
+    container_name: compat-int-submarine
     ports:
-      - "18953:8080"
+      - "18955:8080"
     environment:
-      Metadata__BaseUrl: http://compat-radarr-metadata:8080
+      Metadata__BaseUrl: http://compat-int-metadata:8080
       Metadata__ApiKey: smoke-internal-key
-      Mappings__BaseUrl: http://compat-radarr-mappings:8080
+      Mappings__BaseUrl: http://compat-int-mappings:8080
       Mappings__ApiKey: smoke-internal-key
     volumes:
       - smoke-submarine-config:/config
@@ -28,40 +26,28 @@ services:
 
   submarine-metadata:
     build:
-      context: backend
+      context: ../../backend
       dockerfile: src/Submarine.Metadata/Dockerfile
-    container_name: compat-radarr-metadata
+    container_name: compat-int-metadata
     environment:
       Auth__ApiKey: smoke-internal-key
       Tmdb__ApiKey: ${TMDB_API_KEY:-}
 
   submarine-mappings:
     build:
-      context: backend
+      context: ../../backend
       dockerfile: src/Submarine.Mappings/Dockerfile
-    container_name: compat-radarr-mappings
+    container_name: compat-int-mappings
     environment:
       Auth__AdminApiKey: smoke-internal-key
     volumes:
       - smoke-mappings-config:/config
 
-  overseerr:
-    image: ghcr.io/sct/overseerr:1.35.0
-    container_name: compat-radarr-overseerr
-    ports:
-      - "18954:5055"
-    environment:
-      TZ: Etc/UTC
-    volumes:
-      - smoke-overseerr-config:/app/config
-    depends_on:
-      - submarine
-
   bazarr:
     image: ghcr.io/linuxserver/bazarr:1.6.1
-    container_name: compat-radarr-bazarr
+    container_name: compat-int-bazarr
     ports:
-      - "18955:6767"
+      - "18956:6767"
     environment:
       PUID: "1000"
       PGID: "1000"
@@ -72,9 +58,17 @@ services:
     depends_on:
       - submarine
 
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:8.7.0
+    container_name: compat-int-recyclarr
+    profiles: [consumers]
+    volumes:
+      - ./recyclarr:/config
+    depends_on:
+      - submarine
+
 volumes:
   smoke-submarine-config:
   smoke-mappings-config:
-  smoke-overseerr-config:
   smoke-bazarr-config:
   smoke-media:
