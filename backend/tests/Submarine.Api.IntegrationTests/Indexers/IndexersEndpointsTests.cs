@@ -55,6 +55,44 @@ public sealed class IndexersEndpointsTests : IAsyncLifetime
 	}
 
 	[Fact]
+	public async Task CreateIndexer_ShouldRequireRedirectForUsenet()
+	{
+		var response = await _client.PostAsJsonAsync("/api/v1/indexers", new
+		{
+			name = "Usenet",
+			implementation = "NEWZNAB",
+			definitionId = (string?)null,
+			protocol = "USENET",
+			baseUrl = "https://indexer.example",
+			settings = new { baseUrl = "https://indexer.example", apiPath = "/api" },
+			enableRss = true,
+			enableAutomaticSearch = true,
+			enableInteractiveSearch = true,
+			priority = 25,
+			downloadClientId = (int?)null,
+			proxyId = (int?)null,
+			categories = Array.Empty<int>(),
+			animeCategories = Array.Empty<int>(),
+			minimumSeeders = (int?)null,
+			seedRatio = (double?)null,
+			seedTimeMinutes = (int?)null,
+			seasonPackSeedTimeMinutes = (int?)null,
+			animeStandardFormatSearch = false,
+			tagIds = Array.Empty<int>(),
+			vipExpiration = (string?)null,
+			queryLimit = (int?)null,
+			grabLimit = (int?)null,
+			limitsUnit = "DAY",
+			redirect = false,
+			requiredFlags = Array.Empty<string>(),
+			seasonSearchMaximumSingleEpisodeAge = 0
+		});
+
+		response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+		(await response.Content.ReadAsStringAsync()).ShouldContain("Redirect must be enabled");
+	}
+
+	[Fact]
 	public async Task IndexerLifecycle_ShouldCreateTestSearchGrabAndExposeViaOutboundNewznab()
 	{
 		// create
@@ -79,18 +117,43 @@ public sealed class IndexersEndpointsTests : IAsyncLifetime
 			seedTimeMinutes = (int?)null,
 			seasonPackSeedTimeMinutes = (int?)null,
 			animeStandardFormatSearch = false,
-			tagIds = Array.Empty<int>()
+			tagIds = Array.Empty<int>(),
+			vipExpiration = "2027-01-15",
+			queryLimit = 8,
+			grabLimit = 4,
+			limitsUnit = "HOUR",
+			redirect = false,
+			requiredFlags = new[] { "FREELEECH" },
+			seasonSearchMaximumSingleEpisodeAge = 14
 		};
 		var created = await _client.PostAsJsonAsync("/api/v1/indexers", createBody);
 		created.StatusCode.ShouldBe(HttpStatusCode.Created);
 		var indexer = await created.Content.ReadFromJsonAsync<JsonElement>();
 		var indexerId = indexer.GetProperty("id").GetInt32();
+		indexer.GetProperty("vipExpiration").GetString().ShouldBe("2027-01-15");
+		indexer.GetProperty("queryLimit").GetInt32().ShouldBe(8);
+		indexer.GetProperty("grabLimit").GetInt32().ShouldBe(4);
+		indexer.GetProperty("limitsUnit").GetString().ShouldBe("HOUR");
+		indexer.GetProperty("redirect").GetBoolean().ShouldBeFalse();
+		indexer.GetProperty("requiredFlags")[0].GetString().ShouldBe("FREELEECH");
+		indexer.GetProperty("seasonSearchMaximumSingleEpisodeAge").GetInt32().ShouldBe(14);
+		var roundTripped = await (await _client.GetAsync($"/api/v1/indexers/{indexerId}")).Content.ReadFromJsonAsync<JsonElement>();
+		roundTripped.GetProperty("requiredFlags")[0].GetString().ShouldBe("FREELEECH");
+		roundTripped.GetProperty("vipExpiration").GetString().ShouldBe("2027-01-15");
 
 		// test
 		var testResponse = await _client.PostAsync($"/api/v1/indexers/{indexerId}/test", null);
 		testResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
 		var testResult = await testResponse.Content.ReadFromJsonAsync<JsonElement>();
 		testResult.GetProperty("isValid").GetBoolean().ShouldBeTrue();
+		var filteredSearchResponse = await _client.GetAsync($"/api/v1/search?term=Harbour%20Lights&categories=5000&indexerIds={indexerId}&type=tv");
+		filteredSearchResponse.StatusCode.ShouldBe(HttpStatusCode.OK, await filteredSearchResponse.Content.ReadAsStringAsync());
+		var filteredResults = await filteredSearchResponse.Content.ReadFromJsonAsync<List<JsonElement>>();
+		filteredResults!.Count.ShouldBe(1);
+		var excludedIndexerSearch = await _client.GetAsync("/api/v1/search?term=Harbour%20Lights&indexerIds=99999&type=tv");
+		(await excludedIndexerSearch.Content.ReadFromJsonAsync<List<JsonElement>>())!.ShouldBeEmpty();
+		var secondSearchPage = await _client.GetAsync($"/api/v1/search?term=Harbour%20Lights&indexerIds={indexerId}&page=2&pageSize=1");
+		(await secondSearchPage.Content.ReadFromJsonAsync<List<JsonElement>>())!.ShouldBeEmpty();
 		testResult.GetProperty("capabilities").GetProperty("searchAvailable").GetBoolean().ShouldBeTrue();
 
 		// capabilities
@@ -137,6 +200,12 @@ public sealed class IndexersEndpointsTests : IAsyncLifetime
 			(await db.IndexerHistories.CountAsync(history => history.EventType == IndexerHistoryEventType.GRAB)).ShouldBe(1);
 			return true;
 		});
+		var successfulQueries = await (await _client.GetAsync($"/api/v1/indexers/{indexerId}/history?eventType=QUERY&successful=true")).Content.ReadFromJsonAsync<JsonElement>();
+		var successfulQueryItems = successfulQueries.GetProperty("items").EnumerateArray().ToList();
+		successfulQueryItems.ShouldNotBeEmpty();
+		successfulQueryItems.ShouldAllBe(entry => entry.GetProperty("eventType").GetString() == "QUERY" && entry.GetProperty("successful").GetBoolean());
+		var failedQueries = await (await _client.GetAsync($"/api/v1/indexers/{indexerId}/history?eventType=QUERY&successful=false")).Content.ReadFromJsonAsync<JsonElement>();
+		failedQueries.GetProperty("items").GetArrayLength().ShouldBe(0);
 
 		// outbound newznab caps + search with the real api key
 		var apiKey = await _factory.WithDbAsync(async db => (await db.GeneralConfig.AsNoTracking().SingleAsync()).ApiKey);

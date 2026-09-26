@@ -88,14 +88,46 @@ public static class ImportListSchemas
 		new(ImportListType.CUSTOM,
 		[
 			Text("url", "Url", true, "JSON url returning [{tmdbId|tvdbId, title}]")
+		]),
+		new(ImportListType.SIMKL,
+		[
+			Password("accessToken", "Access token", true, "Simkl personal access token"),
+			Text("clientId", "Client id", false, "Simkl app client id, falls back to the Simkl:ClientId setting"),
+			Select("listType", "List type", ["watching", "plan_to_watch", "hold", "completed", "dropped"], "Which Simkl list to sync"),
+			Select("showType", "Catalogue", ["main", "anime"], "Main catalogue (shows/movies) or the anime catalogue")
+		]),
+		new(ImportListType.IMDB,
+		[
+			Text("listId", "List id", true, "IMDb list id of the form ls12345678")
+		]),
+		new(ImportListType.MYANIMELIST,
+		[
+			Password("accessToken", "Access token", true, "MyAnimeList personal access token"),
+			Select("listStatus", "List status", ["all", "watching", "completed", "on_hold", "dropped", "plan_to_watch"], "Which MyAnimeList status to sync")
+		]),
+		new(ImportListType.RSS,
+		[
+			Text("url", "Url", true, "RSS/XML feed url. Series feeds need a numeric TVDB id in each item's guid; movie feeds are parsed by title and IMDb id")
 		])
 	];
 
 	/// <summary>
-	///     Schema of one type, null when unknown.
+	///     Minimum time between automatic scheduled fetches of a list of this type. Manual test,
+	///     preview and single-list syncs bypass this.
 	/// </summary>
-	public static ImportListTypeSchema? For(ImportListType type)
-		=> All.FirstOrDefault(x => x.Type == type);
+	public static TimeSpan MinRefreshInterval(ImportListType type)
+		=> type switch
+		{
+			ImportListType.SONARR => TimeSpan.FromMinutes(5),
+			ImportListType.RADARR => TimeSpan.FromMinutes(15),
+			ImportListType.PLEX => TimeSpan.FromHours(6),
+			ImportListType.CUSTOM => TimeSpan.FromHours(6),
+			ImportListType.SIMKL => TimeSpan.FromHours(6),
+			ImportListType.MYANIMELIST => TimeSpan.FromHours(6),
+			ImportListType.RSS => TimeSpan.FromHours(6),
+			ImportListType.STEVEN_LU => TimeSpan.FromHours(24),
+			_ => TimeSpan.FromHours(12)
+		};
 
 	private static ImportListField Text(string name, string label, bool required, string help, string? defaultValue = null)
 		=> new(name, label, "text", null, required, help, defaultValue);

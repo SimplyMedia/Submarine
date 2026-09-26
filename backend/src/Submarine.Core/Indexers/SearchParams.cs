@@ -49,5 +49,45 @@ public enum SearchParams
 	/// <summary>
 	///     Release year
 	/// </summary>
-	Year = 1 << 7
+	Year = 1 << 7,
+
+	/// <summary>
+	///     Genre (music, book)
+	/// </summary>
+	Genre = 1 << 8,
+
+	/// <summary>
+	///     Artist name (music)
+	/// </summary>
+	Artist = 1 << 9,
+
+	/// <summary>
+	///     Album name (music)
+	/// </summary>
+	Album = 1 << 10,
+
+	/// <summary>
+	///     Record label (music)
+	/// </summary>
+	Label = 1 << 11,
+
+	/// <summary>
+	///     Track name (music)
+	/// </summary>
+	Track = 1 << 12,
+
+	/// <summary>
+	///     Author name (book)
+	/// </summary>
+	Author = 1 << 13,
+
+	/// <summary>
+	///     Book title (book)
+	/// </summary>
+	Title = 1 << 14,
+
+	/// <summary>
+	///     Publisher (book)
+	/// </summary>
+	Publisher = 1 << 15
 }

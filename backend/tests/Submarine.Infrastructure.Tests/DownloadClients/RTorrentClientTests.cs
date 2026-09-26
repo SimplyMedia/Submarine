@@ -160,4 +160,97 @@ public class RTorrentClientTests
 
 		exception.Message.ShouldContain("Auth failure");
 	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldSetCustom1_WhenPostImportCategoryDiffersFromCategory()
+	{
+		string? requestBody = null;
+		var handler = new StubHttpHandler((_, body) =>
+		{
+			requestBody = body;
+			return StubHttpHandler.Xml("""
+				<?xml version="1.0"?><methodResponse><params><param><value><i8>0</i8></value></param></params></methodResponse>
+				""");
+		});
+		var client = new RTorrentClient(Settings() with { PostImportCategory = "imported" }, 2, "rt",
+			new HttpClient(handler));
+
+		await client.MarkImportedAsync("AAAA", TestContext.Current.CancellationToken);
+
+		requestBody!.ShouldContain("<methodName>d.custom1.set</methodName>");
+		requestBody!.ShouldContain("AAAA");
+		requestBody!.ShouldContain("imported");
+	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldNotCall_WhenPostImportCategoryMatchesCategory()
+	{
+		var handler = new StubHttpHandler((_, _) => StubHttpHandler.Xml("""
+			<?xml version="1.0"?><methodResponse><params><param><value><i8>0</i8></value></param></params></methodResponse>
+			"""));
+		var client = new RTorrentClient(Settings() with { PostImportCategory = "tv" }, 2, "rt", new HttpClient(handler));
+
+		await client.MarkImportedAsync("AAAA", TestContext.Current.CancellationToken);
+
+		handler.Requests.Count.ShouldBe(0);
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldSetHighPriority_WhenReleaseIsRecent()
+	{
+		string? requestBody = null;
+		var handler = new StubHttpHandler((_, body) =>
+		{
+			requestBody = body;
+			return StubHttpHandler.Xml("""
+				<?xml version="1.0"?><methodResponse><params><param><value><i8>0</i8></value></param></params></methodResponse>
+				""");
+		});
+		var client = new RTorrentClient(Settings() with { RecentPriority = RTorrentPriority.HIGH }, 2, "rt",
+			new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease() with { IsRecentRelease = true }, null,
+			TestContext.Current.CancellationToken);
+
+		requestBody!.ShouldContain($"d.priority.set={(int)RTorrentPriority.HIGH}");
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldSetLowPriority_WhenReleaseIsOlder()
+	{
+		string? requestBody = null;
+		var handler = new StubHttpHandler((_, body) =>
+		{
+			requestBody = body;
+			return StubHttpHandler.Xml("""
+				<?xml version="1.0"?><methodResponse><params><param><value><i8>0</i8></value></param></params></methodResponse>
+				""");
+		});
+		var client = new RTorrentClient(Settings() with { OlderPriority = RTorrentPriority.LOW }, 2, "rt",
+			new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease() with { IsRecentRelease = false }, null,
+			TestContext.Current.CancellationToken);
+
+		requestBody!.ShouldContain($"d.priority.set={(int)RTorrentPriority.LOW}");
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldNotSetPriority_WhenNormal()
+	{
+		string? requestBody = null;
+		var handler = new StubHttpHandler((_, body) =>
+		{
+			requestBody = body;
+			return StubHttpHandler.Xml("""
+				<?xml version="1.0"?><methodResponse><params><param><value><i8>0</i8></value></param></params></methodResponse>
+				""");
+		});
+		var client = new RTorrentClient(Settings(), 2, "rt", new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease() with { IsRecentRelease = true }, null,
+			TestContext.Current.CancellationToken);
+
+		requestBody!.ShouldNotContain("d.priority.set");
+	}
 }

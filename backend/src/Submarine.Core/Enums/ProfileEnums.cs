@@ -76,7 +76,33 @@ public enum CustomFormatSpecificationType
 
 	/// <summary>Year range.</summary>
 	YEAR,
-
 	/// <summary>Indexer flags of the release.</summary>
-	INDEXER_FLAG
+	INDEXER_FLAG,
+
+	/// <summary>Series release type: special, episode, multi-episode, partial season, full season or multi-season.</summary>
+	RELEASE_TYPE,
+
+	/// <summary>Quality modifier derived from the quality source: raw HD, BluRay disc or BluRay remux.</summary>
+	QUALITY_MODIFIER
+}
+
+/// <summary>
+///     A modifier on top of a release's quality source, matching the distinctions Radarr's quality modifier condition
+///     makes. Submarine already models raw HD, BluRay disc and BluRay remux as first class
+///     <see cref="Submarine.Core.Quality.QualitySource" /> values, so this enum only re-exposes that distinction for
+///     the QUALITY_MODIFIER custom format specification.
+/// </summary>
+public enum QualityModifier
+{
+	/// <summary>No modifier.</summary>
+	NONE,
+
+	/// <summary>Raw HD source.</summary>
+	RAW_HD,
+
+	/// <summary>Untouched BluRay disc.</summary>
+	BLURAY_DISK,
+
+	/// <summary>BluRay remux.</summary>
+	BLURAY_REMUX
 }

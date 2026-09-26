@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using Submarine.Core.Enums;
 using Submarine.Core.Indexers;
+using Submarine.Infrastructure.Http;
 using Submarine.Infrastructure.Indexers;
 using Submarine.Infrastructure.Indexers.Cardigann;
 using Shouldly;
@@ -100,8 +103,11 @@ public class BundledDefinitionsTests
 			new NullLogger<IndexerDefinitionLoader>(),
 			Path.Combine(Path.GetTempPath(), "submarine-factory-test-" + Guid.NewGuid().ToString("N")),
 			FindDefinitionsFolder());
+		var outboundProxyProvider = Substitute.For<IOutboundProxyProvider>();
+		outboundProxyProvider.GetSnapshotAsync(Arg.Any<CancellationToken>())
+			.Returns(new OutboundProxySnapshot(false, Submarine.Core.Enums.IndexerProxyType.HTTP, "", 0, null, null, "", true, CertificateValidationType.ENABLED));
 		var factory = new IndexerFactory(
-			new IndexerHttpClientFactory(provider.GetRequiredService<IHttpClientFactory>(), new NullLogger<IndexerHttpClientFactory>()),
+			new IndexerHttpClientFactory(provider.GetRequiredService<IHttpClientFactory>(), outboundProxyProvider, new NullLogger<IndexerHttpClientFactory>()),
 			loader,
 			provider.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>());
 

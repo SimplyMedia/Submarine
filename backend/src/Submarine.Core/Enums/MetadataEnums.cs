@@ -48,5 +48,11 @@ public enum AutoTaggingSpecificationType
 	MONITORED,
 
 	/// <summary>Network (series) or studio (movie).</summary>
-	NETWORK_OR_STUDIO
+	NETWORK_OR_STUDIO,
+
+	/// <summary>Original language code.</summary>
+	ORIGINAL_LANGUAGE,
+
+	/// <summary>Keyword associated with the movie.</summary>
+	KEYWORD
 }

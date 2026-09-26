@@ -39,6 +39,10 @@ public sealed class NewznabModule : IEndpointModule
 		HttpRequest httpRequest,
 		SubmarineDbContext db,
 		IIndexerProvider indexerProvider,
+		IIndexerStatusService statusService,
+		IIndexerLimitService limitService,
+		IndexerHistoryRecorder historyRecorder,
+		TimeProvider timeProvider,
 		[AsParameters] ReleaseSearchQuery query,
 		CancellationToken cancellationToken)
 	{
@@ -63,6 +67,19 @@ public sealed class NewznabModule : IEndpointModule
 			return XmlResult(BuildError(200, "Indexer not found"), 404);
 		}
 
+		var status = await db.IndexerStatuses.AsNoTracking().FirstOrDefaultAsync(entity => entity.IndexerId == id, cancellationToken);
+		if (status?.DisabledUntil is { } disabledUntil && disabledUntil > timeProvider.GetUtcNow().UtcDateTime)
+		{
+			AddRetryAfterHeader(httpRequest, (int)(disabledUntil - timeProvider.GetUtcNow().UtcDateTime).TotalSeconds);
+			return XmlResult(BuildError(429, $"Indexer is disabled until {disabledUntil:R} due to recent failures."), 429);
+		}
+
+		if (await limitService.AtQueryLimitAsync(indexer, cancellationToken))
+		{
+			AddRetryAfterHeader(httpRequest, await limitService.CalculateRetryAfterQueryLimitAsync(indexer, cancellationToken));
+			return XmlResult(BuildError(429, $"User configurable Indexer Query Limit of {indexer.QueryLimit} in last {limitService.IntervalHours(indexer)} hour(s) reached."), 429);
+		}
+
 		var baseUrl = BaseUrl(httpRequest);
 		await using var client = await indexerProvider.CreateAsync(indexer, cancellationToken);
 		try
@@ -70,16 +87,20 @@ public sealed class NewznabModule : IEndpointModule
 			if (query.Type == "caps")
 			{
 				var capabilities = await client.GetCapabilitiesAsync(cancellationToken);
+				await statusService.RecordSuccessAsync(id, cancellationToken);
 				return XmlResult(BuildCaps([capabilities]));
 			}
 
 			var request = BuildRequest(query);
 			var releases = await client.FetchAsync(request, cancellationToken);
-			await RecordAsync(db, id, query, cancellationToken);
+			await statusService.RecordSuccessAsync(id, cancellationToken);
+			await historyRecorder.RecordAsync(id, IndexerHistoryEventType.QUERY, true, query.Q, query.Cat, "newznab:unknown", null, cancellationToken);
 			return XmlResult(BuildFeed(releases, query.ApiKey ?? string.Empty, baseUrl));
 		}
 		catch (IndexerException exception)
 		{
+			await statusService.RecordFailureAsync(id, cancellationToken);
+			await historyRecorder.RecordAsync(id, IndexerHistoryEventType.FAILED, false, query.Q, query.Cat, "newznab:unknown", null, cancellationToken);
 			return XmlResult(BuildError(900, exception.Message), 502);
 		}
 	}
@@ -88,6 +109,9 @@ public sealed class NewznabModule : IEndpointModule
 		HttpRequest httpRequest,
 		SubmarineDbContext db,
 		IIndexerProvider indexerProvider,
+		IIndexerStatusService statusService,
+		IIndexerLimitService limitService,
+		IndexerHistoryRecorder historyRecorder,
 		[AsParameters] ReleaseSearchQuery query,
 		CancellationToken cancellationToken)
 	{
@@ -119,17 +143,26 @@ public sealed class NewznabModule : IEndpointModule
 			var request = BuildRequest(query);
 			var batches = await Task.WhenAll(indexers.Select(async configured =>
 			{
+				if (await limitService.AtQueryLimitAsync(configured.Entity, cancellationToken))
+				{
+					return (IReadOnlyList<ReleaseInfo>)[];
+				}
+
 				try
 				{
-					return await configured.Client.FetchAsync(request, cancellationToken);
+					var releases = await configured.Client.FetchAsync(request, cancellationToken);
+					await statusService.RecordSuccessAsync(configured.Entity.Id, cancellationToken);
+					await historyRecorder.RecordAsync(configured.Entity.Id, IndexerHistoryEventType.QUERY, true, query.Q, query.Cat, "newznab:aggregate", null, cancellationToken);
+					return releases;
 				}
 				catch (IndexerException)
 				{
+					await statusService.RecordFailureAsync(configured.Entity.Id, cancellationToken);
+					await historyRecorder.RecordAsync(configured.Entity.Id, IndexerHistoryEventType.FAILED, false, query.Q, query.Cat, "newznab:aggregate", null, cancellationToken);
 					return (IReadOnlyList<ReleaseInfo>)[];
 				}
 			}));
 
-			await RecordAsync(db, null, query, cancellationToken);
 			return XmlResult(BuildFeed([.. batches.SelectMany(batch => batch)], query.ApiKey ?? string.Empty, baseUrl));
 		}
 		finally
@@ -146,8 +179,13 @@ public sealed class NewznabModule : IEndpointModule
 		[FromQuery] string link,
 		[FromQuery] string? file,
 		[FromQuery(Name = "apikey")] string? apikey,
+		HttpRequest httpRequest,
 		SubmarineDbContext db,
 		IIndexerProvider indexerProvider,
+		IIndexerStatusService statusService,
+		IIndexerLimitService limitService,
+		IndexerHistoryRecorder historyRecorder,
+		TimeProvider timeProvider,
 		CancellationToken cancellationToken)
 	{
 		var config = await db.GeneralConfig.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
@@ -182,6 +220,19 @@ public sealed class NewznabModule : IEndpointModule
 			return Results.NotFound();
 		}
 
+		var status = await db.IndexerStatuses.AsNoTracking().FirstOrDefaultAsync(entity => entity.IndexerId == id, cancellationToken);
+		if (status?.DisabledUntil is { } disabledUntil && disabledUntil > timeProvider.GetUtcNow().UtcDateTime)
+		{
+			AddRetryAfterHeader(httpRequest, (int)(disabledUntil - timeProvider.GetUtcNow().UtcDateTime).TotalSeconds);
+			return Results.StatusCode(429);
+		}
+
+		if (await limitService.AtGrabLimitAsync(indexer, cancellationToken))
+		{
+			AddRetryAfterHeader(httpRequest, await limitService.CalculateRetryAfterGrabLimitAsync(indexer, cancellationToken));
+			return Results.StatusCode(429);
+		}
+
 		var definition = indexer.DefinitionId is null
 			? null
 			: await db.IndexerDefinitions.AsNoTracking().FirstOrDefaultAsync(entity => entity.DefinitionId == indexer.DefinitionId, cancellationToken);
@@ -190,16 +241,28 @@ public sealed class NewznabModule : IEndpointModule
 			return Results.BadRequest();
 		}
 
+		// Indexers configured to redirect (required for Usenet) hand the caller the release link directly instead of
+		// being fetched and re-served through Submarine, saving bandwidth for links that are only valid once.
+		if (indexer.Redirect)
+		{
+			await historyRecorder.RecordAsync(id, IndexerHistoryEventType.GRAB, true, file, null, "newznab:download", null, cancellationToken);
+			return Results.Redirect(decoded, permanent: false);
+		}
+
 		await using var client = await indexerProvider.CreateAsync(indexer, cancellationToken);
 		HttpResponseMessage response;
 		try
 		{
 			response = await client.DownloadAsync(decodedUri, cancellationToken);
+			await statusService.RecordSuccessAsync(id, cancellationToken);
 		}
 		catch (IndexerException)
 		{
+			await statusService.RecordFailureAsync(id, cancellationToken);
 			return Results.BadRequest();
 		}
+
+		await historyRecorder.RecordAsync(id, IndexerHistoryEventType.GRAB, true, file, null, "newznab:download", null, cancellationToken);
 
 		if (response.Headers.Location is { } redirect)
 		{
@@ -252,22 +315,11 @@ public sealed class NewznabModule : IEndpointModule
 	private static string BaseUrl(HttpRequest request)
 		=> $"{request.Scheme}://{request.Host}{request.PathBase}";
 
-	private static async Task RecordAsync(SubmarineDbContext db, int? indexerId, ReleaseSearchQuery query, CancellationToken cancellationToken)
+	private static void AddRetryAfterHeader(HttpRequest request, int retryAfterSeconds)
 	{
-		var userAgent = "unknown";
-		if (indexerId is not null)
+		if (retryAfterSeconds > 0 && !request.HttpContext.Response.Headers.ContainsKey("Retry-After"))
 		{
-			db.IndexerHistories.Add(new IndexerHistory
-			{
-				IndexerId = indexerId.Value,
-				EventType = IndexerHistoryEventType.QUERY,
-				Successful = true,
-				Query = query.Q,
-				Categories = query.Cat,
-				Source = $"newznab:{userAgent}",
-				Date = DateTime.UtcNow
-			});
-			await db.SaveChangesAsync(cancellationToken);
+			request.HttpContext.Response.Headers["Retry-After"] = retryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
 		}
 	}
 
@@ -297,6 +349,12 @@ public sealed class NewznabModule : IEndpointModule
 				query.Q, query.Season, query.Ep, query.TvdbId, query.TmdbId, query.ImdbId,
 				Categories: categories, Limit: query.Limit, Offset: query.Offset),
 			"movie" => new MovieSearchRequest(query.Q, ImdbId: query.ImdbId, TmdbId: query.TmdbId, Categories: categories, Limit: query.Limit, Offset: query.Offset),
+			"music" => new MusicSearchRequest(
+				query.Q, query.Artist, query.Album, query.Label, query.Track, query.Genre, query.Year,
+				Categories: categories, Limit: query.Limit, Offset: query.Offset),
+			"book" => new BookSearchRequest(
+				query.Q, query.Author, query.BookTitle, query.Publisher, query.Genre, query.Year,
+				Categories: categories, Limit: query.Limit, Offset: query.Offset),
 			_ => new BasicSearchRequest(query.Q, categories, query.Limit, query.Offset)
 		};
 	}
@@ -323,7 +381,9 @@ public sealed class NewznabModule : IEndpointModule
 					"searching",
 					new XElement("search", new XAttribute("available", capabilities.Any(c => c.SearchAvailable) ? "yes" : "no"), new XAttribute("supportedParams", "q")),
 					new XElement("tv-search", new XAttribute("available", capabilities.Any(c => c.TvSearchAvailable) ? "yes" : "no"), new XAttribute("supportedParams", "q,season,ep,tvdbid,tmdbid,imdbid")),
-					new XElement("movie-search", new XAttribute("available", capabilities.Any(c => c.MovieSearchAvailable) ? "yes" : "no"), new XAttribute("supportedParams", "q,imdbid,tmdbid,year"))),
+					new XElement("movie-search", new XAttribute("available", capabilities.Any(c => c.MovieSearchAvailable) ? "yes" : "no"), new XAttribute("supportedParams", "q,imdbid,tmdbid,year")),
+					new XElement("music-search", new XAttribute("available", capabilities.Any(c => c.MusicSearchAvailable) ? "yes" : "no"), new XAttribute("supportedParams", "q,artist,album,label,track,year,genre")),
+					new XElement("book-search", new XAttribute("available", capabilities.Any(c => c.BookSearchAvailable) ? "yes" : "no"), new XAttribute("supportedParams", "q,author,title,publisher,year,genre"))),
 				new XElement("categories", categories.Select(CategoryElement))));
 	}
 
@@ -397,6 +457,15 @@ public sealed class NewznabModule : IEndpointModule
 /// <param name="Limit">Maximum amount of results.</param>
 /// <param name="Offset">Offset into the results.</param>
 /// <param name="ApiKey">The caller's api key.</param>
+/// <param name="Artist">Artist name, for t=music.</param>
+/// <param name="Album">Album name, for t=music.</param>
+/// <param name="Label">Record label, for t=music.</param>
+/// <param name="Track">Track name, for t=music.</param>
+/// <param name="Genre">Genre, for t=music or t=book.</param>
+/// <param name="Author">Author name, for t=book.</param>
+/// <param name="BookTitle">Book title, for t=book.</param>
+/// <param name="Publisher">Publisher, for t=book.</param>
+/// <param name="Year">Release year, for t=music or t=book.</param>
 public sealed record ReleaseSearchQuery(
 	[FromQuery(Name = "t")] string Type,
 	[FromQuery] string? Q,
@@ -408,7 +477,16 @@ public sealed record ReleaseSearchQuery(
 	[FromQuery] string? Cat,
 	[FromQuery] int? Limit,
 	[FromQuery] int? Offset,
-	[FromQuery(Name = "apikey")] string? ApiKey);
+	[FromQuery(Name = "apikey")] string? ApiKey,
+	[FromQuery] string? Artist = null,
+	[FromQuery] string? Album = null,
+	[FromQuery] string? Label = null,
+	[FromQuery] string? Track = null,
+	[FromQuery] string? Genre = null,
+	[FromQuery] string? Author = null,
+	[FromQuery(Name = "title")] string? BookTitle = null,
+	[FromQuery] string? Publisher = null,
+	[FromQuery] int? Year = null);
 
 /// <summary>
 ///     Fixed one minute window rate limiter keyed by api key, 60 requests per window.

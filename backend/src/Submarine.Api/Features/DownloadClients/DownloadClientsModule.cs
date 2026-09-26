@@ -416,7 +416,13 @@ internal static class DownloadClientSettingsSchema
 		[DownloadClientType.SABNZBD] = typeof(SabnzbdSettings),
 		[DownloadClientType.NZBGET] = typeof(NzbGetSettings),
 		[DownloadClientType.TORRENT_BLACKHOLE] = typeof(TorrentBlackholeSettings),
-		[DownloadClientType.USENET_BLACKHOLE] = typeof(UsenetBlackholeSettings)
+		[DownloadClientType.USENET_BLACKHOLE] = typeof(UsenetBlackholeSettings),
+		[DownloadClientType.VUZE] = typeof(TransmissionSettings),
+		[DownloadClientType.HADOUKEN] = typeof(HadoukenSettings),
+		[DownloadClientType.NZBVORTEX] = typeof(NzbVortexSettings),
+		[DownloadClientType.PNEUMATIC] = typeof(PneumaticSettings),
+		[DownloadClientType.FREEBOX_DOWNLOAD] = typeof(FreeboxDownloadSettings),
+		[DownloadClientType.RQBIT] = typeof(RQbitSettings)
 	};
 
 	public static IReadOnlyList<DownloadClientFieldSchema> FieldsOf(DownloadClientType type)

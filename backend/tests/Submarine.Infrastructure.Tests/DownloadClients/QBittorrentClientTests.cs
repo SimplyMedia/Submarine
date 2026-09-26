@@ -263,6 +263,45 @@ public class QBittorrentClientTests
 	}
 
 	[Fact]
+	public async Task AddAsync_ShouldSendContentLayout_WhenConfigured()
+	{
+		var settings = Settings() with { ContentLayout = QBittorrentContentLayout.SUBFOLDER };
+		var handler = new StubHttpHandler((request, _) =>
+		{
+			if (request.RequestUri!.PathAndQuery.EndsWith("/auth/login"))
+			{
+				var response = StubHttpHandler.Text("Ok.");
+				response.Headers.Add("Set-Cookie", "SID=abc123; path=/");
+				return response;
+			}
+
+			return StubHttpHandler.Text("Ok.");
+		});
+		var client = new QBittorrentClient(settings, 1, "qb", new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease(), null, TestContext.Current.CancellationToken);
+
+		var add = handler.Requests.Single(request => request.Url.Contains("/torrents/add"));
+		add.Body!.ShouldContain("contentLayout=Subfolder");
+	}
+
+	[Fact]
+	public async Task Requests_ShouldUseBearerToken_WhenApiKeyConfigured_SkippingCookieLogin()
+	{
+		var settings = Settings() with { ApiKey = "secret-key" };
+		var handler = new StubHttpHandler((_, _) => StubHttpHandler.Text(string.Empty));
+		var client = new QBittorrentClient(settings, 1, "qb", new HttpClient(handler));
+
+		await client.TestAsync(TestContext.Current.CancellationToken);
+
+		handler.Requests.Count.ShouldBe(1);
+		handler.Requests[0].Url.ShouldNotContain("/auth/login");
+		handler.Requests[0].Headers.Authorization.ShouldNotBeNull();
+		handler.Requests[0].Headers.Authorization!.Scheme.ShouldBe("Bearer");
+		handler.Requests[0].Headers.Authorization!.Parameter.ShouldBe("secret-key");
+	}
+
+	[Fact]
 	public async Task TestAsync_ShouldThrowActionableMessage_WhenLoginRejected()
 	{
 		var handler = new StubHttpHandler((request, _) => StubHttpHandler.Text("Fails."));

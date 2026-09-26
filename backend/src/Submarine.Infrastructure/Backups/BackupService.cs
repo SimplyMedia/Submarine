@@ -48,9 +48,13 @@ public sealed partial class BackupService(
 	/// <summary>
 	///     Creates a backup archive and applies retention.
 	/// </summary>
-	public async Task<BackupEntry> CreateAsync(BackupKind kind, CancellationToken cancellationToken = default)
+	/// <param name="kind">Whether the backup was requested manually or by the scheduler.</param>
+	/// <param name="folder">The configured backup folder; empty uses "backups" under the app data directory.</param>
+	/// <param name="retention">How many of the most recent backups to keep.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	public async Task<BackupEntry> CreateAsync(BackupKind kind, string folder, int retention, CancellationToken cancellationToken = default)
 	{
-		var directory = BackupDirectory();
+		var directory = BackupDirectory(folder);
 		Directory.CreateDirectory(directory);
 		var timestamp = timeProvider.GetUtcNow().UtcDateTime.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
 		var fileName = $"submarine_backup_v2_{timestamp}_{kind}.zip";
@@ -73,7 +77,7 @@ public sealed partial class BackupService(
 			File.Delete(tempPath);
 		}
 
-		ApplyRetention(directory);
+		ApplyRetention(folder, retention);
 		var info = new FileInfo(targetPath);
 		return new BackupEntry(fileName, info.Length, info.CreationTimeUtc, kind);
 	}
@@ -81,9 +85,10 @@ public sealed partial class BackupService(
 	/// <summary>
 	///     Lists all valid backup archives.
 	/// </summary>
-	public IReadOnlyList<BackupEntry> List()
+	/// <param name="folder">The configured backup folder; empty uses "backups" under the app data directory.</param>
+	public IReadOnlyList<BackupEntry> List(string folder)
 	{
-		var directory = BackupDirectory();
+		var directory = BackupDirectory(folder);
 		if (!Directory.Exists(directory))
 		{
 			return [];
@@ -105,11 +110,13 @@ public sealed partial class BackupService(
 	/// <summary>
 	///     Deletes a backup archive.
 	/// </summary>
+	/// <param name="name">The archive file name.</param>
+	/// <param name="folder">The configured backup folder; empty uses "backups" under the app data directory.</param>
 	/// <exception cref="KeyNotFoundException">The archive does not exist.</exception>
 	/// <exception cref="InvalidOperationException">The name does not match the backup pattern.</exception>
-	public void Delete(string name)
+	public void Delete(string name, string folder)
 	{
-		var path = GuardedPath(name);
+		var path = GuardedPath(name, folder);
 		if (!File.Exists(path))
 		{
 			throw new KeyNotFoundException($"Backup {name} does not exist");
@@ -121,11 +128,13 @@ public sealed partial class BackupService(
 	/// <summary>
 	///     Opens a backup archive for download.
 	/// </summary>
+	/// <param name="name">The archive file name.</param>
+	/// <param name="folder">The configured backup folder; empty uses "backups" under the app data directory.</param>
 	/// <exception cref="KeyNotFoundException">The archive does not exist.</exception>
 	/// <exception cref="InvalidOperationException">The name does not match the backup pattern.</exception>
-	public FileStream Open(string name)
+	public FileStream Open(string name, string folder)
 	{
-		var path = GuardedPath(name);
+		var path = GuardedPath(name, folder);
 		if (!File.Exists(path))
 		{
 			throw new KeyNotFoundException($"Backup {name} does not exist");
@@ -138,9 +147,12 @@ public sealed partial class BackupService(
 	///     Validates a backup archive, stages its contents and replaces the live database.
 	///     The caller must restart the application afterwards.
 	/// </summary>
+	/// <param name="zipStream">The archive stream.</param>
+	/// <param name="folder">The configured backup folder, used for the pre-restore Postgres safety dump.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <exception cref="InvalidOperationException">The archive does not contain the required database file.</exception>
 	/// <exception cref="NotSupportedException">Postgres restore requires psql which is not on the PATH.</exception>
-	public async Task RestoreAsync(Stream zipStream, CancellationToken cancellationToken = default)
+	public async Task RestoreAsync(Stream zipStream, string folder, CancellationToken cancellationToken = default)
 	{
 		var staged = Path.Combine(Path.GetTempPath(), "submarine-restore-" + Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(staged);
@@ -178,7 +190,7 @@ public sealed partial class BackupService(
 			var provider = SubmarineDatabase.Provider(configuration);
 			if (provider == SubmarineDatabase.Postgres)
 			{
-				await RestorePostgresAsync(staged, cancellationToken);
+				await RestorePostgresAsync(staged, folder, cancellationToken);
 				return;
 			}
 
@@ -325,7 +337,7 @@ public sealed partial class BackupService(
 		}
 	}
 
-	private async Task RestorePostgresAsync(string stagedDirectory, CancellationToken cancellationToken)
+	private async Task RestorePostgresAsync(string stagedDirectory, string folder, CancellationToken cancellationToken)
 	{
 		var stagedSql = Path.Combine(stagedDirectory, "submarine.sql");
 		if (!File.Exists(stagedSql))
@@ -342,7 +354,7 @@ public sealed partial class BackupService(
 		var builder = new NpgsqlConnectionStringBuilder(SubmarineDatabase.PostgresConnectionString(configuration));
 
 		// Safety net: dump the live database before touching it, so a bad archive is recoverable.
-		await SafetyDumpPostgresAsync(builder, cancellationToken);
+		await SafetyDumpPostgresAsync(builder, folder, cancellationToken);
 
 		// Combine the schema reset and the restore script into one --single-transaction run, so a
 		// failure anywhere in the archive rolls back the DROP too instead of leaving an empty database.
@@ -366,7 +378,7 @@ public sealed partial class BackupService(
 		logger.LogInformation("Restored Postgres database from backup");
 	}
 
-	private async Task SafetyDumpPostgresAsync(NpgsqlConnectionStringBuilder builder, CancellationToken cancellationToken)
+	private async Task SafetyDumpPostgresAsync(NpgsqlConnectionStringBuilder builder, string folder, CancellationToken cancellationToken)
 	{
 		var executable = FindOnPath("pg_dump");
 		if (executable is null)
@@ -375,7 +387,7 @@ public sealed partial class BackupService(
 			return;
 		}
 
-		var directory = BackupDirectory();
+		var directory = BackupDirectory(folder);
 		Directory.CreateDirectory(directory);
 		var safetyPath = Path.Combine(directory, $"pre-restore-safety_{timeProvider.GetUtcNow().UtcDateTime:yyyyMMddHHmmss}.sql");
 		try
@@ -465,10 +477,10 @@ public sealed partial class BackupService(
 		}
 	}
 
-	private void ApplyRetention(string directory)
+	private void ApplyRetention(string folder, int retention)
 	{
-		var retention = configuration.GetValue("Backup:Retention", 7);
-		var valid = List();
+		var directory = BackupDirectory(folder);
+		var valid = List(folder);
 		foreach (var entry in valid.Skip(Math.Max(retention, 0)))
 		{
 			try
@@ -482,22 +494,21 @@ public sealed partial class BackupService(
 		}
 	}
 
-	private string GuardedPath(string name)
+	private string GuardedPath(string name, string folder)
 	{
 		if (!FileNamePattern().IsMatch(name))
 		{
 			throw new InvalidOperationException("Invalid backup name");
 		}
 
-		return Path.Combine(BackupDirectory(), name);
+		return Path.Combine(BackupDirectory(folder), name);
 	}
 
-	private string BackupDirectory()
+	private string BackupDirectory(string folder)
 	{
-		var configured = configuration["Backup:Path"];
-		return string.IsNullOrEmpty(configured)
+		return string.IsNullOrEmpty(folder)
 			? Path.Combine(AppData(), "backups")
-			: Path.GetFullPath(configured, AppData());
+			: Path.GetFullPath(folder, AppData());
 	}
 
 	private static string? FindOnPath(string fileName)

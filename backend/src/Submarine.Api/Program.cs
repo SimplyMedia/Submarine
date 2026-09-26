@@ -98,6 +98,7 @@ builder.Services
 	.AddPolicyScheme(AuthenticationSetup.Scheme, AuthenticationSetup.DisplayName, AuthenticationSetup.ConfigurePolicyScheme)
 	.AddCookie(AuthenticationSetup.CookieScheme, AuthenticationSetup.ConfigureCookie)
 	.AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(AuthenticationSetup.ApiKeyScheme, _ => { })
+	.AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>(AuthenticationSetup.BasicScheme, _ => { })
 	.AddScheme<AuthenticationSchemeOptions, AnonymousAuthenticationHandler>(AuthenticationSetup.AnonymousScheme, _ => { });
 builder.Services.AddAuthorization(options =>
 	options.FallbackPolicy = AuthenticationSetup.FallbackPolicy);
@@ -171,6 +172,11 @@ if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
 	WarnIfLoopback("Metadata:BaseUrl", builder.Configuration["Metadata:BaseUrl"]);
 	WarnIfLoopback("Mappings:BaseUrl", builder.Configuration["Mappings:BaseUrl"]);
 }
+
+// Resolves the real client address from X-Forwarded-For, but only through trusted proxy hops;
+// must run before anything that reads Connection.RemoteIpAddress (the login rate limiter below,
+// the local-address auth bypass in AuthenticationSetup).
+app.Use(TrustedForwardedHeadersMiddleware.InvokeAsync);
 
 // UrlBase lives in the database and can change at runtime, so the path base is applied per request.
 app.Use(async (context, next) =>

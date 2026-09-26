@@ -13,6 +13,8 @@ namespace Submarine.Core.AutoTagging;
 /// <param name="Year">Release or first air year.</param>
 /// <param name="Monitored">Whether the item is monitored.</param>
 /// <param name="NetworkOrStudio">Network for series, studio for movies.</param>
+/// <param name="OriginalLanguage">Original language code.</param>
+/// <param name="Keywords">Metadata keywords, movie only.</param>
 public sealed record AutoTaggingContext(
 	IReadOnlyList<string> Genres,
 	IReadOnlyCollection<int> RootFolderIds,
@@ -21,4 +23,6 @@ public sealed record AutoTaggingContext(
 	string Status,
 	int? Year,
 	bool Monitored,
-	string? NetworkOrStudio);
+	string? NetworkOrStudio,
+	string? OriginalLanguage = null,
+	IReadOnlyList<string>? Keywords = null);

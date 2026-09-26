@@ -100,6 +100,17 @@ public sealed class MetadataConsumersAndAutoTaggingApiTests : IClassFixture<Subm
 		(await client.DeleteAsync($"/api/v1/auto-tagging/{created.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 	}
 
+	[Fact]
+	public async Task AutoTaggingRule_Create_ShouldReject_WhenNameIsEmpty()
+	{
+		var client = ApiClient();
+
+		var create = await client.PostAsync("/api/v1/auto-tagging",
+			Json("""{ "name": "", "enable": true, "removeTagsAutomatically": false, "specifications": [], "tags": [] }"""));
+
+		create.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+	}
+
 	private HttpClient ApiClient()
 	{
 		_factory.CreateClient().Dispose();

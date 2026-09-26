@@ -50,6 +50,7 @@ public sealed class LibraryRefresher(
 		series.Title = resource.Title ?? series.Title;
 		series.SortTitle = TitleNormalizer.SortTitle(series.Title);
 		series.CleanTitle = TitleNormalizer.CleanTitle(series.Title);
+		series.OriginalLanguage = resource.OriginalLanguage;
 		series.Overview = resource.Overview;
 		series.Network = resource.Network;
 		series.Runtime = resource.Runtime;
@@ -204,6 +205,8 @@ public sealed class LibraryRefresher(
 		movie.Title = resource.Title ?? movie.Title;
 		movie.SortTitle = TitleNormalizer.SortTitle(movie.Title);
 		movie.CleanTitle = TitleNormalizer.CleanTitle(movie.Title);
+		movie.OriginalLanguage = resource.OriginalLanguage;
+		movie.Keywords = [.. (resource.Keywords ?? [])];
 		movie.OriginalTitle = resource.OriginalTitle;
 		movie.Overview = resource.Overview;
 		movie.Year = resource.Year ?? movie.Year;

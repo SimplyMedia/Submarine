@@ -22,11 +22,30 @@ public sealed class SearchModule : IEndpointModule
 		[FromQuery] int? movieId,
 		[FromQuery] string? term,
 		[FromQuery] int? mediaVersionId,
+		[FromQuery] string? categories,
+		[FromQuery] string? indexerIds,
+		[FromQuery] string? type,
+		[FromQuery] int? page,
+		[FromQuery] int? pageSize,
 		CancellationToken cancellationToken)
 	{
-		var results = await searchService.SearchAsync(seriesId, seasonNumber, episodeId, movieId, term, mediaVersionId, cancellationToken);
-		return TypedResults.Ok((IReadOnlyList<ReleaseResource>)[.. results.Select(ToResource)]);
+		var results = await searchService.SearchAsync(
+			seriesId, seasonNumber, episodeId, movieId, term, mediaVersionId,
+			ParseIds(categories), ParseIds(indexerIds), type, cancellationToken);
+
+		IEnumerable<SearchResult> page1 = results;
+		if (page is { } pageNumber && pageSize is { } size and > 0)
+		{
+			page1 = results.Skip((Math.Max(pageNumber, 1) - 1) * size).Take(size);
+		}
+
+		return TypedResults.Ok((IReadOnlyList<ReleaseResource>)[.. page1.Select(ToResource)]);
 	}
+
+	private static List<int>? ParseIds(string? value)
+		=> string.IsNullOrWhiteSpace(value)
+			? null
+			: [.. value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(int.Parse)];
 
 	private static ReleaseResource ToResource(SearchResult result)
 	{

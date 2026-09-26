@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Submarine.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +46,82 @@ public sealed class SqliteMigrationTests : IClassFixture<SubmarineApiFactory>
 			using var command = connection.CreateCommand();
 			command.CommandText = sql;
 			return Convert.ToInt32(command.ExecuteScalar());
+		}
+	}
+
+	[Fact]
+	public async Task Migrations_ShouldBackfillRemoveCompletedAndFailed_ForExistingDownloadClientRows()
+	{
+		var dbPath = Path.Combine(Path.GetTempPath(), $"submarine-parity-migrate-{Guid.NewGuid():N}.db");
+		try
+		{
+			var options = new DbContextOptionsBuilder<SqliteSubmarineDbContext>()
+				.UseSqlite($"Data Source={dbPath}")
+				.Options;
+
+			await using (var db = new SqliteSubmarineDbContext(options, TimeProvider.System))
+			{
+				await db.GetService<IMigrator>().MigrateAsync("20260926124842_Initial");
+			}
+
+			using (var connection = new SqliteConnection($"Data Source={dbPath}"))
+			{
+				connection.Open();
+				using var insert = connection.CreateCommand();
+				insert.CommandText = """
+					INSERT INTO DownloadClients (Name, Type, Enable, Priority, SettingsJson, RemoveCompleted, RemoveFailed, CreatedAt, UpdatedAt)
+					VALUES ('Legacy', 0, 1, 1, '{}', 0, 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+					INSERT INTO Indexers (Name, Implementation, Protocol, BaseUrl, SettingsJson, EnableRss, EnableAutomaticSearch, EnableInteractiveSearch, Priority, Categories, AnimeCategories, AnimeStandardFormatSearch, CreatedAt, UpdatedAt)
+					VALUES ('LegacyUsenet', 0, 1, 'http://nzb', '{}', 1, 1, 1, 25, '[]', '[]', 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+					       ('LegacyTorrent', 0, 0, 'http://torrent', '{}', 1, 1, 1, 25, '[]', '[]', 0, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+					INSERT INTO GeneralConfig (Id, AuthMethod, ApiKey, FeedToken, UrlBase, InstanceName, LogLevel, Branch, UpdateAutomatically, UpdatedAt)
+					VALUES (1, 1, 'key', 'feed', '', 'Submarine', 'Information', 'develop', 0, '2024-01-01 00:00:00');
+					INSERT INTO IndexerConfig (Id, RssSyncIntervalMinutes, MinimumAgeMinutes, RetentionDays, MaximumSizeMb, AvailabilityDelayDays, UpdatedAt)
+					VALUES (1, 30, 0, 0, 0, 0, '2024-01-01 00:00:00');
+					""";
+				insert.ExecuteNonQuery();
+			}
+
+			await using (var db = new SqliteSubmarineDbContext(options, TimeProvider.System))
+			{
+				await db.GetService<IMigrator>().MigrateAsync();
+
+				// Load upgraded rows through EF so new columns must hold values the model can read.
+				(await db.Indexers.ToListAsync()).ShouldAllBe(indexer => indexer.RequiredFlags.Count == 0);
+				var general = await db.GeneralConfig.SingleAsync();
+				general.BackupIntervalDays.ShouldBe(7);
+				general.BackupRetention.ShouldBe(7, "a zero retention would delete every backup");
+				general.ProxyPort.ShouldBe(8080);
+				general.ProxyBypassLocalAddresses.ShouldBeTrue();
+				await db.IndexerConfig.SingleAsync();
+				(await db.DownloadClients.ToListAsync()).ShouldNotBeEmpty();
+				await db.DelayProfiles.ToListAsync();
+			}
+
+			using (var connection = new SqliteConnection($"Data Source={dbPath}"))
+			{
+				connection.Open();
+				using var query = connection.CreateCommand();
+				query.CommandText = "SELECT RemoveCompleted, RemoveFailed FROM DownloadClients WHERE Name = 'Legacy'";
+				using var reader = query.ExecuteReader();
+
+				reader.Read().ShouldBeTrue();
+				Convert.ToBoolean(reader.GetInt64(0)).ShouldBeTrue("an existing client must be backfilled to remove completed downloads");
+				Convert.ToBoolean(reader.GetInt64(1)).ShouldBeTrue("an existing client must be backfilled to remove failed downloads");
+				reader.Close();
+
+				query.CommandText = "SELECT Name, Redirect FROM Indexers ORDER BY Name";
+				using var indexers = query.ExecuteReader();
+				indexers.Read().ShouldBeTrue();
+				(indexers.GetString(0), Convert.ToBoolean(indexers.GetInt64(1))).ShouldBe(("LegacyTorrent", false));
+				indexers.Read().ShouldBeTrue();
+				(indexers.GetString(0), Convert.ToBoolean(indexers.GetInt64(1))).ShouldBe(("LegacyUsenet", true), "usenet indexers must redirect after the upgrade");
+			}
+		}
+		finally
+		{
+			if (File.Exists(dbPath))
+				File.Delete(dbPath);
 		}
 	}
 

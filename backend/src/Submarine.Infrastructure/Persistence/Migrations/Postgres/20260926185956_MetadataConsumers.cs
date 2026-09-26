@@ -7,14 +7,30 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
 {
     /// <inheritdoc />
-    public partial class ParityMetadataConsumers : Migration
+    public partial class MetadataConsumers : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "WriteNfo",
-                table: "MediaManagementConfig");
+
+            migrationBuilder.AddColumn<string>(
+                name: "OriginalLanguage",
+                table: "Series",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Keywords",
+                table: "Movies",
+                type: "text",
+                nullable: false,
+                defaultValue: "[]");
+
+            migrationBuilder.AddColumn<string>(
+                name: "OriginalLanguage",
+                table: "Movies",
+                type: "text",
+                nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "FileDate",
@@ -59,6 +75,17 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     table.PrimaryKey("PK_MetadataConsumers", x => x.Id);
                 });
 
+            migrationBuilder.Sql("""
+                INSERT INTO "MetadataConsumers" ("Name", "Type", "Enable", "SettingsJson", "CreatedAt", "UpdatedAt")
+                SELECT 'Kodi (XBMC) / Emby', 0, true, '{}', now(), now()
+                FROM "MediaManagementConfig"
+                WHERE "Id" = 1 AND "WriteNfo" = true;
+                """);
+
+            migrationBuilder.DropColumn(
+                name: "WriteNfo",
+                table: "MediaManagementConfig");
+
             migrationBuilder.CreateTable(
                 name: "AutoTaggingRuleTag",
                 columns: table => new
@@ -100,6 +127,18 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
 
             migrationBuilder.DropTable(
                 name: "AutoTaggingRules");
+
+            migrationBuilder.DropColumn(
+                name: "OriginalLanguage",
+                table: "Series");
+
+            migrationBuilder.DropColumn(
+                name: "Keywords",
+                table: "Movies");
+
+            migrationBuilder.DropColumn(
+                name: "OriginalLanguage",
+                table: "Movies");
 
             migrationBuilder.DropColumn(
                 name: "FileDate",

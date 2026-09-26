@@ -32,7 +32,13 @@ public class DownloadClientFactoryTests
 		DownloadClientType.SABNZBD,
 		DownloadClientType.NZBGET,
 		DownloadClientType.TORRENT_BLACKHOLE,
-		DownloadClientType.USENET_BLACKHOLE
+		DownloadClientType.USENET_BLACKHOLE,
+		DownloadClientType.VUZE,
+		DownloadClientType.HADOUKEN,
+		DownloadClientType.NZBVORTEX,
+		DownloadClientType.PNEUMATIC,
+		DownloadClientType.FREEBOX_DOWNLOAD,
+		DownloadClientType.RQBIT
 	};
 
 	private static readonly Dictionary<DownloadClientType, string> MinimalSettings = new()
@@ -48,7 +54,13 @@ public class DownloadClientFactoryTests
 		[DownloadClientType.SABNZBD] = "{\"host\":\"x.local\",\"apiKey\":\"k\"}",
 		[DownloadClientType.NZBGET] = "{\"host\":\"x.local\",\"username\":\"u\",\"password\":\"p\"}",
 		[DownloadClientType.TORRENT_BLACKHOLE] = "{\"torrentFolder\":\"/t\",\"watchFolder\":\"/w\"}",
-		[DownloadClientType.USENET_BLACKHOLE] = "{\"nzbFolder\":\"/n\",\"watchFolder\":\"/w\"}"
+		[DownloadClientType.USENET_BLACKHOLE] = "{\"nzbFolder\":\"/n\",\"watchFolder\":\"/w\"}",
+		[DownloadClientType.VUZE] = "{\"host\":\"x.local\"}",
+		[DownloadClientType.HADOUKEN] = "{\"host\":\"x.local\",\"username\":\"u\",\"password\":\"p\"}",
+		[DownloadClientType.NZBVORTEX] = "{\"host\":\"x.local\",\"apiKey\":\"k\"}",
+		[DownloadClientType.PNEUMATIC] = "{\"nzbFolder\":\"/n\",\"strmFolder\":\"/s\"}",
+		[DownloadClientType.FREEBOX_DOWNLOAD] = "{\"host\":\"x.local\",\"appId\":\"a\",\"appToken\":\"t\"}",
+		[DownloadClientType.RQBIT] = "{\"host\":\"x.local\"}"
 	};
 
 	[Theory]
@@ -62,7 +74,7 @@ public class DownloadClientFactoryTests
 
 		client.Type.ShouldBe(type);
 		client.Protocol.ShouldBe(type is DownloadClientType.SABNZBD or DownloadClientType.NZBGET
-			or DownloadClientType.USENET_BLACKHOLE
+			or DownloadClientType.USENET_BLACKHOLE or DownloadClientType.NZBVORTEX or DownloadClientType.PNEUMATIC
 			? Protocol.USENET
 			: Protocol.BITTORRENT);
 	}

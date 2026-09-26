@@ -76,6 +76,14 @@ public static class TorznabCapabilitiesParser
 							"tvdbid" => SearchParams.TvdbId,
 							"rid" => SearchParams.Rid,
 							"year" => SearchParams.Year,
+							"genre" => SearchParams.Genre,
+							"artist" => SearchParams.Artist,
+							"album" => SearchParams.Album,
+							"label" => SearchParams.Label,
+							"track" => SearchParams.Track,
+							"author" => SearchParams.Author,
+							"title" => SearchParams.Title,
+							"publisher" => SearchParams.Publisher,
 							_ => SearchParams.None
 						}) ?? SearchParams.None);
 

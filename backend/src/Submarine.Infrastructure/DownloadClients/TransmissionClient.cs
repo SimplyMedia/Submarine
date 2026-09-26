@@ -12,7 +12,7 @@ namespace Submarine.Infrastructure.DownloadClients;
 /// <summary>
 ///     <see cref="IDownloadClient" /> for the Transmission RPC API
 /// </summary>
-public sealed class TransmissionClient(
+public class TransmissionClient(
 	TransmissionSettings settings,
 	int clientId,
 	string clientName,
@@ -21,7 +21,7 @@ public sealed class TransmissionClient(
 	private static readonly string[] TorrentFields =
 	[
 		"id", "hashString", "name", "totalSize", "leftUntilDone", "eta", "status", "downloadDir", "errorString",
-		"labels"
+		"labels", "files"
 	];
 
 	private string? _sessionId;
@@ -31,6 +31,9 @@ public sealed class TransmissionClient(
 
 	/// <inheritdoc />
 	public override Protocol Protocol => Protocol.BITTORRENT;
+
+	/// <summary>Whether this client's api supports labels/categories; Vuze does not</summary>
+	protected virtual bool SupportsLabels => true;
 
 	private string RpcUrl => Settings.Build("/rpc");
 
@@ -52,7 +55,7 @@ public sealed class TransmissionClient(
 		if (Settings.Directory is { Length: > 0 })
 			arguments["download-dir"] = Settings.Directory;
 
-		if (Settings.Category is { Length: > 0 })
+		if (SupportsLabels && Settings.Category is { Length: > 0 })
 			arguments["labels"] = new JsonArray(JsonValue.Create(Settings.Category));
 
 		var result = await CallAsync("torrent-add", arguments, cancellationToken);
@@ -124,7 +127,8 @@ public sealed class TransmissionClient(
 	protected override Task TestAsyncCore(CancellationToken cancellationToken)
 		=> CallAsync("session-get", null, cancellationToken);
 
-	private async Task<JsonNode> CallAsync(string method, JsonObject? arguments, CancellationToken cancellationToken)
+	/// <summary>Sends a Transmission RPC call, retrying once on a session-id challenge</summary>
+	protected async Task<JsonNode> CallAsync(string method, JsonObject? arguments, CancellationToken cancellationToken)
 	{
 		var payload = new JsonObject { ["method"] = method };
 		if (arguments is not null)
@@ -181,21 +185,31 @@ public sealed class TransmissionClient(
 		var errorString = torrent["errorString"]?.GetValue<string>();
 		var status = torrent["status"]?.GetValue<int>() ?? 0;
 		var leftUntilDone = torrent["leftUntilDone"]?.GetValue<long>() ?? 0;
+		var name = torrent["name"]?.GetValue<string>() ?? string.Empty;
+		var fileCount = torrent["files"] is JsonArray files ? files.Count : 0;
 
 		return new DownloadClientItem
 		{
 			DownloadId = hash,
-			Title = torrent["name"]?.GetValue<string>() ?? string.Empty,
+			Title = name,
 			TotalSize = torrent["totalSize"]?.GetValue<long>() ?? 0,
 			RemainingSize = leftUntilDone,
 			RemainingTime = eta >= 0 ? TimeSpan.FromSeconds(eta) : null,
 			Status = string.IsNullOrEmpty(errorString) ? MapStatus(status, leftUntilDone) : DownloadItemStatus.FAILED,
-			OutputPath = torrent["downloadDir"]?.GetValue<string>(),
+			OutputPath = ResolveOutputPath(torrent["downloadDir"]?.GetValue<string>(), name, fileCount),
 			Category = Settings.Category,
 			Message = string.IsNullOrEmpty(errorString) ? null : errorString,
-			IsReadOnly = Settings.Category is { Length: > 0 } && !HasLabel(torrent["labels"], Settings.Category)
+			IsReadOnly = SupportsLabels && Settings.Category is { Length: > 0 }
+				&& !HasLabel(torrent["labels"], Settings.Category)
 		};
 	}
+
+	/// <summary>
+	///     Resolves the local output path of a torrent from its report download directory; overridden by clients
+	///     whose api reports the job's parent directory instead of the job folder itself for single-file torrents
+	/// </summary>
+	protected virtual string? ResolveOutputPath(string? downloadDir, string name, int fileCount)
+		=> downloadDir;
 
 	private static bool HasLabel(JsonNode? labels, string category)
 		=> labels is JsonArray array && array.Any(label => label?.GetValue<string>() == category);

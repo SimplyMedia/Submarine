@@ -66,4 +66,30 @@ public record RemoteRelease
 	///     Raw .nzb file contents, fetched by the caller when available
 	/// </summary>
 	public byte[]? NzbFile { get; init; }
+
+	/// <summary>
+	///     Whether the release is recent: for series, any grabbed episode aired within the last 14 days;
+	///     for movies, the physical or digital release was within the last 21 days, or the cinema release
+	///     within the last 120 days. Clients that support it prioritize recent releases differently from
+	///     older ones
+	/// </summary>
+	public bool IsRecentRelease { get; init; }
+
+	/// <summary>Release group parsed from the title, if any</summary>
+	public string? ReleaseGroup { get; init; }
+
+	/// <summary>Formatted quality (source and resolution), if known</summary>
+	public string? Quality { get; init; }
+
+	/// <summary>Languages parsed from the title</summary>
+	public IReadOnlyList<string> Languages { get; init; } = [];
+
+	/// <summary>Name of the indexer the release came from, if known</summary>
+	public string? Indexer { get; init; }
+
+	/// <summary>First air year (series) or release year (movie), if known</summary>
+	public int? Year { get; init; }
+
+	/// <summary>Broadcast network of the series, if known; movies have none</summary>
+	public string? Network { get; init; }
 }

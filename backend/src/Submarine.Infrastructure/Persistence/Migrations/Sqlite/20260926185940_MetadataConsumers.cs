@@ -6,15 +6,36 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
 {
     /// <inheritdoc />
-    public partial class ParityMetadataConsumers : Migration
+    public partial class MetadataConsumers : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "WriteNfo",
+            migrationBuilder.AddColumn<int>(
+                name: "FileDate",
                 table: "MediaManagementConfig",
-                newName: "FileDate");
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<string>(
+                name: "OriginalLanguage",
+                table: "Series",
+                type: "TEXT",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Keywords",
+                table: "Movies",
+                type: "TEXT",
+                nullable: false,
+                defaultValue: "[]");
+
+            migrationBuilder.AddColumn<string>(
+                name: "OriginalLanguage",
+                table: "Movies",
+                type: "TEXT",
+                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "AutoTaggingRules",
@@ -51,6 +72,17 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                 {
                     table.PrimaryKey("PK_MetadataConsumers", x => x.Id);
                 });
+
+            migrationBuilder.Sql("""
+                INSERT INTO MetadataConsumers (Name, Type, Enable, SettingsJson, CreatedAt, UpdatedAt)
+                SELECT 'Kodi (XBMC) / Emby', 0, 1, '{}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                FROM MediaManagementConfig
+                WHERE Id = 1 AND WriteNfo = 1;
+                """);
+
+            migrationBuilder.DropColumn(
+                name: "WriteNfo",
+                table: "MediaManagementConfig");
 
             migrationBuilder.CreateTable(
                 name: "AutoTaggingRuleTag",
@@ -94,10 +126,28 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
             migrationBuilder.DropTable(
                 name: "AutoTaggingRules");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
+                name: "OriginalLanguage",
+                table: "Series");
+
+            migrationBuilder.DropColumn(
+                name: "Keywords",
+                table: "Movies");
+
+            migrationBuilder.DropColumn(
+                name: "OriginalLanguage",
+                table: "Movies");
+
+            migrationBuilder.DropColumn(
                 name: "FileDate",
+                table: "MediaManagementConfig");
+
+            migrationBuilder.AddColumn<bool>(
+                name: "WriteNfo",
                 table: "MediaManagementConfig",
-                newName: "WriteNfo");
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: false);
         }
     }
 }

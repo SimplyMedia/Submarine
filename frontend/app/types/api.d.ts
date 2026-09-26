@@ -650,7 +650,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/_status/healthz": {
+    "/api/v1/updates/releases": {
         parameters: {
             query?: never;
             header?: never;
@@ -672,1047 +672,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": string;
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/_status/ready": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": string;
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SystemStatusDto"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["StatsDto"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    seriesId?: number;
-                    seasonNumber?: number;
-                    episodeId?: number;
-                    movieId?: number;
-                    term?: string;
-                    mediaVersionId?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ReleaseResource"][];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/releases/grab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["GrabReleaseRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["GrabResultResource"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/releases/push": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PushReleaseRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["GrabResultResource"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/indexer/{id}/newznab/api": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query: {
-                    t: string;
-                    /** @description Free text query. */
-                    Q?: string;
-                    /** @description Season number. */
-                    Season?: number;
-                    /** @description Episode number. */
-                    Ep?: number;
-                    tvdbid?: number;
-                    tmdbid?: number;
-                    imdbid?: string;
-                    /** @description Comma separated standard category ids. */
-                    Cat?: string;
-                    /** @description Maximum amount of results. */
-                    Limit?: number;
-                    /** @description Offset into the results. */
-                    Offset?: number;
-                    apikey?: string;
-                };
-                header?: never;
-                path: {
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/indexers/newznab/api": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query: {
-                    t: string;
-                    /** @description Free text query. */
-                    Q?: string;
-                    /** @description Season number. */
-                    Season?: number;
-                    /** @description Episode number. */
-                    Ep?: number;
-                    tvdbid?: number;
-                    tmdbid?: number;
-                    imdbid?: string;
-                    /** @description Comma separated standard category ids. */
-                    Cat?: string;
-                    /** @description Maximum amount of results. */
-                    Limit?: number;
-                    /** @description Offset into the results. */
-                    Offset?: number;
-                    apikey?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/indexers/torznab/api": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query: {
-                    t: string;
-                    /** @description Free text query. */
-                    Q?: string;
-                    /** @description Season number. */
-                    Season?: number;
-                    /** @description Episode number. */
-                    Ep?: number;
-                    tvdbid?: number;
-                    tmdbid?: number;
-                    imdbid?: string;
-                    /** @description Comma separated standard category ids. */
-                    Cat?: string;
-                    /** @description Maximum amount of results. */
-                    Limit?: number;
-                    /** @description Offset into the results. */
-                    Offset?: number;
-                    apikey?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/indexer/{id}/download": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query: {
-                    link: string;
-                    file?: string;
-                    apikey?: string;
-                };
-                header?: never;
-                path: {
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/indexer-stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    start?: string;
-                    end?: string;
-                    indexerIds?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["IndexerStatsResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/indexer-categories": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["IndexerCategoryDto"][];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["HealthIssueDto"][];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/filesystem": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    path?: string;
-                    includeFiles?: boolean;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["FileSystemListingDto"];
+                        "application/json": components["schemas"]["ReleaseInfo"][];
                     };
                 };
                 /** @description Bad Request */
@@ -2105,6 +1065,1173 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["TagDetailDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/_status/healthz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": string;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/_status/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": string;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SystemStatusDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StatsDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    seriesId?: number;
+                    seasonNumber?: number;
+                    episodeId?: number;
+                    movieId?: number;
+                    term?: string;
+                    mediaVersionId?: number;
+                    categories?: string;
+                    indexerIds?: string;
+                    type?: string;
+                    page?: number;
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReleaseResource"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/releases/grab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GrabReleaseRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GrabResultResource"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/releases/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PushReleaseRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GrabResultResource"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/indexer/{id}/newznab/api": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    t: string;
+                    /** @description Free text query. */
+                    Q?: string;
+                    /** @description Season number. */
+                    Season?: number;
+                    /** @description Episode number. */
+                    Ep?: number;
+                    tvdbid?: number;
+                    tmdbid?: number;
+                    imdbid?: string;
+                    /** @description Comma separated standard category ids. */
+                    Cat?: string;
+                    /** @description Maximum amount of results. */
+                    Limit?: number;
+                    /** @description Offset into the results. */
+                    Offset?: number;
+                    apikey?: string;
+                    /** @description Artist name, for t=music. */
+                    Artist?: string;
+                    /** @description Album name, for t=music. */
+                    Album?: string;
+                    /** @description Record label, for t=music. */
+                    Label?: string;
+                    /** @description Track name, for t=music. */
+                    Track?: string;
+                    /** @description Genre, for t=music or t=book. */
+                    Genre?: string;
+                    /** @description Author name, for t=book. */
+                    Author?: string;
+                    title?: string;
+                    /** @description Publisher, for t=book. */
+                    Publisher?: string;
+                    /** @description Release year, for t=music or t=book. */
+                    Year?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/indexers/newznab/api": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    t: string;
+                    /** @description Free text query. */
+                    Q?: string;
+                    /** @description Season number. */
+                    Season?: number;
+                    /** @description Episode number. */
+                    Ep?: number;
+                    tvdbid?: number;
+                    tmdbid?: number;
+                    imdbid?: string;
+                    /** @description Comma separated standard category ids. */
+                    Cat?: string;
+                    /** @description Maximum amount of results. */
+                    Limit?: number;
+                    /** @description Offset into the results. */
+                    Offset?: number;
+                    apikey?: string;
+                    /** @description Artist name, for t=music. */
+                    Artist?: string;
+                    /** @description Album name, for t=music. */
+                    Album?: string;
+                    /** @description Record label, for t=music. */
+                    Label?: string;
+                    /** @description Track name, for t=music. */
+                    Track?: string;
+                    /** @description Genre, for t=music or t=book. */
+                    Genre?: string;
+                    /** @description Author name, for t=book. */
+                    Author?: string;
+                    title?: string;
+                    /** @description Publisher, for t=book. */
+                    Publisher?: string;
+                    /** @description Release year, for t=music or t=book. */
+                    Year?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/indexers/torznab/api": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    t: string;
+                    /** @description Free text query. */
+                    Q?: string;
+                    /** @description Season number. */
+                    Season?: number;
+                    /** @description Episode number. */
+                    Ep?: number;
+                    tvdbid?: number;
+                    tmdbid?: number;
+                    imdbid?: string;
+                    /** @description Comma separated standard category ids. */
+                    Cat?: string;
+                    /** @description Maximum amount of results. */
+                    Limit?: number;
+                    /** @description Offset into the results. */
+                    Offset?: number;
+                    apikey?: string;
+                    /** @description Artist name, for t=music. */
+                    Artist?: string;
+                    /** @description Album name, for t=music. */
+                    Album?: string;
+                    /** @description Record label, for t=music. */
+                    Label?: string;
+                    /** @description Track name, for t=music. */
+                    Track?: string;
+                    /** @description Genre, for t=music or t=book. */
+                    Genre?: string;
+                    /** @description Author name, for t=book. */
+                    Author?: string;
+                    title?: string;
+                    /** @description Publisher, for t=book. */
+                    Publisher?: string;
+                    /** @description Release year, for t=music or t=book. */
+                    Year?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/indexer/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    link: string;
+                    file?: string;
+                    apikey?: string;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/indexer-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    start?: string;
+                    end?: string;
+                    indexerIds?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IndexerStatsResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/indexer-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IndexerCategoryDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HealthIssueDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/filesystem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    path?: string;
+                    includeFiles?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FileSystemListingDto"];
                     };
                 };
                 /** @description Bad Request */
@@ -6469,6 +6596,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quality-definitions/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["JsonDocument"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["QualityDefinitionImportResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quality-definitions/{id}": {
         parameters: {
             query?: never;
@@ -7198,6 +7400,156 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/trakt/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TraktAuthorizeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TraktAuthorizeResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/trakt/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TraktPollRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TraktPollResponse"];
+                    };
                 };
                 /** @description Bad Request */
                 400: {
@@ -10510,6 +10862,8 @@ export interface paths {
                     SortKey?: string;
                     /** @description ascending or descending, defaults to ascending. */
                     SortDirection?: string;
+                    eventType?: components["schemas"]["IndexerHistoryEventType"];
+                    successful?: boolean;
                 };
                 header?: never;
                 path: {
@@ -15395,6 +15749,136 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/config/import-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportListConfigResource"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ImportListConfigResource"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportListConfigResource"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/config/indexer": {
         parameters: {
             query?: never;
@@ -17898,7 +18382,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** @enum {unknown} */
-        AddMonitorOption: "ALL" | "FUTURE" | "MISSING" | "EXISTING" | "PILOT" | "FIRST_SEASON" | "LATEST_SEASON" | "NONE" | null;
+        AddMonitorOption: "ALL" | "FUTURE" | "MISSING" | "EXISTING" | "PILOT" | "FIRST_SEASON" | "LATEST_SEASON" | "NONE" | "RECENT" | "SKIP" | null;
         /** @description Add movie request. */
         AddMovieRequest: {
             /**
@@ -17988,10 +18472,15 @@ export interface components {
             apiKey: string;
         };
         /**
+         * @description Whether authentication is required for every request or bypassed for local addresses.
+         * @enum {unknown}
+         */
+        AuthenticationRequiredType: "ENABLED" | "DISABLED_FOR_LOCAL_ADDRESSES";
+        /**
          * @description Authentication modes of the application.
          * @enum {unknown}
          */
-        AuthMethod: "NONE" | "FORMS";
+        AuthMethod: "NONE" | "FORMS" | "BASIC" | "EXTERNAL";
         /** @description A saved auto tagging rule. */
         AutoTaggingRuleDto: {
             /** Format: int32 */
@@ -18018,7 +18507,7 @@ export interface components {
          * @description Type of an auto tagging rule specification.
          * @enum {unknown}
          */
-        AutoTaggingSpecificationType: "GENRE" | "ROOT_FOLDER" | "SERIES_TYPE" | "STATUS" | "YEAR" | "QUALITY_PROFILE" | "MONITORED" | "NETWORK_OR_STUDIO";
+        AutoTaggingSpecificationType: "GENRE" | "ROOT_FOLDER" | "SERIES_TYPE" | "STATUS" | "YEAR" | "QUALITY_PROFILE" | "MONITORED" | "NETWORK_OR_STUDIO" | "ORIGINAL_LANGUAGE" | "KEYWORD";
         /** @description One backup archive on disk. */
         BackupEntry: {
             /** @description File name including extension. */
@@ -18216,6 +18705,17 @@ export interface components {
             /** @description Whether a tracked download is in progress or pending import for this item. */
             downloading: boolean;
         };
+        /**
+         * @description How strictly outbound HTTPS clients validate the remote TLS certificate.
+         * @enum {unknown}
+         */
+        CertificateValidationType: "ENABLED" | "DISABLED_FOR_LOCAL_ADDRESSES" | "DISABLED";
+        /**
+         * @description What to do with library items no longer covered by any automatic-add import list, checked
+         *     at the end of a full import list sync.
+         * @enum {unknown}
+         */
+        CleanLibraryLevel: "DISABLED" | "LOG_ONLY" | "KEEP_AND_UNMONITOR" | "REMOVE_AND_KEEP" | "REMOVE_AND_DELETE";
         /** @description Result of adding the missing movies of a collection. */
         CollectionAddMissingDto: {
             /**
@@ -18387,7 +18887,7 @@ export interface components {
          * @description Type of a custom format specification.
          * @enum {unknown}
          */
-        CustomFormatSpecificationType: "RELEASE_TITLE" | "RELEASE_GROUP" | "LANGUAGE" | "QUALITY_SOURCE" | "RESOLUTION" | "STREAMING_PROVIDER" | "EDITION" | "RELEASE_FLAG" | "PROTOCOL" | "HARDCODED_SUBS" | "SIZE" | "YEAR" | "INDEXER_FLAG";
+        CustomFormatSpecificationType: "RELEASE_TITLE" | "RELEASE_GROUP" | "LANGUAGE" | "QUALITY_SOURCE" | "RESOLUTION" | "STREAMING_PROVIDER" | "EDITION" | "RELEASE_FLAG" | "PROTOCOL" | "HARDCODED_SUBS" | "SIZE" | "YEAR" | "INDEXER_FLAG" | "RELEASE_TYPE" | "QUALITY_MODIFIER";
         /** @description Create or update request for a delay profile. */
         DelayProfileRequest: {
             /** @description Name. */
@@ -18415,6 +18915,16 @@ export interface components {
             minimumCustomFormatScore: number;
             /** @description Tag ids this profile applies to. */
             tags: null | number[];
+            /**
+             * @description Whether usenet releases are grabbed for tagged media.
+             * @default true
+             */
+            enableUsenet: boolean;
+            /**
+             * @description Whether torrent releases are grabbed for tagged media.
+             * @default true
+             */
+            enableTorrent: boolean;
         };
         /** @description A delay profile resource. */
         DelayProfileResource: {
@@ -18427,6 +18937,10 @@ export interface components {
             name: string;
             /** @description Protocol preferred when both are available. */
             preferredProtocol: components["schemas"]["Protocol"];
+            /** @description Whether usenet releases are grabbed for tagged media. */
+            enableUsenet: boolean;
+            /** @description Whether torrent releases are grabbed for tagged media. */
+            enableTorrent: boolean;
             /**
              * Format: int32
              * @description Delay in minutes for usenet releases.
@@ -18577,7 +19091,7 @@ export interface components {
             };
         };
         /** @enum {unknown} */
-        DownloadClientType: "QBITTORRENT" | "TRANSMISSION" | "DELUGE" | "RTORRENT" | "UTORRENT" | "ARIA2" | "FLOOD" | "DOWNLOAD_STATION" | "SABNZBD" | "NZBGET" | "TORRENT_BLACKHOLE" | "USENET_BLACKHOLE";
+        DownloadClientType: "QBITTORRENT" | "TRANSMISSION" | "DELUGE" | "RTORRENT" | "UTORRENT" | "ARIA2" | "FLOOD" | "DOWNLOAD_STATION" | "SABNZBD" | "NZBGET" | "TORRENT_BLACKHOLE" | "USENET_BLACKHOLE" | "VUZE" | "HADOUKEN" | "NZBVORTEX" | "PNEUMATIC" | "FREEBOX_DOWNLOAD" | "RQBIT";
         /** @description Download handling configuration resource. */
         DownloadConfigResource: {
             /** @description Import completed downloads automatically. */
@@ -18762,8 +19276,51 @@ export interface components {
             logLevel?: string;
             /** @description Update branch. */
             branch?: string;
-            /** @description Whether automatic updates are enabled, null means unset. */
-            updateAutomatically?: null | boolean;
+            /** @description Whether authentication is required for every request or bypassed for local addresses. */
+            authenticationRequired?: components["schemas"]["AuthenticationRequiredType"];
+            /**
+             * @description Comma separated CIDR list of reverse proxies trusted to set X-Forwarded-For; forwarded
+             *     headers from any other peer are ignored.
+             */
+            trustedProxies?: string;
+            /** @description How strictly outbound HTTPS clients validate the remote TLS certificate. */
+            certificateValidation?: components["schemas"]["CertificateValidationType"];
+            /** @description Whether an outbound proxy is used for external HTTP requests. */
+            proxyEnabled?: boolean;
+            /** @description Outbound proxy protocol; FLARESOLVERR is not a valid value here. */
+            proxyType?: components["schemas"]["IndexerProxyType"];
+            /** @description Outbound proxy host. */
+            proxyHost?: string;
+            /**
+             * Format: int32
+             * @description Outbound proxy port.
+             */
+            proxyPort?: number;
+            /** @description Outbound proxy username. */
+            proxyUsername?: null | string;
+            /** @description Outbound proxy password. */
+            proxyPassword?: null | string;
+            /**
+             * @description Comma separated list of hosts, domains (with a leading *) or CIDR ranges that bypass
+             *     the outbound proxy.
+             */
+            proxyBypassFilter?: string;
+            /** @description Whether local addresses (and hostnames without a dot) bypass the outbound proxy. */
+            proxyBypassLocalAddresses?: boolean;
+            /** @description Backup folder, relative to the app data directory when not rooted; empty uses "backups". */
+            backupFolder?: string;
+            /**
+             * Format: int32
+             * @description How often the scheduled backup task runs, in days.
+             */
+            backupIntervalDays?: number;
+            /**
+             * Format: int32
+             * @description How many of the most recent backups to keep.
+             */
+            backupRetention?: number;
+            /** @description Externally reachable URL of this instance, used in notification links. */
+            applicationUrl?: string;
             /**
              * Format: int32
              * @description Fixed identity, always 1.
@@ -18914,6 +19471,11 @@ export interface components {
         };
         /** Format: binary */
         IFormFile: string;
+        /** @description Import list behaviour configuration resource. */
+        ImportListConfigResource: {
+            /** @description What to do with library items no longer covered by any automatic-add import list. */
+            cleanLibraryLevel: components["schemas"]["CleanLibraryLevel"];
+        };
         /** @description An import list. */
         ImportListDto: {
             /**
@@ -18958,6 +19520,13 @@ export interface components {
             seasonFolder: boolean;
             /** @description Tags applied to added items. */
             tagIds: number[];
+            /**
+             * Format: int32
+             * @description Minimum minutes between automatic scheduled fetches of this list type.
+             */
+            minRefreshIntervalMinutes: number;
+            /** @description Runtime sync and backoff state. */
+            status: components["schemas"]["ImportListStatusSummary"];
         };
         /** @description An import list exclusion. */
         ImportListExclusionDto: {
@@ -19025,6 +19594,24 @@ export interface components {
             /** @description New, exists, excluded or unresolved. */
             status: string;
         };
+        /** @description Runtime sync and backoff state of an import list. */
+        ImportListStatusSummary: {
+            /**
+             * Format: date-time
+             * @description Last successful fetch, null when never synced.
+             */
+            lastSyncAt: null | string;
+            /**
+             * Format: date-time
+             * @description Disabled by backoff until this time, null when not disabled.
+             */
+            disabledUntil: null | string;
+            /**
+             * Format: int32
+             * @description Current backoff escalation level.
+             */
+            escalationLevel: number;
+        };
         /** @description Result of an import list test. */
         ImportListTestDto: {
             /** @description Whether the fetch worked. */
@@ -19041,7 +19628,7 @@ export interface components {
          * @description Type of an import list.
          * @enum {unknown}
          */
-        ImportListType: "TMDB_LIST" | "TMDB_POPULAR" | "TMDB_COLLECTION" | "TMDB_PERSON" | "TRAKT_LIST" | "TRAKT_POPULAR" | "TRAKT_USER" | "ANILIST_SEASON" | "PLEX" | "SONARR" | "RADARR" | "STEVEN_LU" | "CUSTOM";
+        ImportListType: "TMDB_LIST" | "TMDB_POPULAR" | "TMDB_COLLECTION" | "TMDB_PERSON" | "TRAKT_LIST" | "TRAKT_POPULAR" | "TRAKT_USER" | "ANILIST_SEASON" | "PLEX" | "SONARR" | "RADARR" | "STEVEN_LU" | "CUSTOM" | "SIMKL" | "IMDB" | "MYANIMELIST" | "RSS";
         /** @description Settings schema of one import list type. */
         ImportListTypeSchema: {
             /** @description Import list type. */
@@ -19118,6 +19705,10 @@ export interface components {
              * @description Days a movie must be past its release date before grabbing, 0 disables.
              */
             availabilityDelayDays: number;
+            /** @description Allow releases reporting hardcoded subtitles. */
+            allowHardcodedSubs: boolean;
+            /** @description Comma separated release groups allowed to have hardcoded subtitles even when bool IndexerConfigResource.AllowHardcodedSubs is off. */
+            whitelistedHardcodedSubs: string;
         };
         /** @description A Cardigann indexer definition available to configure, bundled or synced from the upstream repository. */
         IndexerDefinitionDto: {
@@ -19189,7 +19780,22 @@ export interface components {
             tagIds: number[];
             status: components["schemas"]["IndexerStatusSummary"];
             capabilities: null | components["schemas"]["IndexerCapabilitiesSummary"];
+            vipExpiration: null | string;
+            /** Format: int32 */
+            queryLimit: null | number;
+            /** Format: int32 */
+            grabLimit: null | number;
+            limitsUnit: components["schemas"]["IndexerLimitsUnit"];
+            redirect: boolean;
+            requiredFlags: components["schemas"]["IndexerFlag"][];
+            /** Format: int32 */
+            seasonSearchMaximumSingleEpisodeAge: number;
         };
+        /**
+         * @description Indexer specific flags of a release
+         * @enum {unknown}
+         */
+        IndexerFlag: "FREELEECH" | "HALFLEECH" | "DOUBLE_UPLOAD" | "INTERNAL" | "SCENE" | "EXCLUSIVE" | "G_FREELEECH";
         /** @description One indexer request history entry. */
         IndexerHistoryDto: {
             /** Format: int32 */
@@ -19216,6 +19822,11 @@ export interface components {
             implementation: components["schemas"]["IndexerImplementation"];
             fields: components["schemas"]["SettingsFieldSchema"][];
         };
+        /**
+         * @description Interval unit for a per-indexer query or grab limit.
+         * @enum {unknown}
+         */
+        IndexerLimitsUnit: "DAY" | "HOUR";
         /** @description A configured indexer proxy. The password is never returned. */
         IndexerProxyDto: {
             /** Format: int32 */
@@ -19282,6 +19893,16 @@ export interface components {
             seasonPackSeedTimeMinutes: null | number;
             animeStandardFormatSearch: boolean;
             tagIds: null | number[];
+            vipExpiration: null | string;
+            /** Format: int32 */
+            queryLimit: null | number;
+            /** Format: int32 */
+            grabLimit: null | number;
+            limitsUnit: components["schemas"]["IndexerLimitsUnit"];
+            redirect: boolean;
+            requiredFlags: null | components["schemas"]["IndexerFlag"][];
+            /** Format: int32 */
+            seasonSearchMaximumSingleEpisodeAge: number;
         };
         /** @description Implementation schemas plus every known Cardigann definition. */
         IndexerSchemaResponse: {
@@ -19971,12 +20592,14 @@ export interface components {
             type: string;
             /** @description Field descriptors. */
             fields: components["schemas"]["NotificationFieldDescriptor"][];
+            /** @description Events this notification type can deliver, driving which toggles the UI shows. */
+            supportedEvents: string[];
         };
         /**
          * @description Type of a notification.
          * @enum {unknown}
          */
-        NotificationType: "DISCORD" | "TELEGRAM" | "WEBHOOK" | "SLACK" | "PUSHOVER" | "PUSHBULLET" | "GOTIFY" | "KODI" | "CUSTOM_SCRIPT" | "PLEX" | "EMBY" | "JELLYFIN" | "EMAIL" | "NTFY" | "APPRISE";
+        NotificationType: "DISCORD" | "TELEGRAM" | "WEBHOOK" | "SLACK" | "PUSHOVER" | "PUSHBULLET" | "GOTIFY" | "KODI" | "CUSTOM_SCRIPT" | "PLEX" | "EMBY" | "JELLYFIN" | "EMAIL" | "NTFY" | "APPRISE" | "JOIN" | "MAILGUN" | "NOTIFIARR" | "PROWL" | "PUSHCUT" | "PUSHSAFER" | "SENDGRID" | "SIGNAL" | "SIMPLEPUSH" | "SYNOLOGY_INDEXER" | "TWITTER" | "TRAKT";
         /** @description A single page of items. */
         PagedResultOfBlocklistItemDto: {
             items: components["schemas"]["BlocklistItemDto"][];
@@ -20279,6 +20902,13 @@ export interface components {
             indexer: null | string;
             /** Format: int64 */
             size: null | number;
+        };
+        /** @description Result of importing TRaSH quality-size entries. */
+        QualityDefinitionImportResult: {
+            /** @description Definitions updated by the import. */
+            updated: components["schemas"]["QualityDefinitionResource"][];
+            /** @description TRaSH quality names that did not match a known Submarine quality. */
+            skipped: string[];
         };
         /** @description A quality size definition. */
         QualityDefinitionResource: {
@@ -20613,6 +21243,24 @@ export interface components {
             releaseGroup: string;
             /** @description Quality source assumed for this group. */
             source: components["schemas"]["QualitySource"];
+        };
+        /** @description One published release, for the System &gt; Updates history view. */
+        ReleaseInfo: {
+            /** @description The release tag. */
+            version: string;
+            /** @description The release notes body, in GitHub flavoured markdown. */
+            notes: string;
+            /** @description Url of the release page. */
+            htmlUrl: string;
+            /** @description Whether this is a develop prerelease rather than a stable release. */
+            prerelease: boolean;
+            /**
+             * Format: date-time
+             * @description When the release was published.
+             */
+            publishedAt: string;
+            /** @description Whether this release matches the running version. */
+            installed: boolean;
         };
         /** @description Create or update request for a release profile. */
         ReleaseProfileRequest: {
@@ -21442,6 +22090,38 @@ export interface components {
          * @enum {unknown}
          */
         Theme: "AUTO" | "LIGHT" | "DARK";
+        /** @description Starts a Trakt OAuth device code flow. */
+        TraktAuthorizeRequest: {
+            /** @description Trakt app client id, falls back to the instance's Trakt:ClientId setting. */
+            clientId: null | string;
+        };
+        /** @description The device code the user must enter at the verification url. */
+        TraktAuthorizeResponse: {
+            deviceCode: string;
+            userCode: string;
+            verificationUrl: string;
+            /** Format: int32 */
+            expiresIn: number;
+            /** Format: int32 */
+            interval: number;
+        };
+        /** @description Polls once for the outcome of a previously started device code flow. */
+        TraktPollRequest: {
+            /** @description Trakt app client id, falls back to the instance's Trakt:ClientId setting. */
+            clientId: null | string;
+            /** @description Trakt app client secret, falls back to the instance's Trakt:ClientSecret setting. */
+            clientSecret: null | string;
+            /** @description Device code returned by TraktAuthorizeResponse. */
+            deviceCode: string;
+        };
+        /** @description Outcome of a device code poll: PENDING, AUTHORIZED, DENIED or EXPIRED. Tokens are set only when AUTHORIZED. */
+        TraktPollResponse: {
+            status: string;
+            accessToken: null | string;
+            refreshToken: null | string;
+            /** Format: date-time */
+            expiresAt: null | string;
+        };
         /** @description A TRaSH custom format. */
         TrashFormat: {
             /** @description Name of the format. */
@@ -21522,7 +22202,7 @@ export interface components {
         UpdateDto: {
             /** @description Version of the running instance. */
             current: string;
-            /** @description Newest published version, null when the check failed. */
+            /** @description Newest published version for the configured branch, null when the check failed or none exists yet. */
             latest: null | string;
             /** @description Url of the newest release notes. */
             releaseNotesUrl: null | string;
@@ -21530,7 +22210,7 @@ export interface components {
             updateAvailable: boolean;
             /** @description Whether the instance runs inside Docker. */
             isDocker: boolean;
-            /** @description Whether the update check failed, distinct from a check that succeeded and found no update. */
+            /** @description Whether the update check failed, distinct from a check that succeeded and found no matching release. */
             checkFailed: boolean;
         };
         /** @description Update version request, null fields keep their value. */

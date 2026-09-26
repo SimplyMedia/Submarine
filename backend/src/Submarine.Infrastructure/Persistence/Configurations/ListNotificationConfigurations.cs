@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Submarine.Core.Entities;
 
@@ -26,6 +27,18 @@ internal sealed class ImportListExclusionConfiguration : EntityConfiguration<Imp
 	}
 }
 
+/// <summary>Configuration for <see cref="ImportListStatus" />.</summary>
+internal sealed class ImportListStatusConfiguration : EntityConfiguration<ImportListStatus>
+{
+	/// <inheritdoc />
+	public override void Configure(EntityTypeBuilder<ImportListStatus> builder)
+	{
+		base.Configure(builder);
+		builder.HasIndex(x => x.ImportListId).IsUnique();
+		builder.HasOne(x => x.ImportList).WithMany().HasForeignKey(x => x.ImportListId).OnDelete(DeleteBehavior.Cascade);
+	}
+}
+
 /// <summary>Configuration for <see cref="Notification" />.</summary>
 internal sealed class NotificationConfiguration : EntityConfiguration<Notification>
 {
@@ -35,5 +48,17 @@ internal sealed class NotificationConfiguration : EntityConfiguration<Notificati
 		base.Configure(builder);
 		builder.Property(x => x.Name).HasMaxLength(256);
 		builder.HasMany(x => x.Tags).WithMany();
+	}
+}
+
+/// <summary>Configuration for <see cref="NotificationStatus" />.</summary>
+internal sealed class NotificationStatusConfiguration : EntityConfiguration<NotificationStatus>
+{
+	/// <inheritdoc />
+	public override void Configure(EntityTypeBuilder<NotificationStatus> builder)
+	{
+		base.Configure(builder);
+		builder.HasIndex(x => x.NotificationId).IsUnique();
+		builder.HasOne(x => x.Notification).WithMany().HasForeignKey(x => x.NotificationId).OnDelete(DeleteBehavior.Cascade);
 	}
 }

@@ -202,4 +202,27 @@ public sealed class AutoTaggingCalculatorTests
 
 		AutoTaggingCalculator.Match(rule, SeriesContext).ShouldBeFalse();
 	}
+
+	[Fact]
+	public void Match_ShouldMatchOriginalLanguageCaseInsensitively()
+	{
+		var rule = new AutoTaggingRule
+		{
+			Specifications = [new AutoTaggingSpecification("Original language", AutoTaggingSpecificationType.ORIGINAL_LANGUAGE, Negate: false, Required: true, Json("""["en"]"""))]
+		};
+
+		AutoTaggingCalculator.Match(rule, SeriesContext with { OriginalLanguage = "EN" }).ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Match_ShouldMatchAnyMovieKeywordCaseInsensitively()
+	{
+		var rule = new AutoTaggingRule
+		{
+			Specifications = [new AutoTaggingSpecification("Keyword", AutoTaggingSpecificationType.KEYWORD, Negate: false, Required: true, Json("""["heist"]"""))]
+		};
+
+		AutoTaggingCalculator.Match(rule, SeriesContext with { Keywords = ["Dreams", "Heist"] }).ShouldBeTrue();
+		AutoTaggingCalculator.Match(rule, SeriesContext with { Keywords = ["Dreams"] }).ShouldBeFalse();
+	}
 }

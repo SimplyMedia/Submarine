@@ -45,3 +45,11 @@ public sealed class StubHttpHandler(string json) : HttpMessageHandler
 			Content = new StringContent(json, Encoding.UTF8, "application/json")
 		});
 }
+
+/// <summary>Always-failing responder for the import list HTTP stub, to simulate a fetch failure.</summary>
+public sealed class FailingHttpHandler : HttpMessageHandler
+{
+	/// <inheritdoc />
+	protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		=> Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+}

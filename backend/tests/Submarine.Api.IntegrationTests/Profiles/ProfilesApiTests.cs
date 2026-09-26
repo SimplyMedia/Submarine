@@ -274,6 +274,10 @@ public sealed class ProfilesApiTests : IClassFixture<SubmarineApiFactory>
 		var firstDto = await first.Content.ReadFromJsonAsync<DelayProfileDto>();
 		var secondDto = await second.Content.ReadFromJsonAsync<DelayProfileDto>();
 
+		// a request omitting enableUsenet/enableTorrent still creates the profile with both protocols enabled
+		firstDto!.EnableUsenet.ShouldBeTrue();
+		firstDto.EnableTorrent.ShouldBeTrue();
+
 		var reorder = await client.PutAsync("/api/v1/delay-profiles/reorder",
 			Json($"[{secondDto!.Id}, {firstDto!.Id}]"));
 		reorder.StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -287,6 +291,27 @@ public sealed class ProfilesApiTests : IClassFixture<SubmarineApiFactory>
 		(await client.DeleteAsync($"/api/v1/delay-profiles/{firstDto.Id}"))
 			.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 		(await client.DeleteAsync($"/api/v1/delay-profiles/{secondDto.Id}"))
+			.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+	}
+
+	[Fact]
+	public async Task DelayProfile_EnableUsenetAndTorrent_ShouldRoundTripThroughTheApi()
+	{
+		var client = ApiClient();
+
+		var create = await client.PostAsync("/api/v1/delay-profiles",
+			Json("""{ "name": "Torrent Only", "preferredProtocol": "BITTORRENT", "enableUsenet": false, "enableTorrent": true, "usenetDelayMinutes": 0, "torrentDelayMinutes": 0, "bypassIfHighestQuality": false, "bypassIfAboveCustomFormatScore": false, "minimumCustomFormatScore": 0, "tags": [] }"""));
+		var created = await create.Content.ReadFromJsonAsync<DelayProfileDto>();
+		created!.EnableUsenet.ShouldBeFalse();
+		created.EnableTorrent.ShouldBeTrue();
+
+		var update = await client.PutAsync($"/api/v1/delay-profiles/{created.Id}",
+			Json("""{ "name": "Torrent Only", "preferredProtocol": "BITTORRENT", "enableUsenet": true, "enableTorrent": false, "usenetDelayMinutes": 0, "torrentDelayMinutes": 0, "bypassIfHighestQuality": false, "bypassIfAboveCustomFormatScore": false, "minimumCustomFormatScore": 0, "tags": [] }"""));
+		var updated = await update.Content.ReadFromJsonAsync<DelayProfileDto>();
+		updated!.EnableUsenet.ShouldBeTrue();
+		updated.EnableTorrent.ShouldBeFalse();
+
+		(await client.DeleteAsync($"/api/v1/delay-profiles/{created.Id}"))
 			.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 	}
 
@@ -370,6 +395,8 @@ public sealed class ProfilesApiTests : IClassFixture<SubmarineApiFactory>
 		int Id,
 		string Name,
 		string PreferredProtocol,
+		bool EnableUsenet,
+		bool EnableTorrent,
 		int UsenetDelayMinutes,
 		int TorrentDelayMinutes,
 		bool BypassIfHighestQuality,

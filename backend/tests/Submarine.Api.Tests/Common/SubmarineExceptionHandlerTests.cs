@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ public sealed class SubmarineExceptionHandlerTests
 		var problemDetailsService = Substitute.For<IProblemDetailsService>();
 		problemDetailsService.TryWriteAsync(Arg.Do<ProblemDetailsContext>(context => captured = context))
 			.Returns(true);
-		var handler = new SubmarineExceptionHandler(problemDetailsService);
+		var handler = new SubmarineExceptionHandler(problemDetailsService, NullLogger<SubmarineExceptionHandler>.Instance);
 		var httpContext = new DefaultHttpContext();
 		var exception = new SiblingServiceException("Metadata service", "Metadata service is unreachable: boom", new HttpRequestException("boom"));
 
@@ -36,7 +37,7 @@ public sealed class SubmarineExceptionHandlerTests
 	{
 		var problemDetailsService = Substitute.For<IProblemDetailsService>();
 		problemDetailsService.TryWriteAsync(Arg.Any<ProblemDetailsContext>()).Returns(true);
-		var handler = new SubmarineExceptionHandler(problemDetailsService);
+		var handler = new SubmarineExceptionHandler(problemDetailsService, NullLogger<SubmarineExceptionHandler>.Instance);
 		var httpContext = new DefaultHttpContext();
 
 		await handler.TryHandleAsync(httpContext, new InvalidOperationException("boom"), TestContext.Current.CancellationToken);

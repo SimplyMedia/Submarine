@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using Shouldly;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
@@ -40,6 +41,8 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 		_provider = services.BuildServiceProvider();
 		var db = _provider.GetRequiredService<SubmarineDbContext>();
 		await db.Database.EnsureCreatedAsync();
+		db.GeneralConfig.Add(new GeneralConfig());
+		await db.SaveChangesAsync();
 	}
 
 	public async ValueTask DisposeAsync()
@@ -50,7 +53,7 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 
 	private SubmarineDbContext Db => _provider.GetRequiredService<SubmarineDbContext>();
 
-	private NotificationDispatcher Dispatcher => new(Db, _senders, NullLogger<NotificationDispatcher>.Instance);
+	private NotificationDispatcher Dispatcher => new(Db, _senders, new NotificationStatusService(Db, TimeProvider.System, Substitute.For<IEventBus>()), new PassthroughTraktTokenRefresher(), NullLogger<NotificationDispatcher>.Instance);
 
 	private async Task<Notification> SeedNotificationAsync(Action<Notification> configure)
 	{
@@ -99,6 +102,10 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 	public async Task Grab_ShouldBuildMessageFromMedia()
 	{
 		await SeedSeriesAsync();
+		var config = await Db.GeneralConfig.SingleAsync(TestContext.Current.CancellationToken);
+		config.InstanceName = "My Submarine";
+		config.ApplicationUrl = "https://submarine.example/base";
+		await Db.SaveChangesAsync(TestContext.Current.CancellationToken);
 		await SeedNotificationAsync(n =>
 		{
 			n.OnGrab = true;
@@ -111,6 +118,10 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 
 		var message = sender.Messages.Single();
 		message.EventType.ShouldBe(NotificationEventType.GRAB);
+		message.Title.ShouldBe("My Submarine - Grabbed");
+		message.Links.ShouldContain(link =>
+			link.Label == "Open My Submarine"
+			&& link.Url == "https://submarine.example/base/series/1");
 		message.MediaTitle.ShouldBe("Some Show");
 		message.Year.ShouldBe(2024);
 		message.ImageUrl.ShouldBe("https://image/poster.jpg");
@@ -182,6 +193,52 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 		var message = sender.Messages.Single();
 		message.EventType.ShouldBe(NotificationEventType.IMPORT);
 		message.Path.ShouldBe("/media/x.mkv");
+	}
+
+	[Fact]
+	public async Task Emby_ShouldReceiveGrab_ButNotManualInteraction()
+	{
+		await SeedSeriesAsync();
+		await SeedNotificationAsync(n =>
+		{
+			n.OnGrab = true;
+			n.OnManualInteractionRequired = true;
+			n.Type = NotificationType.EMBY;
+		});
+		var sender = new RecordingSender(NotificationType.EMBY);
+		_senders.Register(sender);
+
+		await Dispatcher.HandleAsync(GrabEvent(1, [1]), TestContext.Current.CancellationToken);
+		sender.Messages.Single().EventType.ShouldBe(NotificationEventType.GRAB);
+
+		sender.Messages.Clear();
+		await Dispatcher.HandleAsync(
+			new ManualInteractionRequiredEvent("dl-1", "Some.Show.S01E01", 1, null, "stalled"),
+			TestContext.Current.CancellationToken);
+		sender.Messages.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task RepeatedFailures_ShouldDisableNotification_AndSkipFurtherSends()
+	{
+		await SeedSeriesAsync();
+		var notification = await SeedNotificationAsync(n => n.OnGrab = true);
+		var sender = new ThrowingSender(NotificationType.WEBHOOK);
+		_senders.Register(sender);
+		var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero));
+		var statusService = new NotificationStatusService(Db, clock, Substitute.For<IEventBus>());
+		var dispatcher = new NotificationDispatcher(Db, _senders, statusService, new PassthroughTraktTokenRefresher(), NullLogger<NotificationDispatcher>.Instance);
+
+		await dispatcher.HandleAsync(GrabEvent(1, [1]), TestContext.Current.CancellationToken);
+		(await statusService.IsAvailableAsync(notification.Id, TestContext.Current.CancellationToken)).ShouldBeTrue();
+
+		clock.Advance(TimeSpan.FromMinutes(5));
+		await dispatcher.HandleAsync(GrabEvent(1, [1]), TestContext.Current.CancellationToken);
+		(await statusService.IsAvailableAsync(notification.Id, TestContext.Current.CancellationToken)).ShouldBeFalse();
+
+		sender.CallCount = 0;
+		await dispatcher.HandleAsync(GrabEvent(1, [1]), TestContext.Current.CancellationToken);
+		sender.CallCount.ShouldBe(0);
 	}
 
 	[Fact]
@@ -314,12 +371,23 @@ public sealed class NotificationDispatcherTests : IAsyncLifetime
 
 	private sealed class ThrowingSender(NotificationType type) : INotificationSender
 	{
+		public int CallCount { get; set; }
+
 		public NotificationType Type => type;
 
 		public Task SendAsync(NotificationMessage message, string settingsJson, CancellationToken cancellationToken = default)
-			=> throw new HttpRequestException("boom");
+		{
+			CallCount++;
+			throw new HttpRequestException("boom");
+		}
 
 		public Task TestAsync(string settingsJson, CancellationToken cancellationToken = default)
 			=> Task.CompletedTask;
+	}
+
+	private sealed class PassthroughTraktTokenRefresher : ITraktTokenRefresher
+	{
+		public Task<string> EnsureFreshTokensAsync(Notification notification, CancellationToken cancellationToken = default)
+			=> Task.FromResult(notification.SettingsJson);
 	}
 }

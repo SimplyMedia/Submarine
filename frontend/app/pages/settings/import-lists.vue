@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
+import { useDirtyForm } from '~/composables/useDirtyForm'
 import { useReferenceStore } from '~/stores/reference'
 import { useSettingsStore } from '~/stores/settings'
 import { minimumAvailabilityOptions, monitorNewItemsOptions, seriesTypeOptions } from '~/utils/library-labels'
-import { importListTypeIcon, importListTypeLabel, importListTypeOptions, mediaKindLabel, mediaKindOptions } from '~/utils/settings-labels'
+import { cleanLibraryLevelOptions, importListTypeIcon, importListTypeLabel, importListTypeOptions, mediaKindLabel, mediaKindOptions } from '~/utils/settings-labels'
 import type { SchemaField } from '~/types/schema-form'
 import type { components } from '~/types/api'
 
@@ -16,6 +17,7 @@ type SeriesType = components['schemas']['SeriesType']
 type SaveImportListRequest = components['schemas']['SaveImportListRequest']
 type ImportListExclusionDto = components['schemas']['ImportListExclusionDto']
 type ImportListPreviewItemDto = components['schemas']['ImportListPreviewItemDto']
+type ImportListConfigResource = components['schemas']['ImportListConfigResource']
 
 definePageMeta({ layout: 'default' })
 useHead({ title: 'Import lists' })
@@ -24,6 +26,37 @@ const api = useApi()
 const reference = useReferenceStore()
 const settings = useSettingsStore()
 const { toast } = useToast()
+
+const configLoadError = ref('')
+const configSaving = ref(false)
+const configDraft = ref<ImportListConfigResource | null>(null)
+const configDirty = useDirtyForm(configDraft)
+
+async function loadConfig() {
+	configLoadError.value = ''
+	const result = await api.GET('/api/v1/config/import-list')
+	if (result.data) {
+		configDirty.markSaved(result.data)
+	}
+	else {
+		configLoadError.value = 'Could not load library sync settings. Check your connection and try again.'
+	}
+}
+
+async function saveConfig() {
+	if (!configDraft.value) {
+		return
+	}
+	configSaving.value = true
+	const result = await api.PUT('/api/v1/config/import-list', { body: configDraft.value })
+	configSaving.value = false
+	if (!result.data) {
+		toast({ title: 'Could not save', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		return
+	}
+	configDirty.markSaved(result.data)
+	toast({ title: 'Saved', tone: 'ok' })
+}
 
 const lists = ref<ImportListDto[]>([])
 const loading = ref(true)
@@ -58,6 +91,7 @@ async function load() {
 		settings.ensureImportListSchemas(),
 		loadLists(),
 		loadExclusions(),
+		loadConfig(),
 	])
 	loading.value = false
 	exclusionsLoading.value = false
@@ -385,6 +419,39 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 				</SButton>
 			</template>
 		</SPageHeader>
+
+		<SSection title="Library sync">
+			<SEmptyState
+				v-if="configLoadError"
+				:message="configLoadError"
+				icon="lucide:alert-triangle"
+			>
+				<template #action>
+					<SButton @click="loadConfig">
+						Retry
+					</SButton>
+				</template>
+			</SEmptyState>
+			<template v-else-if="configDraft">
+				<SField
+					label="Clean library level"
+					hint="What to do with library items no longer covered by any automatic-add import list, checked after a full sync where every automatic-add list synced successfully."
+					control-id="clean-library-level"
+				>
+					<SSelect
+						v-model="configDraft.cleanLibraryLevel"
+						control-id="clean-library-level"
+						:options="cleanLibraryLevelOptions"
+					/>
+				</SField>
+				<SettingsSaveBar
+					:dirty="configDirty.isDirty.value"
+					:saving="configSaving"
+					@save="saveConfig"
+					@discard="configDirty.revert()"
+				/>
+			</template>
+		</SSection>
 
 		<SSection>
 			<SEmptyState

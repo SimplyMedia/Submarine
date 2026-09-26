@@ -13,5 +13,17 @@ public enum AuthMethod
 	/// <summary>
 	///     Users authenticate with username and password.
 	/// </summary>
-	FORMS
+	FORMS,
+
+	/// <summary>
+	///     Users authenticate with HTTP Basic credentials, e.g. for tools that cannot follow
+	///     a login redirect.
+	/// </summary>
+	BASIC,
+
+	/// <summary>
+	///     Authentication is handled entirely by a reverse proxy in front of the app; behaves
+	///     exactly like <see cref="NONE" /> since the app trusts the proxy to gate access.
+	/// </summary>
+	EXTERNAL
 }

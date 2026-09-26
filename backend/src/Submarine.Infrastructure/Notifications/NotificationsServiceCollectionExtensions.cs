@@ -31,7 +31,23 @@ public static class NotificationsServiceCollectionExtensions
 		services.AddSingleton<INotificationSender, EmailSender>();
 		services.AddSingleton<INotificationSender, NtfySender>();
 		services.AddSingleton<INotificationSender, AppriseSender>();
-		services.AddSingleton<INotificationSenderFactory, NotificationSenderFactory>();
+		services.AddSingleton<INotificationSender, JoinSender>();
+		services.AddSingleton<INotificationSender, MailgunSender>();
+		services.AddSingleton<INotificationSender, NotifiarrSender>();
+		services.AddSingleton<INotificationSender, ProwlSender>();
+		services.AddSingleton<INotificationSender, PushcutSender>();
+		services.AddSingleton<INotificationSender, PushsaferSender>();
+		services.AddSingleton<INotificationSender, SendGridSender>();
+		services.AddSingleton<INotificationSender, SignalSender>();
+		services.AddSingleton<INotificationSender, SimplepushSender>();
+		services.AddSingleton<ISynologyIndexerProcess, SynologyIndexerProcess>();
+		services.AddSingleton<INotificationSender, SynologyIndexerSender>();
+		services.AddSingleton<INotificationSender, TwitterSender>();
+		services.AddScoped<INotificationSender, TraktSender>();
+		services.AddSingleton<ITraktAuthService, TraktAuthService>();
+		services.AddScoped<ITraktTokenRefresher, TraktTokenRefresher>();
+		services.AddScoped<INotificationSenderFactory, NotificationSenderFactory>();
+		services.AddScoped<INotificationStatusService, NotificationStatusService>();
 		services.AddScoped<NotificationDispatcher>();
 
 		return services;

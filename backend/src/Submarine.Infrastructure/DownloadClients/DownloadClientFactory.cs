@@ -45,6 +45,12 @@ public sealed class DownloadClientFactory(IHttpClientFactory httpClientFactory) 
 			DownloadClientType.NZBGET => new NzbGetClient((NzbGetSettings)settings, clientId, clientName, httpClient),
 			DownloadClientType.TORRENT_BLACKHOLE => new TorrentBlackholeClient((TorrentBlackholeSettings)settings, clientId, clientName, httpClient),
 			DownloadClientType.USENET_BLACKHOLE => new UsenetBlackholeClient((UsenetBlackholeSettings)settings, clientId, clientName, httpClient),
+			DownloadClientType.VUZE => new VuzeClient((TransmissionSettings)settings, clientId, clientName, httpClient),
+			DownloadClientType.HADOUKEN => new HadoukenClient((HadoukenSettings)settings, clientId, clientName, httpClient),
+			DownloadClientType.NZBVORTEX => new NzbVortexClient((NzbVortexSettings)settings, clientId, clientName, httpClient),
+			DownloadClientType.PNEUMATIC => new PneumaticClient((PneumaticSettings)settings, clientId, clientName, httpClient),
+			DownloadClientType.FREEBOX_DOWNLOAD => new FreeboxDownloadClient((FreeboxDownloadSettings)settings, clientId, clientName, httpClient),
+			DownloadClientType.RQBIT => new RQbitClient((RQbitSettings)settings, clientId, clientName, httpClient),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown download client type")
 		};
 	}

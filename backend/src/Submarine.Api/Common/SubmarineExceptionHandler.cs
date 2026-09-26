@@ -12,7 +12,9 @@ namespace Submarine.Api.Common;
 ///     ConflictException to 409, SiblingServiceException to 502 naming the service,
 ///     everything else to 500 with no exception detail.
 /// </summary>
-public sealed class SubmarineExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
+public sealed class SubmarineExceptionHandler(
+	IProblemDetailsService problemDetailsService,
+	ILogger<SubmarineExceptionHandler> logger) : IExceptionHandler
 {
 	/// <inheritdoc />
 	public async ValueTask<bool> TryHandleAsync(
@@ -28,6 +30,12 @@ public sealed class SubmarineExceptionHandler(IProblemDetailsService problemDeta
 			SiblingServiceException => (StatusCodes.Status502BadGateway, "Upstream service unavailable", exception.Message),
 			_ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", "An unexpected error occurred")
 		};
+
+		// Handled exceptions are not logged by the middleware, so unexpected ones would vanish without this.
+		if (status == StatusCodes.Status500InternalServerError)
+		{
+			logger.LogError(exception, "Unhandled exception for {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+		}
 
 		httpContext.Response.StatusCode = status;
 

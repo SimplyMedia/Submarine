@@ -56,7 +56,7 @@ public sealed class TmdbClient(
 	public async Task<MovieResource?> GetMovieAsync(int tmdbId, CancellationToken cancellationToken = default)
 	{
 		var detail = await GetJsonAsync<TmdbMovieDetail>(
-			$"movie/{tmdbId}?append_to_response=release_dates,alternative_titles,videos,external_ids", cancellationToken);
+			$"movie/{tmdbId}?append_to_response=release_dates,alternative_titles,videos,external_ids,keywords", cancellationToken);
 		return detail is null ? null : MapMovie(detail);
 	}
 
@@ -150,7 +150,9 @@ public sealed class TmdbClient(
 			TrailerKey(detail.Videos),
 			detail.BelongsToCollection?.Id,
 			detail.BelongsToCollection?.Name,
-			MapAlternateTitles(detail.AlternativeTitles, detail.Title, detail.OriginalTitle));
+			MapAlternateTitles(detail.AlternativeTitles, detail.Title, detail.OriginalTitle),
+			detail.OriginalLanguage,
+			(detail.Keywords?.Keywords ?? []).Select(k => k.Name ?? string.Empty).Where(n => n.Length > 0).ToList());
 	}
 
 	internal MovieResource MapMovieSummaryResource(TmdbMovieSummary summary)
@@ -178,6 +180,8 @@ public sealed class TmdbClient(
 			null,
 			null,
 			null,
+			[],
+			summary.OriginalLanguage,
 			[]);
 	}
 
@@ -247,7 +251,8 @@ public sealed class TmdbClient(
 			MetadataMapping.TmdbImage(detail.PosterPath),
 			MetadataMapping.TmdbImage(detail.BackdropPath),
 			MetadataMapping.ParseDate(detail.FirstAirDate)?.Year,
-			MapAlternateTitles(detail.AlternativeTitles, detail.Name, detail.OriginalName));
+			MapAlternateTitles(detail.AlternativeTitles, detail.Name, detail.OriginalName),
+			detail.OriginalLanguage);
 	}
 
 	internal static SearchResultResource MapSeriesSearchResult(TmdbTvSummary summary) => new(

@@ -74,6 +74,39 @@ public class DownloadStationClientTests
 	}
 
 	[Fact]
+	public async Task AddAsync_ShouldUseCategoryAsDestination_WhenDirectoryNotConfigured()
+	{
+		string? createUrl = null;
+		var handler = new StubHttpHandler((request, _) =>
+		{
+			if (request.RequestUri!.PathAndQuery.Contains("auth.cgi"))
+				return Login();
+			if (request.RequestUri!.PathAndQuery.Contains("method=create"))
+			{
+				createUrl = request.RequestUri.PathAndQuery;
+				return Success(new { });
+			}
+
+			return Success(new { tasks = Array.Empty<object>() });
+		});
+		var client = new DownloadStationClient(
+			new DownloadStationSettings { Host = "ds.local", Port = 5000, Username = "admin", Password = "secret", Category = "tv-sonarr" },
+			9, "ds", new HttpClient(handler));
+
+		await Should.ThrowAsync<DownloadClientException>(() => client.AddAsync(new RemoteRelease
+		{
+			Title = "Some.Show.S01E01",
+			DownloadUrl = "http://indexer/torrents/1",
+			Size = 1000,
+			Protocol = Protocol.BITTORRENT,
+			Category = RemoteReleaseCategory.SERIES
+		}, null, TestContext.Current.CancellationToken));
+
+		createUrl.ShouldNotBeNull();
+		createUrl.ShouldContain("destination=tv-sonarr");
+	}
+
+	[Fact]
 	public async Task GetItemsAsync_ShouldMapTasksStatusesAndIdentity()
 	{
 		var handler = new StubHttpHandler((request, _) =>

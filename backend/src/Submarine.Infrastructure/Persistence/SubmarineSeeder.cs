@@ -54,6 +54,7 @@ public sealed class SubmarineSeeder(SubmarineDbContext db, TimeProvider timeProv
 		GetOrCreate(() => new IndexerConfig(), now);
 		GetOrCreate(() => new DownloadConfig(), now);
 		GetOrCreate(() => new UiConfig(), now);
+		GetOrCreate(() => new ImportListConfig(), now);
 
 		await SeedQualityDefinitionsAsync(cancellationToken);
 

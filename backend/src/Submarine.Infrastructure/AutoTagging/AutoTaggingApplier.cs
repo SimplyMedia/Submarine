@@ -54,7 +54,8 @@ public sealed class AutoTaggingApplier(SubmarineDbContext db) :
 			series.Status.ToString(),
 			series.Year,
 			series.Monitored,
-			series.Network);
+			series.Network,
+			series.OriginalLanguage);
 
 		if (Apply(series.Tags, rules, context))
 		{
@@ -84,7 +85,9 @@ public sealed class AutoTaggingApplier(SubmarineDbContext db) :
 			movie.Status.ToString(),
 			movie.Year,
 			movie.Monitored,
-			movie.Studio);
+			movie.Studio,
+			movie.OriginalLanguage,
+			movie.Keywords);
 
 		if (Apply(movie.Tags, rules, context))
 		{

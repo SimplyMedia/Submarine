@@ -9,10 +9,15 @@ namespace Submarine.Core.DecisionEngine;
 /// <param name="Rejections">The reasons the candidate was rejected, empty when approved.</param>
 /// <param name="CustomFormats">The custom formats matching the candidate.</param>
 /// <param name="CustomFormatScore">The profile score of the matched custom formats.</param>
+/// <param name="SizePreferenceKey">
+///     Final ordering tie-break, higher is preferred: closeness to the quality definition's preferred size when known,
+///     otherwise the release size so larger releases sort first.
+/// </param>
 public sealed record DownloadDecision(
 	ReleaseCandidate Candidate,
 	bool Approved,
 	int Score,
 	IReadOnlyList<RejectionReason> Rejections,
 	IReadOnlyList<Entities.CustomFormat> CustomFormats,
-	int CustomFormatScore);
+	int CustomFormatScore,
+	double SizePreferenceKey = 0);

@@ -22,7 +22,8 @@ public sealed class CheckForUpdateCommandHandler(
 	/// <inheritdoc />
 	public async Task ExecuteAsync(CheckForUpdateCommand command, ICommandContext context, CancellationToken cancellationToken = default)
 	{
-		var info = await updateChecker.GetLatestAsync(bypassCache: true, cancellationToken);
+		var branch = await db.GeneralConfig.AsNoTracking().Select(x => x.Branch).SingleAsync(cancellationToken);
+		var info = await updateChecker.GetLatestAsync(branch, bypassCache: true, cancellationToken);
 		if (!info.UpdateAvailable)
 		{
 			// Clear a stale notice when the running version is current again.

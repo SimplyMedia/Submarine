@@ -7,6 +7,7 @@ using Submarine.Core.Enums;
 using Submarine.Core.Events;
 using Submarine.Core.Provider;
 using Submarine.Core.Release;
+using Submarine.Infrastructure.Downloads;
 using Submarine.Infrastructure.IndexerManagement;
 using Submarine.Infrastructure.Persistence;
 
@@ -21,6 +22,7 @@ public sealed class GrabService(
 	SubmarineDbContext db,
 	IIndexerProvider indexerProvider,
 	IDownloadClientFactory downloadClientFactory,
+	IDownloadClientStatusTracker statusTracker,
 	IEventBus eventBus,
 	TimeProvider timeProvider) : IGrabService
 {
@@ -57,7 +59,15 @@ public sealed class GrabService(
 		var release = decision.Candidate.Info;
 		var parsed = decision.Candidate.Parsed;
 
-		var (client, clientEntity) = await ResolveDownloadClientAsync(release, cancellationToken)
+		var mediaTagIds = seriesId is { } seriesTagId
+			? await db.Series.AsNoTracking().Where(series => series.Id == seriesTagId)
+				.SelectMany(series => series.Tags.Select(tag => tag.Id)).ToListAsync(cancellationToken)
+			: movieId is { } movieTagId
+				? await db.Movies.AsNoTracking().Where(movie => movie.Id == movieTagId)
+					.SelectMany(movie => movie.Tags.Select(tag => tag.Id)).ToListAsync(cancellationToken)
+				: [];
+
+		var (client, clientEntity) = await ResolveDownloadClientAsync(release, mediaTagIds, cancellationToken)
 			?? throw new InvalidOperationException("No enabled download client matches this release's protocol");
 
 		byte[]? torrentFile = null;
@@ -85,6 +95,8 @@ public sealed class GrabService(
 		var isSeasonPack = (episodeIds?.Count ?? 0) > 1
 			|| parsed.SeriesReleaseData?.ReleaseType is SeriesReleaseType.FULL_SEASON or SeriesReleaseType.MULTI_SEASON;
 
+		var (isRecentRelease, year, network) = await GetReleaseMetadataAsync(seriesId, episodeIds, movieId, cancellationToken);
+
 		var remoteRelease = new RemoteRelease
 		{
 			Title = parsed.FullTitle,
@@ -96,7 +108,14 @@ public sealed class GrabService(
 			IsSeasonPack = isSeasonPack,
 			Category = movieId is not null ? RemoteReleaseCategory.MOVIE : RemoteReleaseCategory.SERIES,
 			TorrentFile = torrentFile,
-			NzbFile = nzbFile
+			NzbFile = nzbFile,
+			IsRecentRelease = isRecentRelease,
+			ReleaseGroup = parsed.ReleaseGroup,
+			Quality = $"{parsed.Quality.Resolution.Source}-{parsed.Quality.Resolution.Resolution}",
+			Languages = [.. parsed.Languages.Select(language => ToTitleCase(language.ToString()))],
+			Indexer = release.Indexer,
+			Year = year,
+			Network = network
 		};
 
 		var downloadId = await client.AddAsync(remoteRelease, seedCriteria, cancellationToken);
@@ -235,37 +254,65 @@ public sealed class GrabService(
 		return (await response.Content.ReadAsByteArrayAsync(cancellationToken), null);
 	}
 
+	/// <summary>
+	///     Resolves the download client for a release: an indexer-pinned client when configured (matching the
+	///     release's protocol), otherwise the enabled clients of that protocol whose tags intersect
+	///     <paramref name="mediaTagIds" /> (or, when none match, the untagged clients), preferring clients that
+	///     are not currently backed off and round-robining by id within the highest-priority (lowest value) group
+	/// </summary>
 	private async Task<(IDownloadClient Client, DownloadClient Entity)?> ResolveDownloadClientAsync(
 		Core.Indexers.ReleaseInfo release,
+		IReadOnlyCollection<int> mediaTagIds,
 		CancellationToken cancellationToken)
 	{
-		Indexer? indexer = release.IndexerId is { } indexerId
-			? await db.Indexers.Include(entity => entity.Tags).AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == indexerId, cancellationToken)
-			: null;
-
-		if (indexer?.DownloadClientId is { } explicitId)
-		{
-			var explicitEntity = await db.DownloadClients.AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == explicitId && entity.Enable, cancellationToken);
-			if (explicitEntity is not null)
-			{
-				return (downloadClientFactory.Create(explicitEntity.Type, explicitEntity.SettingsJson, explicitEntity.Id, explicitEntity.Name), explicitEntity);
-			}
-		}
-
-		var indexerTagIds = indexer?.Tags.Select(tag => tag.Id).ToHashSet() ?? [];
-		var candidates = await db.DownloadClients.Include(entity => entity.Tags).AsNoTracking()
+		var rows = await db.DownloadClients.Include(entity => entity.Tags).AsNoTracking()
 			.Where(entity => entity.Enable)
-			.OrderBy(entity => entity.Priority)
 			.ToListAsync(cancellationToken);
 
-		var matching = candidates
+		var matchingProtocol = rows
 			.Select(entity => (Entity: entity, Client: TryCreate(entity)))
 			.Where(pair => pair.Client is { } client && client.Protocol == release.Protocol)
-			.OrderByDescending(pair => pair.Entity.Tags.Any(tag => indexerTagIds.Contains(tag.Id)))
-			.ThenBy(pair => pair.Entity.Priority)
 			.ToList();
 
-		return matching.Count == 0 ? null : (matching[0].Client!, matching[0].Entity);
+		if (matchingProtocol.Count == 0)
+			return null;
+
+		var explicitId = release.IndexerId is { } indexerId
+			? (await db.Indexers.AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == indexerId, cancellationToken))
+				?.DownloadClientId
+			: null;
+
+		if (explicitId is { } id)
+		{
+			var explicitMatch = matchingProtocol.FirstOrDefault(pair => pair.Entity.Id == id);
+			return explicitMatch.Entity is null ? null : (explicitMatch.Client!, explicitMatch.Entity);
+		}
+
+		var tagSet = mediaTagIds.ToHashSet();
+		var matchingTags = matchingProtocol.Where(pair => pair.Entity.Tags.Any(tag => tagSet.Contains(tag.Id))).ToList();
+		var candidates = matchingTags.Count > 0
+			? matchingTags
+			: matchingProtocol.Where(pair => pair.Entity.Tags.Count == 0).ToList();
+
+		if (candidates.Count == 0)
+			return null;
+
+		var available = candidates.Where(pair => statusTracker.IsAvailable(pair.Entity.Id)).ToList();
+		if (available.Count > 0)
+			candidates = available;
+
+		var bestPriority = candidates.Min(pair => pair.Entity.Priority);
+		var group = candidates.Where(pair => pair.Entity.Priority == bestPriority)
+			.OrderBy(pair => pair.Entity.Id)
+			.ToList();
+
+		var lastId = statusTracker.GetLastUsedClientId(release.Protocol);
+		var next = group.FirstOrDefault(pair => pair.Entity.Id > lastId);
+		var selected = next.Entity is null ? group[0] : next;
+
+		statusTracker.SetLastUsedClientId(release.Protocol, selected.Entity.Id);
+
+		return (selected.Client!, selected.Entity);
 	}
 
 	private IDownloadClient? TryCreate(DownloadClient entity)
@@ -279,4 +326,57 @@ public sealed class GrabService(
 			return null;
 		}
 	}
+
+	/// <summary>
+	///     Resolves the media metadata download clients can key their behaviour on: whether the release is
+	///     recent (a series episode that aired within the last 14 days, or a movie whose physical/digital
+	///     release was within the last 21 days or cinema release within the last 120 days), the media's
+	///     first-air or release year, and the series' broadcast network (null for movies)
+	/// </summary>
+	private async Task<(bool IsRecent, int? Year, string? Network)> GetReleaseMetadataAsync(int? seriesId,
+		IReadOnlyList<int>? episodeIds, int? movieId, CancellationToken cancellationToken)
+	{
+		var now = timeProvider.GetUtcNow().UtcDateTime;
+
+		if (seriesId is { } id)
+		{
+			var series = await db.Series.AsNoTracking().Where(entity => entity.Id == id)
+				.Select(entity => new { entity.Year, entity.Network })
+				.FirstOrDefaultAsync(cancellationToken);
+
+			var isRecent = episodeIds is { Count: > 0 } && await db.Episodes.AsNoTracking()
+				.Where(episode => episodeIds.Contains(episode.Id))
+				.AnyAsync(episode => episode.AirDateUtc != null && episode.AirDateUtc >= now.AddDays(-14),
+					cancellationToken);
+
+			return (isRecent, series?.Year, series?.Network);
+		}
+
+		if (movieId is { } id2)
+		{
+			var movie = await db.Movies.AsNoTracking().Where(entity => entity.Id == id2)
+				.Select(entity => new
+				{
+					entity.Year,
+					entity.PhysicalReleaseDate,
+					entity.DigitalReleaseDate,
+					entity.InCinemasDate
+				})
+				.FirstOrDefaultAsync(cancellationToken);
+
+			if (movie is null)
+				return (false, null, null);
+
+			var isRecent = (movie.PhysicalReleaseDate is { } physical && physical >= now.AddDays(-21))
+				|| (movie.DigitalReleaseDate is { } digital && digital >= now.AddDays(-21))
+				|| (movie.InCinemasDate is { } cinemas && cinemas >= now.AddDays(-120));
+
+			return (isRecent, movie.Year, null);
+		}
+
+		return (false, null, null);
+	}
+
+	private static string ToTitleCase(string value)
+		=> value.Length == 0 ? value : char.ToUpperInvariant(value[0]) + value[1..].ToLowerInvariant();
 }

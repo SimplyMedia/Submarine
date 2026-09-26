@@ -114,6 +114,53 @@ public sealed class MonitorRulesTests
 		series.Episodes.Single(x => x.SeasonNumber == 0).Monitored.ShouldBeTrue();
 	}
 
+	[Fact]
+	public void Apply_ShouldMonitorRecentAndFutureEpisodes_WhenOptionIsRecent()
+	{
+		var series = TestSeries();
+		// Episode S1E1 aired 30 days ago (within the last 90 days) -> monitored.
+		// Episode S1E2 airs in 7 days (future) -> monitored.
+		// Episode S2E1 has no air date -> monitored.
+		MonitorRules.Apply(series, AddMonitorOption.RECENT, monitorSpecials: false, Now);
+		series.Episodes.Single(x => x.SeasonNumber == 1 && x.EpisodeNumber == 1).Monitored.ShouldBeTrue();
+		series.Episodes.Single(x => x.SeasonNumber == 1 && x.EpisodeNumber == 2).Monitored.ShouldBeTrue();
+		series.Episodes.Single(x => x.SeasonNumber == 2 && x.EpisodeNumber == 1).Monitored.ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Apply_ShouldNotMonitorOldEpisodes_WhenOptionIsRecent()
+	{
+		var series = TestSeries();
+		series.Episodes.Add(new Episode
+		{
+			SeriesId = 1,
+			SeasonNumber = 1,
+			EpisodeNumber = 3,
+			AirDateUtc = Now.AddDays(-120)
+		});
+		MonitorRules.Apply(series, AddMonitorOption.RECENT, monitorSpecials: false, Now);
+		series.Episodes.Single(x => x.SeasonNumber == 1 && x.EpisodeNumber == 3).Monitored.ShouldBeFalse();
+	}
+
+	[Fact]
+	public void Apply_ShouldLeaveMonitoredFlagsUntouched_WhenOptionIsSkip()
+	{
+		var series = TestSeries();
+		foreach (var season in series.Seasons)
+		{
+			season.Monitored = true;
+		}
+
+		series.Episodes.Single(x => x.SeasonNumber == 1 && x.EpisodeNumber == 1).Monitored = false;
+		series.Episodes.Single(x => x.SeasonNumber == 1 && x.EpisodeNumber == 2).Monitored = true;
+
+		MonitorRules.Apply(series, AddMonitorOption.SKIP, monitorSpecials: true, Now);
+
+		series.Seasons.All(x => x.Monitored).ShouldBeTrue();
+		series.Episodes.Single(x => x.SeasonNumber == 1 && x.EpisodeNumber == 1).Monitored.ShouldBeFalse();
+		series.Episodes.Single(x => x.SeasonNumber == 1 && x.EpisodeNumber == 2).Monitored.ShouldBeTrue();
+	}
+
 	private static Series TestSeries()
 	{
 		var series = new Series { Title = "Test", TvdbId = 1 };

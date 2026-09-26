@@ -1,3 +1,5 @@
+using Submarine.Core.Provider;
+
 namespace Submarine.Infrastructure.Downloads;
 
 /// <summary>
@@ -20,4 +22,14 @@ public interface IDownloadClientStatusTracker
 	///     Record a failed contact, escalating the backoff.
 	/// </summary>
 	Task RecordFailureAsync(int clientId, string message, CancellationToken cancellationToken = default);
+
+	/// <summary>
+	///     Client id last selected for this protocol during round-robin client selection, or 0 when none yet.
+	/// </summary>
+	int GetLastUsedClientId(Protocol protocol);
+
+	/// <summary>
+	///     Records the client id selected for this protocol during round-robin client selection.
+	/// </summary>
+	void SetLastUsedClientId(Protocol protocol, int clientId);
 }

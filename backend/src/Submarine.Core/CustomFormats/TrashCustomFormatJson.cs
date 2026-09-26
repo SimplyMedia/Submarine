@@ -53,7 +53,9 @@ public static class TrashCustomFormatJson
 		"ReleaseFlagSpecification",
 		"HardcodedSubsSpecification",
 		"StreamingProviderSpecification",
-		"StreamingServiceSpecification"
+		"StreamingServiceSpecification",
+		"ReleaseTypeSpecification",
+		"QualityModifierSpecification"
 	};
 
 	/// <summary>
@@ -95,6 +97,8 @@ public static class TrashCustomFormatJson
 			"HardcodedSubsSpecification" => CustomFormatSpecificationType.HARDCODED_SUBS,
 			"StreamingProviderSpecification" or "StreamingServiceSpecification"
 				=> CustomFormatSpecificationType.STREAMING_PROVIDER,
+			"ReleaseTypeSpecification" => CustomFormatSpecificationType.RELEASE_TYPE,
+			"QualityModifierSpecification" => CustomFormatSpecificationType.QUALITY_MODIFIER,
 			_ => throw new KeyNotFoundException(
 				$"Unknown custom format specification implementation '{specification.Implementation}'")
 		};
@@ -124,6 +128,8 @@ public static class TrashCustomFormatJson
 			CustomFormatSpecificationType.RELEASE_FLAG => "ReleaseFlagSpecification",
 			CustomFormatSpecificationType.HARDCODED_SUBS => "HardcodedSubsSpecification",
 			CustomFormatSpecificationType.STREAMING_PROVIDER => "StreamingProviderSpecification",
+			CustomFormatSpecificationType.RELEASE_TYPE => "ReleaseTypeSpecification",
+			CustomFormatSpecificationType.QUALITY_MODIFIER => "QualityModifierSpecification",
 			_ => throw new ArgumentOutOfRangeException(nameof(specification), specification.Type, "Unknown specification type")
 		};
 

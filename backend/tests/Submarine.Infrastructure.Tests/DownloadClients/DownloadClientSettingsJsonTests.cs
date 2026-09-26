@@ -56,7 +56,12 @@ public class DownloadClientSettingsJsonTests
 			[DownloadClientType.SABNZBD] = ["host", "apiKey"],
 			[DownloadClientType.NZBGET] = ["host", "username", "password"],
 			[DownloadClientType.TORRENT_BLACKHOLE] = ["torrentFolder", "watchFolder"],
-			[DownloadClientType.USENET_BLACKHOLE] = ["nzbFolder", "watchFolder"]
+			[DownloadClientType.USENET_BLACKHOLE] = ["nzbFolder", "watchFolder"],
+			[DownloadClientType.HADOUKEN] = ["host", "username", "password"],
+			[DownloadClientType.NZBVORTEX] = ["host", "apiKey"],
+			[DownloadClientType.PNEUMATIC] = ["nzbFolder", "strmFolder"],
+			[DownloadClientType.FREEBOX_DOWNLOAD] = ["appId", "appToken"],
+			[DownloadClientType.RQBIT] = ["host"]
 		};
 
 		foreach (var (type, expectedFields) in cases)
@@ -129,5 +134,44 @@ public class DownloadClientSettingsJsonTests
 
 		result.IsValid.ShouldBeTrue();
 		result.Settings.ShouldBeOfType<QBittorrentSettings>();
+	}
+
+	[Fact]
+	public void Parse_ShouldReadLegacyUTorrentAddStoppedAsInitialStateStop_WhenInitialStateAbsent()
+	{
+		var settings = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT,
+			"""{"host":"ut.local","addStopped":true}""");
+
+		settings.InitialState.ShouldBe(UTorrentInitialState.STOP);
+	}
+
+	[Fact]
+	public void Parse_ShouldDefaultUTorrentInitialStateToStart_WhenLegacyAddStoppedFalse()
+	{
+		var settings = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT,
+			"""{"host":"ut.local","addStopped":false}""");
+
+		settings.InitialState.ShouldBe(UTorrentInitialState.START);
+	}
+
+	[Fact]
+	public void Parse_ShouldPreferExplicitUTorrentInitialState_OverLegacyAddStopped()
+	{
+		var settings = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT,
+			"""{"host":"ut.local","addStopped":true,"initialState":"FORCE_START"}""");
+
+		settings.InitialState.ShouldBe(UTorrentInitialState.FORCE_START);
+	}
+
+	[Fact]
+	public void Serialize_ShouldRoundTripUTorrentInitialState()
+	{
+		var settings = new UTorrentSettings { Host = "ut.local", InitialState = UTorrentInitialState.PAUSE };
+
+		var json = DownloadClientSettingsJson.Serialize(settings);
+		var parsed = (UTorrentSettings)DownloadClientSettingsJson.Parse(DownloadClientType.UTORRENT, json);
+
+		parsed.InitialState.ShouldBe(UTorrentInitialState.PAUSE);
+		json.ShouldNotContain("addStopped");
 	}
 }

@@ -23,6 +23,9 @@ public record DelugeSettings : DownloadClientSettings, IDownloadClientEndpoint
 	/// <summary>Label torrents are added under and owned by, requires the label plugin</summary>
 	public string? Category { get; init; }
 
+	/// <summary>Label torrents are moved to after import, if different from <see cref="Category" />, requires the label plugin</summary>
+	public string? PostImportCategory { get; init; }
+
 	/// <summary>Whether torrents are added paused</summary>
 	public bool AddPaused { get; init; }
 }

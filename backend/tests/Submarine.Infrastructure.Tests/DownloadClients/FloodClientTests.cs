@@ -178,4 +178,117 @@ public class FloodClientTests
 		items.Count.ShouldBe(5);
 		authentications.ShouldBe(2);
 	}
+
+	[Fact]
+	public async Task AddAsync_ShouldIncludeAdditionalTags_WhenConfigured()
+	{
+		string? addBody = null;
+		var handler = new StubHttpHandler((request, body) =>
+		{
+			if (request.RequestUri!.PathAndQuery.EndsWith("/auth/authenticate"))
+				return Authenticate();
+			if (request.RequestUri!.PathAndQuery.EndsWith("/torrents/add-urls"))
+			{
+				addBody = body;
+				return StubHttpHandler.Json("""{"id":"x"}""");
+			}
+
+			return StubHttpHandler.Text("{}");
+		});
+		var settings = Settings() with
+		{
+			AdditionalTags =
+			[
+				FloodAdditionalTag.RELEASE_GROUP, FloodAdditionalTag.QUALITY, FloodAdditionalTag.LANGUAGES,
+				FloodAdditionalTag.YEAR, FloodAdditionalTag.INDEXER, FloodAdditionalTag.NETWORK
+			]
+		};
+		var client = new FloodClient(settings, 8, "flood", new HttpClient(handler));
+		var release = TestTorrent.MagnetRelease() with
+		{
+			ReleaseGroup = "GROUP", Quality = "WEB_DL-R1080_P", Languages = ["English", "French"], Year = 2024,
+			Indexer = "Stub", Network = "ABC"
+		};
+
+		await client.AddAsync(release, null, TestContext.Current.CancellationToken);
+
+		using var payload = JsonDocument.Parse(addBody!);
+		var tags = payload.RootElement.GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ToList();
+		tags.ShouldContain("tv");
+		tags.ShouldContain("GROUP");
+		tags.ShouldContain("WEB_DL-R1080_P");
+		tags.ShouldContain("English");
+		tags.ShouldContain("French");
+		tags.ShouldContain("2024");
+		tags.ShouldContain("Stub");
+		tags.ShouldContain("ABC");
+	}
+
+	[Fact]
+	public async Task AddAsync_ShouldIncludeTitleSlug_WhenConfigured()
+	{
+		string? addBody = null;
+		var handler = new StubHttpHandler((request, body) =>
+		{
+			if (request.RequestUri!.PathAndQuery.EndsWith("/auth/authenticate"))
+				return Authenticate();
+			if (request.RequestUri!.PathAndQuery.EndsWith("/torrents/add-urls"))
+			{
+				addBody = body;
+				return StubHttpHandler.Json("""{"id":"x"}""");
+			}
+
+			return StubHttpHandler.Text("{}");
+		});
+		var settings = Settings() with { AdditionalTags = [FloodAdditionalTag.TITLE_SLUG] };
+		var client = new FloodClient(settings, 8, "flood", new HttpClient(handler));
+
+		await client.AddAsync(TestTorrent.MagnetRelease(), null, TestContext.Current.CancellationToken);
+
+		using var payload = JsonDocument.Parse(addBody!);
+		var tags = payload.RootElement.GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ToList();
+		tags.ShouldContain("some-show-s01e01");
+	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldMergePostImportTags_WithExistingTags()
+	{
+		string? patchBody = null;
+		var handler = new StubHttpHandler((request, body) =>
+		{
+			if (request.RequestUri!.PathAndQuery.EndsWith("/auth/authenticate"))
+				return Authenticate();
+			if (request.RequestUri!.PathAndQuery.EndsWith("/torrents") && request.Method == HttpMethod.Get)
+				return Torrents();
+			if (request.RequestUri!.PathAndQuery.EndsWith("/torrents/tags"))
+			{
+				patchBody = body;
+				return StubHttpHandler.Text("{}");
+			}
+
+			return StubHttpHandler.Text("{}");
+		});
+		var client = new FloodClient(Settings() with { PostImportTags = ["imported"] }, 8, "flood",
+			new HttpClient(handler));
+
+		await client.MarkImportedAsync("AAAA", TestContext.Current.CancellationToken);
+
+		using var payload = JsonDocument.Parse(patchBody!);
+		payload.RootElement.GetProperty("hashes")[0].GetString().ShouldBe("AAAA");
+		var tags = payload.RootElement.GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ToList();
+		tags.ShouldContain("tv");
+		tags.ShouldContain("imported");
+	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldNotCallApi_WhenNoPostImportTagsConfigured()
+	{
+		var handler = new StubHttpHandler((request, _) =>
+			request.RequestUri!.PathAndQuery.EndsWith("/auth/authenticate") ? Authenticate() : StubHttpHandler.Text("{}"));
+		var client = new FloodClient(Settings(), 8, "flood", new HttpClient(handler));
+
+		await client.MarkImportedAsync("AAAA", TestContext.Current.CancellationToken);
+
+		handler.Requests.Count.ShouldBe(0);
+	}
 }

@@ -168,6 +168,47 @@ public sealed class CustomFormatsApiTests : IClassFixture<SubmarineApiFactory>
 	}
 
 	[Fact]
+	public async Task QualityDefinition_Import_ShouldMapTrashQualitySizesAndReportSkipped()
+	{
+		var client = ApiClient();
+
+		var import = await client.PostAsync("/api/v1/quality-definitions/import",
+			Json("""
+				{
+					"trash_id": "test",
+					"type": "movie",
+					"qualities": [
+						{ "quality": "Bluray-1080p", "min": 50.4, "preferred": 90, "max": 199.9 },
+						{ "quality": "Some-Unknown-Quality", "min": 1, "preferred": 2, "max": 3 }
+					]
+				}
+				"""));
+		import.StatusCode.ShouldBe(HttpStatusCode.OK, await import.Content.ReadAsStringAsync());
+		var result = await import.Content.ReadFromJsonAsync<QualityDefinitionImportResultDto>();
+		result!.Updated.ShouldHaveSingleItem();
+		result.Updated[0].Source.ShouldBe("BLURAY");
+		result.Updated[0].Resolution.ShouldBe("R1080_P");
+		result.Updated[0].MinSizeMbPerMinute.ShouldBe(50.4);
+		result.Updated[0].MaxSizeMbPerMinute.ShouldBe(199.9);
+		result.Updated[0].PreferredSizeMbPerMinute.ShouldBe(90);
+		result.Skipped.ShouldBe(["Some-Unknown-Quality"]);
+
+		var reloaded = await client.GetFromJsonAsync<List<QualityDefinitionDto>>("/api/v1/quality-definitions");
+		reloaded!.First(definition => definition.Source == "BLURAY" && definition.Resolution == "R1080_P")
+			.MinSizeMbPerMinute.ShouldBe(50.4);
+	}
+
+	[Fact]
+	public async Task QualityDefinition_Import_ShouldRejectAnInvalidBody()
+	{
+		var client = ApiClient();
+
+		var import = await client.PostAsync("/api/v1/quality-definitions/import", Json("""{ "not": "a quality list" }"""));
+
+		import.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+	}
+
+	[Fact]
 	public async Task ReleaseFilter_FullCrud_ShouldWork()
 	{
 		var client = ApiClient();
@@ -246,6 +287,8 @@ public sealed class CustomFormatsApiTests : IClassFixture<SubmarineApiFactory>
 		double? MinSizeMbPerMinute,
 		double? MaxSizeMbPerMinute,
 		double? PreferredSizeMbPerMinute);
+
+	private sealed record QualityDefinitionImportResultDto(IReadOnlyList<QualityDefinitionDto> Updated, IReadOnlyList<string> Skipped);
 
 	private sealed record ReleaseFilterDto(int Id, string Field, IReadOnlyList<string> Values, string Mode, int Tier);
 

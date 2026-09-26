@@ -139,6 +139,24 @@ async function save() {
 				</div>
 			</SSection>
 
+			<SSection title="Hardcoded subtitles">
+				<SSwitch
+					v-model="draft.allowHardcodedSubs"
+					label="Allow releases reporting hardcoded subtitles"
+				/>
+				<SField
+					v-if="!draft.allowHardcodedSubs"
+					label="Whitelisted release groups"
+					hint="Comma separated release groups allowed to have hardcoded subtitles."
+					control-id="hardcoded-subs-whitelist"
+				>
+					<SInput
+						id="hardcoded-subs-whitelist"
+						v-model="draft.whitelistedHardcodedSubs"
+					/>
+				</SField>
+			</SSection>
+
 			<SettingsSaveBar
 				:dirty="dirty.isDirty.value"
 				:saving="saving"

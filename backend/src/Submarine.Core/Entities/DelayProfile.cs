@@ -14,6 +14,12 @@ public sealed class DelayProfile : Entity
 	/// <summary>Protocol preferred when both are available.</summary>
 	public Protocol PreferredProtocol { get; set; } = Protocol.USENET;
 
+	/// <summary>Whether usenet releases are grabbed for tagged media.</summary>
+	public bool EnableUsenet { get; set; } = true;
+
+	/// <summary>Whether torrent releases are grabbed for tagged media.</summary>
+	public bool EnableTorrent { get; set; } = true;
+
 	/// <summary>Delay in minutes for usenet releases.</summary>
 	public int UsenetDelayMinutes { get; set; }
 

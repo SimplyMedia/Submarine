@@ -252,6 +252,199 @@ public sealed class ImportListParserTests
 		handler.LastRequest.RequestUri!.ToString().ShouldBe("https://graphql.anilist.co/");
 	}
 
+	[Fact]
+	public async Task SimklImportList_ShouldParseSeriesFromMainCatalogue()
+	{
+		var json = """
+			{"shows": [
+				{"show": {"title": "Severance", "year": 2022, "ids": {"tvdb": "391913", "imdb": "tt11280740"}}}
+			]}
+			""";
+		var list = new ImportList
+		{
+			Name = "simkl",
+			Type = ImportListType.SIMKL,
+			MediaKind = MediaKind.SERIES,
+			SettingsJson = """{"accessToken": "token", "clientId": "client", "listType": "plan_to_watch", "showType": "main"}"""
+		};
+
+		var handler = new RecordingHandler(json);
+		var items = await new SimklImportList(Factory(handler), Config("Simkl:ClientId", null)).FetchAsync(list, TestContext.Current.CancellationToken);
+
+		items.Single().TvdbId.ShouldBe(391913);
+		items.Single().ImdbId.ShouldBe("tt11280740");
+		handler.LastRequest!.RequestUri!.ToString().ShouldBe("https://api.simkl.com/sync/all-items/shows/plantowatch");
+		handler.LastRequest.Headers.GetValues("simkl-api-key").ShouldBe(["client"]);
+		handler.LastRequest.Headers.GetValues("Authorization").ShouldBe(["Bearer token"]);
+	}
+
+	[Fact]
+	public async Task SimklImportList_ShouldParseMoviesFromAnimeCatalogue()
+	{
+		var json = """{"anime": [{"show": {"title": "Your Name", "ids": {"tmdb": "372058"}}}]}""";
+		var list = new ImportList
+		{
+			Name = "simkl-anime",
+			Type = ImportListType.SIMKL,
+			MediaKind = MediaKind.MOVIES,
+			SettingsJson = """{"accessToken": "token", "showType": "anime"}"""
+		};
+
+		var items = await new SimklImportList(Factory(HttpStatusCode.OK, json), Config("Simkl:ClientId", "fallback"))
+			.FetchAsync(list, TestContext.Current.CancellationToken);
+
+		items.Single().TmdbId.ShouldBe(372058);
+	}
+
+	[Fact]
+	public async Task ImdbImportList_ShouldResolveMoviesByImdbId()
+	{
+		var metadata = Substitute.For<IMetadataClient>();
+		metadata.GetMovieByImdbAsync("tt0468569", Arg.Any<CancellationToken>())
+			.Returns(new Contracts.Metadata.MovieResource(
+				155, "tt0468569", "The Dark Knight", "The Dark Knight", null, null,
+				null, null, null, Contracts.Metadata.MovieStatus.RELEASED, 2008, 152,
+				[], null, null, null, null, null, null, null, []));
+
+		var csv = "position,const,created,modified,description,title\r\n1,tt0468569,x,x,x,The Dark Knight\r\n";
+		var list = new ImportList
+		{
+			Name = "imdb",
+			Type = ImportListType.IMDB,
+			MediaKind = MediaKind.MOVIES,
+			SettingsJson = """{"listId": "ls000000001"}"""
+		};
+
+		var handler = new RecordingHandler(csv);
+		var items = await new ImdbImportList(Factory(handler), metadata).FetchAsync(list, TestContext.Current.CancellationToken);
+
+		items.Single().TmdbId.ShouldBe(155);
+		handler.LastRequest!.RequestUri!.ToString().ShouldBe("https://www.imdb.com/list/ls000000001/export");
+	}
+
+	[Fact]
+	public async Task ImdbImportList_ShouldResolveSeriesByTitle()
+	{
+		var metadata = Substitute.For<IMetadataClient>();
+		metadata.SearchSeriesAsync("Severance", Arg.Any<Core.Enums.MetadataProvider>(), Arg.Any<CancellationToken>())
+			.Returns([new Contracts.Metadata.SearchResultResource(391913, null, null, "Severance", 2022, null, null, "continuing", "tvdb")]);
+
+		var csv = "position,const,created,modified,description,title\r\n1,tt11280740,x,x,x,Severance\r\n";
+		var list = new ImportList
+		{
+			Name = "imdb-series",
+			Type = ImportListType.IMDB,
+			MediaKind = MediaKind.SERIES,
+			SettingsJson = """{"listId": "ls000000002"}"""
+		};
+
+		var items = await new ImdbImportList(Factory(HttpStatusCode.OK, csv), metadata)
+			.FetchAsync(list, TestContext.Current.CancellationToken);
+
+		items.Single().TvdbId.ShouldBe(391913);
+	}
+
+	[Fact]
+	public async Task MyAnimeListImportList_ShouldResolveViaMappingsThenMetadata()
+	{
+		var mappings = Substitute.For<IMappingsClient>();
+		mappings.FindByNameAsync("Frieren: Beyond Journey's End", Arg.Any<CancellationToken>()).Returns([109863]);
+		var metadata = Substitute.For<IMetadataClient>();
+		metadata.SearchSeriesAsync("Unmapped", Arg.Any<Core.Enums.MetadataProvider>(), Arg.Any<CancellationToken>()).Returns([]);
+
+		var json = """
+			{"data": [
+				{"node": {"id": 154587, "title": "Frieren: Beyond Journey's End"}},
+				{"node": {"id": 999, "title": "Unmapped"}}
+			]}
+			""";
+		var list = new ImportList
+		{
+			Name = "mal",
+			Type = ImportListType.MYANIMELIST,
+			MediaKind = MediaKind.SERIES,
+			SettingsJson = """{"accessToken": "token", "listStatus": "watching"}"""
+		};
+
+		var handler = new RecordingHandler(json);
+		var items = await new MyAnimeListImportList(Factory(handler), mappings, metadata).FetchAsync(list, TestContext.Current.CancellationToken);
+
+		items.Count.ShouldBe(2);
+		items[0].TvdbId.ShouldBe(109863);
+		items[1].TvdbId.ShouldBeNull();
+		handler.LastRequest!.RequestUri!.Query.ShouldContain("status=watching");
+		handler.LastRequest.Headers.GetValues("Authorization").ShouldBe(["Bearer token"]);
+	}
+
+	[Fact]
+	public async Task RssImportList_ShouldParseSeriesGuidAsTvdbId()
+	{
+		var xml = """
+			<rss><channel>
+				<item><title>Severance</title><guid>391913</guid></item>
+			</channel></rss>
+			""";
+		var list = new ImportList
+		{
+			Name = "rss-series",
+			Type = ImportListType.RSS,
+			MediaKind = MediaKind.SERIES,
+			SettingsJson = """{"url": "https://example.com/feed.xml"}"""
+		};
+
+		var items = await new RssImportList(Factory(HttpStatusCode.OK, xml), Substitute.For<IMetadataClient>())
+			.FetchAsync(list, TestContext.Current.CancellationToken);
+
+		items.Single().TvdbId.ShouldBe(391913);
+	}
+
+	[Fact]
+	public async Task RssImportList_ShouldFailWhenSeriesItemHasNoNumericGuid()
+	{
+		var xml = """<rss><channel><item><title>Severance</title></item></channel></rss>""";
+		var list = new ImportList
+		{
+			Name = "rss-series",
+			Type = ImportListType.RSS,
+			MediaKind = MediaKind.SERIES,
+			SettingsJson = """{"url": "https://example.com/feed.xml"}"""
+		};
+
+		await Should.ThrowAsync<InvalidOperationException>(async () =>
+			await new RssImportList(Factory(HttpStatusCode.OK, xml), Substitute.For<IMetadataClient>())
+				.FetchAsync(list, TestContext.Current.CancellationToken));
+	}
+
+	[Fact]
+	public async Task RssImportList_ShouldResolveMovieImdbIdFromLink()
+	{
+		var metadata = Substitute.For<IMetadataClient>();
+		metadata.GetMovieByImdbAsync("tt0468569", Arg.Any<CancellationToken>())
+			.Returns(new Contracts.Metadata.MovieResource(
+				155, "tt0468569", "The Dark Knight", "The Dark Knight", null, null,
+				null, null, null, Contracts.Metadata.MovieStatus.RELEASED, 2008, 152,
+				[], null, null, null, null, null, null, null, []));
+
+		var xml = """
+			<rss><channel>
+				<item><title>The Dark Knight</title><link>https://www.imdb.com/title/tt0468569/</link></item>
+				<item><title>Some TV Series</title><link>https://www.imdb.com/title/tt0000000/</link></item>
+			</channel></rss>
+			""";
+		var list = new ImportList
+		{
+			Name = "rss-movies",
+			Type = ImportListType.RSS,
+			MediaKind = MediaKind.MOVIES,
+			SettingsJson = """{"url": "https://example.com/feed.xml"}"""
+		};
+
+		var items = await new RssImportList(Factory(HttpStatusCode.OK, xml), metadata)
+			.FetchAsync(list, TestContext.Current.CancellationToken);
+
+		items.Single().TmdbId.ShouldBe(155);
+	}
+
 	private static IConfiguration Config(string key, string? value)
 	{
 		var settings = new Dictionary<string, string?>();

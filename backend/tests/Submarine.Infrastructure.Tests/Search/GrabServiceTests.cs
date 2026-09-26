@@ -14,6 +14,7 @@ using Submarine.Core.Provider;
 using Submarine.Core.Quality;
 using Submarine.Core.Release;
 using Submarine.Core.Release.Torrent;
+using Submarine.Infrastructure.Downloads;
 using Submarine.Infrastructure.Grab;
 using Submarine.Infrastructure.IndexerManagement;
 using Submarine.Infrastructure.Persistence;
@@ -28,13 +29,15 @@ public sealed class GrabServiceTests : IDisposable
 	private readonly SqliteSubmarineDbContext _db;
 	private readonly IIndexerProvider _indexerProvider = Substitute.For<IIndexerProvider>();
 	private readonly IDownloadClientFactory _downloadClientFactory = Substitute.For<IDownloadClientFactory>();
+	private readonly IDownloadClientStatusTracker _statusTracker = Substitute.For<IDownloadClientStatusTracker>();
 	private readonly IEventBus _eventBus = Substitute.For<IEventBus>();
 	private readonly GrabService _service;
 
 	public GrabServiceTests()
 	{
 		_db = TestDbFactory.Create(_clock);
-		_service = new GrabService(_db, _indexerProvider, _downloadClientFactory, _eventBus, _clock);
+		_statusTracker.IsAvailable(Arg.Any<int>()).Returns(true);
+		_service = new GrabService(_db, _indexerProvider, _downloadClientFactory, _statusTracker, _eventBus, _clock);
 	}
 
 	public void Dispose() => _db.Dispose();
@@ -130,6 +133,132 @@ public sealed class GrabServiceTests : IDisposable
 		var grabbed = outcome.ShouldBeOfType<GrabbedOutcome>();
 		grabbed.Download.DownloadClientId.ShouldBe(22);
 		grabbed.Download.DownloadId.ShouldBe("HIGH");
+	}
+
+	[Fact]
+	public async Task GrabAsync_ShouldRoundRobinAmongEqualPriorityClients_WhenNoTagsOrExplicitClientConfigured()
+	{
+		AddSeries(2);
+		AddMediaVersion(5, 2, null);
+		_db.DownloadClients.Add(new DownloadClient { Id = 30, Name = "First", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1 });
+		_db.DownloadClients.Add(new DownloadClient { Id = 31, Name = "Second", Type = DownloadClientType.TRANSMISSION, Enable = true, Priority = 1 });
+		await _db.SaveChangesAsync();
+
+		var firstClient = FakeClient(Protocol.BITTORRENT, "FIRST");
+		var secondClient = FakeClient(Protocol.BITTORRENT, "SECOND");
+		_downloadClientFactory.Create(DownloadClientType.QBITTORRENT, Arg.Any<string>(), 30, "First").Returns(firstClient);
+		_downloadClientFactory.Create(DownloadClientType.TRANSMISSION, Arg.Any<string>(), 31, "Second").Returns(secondClient);
+		_statusTracker.GetLastUsedClientId(Protocol.BITTORRENT).Returns(30);
+
+		var decision = new DownloadDecision(MagnetCandidate(), true, 100, [], [], 0);
+
+		var outcome = await _service.GrabAsync(decision, mediaVersionId: 5, seriesId: 2, episodeIds: [7], movieId: null);
+
+		outcome.ShouldBeOfType<GrabbedOutcome>().Download.DownloadClientId.ShouldBe(31);
+		_statusTracker.Received(1).SetLastUsedClientId(Protocol.BITTORRENT, 31);
+	}
+
+	[Fact]
+	public async Task GrabAsync_ShouldWrapRoundRobin_WhenLastUsedClientHasHighestId()
+	{
+		AddSeries(2);
+		AddMediaVersion(5, 2, null);
+		_db.DownloadClients.Add(new DownloadClient { Id = 30, Name = "First", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1 });
+		_db.DownloadClients.Add(new DownloadClient { Id = 31, Name = "Second", Type = DownloadClientType.TRANSMISSION, Enable = true, Priority = 1 });
+		await _db.SaveChangesAsync();
+
+		var firstClient = FakeClient(Protocol.BITTORRENT, "FIRST");
+		var secondClient = FakeClient(Protocol.BITTORRENT, "SECOND");
+		_downloadClientFactory.Create(DownloadClientType.QBITTORRENT, Arg.Any<string>(), 30, "First").Returns(firstClient);
+		_downloadClientFactory.Create(DownloadClientType.TRANSMISSION, Arg.Any<string>(), 31, "Second").Returns(secondClient);
+		_statusTracker.GetLastUsedClientId(Protocol.BITTORRENT).Returns(31);
+
+		var decision = new DownloadDecision(MagnetCandidate(), true, 100, [], [], 0);
+
+		var outcome = await _service.GrabAsync(decision, mediaVersionId: 5, seriesId: 2, episodeIds: [7], movieId: null);
+
+		outcome.ShouldBeOfType<GrabbedOutcome>().Download.DownloadClientId.ShouldBe(30);
+	}
+
+	[Fact]
+	public async Task GrabAsync_ShouldSkipBackedOffClient_WhenAnotherOfEqualPriorityIsAvailable()
+	{
+		AddSeries(2);
+		AddMediaVersion(5, 2, null);
+		_db.DownloadClients.Add(new DownloadClient { Id = 30, Name = "Blocked", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1 });
+		_db.DownloadClients.Add(new DownloadClient { Id = 31, Name = "Healthy", Type = DownloadClientType.TRANSMISSION, Enable = true, Priority = 1 });
+		await _db.SaveChangesAsync();
+
+		var blockedClient = FakeClient(Protocol.BITTORRENT, "BLOCKED");
+		var healthyClient = FakeClient(Protocol.BITTORRENT, "HEALTHY");
+		_downloadClientFactory.Create(DownloadClientType.QBITTORRENT, Arg.Any<string>(), 30, "Blocked").Returns(blockedClient);
+		_downloadClientFactory.Create(DownloadClientType.TRANSMISSION, Arg.Any<string>(), 31, "Healthy").Returns(healthyClient);
+		_statusTracker.IsAvailable(30).Returns(false);
+
+		var decision = new DownloadDecision(MagnetCandidate(), true, 100, [], [], 0);
+
+		var outcome = await _service.GrabAsync(decision, mediaVersionId: 5, seriesId: 2, episodeIds: [7], movieId: null);
+
+		outcome.ShouldBeOfType<GrabbedOutcome>().Download.DownloadClientId.ShouldBe(31);
+		await blockedClient.DidNotReceive().AddAsync(Arg.Any<RemoteRelease>(), Arg.Any<SeedCriteria?>(), Arg.Any<CancellationToken>());
+	}
+
+	[Fact]
+	public async Task GrabAsync_ShouldPreferClientMatchingSeriesTag_OverUntaggedClient()
+	{
+		var tag = new Tag { Id = 1, Label = "anime" };
+		_db.Tags.Add(tag);
+		var series = new Series { Id = 2, TvdbId = 2, Title = "Show", CleanTitle = "show" };
+		series.Tags.Add(tag);
+		_db.Series.Add(series);
+		AddMediaVersion(5, 2, null);
+
+		var taggedEntity = new DownloadClient { Id = 30, Name = "Tagged", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 5 };
+		taggedEntity.Tags.Add(tag);
+		_db.DownloadClients.Add(taggedEntity);
+		_db.DownloadClients.Add(new DownloadClient { Id = 31, Name = "Untagged", Type = DownloadClientType.TRANSMISSION, Enable = true, Priority = 1 });
+		await _db.SaveChangesAsync();
+
+		var taggedClient = FakeClient(Protocol.BITTORRENT, "TAGGED");
+		var untaggedClient = FakeClient(Protocol.BITTORRENT, "UNTAGGED");
+		_downloadClientFactory.Create(DownloadClientType.QBITTORRENT, Arg.Any<string>(), 30, "Tagged").Returns(taggedClient);
+		_downloadClientFactory.Create(DownloadClientType.TRANSMISSION, Arg.Any<string>(), 31, "Untagged").Returns(untaggedClient);
+
+		var decision = new DownloadDecision(MagnetCandidate(), true, 100, [], [], 0);
+
+		var outcome = await _service.GrabAsync(decision, mediaVersionId: 5, seriesId: 2, episodeIds: [7], movieId: null);
+
+		// the tagged client wins despite its lower priority, because it matches the series tag
+		outcome.ShouldBeOfType<GrabbedOutcome>().Download.DownloadClientId.ShouldBe(30);
+	}
+
+	[Fact]
+	public async Task GrabAsync_ShouldFallBackToUntaggedClient_WhenNoClientTagsMatchSeriesTags()
+	{
+		var seriesTag = new Tag { Id = 1, Label = "anime" };
+		var otherTag = new Tag { Id = 2, Label = "documentary" };
+		_db.Tags.AddRange(seriesTag, otherTag);
+		var series = new Series { Id = 2, TvdbId = 2, Title = "Show", CleanTitle = "show" };
+		series.Tags.Add(seriesTag);
+		_db.Series.Add(series);
+		AddMediaVersion(5, 2, null);
+
+		var mismatchedEntity = new DownloadClient { Id = 30, Name = "Mismatched", Type = DownloadClientType.QBITTORRENT, Enable = true, Priority = 1 };
+		mismatchedEntity.Tags.Add(otherTag);
+		_db.DownloadClients.Add(mismatchedEntity);
+		_db.DownloadClients.Add(new DownloadClient { Id = 31, Name = "Untagged", Type = DownloadClientType.TRANSMISSION, Enable = true, Priority = 5 });
+		await _db.SaveChangesAsync();
+
+		var mismatchedClient = FakeClient(Protocol.BITTORRENT, "MISMATCHED");
+		var untaggedClient = FakeClient(Protocol.BITTORRENT, "UNTAGGED");
+		_downloadClientFactory.Create(DownloadClientType.QBITTORRENT, Arg.Any<string>(), 30, "Mismatched").Returns(mismatchedClient);
+		_downloadClientFactory.Create(DownloadClientType.TRANSMISSION, Arg.Any<string>(), 31, "Untagged").Returns(untaggedClient);
+
+		var decision = new DownloadDecision(MagnetCandidate(), true, 100, [], [], 0);
+
+		var outcome = await _service.GrabAsync(decision, mediaVersionId: 5, seriesId: 2, episodeIds: [7], movieId: null);
+
+		outcome.ShouldBeOfType<GrabbedOutcome>().Download.DownloadClientId.ShouldBe(31);
 	}
 
 	[Fact]

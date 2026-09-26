@@ -50,7 +50,9 @@ public class IndexerCategoriesTests
 		IndexerCategories.Resolve("tv/anime").ShouldBe(5070);
 		IndexerCategories.Resolve("Console/XBox 360").ShouldBe(1050);
 		IndexerCategories.Resolve("Movies/WEB-DL").ShouldBe(2080);
-		IndexerCategories.Resolve("Books/EBook").ShouldBe(7010);
+		IndexerCategories.Resolve("Books/EBook").ShouldBe(7020);
+		IndexerCategories.Resolve("Books/Mags").ShouldBe(7010);
+		IndexerCategories.Resolve("PC/ISO").ShouldBe(4020);
 	}
 
 	[Fact]
@@ -59,7 +61,7 @@ public class IndexerCategoriesTests
 
 	[Fact]
 	public void Resolve_ShouldFallBackToParent_WhenSubcategoryMissingFromTree()
-		=> IndexerCategories.Resolve("PC/ISO").ShouldBe(4000);
+		=> IndexerCategories.Resolve("Console/PS5").ShouldBe(1000);
 
 	[Fact]
 	public void InclusiveDescendantIds_ShouldIncludeSelfAndChildren_WhenParentRequested()

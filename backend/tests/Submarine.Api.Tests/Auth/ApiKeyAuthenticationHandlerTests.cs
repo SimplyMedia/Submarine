@@ -53,7 +53,7 @@ public sealed class ApiKeyAuthenticationHandlerTests
 	public async Task HandleAuthenticateAsync_ShouldSucceed_WithValidHeaderKey()
 	{
 		_authConfigProvider.GetSnapshotAsync(Arg.Any<CancellationToken>())
-			.Returns(new AuthSnapshot(AuthMethod.FORMS, "0123456789abcdef", string.Empty));
+			.Returns(new AuthSnapshot(AuthMethod.FORMS, "0123456789abcdef", string.Empty, AuthenticationRequiredType.ENABLED, []));
 
 		var result = await AuthenticateAsync("0123456789abcdef");
 
@@ -66,7 +66,7 @@ public sealed class ApiKeyAuthenticationHandlerTests
 	public async Task HandleAuthenticateAsync_ShouldSucceed_WithValidQueryKey()
 	{
 		_authConfigProvider.GetSnapshotAsync(Arg.Any<CancellationToken>())
-			.Returns(new AuthSnapshot(AuthMethod.FORMS, "0123456789abcdef", string.Empty));
+			.Returns(new AuthSnapshot(AuthMethod.FORMS, "0123456789abcdef", string.Empty, AuthenticationRequiredType.ENABLED, []));
 
 		var result = await AuthenticateAsync(null, "0123456789abcdef");
 
@@ -77,7 +77,7 @@ public sealed class ApiKeyAuthenticationHandlerTests
 	public async Task HandleAuthenticateAsync_ShouldFail_WithWrongKey()
 	{
 		_authConfigProvider.GetSnapshotAsync(Arg.Any<CancellationToken>())
-			.Returns(new AuthSnapshot(AuthMethod.FORMS, "0123456789abcdef", string.Empty));
+			.Returns(new AuthSnapshot(AuthMethod.FORMS, "0123456789abcdef", string.Empty, AuthenticationRequiredType.ENABLED, []));
 
 		var result = await AuthenticateAsync("deadbeef");
 
@@ -89,7 +89,7 @@ public sealed class ApiKeyAuthenticationHandlerTests
 	public async Task HandleAuthenticateAsync_ShouldFail_WhenNoKeyConfigured()
 	{
 		_authConfigProvider.GetSnapshotAsync(Arg.Any<CancellationToken>())
-			.Returns(new AuthSnapshot(AuthMethod.FORMS, string.Empty, string.Empty));
+			.Returns(new AuthSnapshot(AuthMethod.FORMS, string.Empty, string.Empty, AuthenticationRequiredType.ENABLED, []));
 
 		var result = await AuthenticateAsync("anything");
 

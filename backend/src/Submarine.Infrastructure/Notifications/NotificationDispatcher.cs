@@ -18,6 +18,8 @@ namespace Submarine.Infrastructure.Notifications;
 public sealed class NotificationDispatcher(
 	SubmarineDbContext db,
 	INotificationSenderFactory senderFactory,
+	INotificationStatusService statusService,
+	ITraktTokenRefresher traktTokenRefresher,
 	ILogger<NotificationDispatcher> logger) :
 	IEventHandler<ReleaseGrabbedEvent>,
 	IEventHandler<EpisodeFileImportedEvent>,
@@ -163,7 +165,7 @@ public sealed class NotificationDispatcher(
 			.ToListAsync(cancellationToken);
 		foreach (var (issue, eventType, flag) in items)
 		{
-			var message = new NotificationMessage(
+			var message = await ApplyInstanceSettingsAsync(new NotificationMessage(
 				eventType,
 				eventType == NotificationEventType.HEALTH ? "Health issue" : "Health restored",
 				$"{issue.Source}: {issue.Message}",
@@ -181,7 +183,7 @@ public sealed class NotificationDispatcher(
 				null,
 				null,
 				[],
-				issue.WikiUrl is null ? [] : [new NotificationLink("Wiki", issue.WikiUrl)]);
+				issue.WikiUrl is null ? [] : [new NotificationLink("Wiki", issue.WikiUrl)]), cancellationToken);
 			await SendAsync(notifications.Where(flag), message, cancellationToken);
 		}
 	}
@@ -264,21 +266,46 @@ public sealed class NotificationDispatcher(
 			return;
 		}
 
-		var message = await buildMessage();
+		var message = await ApplyInstanceSettingsAsync(await buildMessage(), cancellationToken);
 		await SendAsync(matching, message, cancellationToken);
+	}
+
+	private async Task<NotificationMessage> ApplyInstanceSettingsAsync(
+		NotificationMessage message,
+		CancellationToken cancellationToken)
+	{
+		var config = await db.GeneralConfig.AsNoTracking().SingleAsync(cancellationToken);
+		var title = string.IsNullOrWhiteSpace(config.InstanceName)
+			? message.Title
+			: $"{config.InstanceName} - {message.Title}";
+		if (!Uri.TryCreate(config.ApplicationUrl, UriKind.Absolute, out _))
+		{
+			return message with { Title = title };
+		}
+
+		var relativePath = message.SeriesId is { } seriesId
+			? $"series/{seriesId}"
+			: message.MovieId is { } movieId
+				? $"movies/{movieId}"
+				: string.Empty;
+		var applicationLink = new NotificationLink(
+			string.IsNullOrWhiteSpace(config.InstanceName) ? "Open application" : $"Open {config.InstanceName}",
+			new Uri(new Uri(config.ApplicationUrl.TrimEnd('/') + "/", UriKind.Absolute), relativePath).AbsoluteUri);
+		return message with { Title = title, Links = [.. message.Links, applicationLink] };
 	}
 
 	private async Task SendAsync(IEnumerable<Notification> notifications, NotificationMessage message, CancellationToken cancellationToken)
 	{
 		foreach (var notification in notifications)
 		{
-			if (notification.Type is NotificationType.PLEX or NotificationType.EMBY or NotificationType.JELLYFIN
-				&& message.EventType
-					is not (NotificationEventType.IMPORT
-						or NotificationEventType.UPGRADE
-						or NotificationEventType.RENAME
-						or NotificationEventType.DELETE))
+			if (!NotificationCapabilities.Supports(notification.Type, message.EventType))
 			{
+				continue;
+			}
+
+			if (!await statusService.IsAvailableAsync(notification.Id, cancellationToken))
+			{
+				logger.LogDebug("Notification {Name} skipped: disabled by backoff", notification.Name);
 				continue;
 			}
 
@@ -295,7 +322,9 @@ public sealed class NotificationDispatcher(
 
 			try
 			{
-				await sender.SendAsync(message, notification.SettingsJson, cancellationToken);
+				var settingsJson = await traktTokenRefresher.EnsureFreshTokensAsync(notification, cancellationToken);
+				await sender.SendAsync(message, settingsJson, cancellationToken);
+				await statusService.RecordSuccessAsync(notification.Id, cancellationToken);
 			}
 			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
 			{
@@ -305,6 +334,7 @@ public sealed class NotificationDispatcher(
 			{
 				logger.LogError(ex, "Notification {Name} ({Type}) failed for {Event}",
 					notification.Name, notification.Type, message.EventType);
+				await statusService.RecordFailureAsync(notification.Id, cancellationToken);
 			}
 		}
 	}

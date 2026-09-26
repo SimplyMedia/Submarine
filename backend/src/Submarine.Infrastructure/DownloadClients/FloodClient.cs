@@ -32,18 +32,18 @@ public sealed class FloodClient(
 	{
 		var magnetUrl = MagnetUrl(release);
 		var fileName = $"{SanitizeFileName(release.Title)}.torrent";
+		var tags = BuildTags(release);
 
 		if (magnetUrl is not null)
 		{
 			var payload = new Dictionary<string, object?>
 			{
 				["urls"] = new[] { magnetUrl },
-				["stopped"] = Settings.AddPaused
+				["stopped"] = Settings.AddPaused,
+				["tags"] = tags
 			};
 			if (Settings.Destination is { Length: > 0 })
 				payload["destination"] = Settings.Destination;
-			if (Settings.Tags.Count > 0)
-				payload["tags"] = Settings.Tags;
 
 			await AuthorizedAsync(
 				() => JsonRequest(HttpMethod.Post, Api("/torrents/add-urls"), payload),
@@ -59,12 +59,48 @@ public sealed class FloodClient(
 			{
 				Content = new MultipartFormDataContent
 				{
-					{ new ByteArrayContent(torrentData), "files", fileName }
+					{ new ByteArrayContent(torrentData), "files", fileName },
+					{ new StringContent(JsonSerializer.Serialize(tags)), "tags" }
 				}
 			}, $"Flood {ClientName} add", cancellationToken);
 
 		return ResolveTorrentId(release, magnetUrl, torrentData);
 	}
+
+	/// <summary>Configured tags plus any per-release metadata tags enabled in <see cref="FloodSettings.AdditionalTags" /></summary>
+	private List<string> BuildTags(RemoteRelease release)
+	{
+		var tags = new HashSet<string>(Settings.Tags);
+
+		foreach (var additionalTag in Settings.AdditionalTags)
+		{
+			var value = additionalTag switch
+			{
+				FloodAdditionalTag.TITLE_SLUG => Slugify(release.Title),
+				FloodAdditionalTag.QUALITY => release.Quality,
+				FloodAdditionalTag.RELEASE_GROUP => release.ReleaseGroup,
+				FloodAdditionalTag.YEAR => release.Year?.ToString(),
+				FloodAdditionalTag.INDEXER => release.Indexer,
+				FloodAdditionalTag.NETWORK => release.Network,
+				FloodAdditionalTag.LANGUAGES => null, // added below, one tag per language
+				_ => null
+			};
+
+			if (!string.IsNullOrWhiteSpace(value))
+				tags.Add(value);
+
+			if (additionalTag == FloodAdditionalTag.LANGUAGES)
+				foreach (var language in release.Languages)
+					if (!string.IsNullOrWhiteSpace(language))
+						tags.Add(language);
+		}
+
+		return [.. tags];
+	}
+
+	private static string Slugify(string title)
+		=> string.Concat(title.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-'))
+			.Trim('-');
 
 	/// <inheritdoc />
 	protected override async Task<IReadOnlyList<DownloadClientItem>> GetItemsAsyncCore(
@@ -87,6 +123,31 @@ public sealed class FloodClient(
 			() => JsonRequest(HttpMethod.Post, Api("/torrents/delete"),
 				new { hashes = new[] { downloadId }, deleteData }),
 			$"Flood {ClientName} remove", cancellationToken);
+
+	/// <inheritdoc />
+	public override async Task MarkImportedAsync(string downloadId, CancellationToken cancellationToken)
+	{
+		if (Settings.PostImportTags.Count == 0)
+			return;
+
+		using var response = await AuthorizedAsync(
+			() => new HttpRequestMessage(HttpMethod.Get, Api("/torrents")),
+			$"Flood {ClientName} list", cancellationToken);
+
+		using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+		if (!document.RootElement.GetProperty("torrents").TryGetProperty(downloadId, out var torrent))
+			return;
+
+		var tags = new HashSet<string>(Settings.PostImportTags);
+		if (torrent.TryGetProperty("tags", out var tagsElement) && tagsElement.ValueKind == JsonValueKind.Array)
+			tags.UnionWith(tagsElement.EnumerateArray().Select(tag => tag.GetString() ?? string.Empty));
+
+		await AuthorizedAsync(
+			() => new HttpRequestMessage(HttpMethod.Patch, Api("/torrents/tags"))
+			{
+				Content = JsonContent.Create(new { hashes = new[] { downloadId }, tags = tags.ToList() })
+			}, $"Flood {ClientName} set tags", cancellationToken);
+	}
 
 	/// <inheritdoc />
 	protected override async Task TestAsyncCore(CancellationToken cancellationToken)

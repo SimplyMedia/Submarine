@@ -104,4 +104,8 @@ public sealed record HealthIssuesChangedEvent(
 
 public sealed record IndexerStatusChangedEvent(int IndexerId) : IDomainEvent;
 
+public sealed record ImportListStatusChangedEvent(int ImportListId) : IDomainEvent;
+
 public sealed record DownloadClientStatusChangedEvent(int DownloadClientId) : IDomainEvent;
+
+public sealed record NotificationStatusChangedEvent(int NotificationId) : IDomainEvent;

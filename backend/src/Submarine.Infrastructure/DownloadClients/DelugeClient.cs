@@ -96,6 +96,23 @@ public sealed class DelugeClient(
 		=> RpcAsync("core.remove_torrent", [downloadId, deleteData], cancellationToken);
 
 	/// <inheritdoc />
+	public override async Task MarkImportedAsync(string downloadId, CancellationToken cancellationToken)
+	{
+		if (string.IsNullOrEmpty(Settings.PostImportCategory) || Settings.PostImportCategory == Settings.Category)
+			return;
+
+		try
+		{
+			await RpcAsync("label.set_torrent", [downloadId.ToLowerInvariant(), Settings.PostImportCategory],
+				cancellationToken);
+		}
+		catch (DownloadClientException)
+		{
+			// the label plugin is optional; the download was already added successfully
+		}
+	}
+
+	/// <inheritdoc />
 	protected override Task TestAsyncCore(CancellationToken cancellationToken)
 		=> RpcAsync("daemon.info", [], cancellationToken);
 

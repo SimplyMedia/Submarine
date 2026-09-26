@@ -699,295 +699,10 @@
         }
       }
     },
-    "/_status/healthz": {
+    "/api/v1/updates/releases": {
       "get": {
         "tags": [
-          "Submarine.Api"
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/_status/ready": {
-      "get": {
-        "tags": [
-          "SystemModule"
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/system/status": {
-      "get": {
-        "tags": [
-          "SystemModule"
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SystemStatusDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/stats": {
-      "get": {
-        "tags": [
-          "StatsModule"
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StatsDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/search": {
-      "get": {
-        "tags": [
-          "SearchModule"
-        ],
-        "parameters": [
-          {
-            "name": "seriesId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "seasonNumber",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "episodeId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "movieId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "term",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "mediaVersionId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
+          "UpdatesModule"
         ],
         "responses": {
           "400": {
@@ -1037,939 +752,8 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ReleaseResource"
+                    "$ref": "#/components/schemas/ReleaseInfo"
                   }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/releases/grab": {
-      "post": {
-        "tags": [
-          "ReleasesModule"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GrabReleaseRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GrabResultResource"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/releases/push": {
-      "post": {
-        "tags": [
-          "ReleasesModule"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PushReleaseRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GrabResultResource"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/indexer/{id}/newznab/api": {
-      "get": {
-        "tags": [
-          "NewznabModule"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "t",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Q",
-            "in": "query",
-            "description": "Free text query.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Season",
-            "in": "query",
-            "description": "Season number.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "Ep",
-            "in": "query",
-            "description": "Episode number.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "tvdbid",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "tmdbid",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "imdbid",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Cat",
-            "in": "query",
-            "description": "Comma separated standard category ids.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Limit",
-            "in": "query",
-            "description": "Maximum amount of results.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "Offset",
-            "in": "query",
-            "description": "Offset into the results.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "apikey",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/indexers/newznab/api": {
-      "get": {
-        "tags": [
-          "NewznabModule"
-        ],
-        "parameters": [
-          {
-            "name": "t",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Q",
-            "in": "query",
-            "description": "Free text query.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Season",
-            "in": "query",
-            "description": "Season number.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "Ep",
-            "in": "query",
-            "description": "Episode number.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "tvdbid",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "tmdbid",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "imdbid",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Cat",
-            "in": "query",
-            "description": "Comma separated standard category ids.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Limit",
-            "in": "query",
-            "description": "Maximum amount of results.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "Offset",
-            "in": "query",
-            "description": "Offset into the results.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "apikey",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/indexers/torznab/api": {
-      "get": {
-        "tags": [
-          "NewznabModule"
-        ],
-        "parameters": [
-          {
-            "name": "t",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Q",
-            "in": "query",
-            "description": "Free text query.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Season",
-            "in": "query",
-            "description": "Season number.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "Ep",
-            "in": "query",
-            "description": "Episode number.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "tvdbid",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "tmdbid",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "imdbid",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Cat",
-            "in": "query",
-            "description": "Comma separated standard category ids.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Limit",
-            "in": "query",
-            "description": "Maximum amount of results.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "Offset",
-            "in": "query",
-            "description": "Offset into the results.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "apikey",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/indexer/{id}/download": {
-      "get": {
-        "tags": [
-          "NewznabModule"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "link",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "file",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "apikey",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/indexer-stats": {
-      "get": {
-        "tags": [
-          "IndexerStatsModule"
-        ],
-        "parameters": [
-          {
-            "name": "start",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "indexerIds",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IndexerStatsResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/indexer-categories": {
-      "get": {
-        "tags": [
-          "IndexersModule"
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/IndexerCategoryDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/health": {
-      "get": {
-        "tags": [
-          "HealthModule"
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HealthIssueDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/filesystem": {
-      "get": {
-        "tags": [
-          "FileSystemModule"
-        ],
-        "parameters": [
-          {
-            "name": "path",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "includeFiles",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileSystemListingDto"
                 }
               }
             }
@@ -2382,6 +1166,1537 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TagDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/_status/healthz": {
+      "get": {
+        "tags": [
+          "Submarine.Api"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/_status/ready": {
+      "get": {
+        "tags": [
+          "SystemModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/status": {
+      "get": {
+        "tags": [
+          "SystemModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "tags": [
+          "StatsModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "tags": [
+          "SearchModule"
+        ],
+        "parameters": [
+          {
+            "name": "seriesId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "seasonNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "episodeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "movieId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "term",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaVersionId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "categories",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "indexerIds",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReleaseResource"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/grab": {
+      "post": {
+        "tags": [
+          "ReleasesModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrabReleaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrabResultResource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/push": {
+      "post": {
+        "tags": [
+          "ReleasesModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushReleaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrabResultResource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexer/{id}/newznab/api": {
+      "get": {
+        "tags": [
+          "NewznabModule"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "t",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Q",
+            "in": "query",
+            "description": "Free text query.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Season",
+            "in": "query",
+            "description": "Season number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Ep",
+            "in": "query",
+            "description": "Episode number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Cat",
+            "in": "query",
+            "description": "Comma separated standard category ids.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "description": "Maximum amount of results.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Offset",
+            "in": "query",
+            "description": "Offset into the results.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Artist",
+            "in": "query",
+            "description": "Artist name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Album",
+            "in": "query",
+            "description": "Album name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Label",
+            "in": "query",
+            "description": "Record label, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Track",
+            "in": "query",
+            "description": "Track name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Genre",
+            "in": "query",
+            "description": "Genre, for t=music or t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Author",
+            "in": "query",
+            "description": "Author name, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Publisher",
+            "in": "query",
+            "description": "Publisher, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Year",
+            "in": "query",
+            "description": "Release year, for t=music or t=book.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexers/newznab/api": {
+      "get": {
+        "tags": [
+          "NewznabModule"
+        ],
+        "parameters": [
+          {
+            "name": "t",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Q",
+            "in": "query",
+            "description": "Free text query.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Season",
+            "in": "query",
+            "description": "Season number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Ep",
+            "in": "query",
+            "description": "Episode number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Cat",
+            "in": "query",
+            "description": "Comma separated standard category ids.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "description": "Maximum amount of results.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Offset",
+            "in": "query",
+            "description": "Offset into the results.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Artist",
+            "in": "query",
+            "description": "Artist name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Album",
+            "in": "query",
+            "description": "Album name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Label",
+            "in": "query",
+            "description": "Record label, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Track",
+            "in": "query",
+            "description": "Track name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Genre",
+            "in": "query",
+            "description": "Genre, for t=music or t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Author",
+            "in": "query",
+            "description": "Author name, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Publisher",
+            "in": "query",
+            "description": "Publisher, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Year",
+            "in": "query",
+            "description": "Release year, for t=music or t=book.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexers/torznab/api": {
+      "get": {
+        "tags": [
+          "NewznabModule"
+        ],
+        "parameters": [
+          {
+            "name": "t",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Q",
+            "in": "query",
+            "description": "Free text query.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Season",
+            "in": "query",
+            "description": "Season number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Ep",
+            "in": "query",
+            "description": "Episode number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Cat",
+            "in": "query",
+            "description": "Comma separated standard category ids.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "description": "Maximum amount of results.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Offset",
+            "in": "query",
+            "description": "Offset into the results.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Artist",
+            "in": "query",
+            "description": "Artist name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Album",
+            "in": "query",
+            "description": "Album name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Label",
+            "in": "query",
+            "description": "Record label, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Track",
+            "in": "query",
+            "description": "Track name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Genre",
+            "in": "query",
+            "description": "Genre, for t=music or t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Author",
+            "in": "query",
+            "description": "Author name, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Publisher",
+            "in": "query",
+            "description": "Publisher, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Year",
+            "in": "query",
+            "description": "Release year, for t=music or t=book.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexer/{id}/download": {
+      "get": {
+        "tags": [
+          "NewznabModule"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "link",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "apikey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexer-stats": {
+      "get": {
+        "tags": [
+          "IndexerStatsModule"
+        ],
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "indexerIds",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexer-categories": {
+      "get": {
+        "tags": [
+          "IndexersModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IndexerCategoryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "HealthModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HealthIssueDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/filesystem": {
+      "get": {
+        "tags": [
+          "FileSystemModule"
+        ],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeFiles",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSystemListingDto"
                 }
               }
             }
@@ -6926,6 +7241,75 @@
         }
       }
     },
+    "/api/v1/quality-definitions/import": {
+      "post": {
+        "tags": [
+          "QualityDefinitionsModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityDefinitionImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/quality-definitions/{id}": {
       "put": {
         "tags": [
@@ -7679,6 +8063,144 @@
           },
           "204": {
             "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/trakt/authorize": {
+      "post": {
+        "tags": [
+          "NotificationsModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TraktAuthorizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraktAuthorizeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/trakt/poll": {
+      "post": {
+        "tags": [
+          "NotificationsModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TraktPollRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraktPollResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -11214,6 +11736,20 @@
             "description": "ascending or descending, defaults to ascending.",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/IndexerHistoryEventType"
+            }
+          },
+          {
+            "name": "successful",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -16169,6 +16705,132 @@
         }
       }
     },
+    "/api/v1/config/import-list": {
+      "get": {
+        "tags": [
+          "ImportListConfigModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportListConfigResource"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ImportListConfigModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportListConfigResource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportListConfigResource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/indexer": {
       "get": {
         "tags": [
@@ -18637,6 +19299,8 @@
           "FIRST_SEASON",
           "LATEST_SEASON",
           "NONE",
+          "RECENT",
+          "SKIP",
           null
         ]
       },
@@ -18932,10 +19596,19 @@
         },
         "description": "Regenerated API key."
       },
+      "AuthenticationRequiredType": {
+        "enum": [
+          "ENABLED",
+          "DISABLED_FOR_LOCAL_ADDRESSES"
+        ],
+        "description": "Whether authentication is required for every request or bypassed for local addresses."
+      },
       "AuthMethod": {
         "enum": [
           "NONE",
-          "FORMS"
+          "FORMS",
+          "BASIC",
+          "EXTERNAL"
         ],
         "description": "Authentication modes of the application."
       },
@@ -19027,7 +19700,9 @@
           "YEAR",
           "QUALITY_PROFILE",
           "MONITORED",
-          "NETWORK_OR_STUDIO"
+          "NETWORK_OR_STUDIO",
+          "ORIGINAL_LANGUAGE",
+          "KEYWORD"
         ],
         "description": "Type of an auto tagging rule specification."
       },
@@ -19486,6 +20161,24 @@
         },
         "description": "One calendar entry."
       },
+      "CertificateValidationType": {
+        "enum": [
+          "ENABLED",
+          "DISABLED_FOR_LOCAL_ADDRESSES",
+          "DISABLED"
+        ],
+        "description": "How strictly outbound HTTPS clients validate the remote TLS certificate."
+      },
+      "CleanLibraryLevel": {
+        "enum": [
+          "DISABLED",
+          "LOG_ONLY",
+          "KEEP_AND_UNMONITOR",
+          "REMOVE_AND_KEEP",
+          "REMOVE_AND_DELETE"
+        ],
+        "description": "What to do with library items no longer covered by any automatic-add import list, checked\nat the end of a full import list sync."
+      },
       "CollectionAddMissingDto": {
         "required": [
           "added"
@@ -19823,7 +20516,9 @@
           "HARDCODED_SUBS",
           "SIZE",
           "YEAR",
-          "INDEXER_FLAG"
+          "INDEXER_FLAG",
+          "RELEASE_TYPE",
+          "QUALITY_MODIFIER"
         ],
         "description": "Type of a custom format specification."
       },
@@ -19881,6 +20576,16 @@
               "format": "int32"
             },
             "description": "Tag ids this profile applies to."
+          },
+          "enableUsenet": {
+            "type": "boolean",
+            "description": "Whether usenet releases are grabbed for tagged media.",
+            "default": true
+          },
+          "enableTorrent": {
+            "type": "boolean",
+            "description": "Whether torrent releases are grabbed for tagged media.",
+            "default": true
           }
         },
         "description": "Create or update request for a delay profile."
@@ -19890,6 +20595,8 @@
           "id",
           "name",
           "preferredProtocol",
+          "enableUsenet",
+          "enableTorrent",
           "usenetDelayMinutes",
           "torrentDelayMinutes",
           "bypassIfHighestQuality",
@@ -19912,6 +20619,14 @@
           "preferredProtocol": {
             "description": "Protocol preferred when both are available.",
             "$ref": "#/components/schemas/Protocol"
+          },
+          "enableUsenet": {
+            "type": "boolean",
+            "description": "Whether usenet releases are grabbed for tagged media."
+          },
+          "enableTorrent": {
+            "type": "boolean",
+            "description": "Whether torrent releases are grabbed for tagged media."
           },
           "usenetDelayMinutes": {
             "type": "integer",
@@ -20287,7 +21002,13 @@
           "SABNZBD",
           "NZBGET",
           "TORRENT_BLACKHOLE",
-          "USENET_BLACKHOLE"
+          "USENET_BLACKHOLE",
+          "VUZE",
+          "HADOUKEN",
+          "NZBVORTEX",
+          "PNEUMATIC",
+          "FREEBOX_DOWNLOAD",
+          "RQBIT"
         ]
       },
       "DownloadConfigResource": {
@@ -20776,12 +21497,74 @@
             "type": "string",
             "description": "Update branch."
           },
-          "updateAutomatically": {
+          "authenticationRequired": {
+            "description": "Whether authentication is required for every request or bypassed for local addresses.",
+            "$ref": "#/components/schemas/AuthenticationRequiredType"
+          },
+          "trustedProxies": {
+            "type": "string",
+            "description": "Comma separated CIDR list of reverse proxies trusted to set X-Forwarded-For; forwarded\nheaders from any other peer are ignored."
+          },
+          "certificateValidation": {
+            "description": "How strictly outbound HTTPS clients validate the remote TLS certificate.",
+            "$ref": "#/components/schemas/CertificateValidationType"
+          },
+          "proxyEnabled": {
+            "type": "boolean",
+            "description": "Whether an outbound proxy is used for external HTTP requests."
+          },
+          "proxyType": {
+            "description": "Outbound proxy protocol; FLARESOLVERR is not a valid value here.",
+            "$ref": "#/components/schemas/IndexerProxyType"
+          },
+          "proxyHost": {
+            "type": "string",
+            "description": "Outbound proxy host."
+          },
+          "proxyPort": {
+            "type": "integer",
+            "description": "Outbound proxy port.",
+            "format": "int32"
+          },
+          "proxyUsername": {
             "type": [
               "null",
-              "boolean"
+              "string"
             ],
-            "description": "Whether automatic updates are enabled, null means unset."
+            "description": "Outbound proxy username."
+          },
+          "proxyPassword": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Outbound proxy password."
+          },
+          "proxyBypassFilter": {
+            "type": "string",
+            "description": "Comma separated list of hosts, domains (with a leading *) or CIDR ranges that bypass\nthe outbound proxy."
+          },
+          "proxyBypassLocalAddresses": {
+            "type": "boolean",
+            "description": "Whether local addresses (and hostnames without a dot) bypass the outbound proxy."
+          },
+          "backupFolder": {
+            "type": "string",
+            "description": "Backup folder, relative to the app data directory when not rooted; empty uses \"backups\"."
+          },
+          "backupIntervalDays": {
+            "type": "integer",
+            "description": "How often the scheduled backup task runs, in days.",
+            "format": "int32"
+          },
+          "backupRetention": {
+            "type": "integer",
+            "description": "How many of the most recent backups to keep.",
+            "format": "int32"
+          },
+          "applicationUrl": {
+            "type": "string",
+            "description": "Externally reachable URL of this instance, used in notification links."
           },
           "id": {
             "type": "integer",
@@ -21170,6 +21953,19 @@
         "type": "string",
         "format": "binary"
       },
+      "ImportListConfigResource": {
+        "required": [
+          "cleanLibraryLevel"
+        ],
+        "type": "object",
+        "properties": {
+          "cleanLibraryLevel": {
+            "description": "What to do with library items no longer covered by any automatic-add import list.",
+            "$ref": "#/components/schemas/CleanLibraryLevel"
+          }
+        },
+        "description": "Import list behaviour configuration resource."
+      },
       "ImportListDto": {
         "required": [
           "id",
@@ -21187,7 +21983,9 @@
           "minimumAvailability",
           "seriesType",
           "seasonFolder",
-          "tagIds"
+          "tagIds",
+          "minRefreshIntervalMinutes",
+          "status"
         ],
         "type": "object",
         "properties": {
@@ -21285,6 +22083,15 @@
               "format": "int32"
             },
             "description": "Tags applied to added items."
+          },
+          "minRefreshIntervalMinutes": {
+            "type": "integer",
+            "description": "Minimum minutes between automatic scheduled fetches of this list type.",
+            "format": "int32"
+          },
+          "status": {
+            "description": "Runtime sync and backoff state.",
+            "$ref": "#/components/schemas/ImportListStatusSummary"
           }
         },
         "description": "An import list."
@@ -21443,6 +22250,38 @@
         },
         "description": "One preview item."
       },
+      "ImportListStatusSummary": {
+        "required": [
+          "lastSyncAt",
+          "disabledUntil",
+          "escalationLevel"
+        ],
+        "type": "object",
+        "properties": {
+          "lastSyncAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Last successful fetch, null when never synced.",
+            "format": "date-time"
+          },
+          "disabledUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Disabled by backoff until this time, null when not disabled.",
+            "format": "date-time"
+          },
+          "escalationLevel": {
+            "type": "integer",
+            "description": "Current backoff escalation level.",
+            "format": "int32"
+          }
+        },
+        "description": "Runtime sync and backoff state of an import list."
+      },
       "ImportListTestDto": {
         "required": [
           "success",
@@ -21484,7 +22323,11 @@
           "SONARR",
           "RADARR",
           "STEVEN_LU",
-          "CUSTOM"
+          "CUSTOM",
+          "SIMKL",
+          "IMDB",
+          "MYANIMELIST",
+          "RSS"
         ],
         "description": "Type of an import list."
       },
@@ -21653,7 +22496,9 @@
           "minimumAgeMinutes",
           "retentionDays",
           "maximumSizeMb",
-          "availabilityDelayDays"
+          "availabilityDelayDays",
+          "allowHardcodedSubs",
+          "whitelistedHardcodedSubs"
         ],
         "type": "object",
         "properties": {
@@ -21681,6 +22526,14 @@
             "type": "integer",
             "description": "Days a movie must be past its release date before grabbing, 0 disables.",
             "format": "int32"
+          },
+          "allowHardcodedSubs": {
+            "type": "boolean",
+            "description": "Allow releases reporting hardcoded subtitles."
+          },
+          "whitelistedHardcodedSubs": {
+            "type": "string",
+            "description": "Comma separated release groups allowed to have hardcoded subtitles even when bool IndexerConfigResource.AllowHardcodedSubs is off."
           }
         },
         "description": "Indexer behaviour configuration resource."
@@ -21845,7 +22698,14 @@
           "animeStandardFormatSearch",
           "tagIds",
           "status",
-          "capabilities"
+          "capabilities",
+          "vipExpiration",
+          "queryLimit",
+          "grabLimit",
+          "limitsUnit",
+          "redirect",
+          "requiredFlags",
+          "seasonSearchMaximumSingleEpisodeAge"
         ],
         "type": "object",
         "properties": {
@@ -21965,9 +22825,57 @@
                 "$ref": "#/components/schemas/IndexerCapabilitiesSummary"
               }
             ]
+          },
+          "vipExpiration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "queryLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "grabLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "limitsUnit": {
+            "$ref": "#/components/schemas/IndexerLimitsUnit"
+          },
+          "redirect": {
+            "type": "boolean"
+          },
+          "requiredFlags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerFlag"
+            }
+          },
+          "seasonSearchMaximumSingleEpisodeAge": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "description": "A configured indexer."
+      },
+      "IndexerFlag": {
+        "enum": [
+          "FREELEECH",
+          "HALFLEECH",
+          "DOUBLE_UPLOAD",
+          "INTERNAL",
+          "SCENE",
+          "EXCLUSIVE",
+          "G_FREELEECH"
+        ],
+        "description": "Indexer specific flags of a release"
       },
       "IndexerHistoryDto": {
         "required": [
@@ -22059,6 +22967,13 @@
           }
         },
         "description": "Settings schema for one indexer implementation."
+      },
+      "IndexerLimitsUnit": {
+        "enum": [
+          "DAY",
+          "HOUR"
+        ],
+        "description": "Interval unit for a per-indexer query or grab limit."
       },
       "IndexerProxyDto": {
         "required": [
@@ -22214,7 +23129,14 @@
           "seedTimeMinutes",
           "seasonPackSeedTimeMinutes",
           "animeStandardFormatSearch",
-          "tagIds"
+          "tagIds",
+          "vipExpiration",
+          "queryLimit",
+          "grabLimit",
+          "limitsUnit",
+          "redirect",
+          "requiredFlags",
+          "seasonSearchMaximumSingleEpisodeAge"
         ],
         "type": "object",
         "properties": {
@@ -22326,6 +23248,45 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "vipExpiration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "queryLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "grabLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "limitsUnit": {
+            "$ref": "#/components/schemas/IndexerLimitsUnit"
+          },
+          "redirect": {
+            "type": "boolean"
+          },
+          "requiredFlags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexerFlag"
+            }
+          },
+          "seasonSearchMaximumSingleEpisodeAge": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "description": "Create or update request for an indexer."
@@ -24237,7 +25198,8 @@
       "NotificationSchemaDto": {
         "required": [
           "type",
-          "fields"
+          "fields",
+          "supportedEvents"
         ],
         "type": "object",
         "properties": {
@@ -24251,6 +25213,13 @@
               "$ref": "#/components/schemas/NotificationFieldDescriptor"
             },
             "description": "Field descriptors."
+          },
+          "supportedEvents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Events this notification type can deliver, driving which toggles the UI shows."
           }
         },
         "description": "Field descriptors of one notification type."
@@ -24271,7 +25240,19 @@
           "JELLYFIN",
           "EMAIL",
           "NTFY",
-          "APPRISE"
+          "APPRISE",
+          "JOIN",
+          "MAILGUN",
+          "NOTIFIARR",
+          "PROWL",
+          "PUSHCUT",
+          "PUSHSAFER",
+          "SENDGRID",
+          "SIGNAL",
+          "SIMPLEPUSH",
+          "SYNOLOGY_INDEXER",
+          "TWITTER",
+          "TRAKT"
         ],
         "description": "Type of a notification."
       },
@@ -25221,6 +26202,30 @@
         },
         "description": "Request to push a release from an external tool through the decision pipeline."
       },
+      "QualityDefinitionImportResult": {
+        "required": [
+          "updated",
+          "skipped"
+        ],
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QualityDefinitionResource"
+            },
+            "description": "Definitions updated by the import."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "TRaSH quality names that did not match a known Submarine quality."
+          }
+        },
+        "description": "Result of importing TRaSH quality-size entries."
+      },
       "QualityDefinitionResource": {
         "required": [
           "id",
@@ -25983,6 +26988,45 @@
           }
         },
         "description": "A release group quality source override."
+      },
+      "ReleaseInfo": {
+        "required": [
+          "version",
+          "notes",
+          "htmlUrl",
+          "prerelease",
+          "publishedAt",
+          "installed"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "The release tag."
+          },
+          "notes": {
+            "type": "string",
+            "description": "The release notes body, in GitHub flavoured markdown."
+          },
+          "htmlUrl": {
+            "type": "string",
+            "description": "Url of the release page."
+          },
+          "prerelease": {
+            "type": "boolean",
+            "description": "Whether this is a develop prerelease rather than a stable release."
+          },
+          "publishedAt": {
+            "type": "string",
+            "description": "When the release was published.",
+            "format": "date-time"
+          },
+          "installed": {
+            "type": "boolean",
+            "description": "Whether this release matches the running version."
+          }
+        },
+        "description": "One published release, for the System &gt; Updates history view."
       },
       "ReleaseProfileRequest": {
         "required": [
@@ -28070,6 +29114,115 @@
         ],
         "description": "Color theme of the web UI."
       },
+      "TraktAuthorizeRequest": {
+        "required": [
+          "clientId"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Trakt app client id, falls back to the instance's Trakt:ClientId setting."
+          }
+        },
+        "description": "Starts a Trakt OAuth device code flow."
+      },
+      "TraktAuthorizeResponse": {
+        "required": [
+          "deviceCode",
+          "userCode",
+          "verificationUrl",
+          "expiresIn",
+          "interval"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceCode": {
+            "type": "string"
+          },
+          "userCode": {
+            "type": "string"
+          },
+          "verificationUrl": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "interval": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The device code the user must enter at the verification url."
+      },
+      "TraktPollRequest": {
+        "required": [
+          "clientId",
+          "clientSecret",
+          "deviceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Trakt app client id, falls back to the instance's Trakt:ClientId setting."
+          },
+          "clientSecret": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Trakt app client secret, falls back to the instance's Trakt:ClientSecret setting."
+          },
+          "deviceCode": {
+            "type": "string",
+            "description": "Device code returned by TraktAuthorizeResponse."
+          }
+        },
+        "description": "Polls once for the outcome of a previously started device code flow."
+      },
+      "TraktPollResponse": {
+        "required": [
+          "status",
+          "accessToken",
+          "refreshToken",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "accessToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "refreshToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "Outcome of a device code poll: PENDING, AUTHORIZED, DENIED or EXPIRED. Tokens are set only when AUTHORIZED."
+      },
       "TrashFormat": {
         "required": [
           "name",
@@ -28268,7 +29421,7 @@
               "null",
               "string"
             ],
-            "description": "Newest published version, null when the check failed."
+            "description": "Newest published version for the configured branch, null when the check failed or none exists yet."
           },
           "releaseNotesUrl": {
             "type": [
@@ -28287,7 +29440,7 @@
           },
           "checkFailed": {
             "type": "boolean",
-            "description": "Whether the update check failed, distinct from a check that succeeded and found no update."
+            "description": "Whether the update check failed, distinct from a check that succeeded and found no matching release."
           }
         },
         "description": "Update availability."
@@ -28846,6 +29999,9 @@
       "name": "UpdatesModule"
     },
     {
+      "name": "TagsModule"
+    },
+    {
       "name": "Submarine.Api"
     },
     {
@@ -28874,9 +30030,6 @@
     },
     {
       "name": "FileSystemModule"
-    },
-    {
-      "name": "TagsModule"
     },
     {
       "name": "SystemExtrasModule"
@@ -28982,6 +30135,9 @@
     },
     {
       "name": "DownloadConfigModule"
+    },
+    {
+      "name": "ImportListConfigModule"
     },
     {
       "name": "IndexerConfigModule"

@@ -57,6 +57,10 @@ public static class AutoTaggingCalculator
 			AutoTaggingSpecificationType.MONITORED => context.Monitored,
 			AutoTaggingSpecificationType.NETWORK_OR_STUDIO => context.NetworkOrStudio is { } networkOrStudio
 				&& ReadStrings(specification.Value).Any(value => string.Equals(value, networkOrStudio, StringComparison.OrdinalIgnoreCase)),
+			AutoTaggingSpecificationType.ORIGINAL_LANGUAGE => context.OriginalLanguage is { } language
+				&& ReadStrings(specification.Value).Any(value => string.Equals(value, language, StringComparison.OrdinalIgnoreCase)),
+			AutoTaggingSpecificationType.KEYWORD => context.Keywords is { } keywords
+				&& ReadStrings(specification.Value).Any(value => keywords.Contains(value, StringComparer.OrdinalIgnoreCase)),
 			_ => false
 		};
 

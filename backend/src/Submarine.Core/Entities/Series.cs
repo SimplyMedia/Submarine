@@ -25,6 +25,9 @@ public sealed class Series : Entity
 	/// <summary>Lowercase cleaned title used for parsing and matching.</summary>
 	public string CleanTitle { get; set; } = string.Empty;
 
+	/// <summary>Original language code.</summary>
+	public string? OriginalLanguage { get; set; }
+
 	/// <summary>Overview.</summary>
 	public string? Overview { get; set; }
 
