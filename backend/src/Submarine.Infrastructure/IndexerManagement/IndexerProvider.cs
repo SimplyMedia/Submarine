@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Submarine.Core.Entities;
 using Submarine.Core.Indexers;
 using Submarine.Infrastructure.Http;
@@ -20,13 +21,15 @@ namespace Submarine.Infrastructure.IndexerManagement;
 /// <param name="capabilityCache">The shared capability cache.</param>
 /// <param name="outboundProxyProvider">Global outbound proxy, used when the indexer has none of its own.</param>
 /// <param name="timeProvider">The time source, used to evaluate backoff windows.</param>
+/// <param name="logger">Logs indexers that cannot be built from their stored settings.</param>
 public sealed class IndexerProvider(
 	SubmarineDbContext db,
 	IIndexerFactory factory,
 	IndexerDefinitionLoader definitionLoader,
 	IndexerCapabilityCache capabilityCache,
 	IOutboundProxyProvider outboundProxyProvider,
-	TimeProvider timeProvider) : IIndexerProvider
+	TimeProvider timeProvider,
+	ILogger<IndexerProvider> logger) : IIndexerProvider
 {
 	/// <inheritdoc />
 	public async Task<IReadOnlyList<ConfiguredIndexer>> GetEnabledAsync(IndexerSearchMode mode, CancellationToken cancellationToken = default)
@@ -58,7 +61,15 @@ public sealed class IndexerProvider(
 
 		foreach (var entity in available)
 		{
-			configured.Add(new ConfiguredIndexer(entity, await CreateAsync(entity, cancellationToken)));
+			// One indexer with broken settings must not take down every search, RSS sync and grab.
+			try
+			{
+				configured.Add(new ConfiguredIndexer(entity, await CreateAsync(entity, cancellationToken)));
+			}
+			catch (IndexerException exception)
+			{
+				logger.LogWarning(exception, "Skipping indexer {Name} ({Id}): {Message}", entity.Name, entity.Id, exception.Message);
+			}
 		}
 
 		return configured;
