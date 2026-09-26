@@ -76,7 +76,7 @@ public sealed class NotificationSenderTests
 		stub.Requests.Single().Body!.ShouldNotContain("GRP");
 	}
 
-	[Fact]
+[Fact]
 	public async Task Telegram_ShouldCallBotApi()
 	{
 		var (factory, stub) = CreateFactory();
@@ -85,6 +85,7 @@ public sealed class NotificationSenderTests
 		await sender.SendAsync(Message(), """{"botToken":"123:secret","chatId":"-42","topicId":7,"sendSilently":true}""", TestContext.Current.CancellationToken);
 
 		var request = stub.Requests.Single();
+		request.Method.ShouldBe(HttpMethod.Post);
 		request.Url.ShouldBe("https://api.telegram.org/bot123:secret/sendMessage");
 		request.Body!.ShouldContain("\"chat_id\":\"-42\"");
 		request.Body!.ShouldContain("\"message_thread_id\":7");
@@ -100,6 +101,8 @@ public sealed class NotificationSenderTests
 		await sender.SendAsync(Message(), """{"webhookUrl":"https://hooks.slack.com/1","username":"Sub","icon":":rocket:","channel":"#media"}""", TestContext.Current.CancellationToken);
 
 		var request = stub.Requests.Single();
+		request.Method.ShouldBe(HttpMethod.Post);
+		request.Url.ShouldBe("https://hooks.slack.com/1");
 		request.Body!.ShouldContain("\"text\":\"Imported\\nSome Show - S01E01 [WEBDL-1080p]\"");
 		request.Body!.ShouldContain("\"icon_emoji\":\":rocket:\"");
 		request.Body!.ShouldContain("\"channel\":\"#media\"");
@@ -154,6 +157,7 @@ public sealed class NotificationSenderTests
 		await sender.SendAsync(Message(), settings, TestContext.Current.CancellationToken);
 
 		stub.Requests.Count.ShouldBe(2);
+		stub.Requests[0].Method.ShouldBe(HttpMethod.Post);
 		stub.Requests[0].Url.ShouldBe("https://api.pushbullet.com/v2/pushes");
 		stub.Requests[0].HasHeader("Access-Token", "token").ShouldBeTrue();
 		stub.Requests[0].Body!.ShouldContain("\"device_iden\":\"dev1\"");
@@ -169,6 +173,7 @@ public sealed class NotificationSenderTests
 		await sender.SendAsync(Message(), """{"server":"https://gotify.example","appToken":"tok","priority":8,"includeSeriesPoster":true}""", TestContext.Current.CancellationToken);
 
 		var request = stub.Requests.Single();
+		request.Method.ShouldBe(HttpMethod.Post);
 		request.Url.ShouldBe("https://gotify.example/message?token=tok");
 		request.Body!.ShouldContain("\"priority\":8");
 		request.Body!.ShouldContain("bigImageUrl");
@@ -185,6 +190,7 @@ public sealed class NotificationSenderTests
 
 		stub.Requests.Count.ShouldBe(2);
 		var first = stub.Requests[0];
+		first.Method.ShouldBe(HttpMethod.Post);
 		first.Url.ShouldBe("https://ntfy.example/a");
 		first.HasHeader("X-Title", "Imported").ShouldBeTrue();
 		first.HasHeader("X-Priority", "4").ShouldBeTrue();
@@ -212,6 +218,7 @@ public sealed class NotificationSenderTests
 		await sender.SendAsync(Message(), """{"serverUrl":"https://apprise.example","statelessUrls":["json://a","json://b"],"notificationType":"success"}""", TestContext.Current.CancellationToken);
 
 		var request = stub.Requests.Single();
+		request.Method.ShouldBe(HttpMethod.Post);
 		request.Url.ShouldBe("https://apprise.example/notify");
 		request.Body!.ShouldContain("\"urls\":\"json://a, json://b\"");
 		request.Body!.ShouldContain("\"type\":\"success\"");
@@ -226,6 +233,35 @@ public sealed class NotificationSenderTests
 		await sender.SendAsync(Message(), """{"serverUrl":"https://apprise.example/","configurationKey":"submarine"}""", TestContext.Current.CancellationToken);
 
 		stub.Requests.Single().Url.ShouldBe("https://apprise.example/notify/submarine");
+	}
+
+	[Theory]
+	[InlineData("Kodi", """{"host":"kodi","notify":true}""")]
+	[InlineData("Telegram", """{"botToken":"123:secret","chatId":"-42"}""")]
+	[InlineData("Slack", """{"webhookUrl":"https://hooks.slack.com/1"}""")]
+	[InlineData("Pushbullet", """{"apiKey":"token"}""")]
+	[InlineData("Gotify", """{"server":"https://gotify.example","appToken":"tok"}""")]
+	[InlineData("Ntfy", """{"topics":["topic"]}""")]
+	[InlineData("Apprise", """{"serverUrl":"https://apprise.example","statelessUrls":["json://a"]}""")]
+	public async Task OlderProviders_ShouldThrowOnFailedHttpResponse(string provider, string settings)
+	{
+		var (factory, stub) = CreateFactory((_, _) => StubHttpHandler.Json("{}", HttpStatusCode.InternalServerError));
+		INotificationSender sender = provider switch
+		{
+			"Kodi" => new KodiSender(factory),
+			"Telegram" => new TelegramSender(factory),
+			"Slack" => new SlackSender(factory),
+			"Pushbullet" => new PushbulletSender(factory),
+			"Gotify" => new GotifySender(factory),
+			"Ntfy" => new NtfySender(factory),
+			"Apprise" => new AppriseSender(factory),
+			_ => throw new ArgumentOutOfRangeException(nameof(provider))
+		};
+
+		await Should.ThrowAsync<HttpRequestException>(
+			() => sender.SendAsync(Message(), settings, TestContext.Current.CancellationToken));
+
+		stub.Requests.ShouldNotBeEmpty();
 	}
 
 	[Fact]
