@@ -1,0 +1,108 @@
+name: Build
+
+# Runs the full test workflow, then builds and publishes the images to ghcr.io.
+#   develop  -> develop, <short sha>
+#   master   -> master, latest, <short sha>
+#   v1.5.5   -> v1.5.5, v1.5, v1 (v0.x tags skip the major-only tag)
+on:
+  push:
+    branches: [develop, master]
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  images:
+    name: ${{ matrix.image }}
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: submarine-api
+            title: Submarine
+            description: Series, anime and movie PVR for Usenet and BitTorrent
+            dockerfile: backend/src/Submarine.Api/Dockerfile
+            context: .
+          - image: submarine-metadata
+            title: Submarine Metadata
+            description: TVDB and TMDB metadata service for Submarine
+            dockerfile: backend/src/Submarine.Metadata/Dockerfile
+            context: backend
+          - image: submarine-mappings
+            title: Submarine Mappings
+            description: Scene numbering and AniList mapping service for Submarine
+            dockerfile: backend/src/Submarine.Mappings/Dockerfile
+            context: backend
+    steps:
+      - uses: actions/checkout@v7
+
+      # Registry paths must be lowercase; the organisation name is not.
+      - id: image
+        run: echo "name=ghcr.io/${OWNER,,}/${{ matrix.image }}" >> "$GITHUB_OUTPUT"
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.image.outputs.name }}
+          flavor: latest=false
+          tags: |
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}}.{{minor}}
+            type=semver,pattern=v{{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.vendor=SimplyMedia
+          annotations: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.description=${{ matrix.description }}
+
+      - id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
