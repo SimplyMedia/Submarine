@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Submarine.Api.IntegrationTests.Indexers;
+using Submarine.Core.Entities;
+using Submarine.Core.Enums;
 using Xunit;
 
 namespace Submarine.Api.IntegrationTests.Newznab;
@@ -113,6 +115,59 @@ public sealed class NewznabDownloadProxyTests : IAsyncLifetime
 
 		response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 		(await response.Content.ReadAsStringAsync()).ShouldContain("<error");
+	}
+
+	[Fact]
+	public async Task OutboundQueryLimit_ShouldReturn429WithRetryAfter()
+	{
+		await _factory.WithDbAsync(async db =>
+		{
+			var indexer = await db.Indexers.SingleAsync(entity => entity.Id == _indexerId);
+			indexer.QueryLimit = 1;
+			indexer.LimitsUnit = IndexerLimitsUnit.HOUR;
+			db.IndexerHistories.Add(new IndexerHistory
+			{
+				IndexerId = _indexerId,
+				EventType = IndexerHistoryEventType.QUERY,
+				Successful = true,
+				Query = "previous request",
+				Date = DateTime.UtcNow
+			});
+			await db.SaveChangesAsync();
+			return true;
+		});
+
+		var response = await _client.GetAsync($"/api/v1/indexer/{_indexerId}/newznab/api?t=search&apikey={_apiKey}");
+
+		response.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
+		response.Headers.Contains("Retry-After").ShouldBeTrue();
+	}
+
+	[Fact]
+	public async Task OutboundGrabLimit_ShouldReturn429WithRetryAfter()
+	{
+		await _factory.WithDbAsync(async db =>
+		{
+			var indexer = await db.Indexers.SingleAsync(entity => entity.Id == _indexerId);
+			indexer.GrabLimit = 1;
+			indexer.LimitsUnit = IndexerLimitsUnit.HOUR;
+			db.IndexerHistories.Add(new IndexerHistory
+			{
+				IndexerId = _indexerId,
+				EventType = IndexerHistoryEventType.GRAB,
+				Successful = true,
+				Query = "previous grab",
+				Date = DateTime.UtcNow
+			});
+			await db.SaveChangesAsync();
+			return true;
+		});
+
+		var link = EncodeLink($"{_stub.BaseUrl}/download/1");
+		var response = await _client.GetAsync($"/api/v1/indexer/{_indexerId}/download?link={link}&apikey={_apiKey}");
+
+		response.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
+		response.Headers.Contains("Retry-After").ShouldBeTrue();
 	}
 
 	private static string EncodeLink(string url) => WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(url));

@@ -104,6 +104,13 @@ function toRequest(indexer: IndexerDto, overrides: Partial<IndexerRequest> = {})
 		animeStandardFormatSearch: indexer.animeStandardFormatSearch,
 		tagIds: indexer.tagIds,
 		...overrides,
+		vipExpiration: indexer.vipExpiration,
+		queryLimit: indexer.queryLimit,
+		grabLimit: indexer.grabLimit,
+		limitsUnit: indexer.limitsUnit,
+		redirect: indexer.redirect,
+		requiredFlags: indexer.requiredFlags,
+		seasonSearchMaximumSingleEpisodeAge: indexer.seasonSearchMaximumSingleEpisodeAge,
 	}
 }
 
@@ -263,6 +270,13 @@ const seasonPackSeedTimeMinutes = ref<number | null>(null)
 const downloadClientId = ref<number | null>(null)
 const proxyId = ref<number | null>(null)
 const tagIds = ref<number[]>([])
+const vipExpiration = ref('')
+const queryLimit = ref<number | null>(null)
+const grabLimit = ref<number | null>(null)
+const limitsUnit = ref<components['schemas']['IndexerLimitsUnit']>('DAY')
+const redirect = ref(false)
+const requiredFlags = ref<components['schemas']['IndexerFlag'][]>([])
+const seasonSearchMaximumSingleEpisodeAge = ref<number | null>(null)
 const settingsDraft = ref<Record<string, unknown>>({})
 const nameError = ref('')
 const schemaFieldErrors = ref<Record<string, string[]>>({})
@@ -332,6 +346,13 @@ function resetForm() {
 	tagIds.value = []
 	settingsDraft.value = {}
 	nameError.value = ''
+	vipExpiration.value = ''
+	queryLimit.value = null
+	grabLimit.value = null
+	limitsUnit.value = 'DAY'
+	redirect.value = false
+	requiredFlags.value = []
+	seasonSearchMaximumSingleEpisodeAge.value = null
 	schemaFieldErrors.value = {}
 	testResult.value = null
 }
@@ -377,6 +398,13 @@ function openEdit(indexer: IndexerDto) {
 	proxyId.value = indexer.proxyId
 	tagIds.value = [...indexer.tagIds]
 	settingsDraft.value = { ...(indexer.settings as Record<string, unknown>) }
+	vipExpiration.value = indexer.vipExpiration ?? ''
+	queryLimit.value = indexer.queryLimit
+	grabLimit.value = indexer.grabLimit
+	limitsUnit.value = indexer.limitsUnit
+	redirect.value = indexer.redirect
+	requiredFlags.value = [...indexer.requiredFlags]
+	seasonSearchMaximumSingleEpisodeAge.value = indexer.seasonSearchMaximumSingleEpisodeAge
 	if (indexer.implementation === 'CARDIGANN' && indexer.definitionId) {
 		selectedDefinition.value = store.schema?.cardigannDefinitions.find(def => def.id === indexer.definitionId) ?? null
 	}
@@ -428,6 +456,13 @@ function buildRequest(): IndexerRequest {
 		seasonPackSeedTimeMinutes: seasonPackSeedTimeMinutes.value,
 		animeStandardFormatSearch: animeStandardFormatSearch.value,
 		tagIds: tagIds.value,
+		vipExpiration: vipExpiration.value || null,
+		queryLimit: queryLimit.value,
+		grabLimit: grabLimit.value,
+		limitsUnit: limitsUnit.value,
+		redirect: redirect.value,
+		requiredFlags: protocol.value === 'BITTORRENT' ? requiredFlags.value : [],
+		seasonSearchMaximumSingleEpisodeAge: seasonSearchMaximumSingleEpisodeAge.value,
 	}
 }
 
@@ -571,11 +606,22 @@ const historyColumns = [
 	{ key: 'elapsedMs', label: 'Elapsed', align: 'right' as const },
 	{ key: 'date', label: 'Date' },
 ]
+const historyEventType = ref<'ALL' | components['schemas']['IndexerHistoryEventType']>('ALL')
+const historySuccessful = ref<'ALL' | 'true' | 'false'>('ALL')
 
 async function openHistory(indexer: IndexerDto) {
 	historyTarget.value = indexer
 	historyLoading.value = true
-	const result = await api.GET('/api/v1/indexers/{id}/history', { params: { path: { id: indexer.id }, query: { PageSize: 100 } } })
+	const result = await api.GET('/api/v1/indexers/{id}/history', {
+		params: {
+			path: { id: indexer.id },
+			query: {
+				PageSize: 100,
+				eventType: historyEventType.value === 'ALL' ? undefined : historyEventType.value,
+				successful: historySuccessful.value === 'ALL' ? undefined : historySuccessful.value === 'true',
+			},
+		},
+	})
 	historyItems.value = result.data?.items ?? []
 	historyLoading.value = false
 }
@@ -921,13 +967,96 @@ async function copyToClipboard(value: string) {
 					:option-label="schemaOptionLabel"
 				/>
 
-				<SField label="Categories">
-					<IndexerCategoryPicker
-						v-model="categories"
-						:categories="store.categories"
+				<div class="field-grid">
+					<SField label="Categories">
+						<IndexerCategoryPicker
+							v-model="categories"
+							:categories="store.categories"
+						/>
+					</SField>
+					<SField
+						label="VIP expiration"
+						hint="Optional date when indexer access expires"
+						control-id="idx-vip-expiration"
+					>
+						<input
+							id="idx-vip-expiration"
+							v-model="vipExpiration"
+							class="s-input"
+							type="date"
+						>
+					</SField>
+					<SField
+						label="Season search maximum single episode age (days)"
+						hint="Optional maximum age for searching individual season episodes"
+						control-id="idx-season-search-age"
+					>
+						<SInput
+							id="idx-season-search-age"
+							type="number"
+							:model-value="seasonSearchMaximumSingleEpisodeAge == null ? '' : String(seasonSearchMaximumSingleEpisodeAge)"
+							@update:model-value="seasonSearchMaximumSingleEpisodeAge = $event === '' ? null : Number($event)"
+						/>
+					</SField>
+				</div>
+				<div class="field-grid">
+					<SField
+						label="Query limit"
+						control-id="idx-query-limit"
+					>
+						<SInput
+							id="idx-query-limit"
+							type="number"
+							:model-value="queryLimit == null ? '' : String(queryLimit)"
+							@update:model-value="queryLimit = $event === '' ? null : Number($event)"
+						/>
+					</SField>
+					<SField
+						label="Grab limit"
+						control-id="idx-grab-limit"
+					>
+						<SInput
+							id="idx-grab-limit"
+							type="number"
+							:model-value="grabLimit == null ? '' : String(grabLimit)"
+							@update:model-value="grabLimit = $event === '' ? null : Number($event)"
+						/>
+					</SField>
+					<SField
+						label="Limits unit"
+						control-id="idx-limits-unit"
+					>
+						<SSelect
+							control-id="idx-limits-unit"
+							:model-value="limitsUnit"
+							:options="[{ value: 'DAY', label: 'Per day' }, { value: 'HOUR', label: 'Per hour' }]"
+							@update:model-value="limitsUnit = $event as components['schemas']['IndexerLimitsUnit']"
+						/>
+					</SField>
+				</div>
+				<SSwitch
+					v-model="redirect"
+					label="Redirect download requests"
+				/>
+				<p
+					v-if="protocol === 'USENET'"
+					class="s-field-hint"
+				>
+					Usenet indexers require redirect mode.
+				</p>
+				<div
+					v-if="protocol === 'BITTORRENT'"
+					class="field-grid-stack"
+				>
+					<span class="s-field-label">Required release flags</span>
+					<SCheckbox
+						v-for="flag in (['FREELEECH', 'HALFLEECH', 'DOUBLE_UPLOAD', 'INTERNAL', 'SCENE', 'EXCLUSIVE', 'G_FREELEECH'] as const)"
+						:key="flag"
+						:model-value="requiredFlags.includes(flag)"
+						:label="flag.replaceAll('_', ' ').toLowerCase()"
+						@update:model-value="requiredFlags = $event ? [...requiredFlags, flag] : requiredFlags.filter(value => value !== flag)"
 					/>
-				</SField>
-
+				</div>
 				<div class="field-grid">
 					<SField label="Anime categories">
 						<IndexerCategoryPicker
@@ -942,7 +1071,6 @@ async function copyToClipboard(value: string) {
 						/>
 					</div>
 				</div>
-
 				<div
 					v-if="protocol === 'BITTORRENT'"
 					class="field-grid"
@@ -1230,42 +1358,70 @@ async function copyToClipboard(value: string) {
 			wide
 		>
 			<SSpinner v-if="historyLoading" />
-			<STable
-				v-else
-				:columns="historyColumns"
-				:rows="historyItems"
-				:row-key="(row) => row.id"
-			>
-				<template #cell-eventType="{ row }">
-					<SBadge :tone="row.successful ? 'ok' : 'danger'">
-						{{ row.eventType }}
-					</SBadge>
-				</template>
-				<template #cell-query="{ row }">
-					<span v-if="row.query">{{ row.query }}</span>
-					<span
-						v-else
-						class="s-cell-muted"
-					>None</span>
-				</template>
-				<template #cell-source="{ row }">
-					<span v-if="row.source">{{ row.source }}</span>
-					<span
-						v-else
-						class="s-cell-muted"
-					>None</span>
-				</template>
-				<template #cell-elapsedMs="{ row }">
-					<span v-if="row.elapsedMs != null">{{ row.elapsedMs }} ms</span>
-					<span
-						v-else
-						class="s-cell-muted"
-					>None</span>
-				</template>
-				<template #cell-date="{ row }">
-					{{ formatDateTime(row.date) }}
-				</template>
-			</STable>
+			<template v-else>
+				<div class="history-filters">
+					<SField label="Event type">
+						<SSelect
+							:model-value="historyEventType"
+							:options="[
+								{ value: 'ALL', label: 'All events' },
+								{ value: 'QUERY', label: 'Query' },
+								{ value: 'RSS', label: 'RSS' },
+								{ value: 'GRAB', label: 'Grab' },
+								{ value: 'AUTH', label: 'Auth' },
+								{ value: 'FAILED', label: 'Failed' },
+							]"
+							@update:model-value="historyEventType = $event as typeof historyEventType; openHistory(historyTarget!)"
+						/>
+					</SField>
+					<SField label="Result">
+						<SSelect
+							:model-value="historySuccessful"
+							:options="[
+								{ value: 'ALL', label: 'All results' },
+								{ value: 'true', label: 'Successful' },
+								{ value: 'false', label: 'Failed' },
+							]"
+							@update:model-value="historySuccessful = $event as typeof historySuccessful; openHistory(historyTarget!)"
+						/>
+					</SField>
+				</div>
+				<STable
+					:columns="historyColumns"
+					:rows="historyItems"
+					:row-key="(row) => row.id"
+				>
+					<template #cell-eventType="{ row }">
+						<SBadge :tone="row.successful ? 'ok' : 'danger'">
+							{{ row.eventType }}
+						</SBadge>
+					</template>
+					<template #cell-query="{ row }">
+						<span v-if="row.query">{{ row.query }}</span>
+						<span
+							v-else
+							class="s-cell-muted"
+						>None</span>
+					</template>
+					<template #cell-source="{ row }">
+						<span v-if="row.source">{{ row.source }}</span>
+						<span
+							v-else
+							class="s-cell-muted"
+						>None</span>
+					</template>
+					<template #cell-elapsedMs="{ row }">
+						<span v-if="row.elapsedMs != null">{{ row.elapsedMs }} ms</span>
+						<span
+							v-else
+							class="s-cell-muted"
+						>None</span>
+					</template>
+					<template #cell-date="{ row }">
+						{{ formatDateTime(row.date) }}
+					</template>
+				</STable>
+			</template>
 		</SDialog>
 	</div>
 </template>
@@ -1371,5 +1527,12 @@ async function copyToClipboard(value: string) {
 	font-size: 0.8125rem;
 	overflow-x: auto;
 	white-space: nowrap;
+}
+
+.history-filters {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
+	gap: 12px;
+	margin-bottom: 16px;
 }
 </style>

@@ -18,6 +18,7 @@ useHead({ title: 'Search' })
 
 const api = useApi()
 const indexersStore = useIndexersStore()
+const apiKey = ref('')
 
 const mode = ref<'term' | 'library'>('term')
 const term = ref('')
@@ -34,6 +35,15 @@ const selectedSeasonNumber = ref<number | null>(null)
 const episodes = ref<EpisodeDto[]>([])
 const selectedEpisodeId = ref<number | null>(null)
 const versionLabels = ref<Record<number, string>>({})
+const searchType = ref<'search' | 'tv' | 'movie' | 'music' | 'book'>('search')
+const selectedCategoryIds = ref<number[]>([])
+const selectedIndexerIds = ref<number[]>([])
+const page = ref(1)
+const pageSize = 50
+const selectedGuids = ref<string[]>([])
+const { toast } = useToast()
+const bulkGrabbing = ref(false)
+const categoryFilterId = ref<number | 'ALL'>('ALL')
 
 let librarySearchTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -137,6 +147,11 @@ async function runSearch() {
 					seasonNumber: selectedSeasonNumber.value ?? undefined,
 					episodeId: selectedEpisodeId.value ?? undefined,
 					movieId: selectedMovie.value?.id,
+					categories: selectedCategoryIds.value.length ? selectedCategoryIds.value.join(',') : undefined,
+					indexerIds: selectedIndexerIds.value.length ? selectedIndexerIds.value.join(',') : undefined,
+					type: mode.value === 'term' ? searchType.value : undefined,
+					page: page.value,
+					pageSize,
 				},
 			},
 		})
@@ -144,6 +159,7 @@ async function runSearch() {
 			throw toApiError(result.error, result.response)
 		}
 		releases.value = result.data
+		selectedGuids.value = []
 		hasSearched.value = true
 	}
 	catch (error) {
@@ -164,6 +180,21 @@ const indexerFilterOptions = computed(() => [
 	{ value: 'ALL', label: 'All indexers' },
 	...indexersStore.indexers.map(indexer => ({ value: String(indexer.id), label: indexer.name })),
 ])
+const categoryOptions = computed(() => indexersStore.categories)
+const currentPageReleases = computed(() => filteredReleases.value)
+const hasMoreResults = computed(() => releases.value.length === pageSize)
+
+watch([searchType, selectedCategoryIds, selectedIndexerIds], () => {
+	page.value = 1
+	if (hasSearched.value) {
+		void runSearch()
+	}
+})
+watch(page, () => {
+	if (hasSearched.value) {
+		void runSearch()
+	}
+})
 
 const filteredReleases = computed(() => filterAndSortReleases(releases.value, {
 	protocol: filterProtocol.value,
@@ -171,9 +202,57 @@ const filteredReleases = computed(() => filterAndSortReleases(releases.value, {
 	minSeeders: filterMinSeeders.value,
 	sortKey: sortKey.value,
 }))
+const selectedReleases = computed(() => currentPageReleases.value.filter(release => selectedGuids.value.includes(release.guid)))
+
+async function grabSelected() {
+	bulkGrabbing.value = true
+	let grabbed = 0
+	try {
+		for (const release of selectedReleases.value) {
+			const approved = release.decisions.filter(decision => decision.approved)
+			const decision = [...(approved.length ? approved : release.decisions)].sort((a, b) => b.score - a.score)[0]
+			if (!decision || release.indexerId == null) continue
+			const result = await api.POST('/api/v1/releases/grab', {
+				body: {
+					guid: release.guid,
+					indexerId: release.indexerId,
+					mediaVersionId: decision.mediaVersionId,
+					seriesId: release.mappedSeriesId,
+					episodeIds: release.episodeIds.length ? release.episodeIds : null,
+					movieId: release.mappedMovieId,
+					qualitySource: null,
+					qualityResolution: null,
+					languages: null,
+					override: false,
+				},
+			})
+			if (result.response.ok) grabbed++
+		}
+		toast({ title: `${grabbed} releases grabbed`, tone: grabbed ? 'ok' : 'danger' })
+		selectedGuids.value = []
+	}
+	catch (error) {
+		toast({ title: 'Could not grab selected releases', description: toApiError(error).message, tone: 'danger' })
+	}
+	finally {
+		bulkGrabbing.value = false
+	}
+}
+
+function downloadSelected() {
+	for (const release of selectedReleases.value) {
+		if (release.indexerId == null) continue
+		const encoded = btoa(unescape(encodeURIComponent(release.guid))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+		const params = new URLSearchParams({ link: encoded, file: release.title, apikey: apiKey.value })
+		window.open(`/api/v1/indexer/${release.indexerId}/download?${params}`, '_blank', 'noopener')
+	}
+}
 
 onMounted(() => {
 	void indexersStore.load()
+	void api.GET('/api/v1/config/general').then((result) => {
+		apiKey.value = result.data?.apiKey ?? ''
+	})
 })
 </script>
 
@@ -192,6 +271,17 @@ onMounted(() => {
 				@update:model-value="switchMode($event as 'term' | 'library')"
 			>
 				<template #panel-term>
+					<SField
+						label="Search type"
+						control-id="search-type"
+					>
+						<SSelect
+							control-id="search-type"
+							:model-value="searchType"
+							:options="[{ value: 'search', label: 'Search' }, { value: 'tv', label: 'TV' }, { value: 'movie', label: 'Movie' }, { value: 'music', label: 'Music' }, { value: 'book', label: 'Book' }]"
+							@update:model-value="searchType = $event as typeof searchType"
+						/>
+					</SField>
 					<div class="search-term-row">
 						<SInput
 							v-model="term"
@@ -298,6 +388,34 @@ onMounted(() => {
 			v-if="hasSearched"
 			title="Results"
 		>
+			<div
+				v-if="selectedGuids.length > 0"
+				class="search-bulk-toolbar"
+			>
+				<span>{{ selectedGuids.length }} selected</span>
+				<SButton
+					size="sm"
+					variant="primary"
+					:loading="bulkGrabbing"
+					@click="grabSelected"
+				>
+					Grab selected
+				</SButton>
+				<SButton
+					size="sm"
+					variant="secondary"
+					@click="downloadSelected"
+				>
+					Download selected
+				</SButton>
+				<SButton
+					size="sm"
+					variant="ghost"
+					@click="selectedGuids = []"
+				>
+					Clear selection
+				</SButton>
+			</div>
 			<div class="search-filters">
 				<SField
 					label="Protocol"
@@ -311,6 +429,17 @@ onMounted(() => {
 					/>
 				</SField>
 				<SField
+					label="Category"
+					control-id="category-filter"
+				>
+					<SSelect
+						:model-value="categoryFilterId === 'ALL' ? 'ALL' : String(categoryFilterId)"
+						control-id="category-filter"
+						:options="[{ value: 'ALL', label: 'All categories' }, ...categoryOptions.map(category => ({ value: String(category.id), label: category.name }))]"
+						@update:model-value="categoryFilterId = $event === 'ALL' ? 'ALL' : Number($event); selectedCategoryIds = categoryFilterId === 'ALL' ? [] : [categoryFilterId]"
+					/>
+				</SField>
+				<SField
 					label="Indexer"
 					control-id="indexer-filter"
 				>
@@ -318,7 +447,7 @@ onMounted(() => {
 						:model-value="String(filterIndexerId)"
 						control-id="indexer-filter"
 						:options="indexerFilterOptions"
-						@update:model-value="filterIndexerId = $event === 'ALL' ? 'ALL' : Number($event)"
+						@update:model-value="filterIndexerId = $event === 'ALL' ? 'ALL' : Number($event); selectedIndexerIds = filterIndexerId === 'ALL' ? [] : [filterIndexerId]"
 					/>
 				</SField>
 				<SField
@@ -345,6 +474,25 @@ onMounted(() => {
 				</SField>
 			</div>
 
+			<div class="pagination">
+				<SButton
+					size="sm"
+					variant="secondary"
+					:disabled="page <= 1 || searching"
+					@click="page--"
+				>
+					Previous
+				</SButton>
+				<span>Page {{ page }}</span>
+				<SButton
+					size="sm"
+					variant="secondary"
+					:disabled="!hasMoreResults || searching"
+					@click="page++"
+				>
+					Next
+				</SButton>
+			</div>
 			<SSpinner v-if="searching" />
 			<p
 				v-else-if="searchError"
@@ -355,14 +503,30 @@ onMounted(() => {
 			</p>
 			<ReleaseTable
 				v-else
-				:releases="filteredReleases"
+				:releases="currentPageReleases"
 				:version-labels="versionLabels"
+				selectable
+				:selected-guids="selectedGuids"
+				@update:selected-guids="selectedGuids = $event"
 			/>
 		</SSection>
 	</div>
 </template>
 
 <style scoped>
+ .search-bulk-toolbar,
+ .pagination {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
+}
+
+ .pagination {
+	justify-content: flex-end;
+	margin-top: 12px;
+}
 .search-term-row {
 	display: flex;
 	gap: 12px;

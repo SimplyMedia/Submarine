@@ -987,6 +987,43 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "categories",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "indexerIds",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -1282,6 +1319,78 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Artist",
+            "in": "query",
+            "description": "Artist name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Album",
+            "in": "query",
+            "description": "Album name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Label",
+            "in": "query",
+            "description": "Record label, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Track",
+            "in": "query",
+            "description": "Track name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Genre",
+            "in": "query",
+            "description": "Genre, for t=music or t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Author",
+            "in": "query",
+            "description": "Author name, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Publisher",
+            "in": "query",
+            "description": "Publisher, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Year",
+            "in": "query",
+            "description": "Release year, for t=music or t=book.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -1423,6 +1532,78 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Artist",
+            "in": "query",
+            "description": "Artist name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Album",
+            "in": "query",
+            "description": "Album name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Label",
+            "in": "query",
+            "description": "Record label, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Track",
+            "in": "query",
+            "description": "Track name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Genre",
+            "in": "query",
+            "description": "Genre, for t=music or t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Author",
+            "in": "query",
+            "description": "Author name, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Publisher",
+            "in": "query",
+            "description": "Publisher, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Year",
+            "in": "query",
+            "description": "Release year, for t=music or t=book.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -1563,6 +1744,78 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "Artist",
+            "in": "query",
+            "description": "Artist name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Album",
+            "in": "query",
+            "description": "Album name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Label",
+            "in": "query",
+            "description": "Record label, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Track",
+            "in": "query",
+            "description": "Track name, for t=music.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Genre",
+            "in": "query",
+            "description": "Genre, for t=music or t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Author",
+            "in": "query",
+            "description": "Author name, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Publisher",
+            "in": "query",
+            "description": "Publisher, for t=book.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Year",
+            "in": "query",
+            "description": "Release year, for t=music or t=book.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -10880,6 +11133,20 @@
             "description": "ascending or descending, defaults to ascending.",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/IndexerHistoryEventType"
+            }
+          },
+          {
+            "name": "successful",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -21137,7 +21404,14 @@
           "animeStandardFormatSearch",
           "tagIds",
           "status",
-          "capabilities"
+          "capabilities",
+          "vipExpiration",
+          "queryLimit",
+          "grabLimit",
+          "limitsUnit",
+          "redirect",
+          "requiredFlags",
+          "seasonSearchMaximumSingleEpisodeAge"
         ],
         "type": "object",
         "properties": {
@@ -21257,9 +21531,60 @@
                 "$ref": "#/components/schemas/IndexerCapabilitiesSummary"
               }
             ]
+          },
+          "vipExpiration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "queryLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "grabLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "limitsUnit": {
+            "$ref": "#/components/schemas/IndexerLimitsUnit"
+          },
+          "redirect": {
+            "type": "boolean"
+          },
+          "requiredFlags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerFlag"
+            }
+          },
+          "seasonSearchMaximumSingleEpisodeAge": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         },
         "description": "A configured indexer."
+      },
+      "IndexerFlag": {
+        "enum": [
+          "FREELEECH",
+          "HALFLEECH",
+          "DOUBLE_UPLOAD",
+          "INTERNAL",
+          "SCENE",
+          "EXCLUSIVE",
+          "G_FREELEECH"
+        ],
+        "description": "Indexer specific flags of a release"
       },
       "IndexerHistoryDto": {
         "required": [
@@ -21351,6 +21676,13 @@
           }
         },
         "description": "Settings schema for one indexer implementation."
+      },
+      "IndexerLimitsUnit": {
+        "enum": [
+          "DAY",
+          "HOUR"
+        ],
+        "description": "Interval unit for a per-indexer query or grab limit."
       },
       "IndexerProxyDto": {
         "required": [
@@ -21506,7 +21838,14 @@
           "seedTimeMinutes",
           "seasonPackSeedTimeMinutes",
           "animeStandardFormatSearch",
-          "tagIds"
+          "tagIds",
+          "vipExpiration",
+          "queryLimit",
+          "grabLimit",
+          "limitsUnit",
+          "redirect",
+          "requiredFlags",
+          "seasonSearchMaximumSingleEpisodeAge"
         ],
         "type": "object",
         "properties": {
@@ -21618,6 +21957,48 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "vipExpiration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "queryLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "grabLimit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "limitsUnit": {
+            "$ref": "#/components/schemas/IndexerLimitsUnit"
+          },
+          "redirect": {
+            "type": "boolean"
+          },
+          "requiredFlags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexerFlag"
+            }
+          },
+          "seasonSearchMaximumSingleEpisodeAge": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         },
         "description": "Create or update request for an indexer."
