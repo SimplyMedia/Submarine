@@ -15062,6 +15062,136 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/config/import-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportListConfigResource"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ImportListConfigResource"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportListConfigResource"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/config/indexer": {
         parameters: {
             query?: never;
@@ -17303,7 +17433,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** @enum {unknown} */
-        AddMonitorOption: "ALL" | "FUTURE" | "MISSING" | "EXISTING" | "PILOT" | "FIRST_SEASON" | "LATEST_SEASON" | "NONE" | null;
+        AddMonitorOption: "ALL" | "FUTURE" | "MISSING" | "EXISTING" | "PILOT" | "FIRST_SEASON" | "LATEST_SEASON" | "NONE" | "RECENT" | "SKIP" | null;
         /** @description Add movie request. */
         AddMovieRequest: {
             /**
@@ -17594,6 +17724,12 @@ export interface components {
             /** @description Whether a tracked download is in progress or pending import for this item. */
             downloading: boolean;
         };
+        /**
+         * @description What to do with library items no longer covered by any automatic-add import list, checked
+         *     at the end of a full import list sync.
+         * @enum {unknown}
+         */
+        CleanLibraryLevel: "DISABLED" | "LOG_ONLY" | "KEEP_AND_UNMONITOR" | "REMOVE_AND_KEEP" | "REMOVE_AND_DELETE";
         /** @description Result of adding the missing movies of a collection. */
         CollectionAddMissingDto: {
             /**
@@ -18287,6 +18423,11 @@ export interface components {
         };
         /** Format: binary */
         IFormFile: string;
+        /** @description Import list behaviour configuration resource. */
+        ImportListConfigResource: {
+            /** @description What to do with library items no longer covered by any automatic-add import list. */
+            cleanLibraryLevel: components["schemas"]["CleanLibraryLevel"];
+        };
         /** @description An import list. */
         ImportListDto: {
             /**
@@ -18331,6 +18472,13 @@ export interface components {
             seasonFolder: boolean;
             /** @description Tags applied to added items. */
             tagIds: number[];
+            /**
+             * Format: int32
+             * @description Minimum minutes between automatic scheduled fetches of this list type.
+             */
+            minRefreshIntervalMinutes: number;
+            /** @description Runtime sync and backoff state. */
+            status: components["schemas"]["ImportListStatusSummary"];
         };
         /** @description An import list exclusion. */
         ImportListExclusionDto: {
@@ -18398,6 +18546,24 @@ export interface components {
             /** @description New, exists, excluded or unresolved. */
             status: string;
         };
+        /** @description Runtime sync and backoff state of an import list. */
+        ImportListStatusSummary: {
+            /**
+             * Format: date-time
+             * @description Last successful fetch, null when never synced.
+             */
+            lastSyncAt: null | string;
+            /**
+             * Format: date-time
+             * @description Disabled by backoff until this time, null when not disabled.
+             */
+            disabledUntil: null | string;
+            /**
+             * Format: int32
+             * @description Current backoff escalation level.
+             */
+            escalationLevel: number;
+        };
         /** @description Result of an import list test. */
         ImportListTestDto: {
             /** @description Whether the fetch worked. */
@@ -18414,7 +18580,7 @@ export interface components {
          * @description Type of an import list.
          * @enum {unknown}
          */
-        ImportListType: "TMDB_LIST" | "TMDB_POPULAR" | "TMDB_COLLECTION" | "TMDB_PERSON" | "TRAKT_LIST" | "TRAKT_POPULAR" | "TRAKT_USER" | "ANILIST_SEASON" | "PLEX" | "SONARR" | "RADARR" | "STEVEN_LU" | "CUSTOM";
+        ImportListType: "TMDB_LIST" | "TMDB_POPULAR" | "TMDB_COLLECTION" | "TMDB_PERSON" | "TRAKT_LIST" | "TRAKT_POPULAR" | "TRAKT_USER" | "ANILIST_SEASON" | "PLEX" | "SONARR" | "RADARR" | "STEVEN_LU" | "CUSTOM" | "SIMKL" | "IMDB" | "MYANIMELIST" | "RSS";
         /** @description Settings schema of one import list type. */
         ImportListTypeSchema: {
             /** @description Import list type. */

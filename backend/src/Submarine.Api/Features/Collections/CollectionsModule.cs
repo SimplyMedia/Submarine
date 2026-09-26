@@ -7,6 +7,7 @@ using Submarine.Api.Modules;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
 using Submarine.Infrastructure.Library;
+using Submarine.Infrastructure.Metadata;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.Collections;
@@ -26,23 +27,31 @@ public sealed class CollectionsModule : IEndpointModule
 		group.MapPost("/{id:int}/add-missing", AddMissingAsync);
 	}
 
-	private static async Task<Ok<List<CollectionDto>>> ListAsync(SubmarineDbContext db, CancellationToken cancellationToken)
+	private static async Task<Ok<List<CollectionDto>>> ListAsync(SubmarineDbContext db, IMetadataClient metadata, CancellationToken cancellationToken)
 	{
 		var movieCounts = await db.Movies.AsNoTracking()
 			.Where(x => x.TmdbCollectionId != null)
 			.GroupBy(x => x.TmdbCollectionId!.Value)
 			.Select(x => new { CollectionId = x.Key, MovieCount = x.Count() })
 			.ToDictionaryAsync(x => x.CollectionId, x => x.MovieCount, cancellationToken);
+		var existingTmdbIds = await db.Movies.AsNoTracking().Select(x => x.TmdbId).ToListAsync(cancellationToken);
 		var rows = await db.Collections.AsNoTracking().ToListAsync(cancellationToken);
 
 		var knownIds = rows.Select(x => x.TmdbCollectionId).ToHashSet();
-		var result = rows.Select(x => ToDto(x.Id, x, movieCounts.GetValueOrDefault(x.TmdbCollectionId), 0)).ToList();
+		var result = new List<CollectionDto>();
+		foreach (var row in rows)
+		{
+			var missingCount = await ComputeMissingCountAsync(row.TmdbCollectionId, existingTmdbIds, metadata, cancellationToken);
+			result.Add(ToDto(row.Id, row, movieCounts.GetValueOrDefault(row.TmdbCollectionId), missingCount));
+		}
+
 		foreach (var (collectionId, movieCount) in movieCounts.Where(x => !knownIds.Contains(x.Key)))
 		{
 			var title = await db.Movies
 				.Where(x => x.TmdbCollectionId == collectionId && x.CollectionTitle != null)
 				.Select(x => x.CollectionTitle!)
 				.FirstOrDefaultAsync(cancellationToken);
+			var missingCount = await ComputeMissingCountAsync(collectionId, existingTmdbIds, metadata, cancellationToken);
 			result.Add(new CollectionDto(
 				null,
 				collectionId,
@@ -56,19 +65,32 @@ public sealed class CollectionsModule : IEndpointModule
 				MinimumAvailability.RELEASED,
 				false,
 				movieCount,
-				0));
+				missingCount));
 		}
 
 		return TypedResults.Ok(result.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase).ToList());
 	}
 
-	private static async Task<Ok<CollectionDto>> GetAsync(int id, SubmarineDbContext db, CancellationToken cancellationToken)
+	private static async Task<Ok<CollectionDto>> GetAsync(int id, SubmarineDbContext db, IMetadataClient metadata, CancellationToken cancellationToken)
 	{
 		var collection = await db.Collections.AsNoTracking()
 			.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
 			?? throw new KeyNotFoundException($"Collection {id} not found");
 		var movieCount = await db.Movies.CountAsync(x => x.TmdbCollectionId == collection.TmdbCollectionId, cancellationToken);
-		return TypedResults.Ok(ToDto(collection.Id, collection, movieCount, 0));
+		var existingTmdbIds = await db.Movies.AsNoTracking().Select(x => x.TmdbId).ToListAsync(cancellationToken);
+		var missingCount = await ComputeMissingCountAsync(collection.TmdbCollectionId, existingTmdbIds, metadata, cancellationToken);
+		return TypedResults.Ok(ToDto(collection.Id, collection, movieCount, missingCount));
+	}
+
+	/// <summary>Movies of the collection on the metadata provider not yet in the library, 0 when the provider has no data.</summary>
+	private static async Task<int> ComputeMissingCountAsync(
+		int tmdbCollectionId,
+		IReadOnlyCollection<int> existingTmdbIds,
+		IMetadataClient metadata,
+		CancellationToken cancellationToken)
+	{
+		var resource = await metadata.GetCollectionAsync(tmdbCollectionId, cancellationToken);
+		return resource is null ? 0 : resource.Movies.Count(x => !existingTmdbIds.Contains(x.TmdbId));
 	}
 
 	private static async Task<Ok<CollectionDto>> UpdateAsync(
@@ -76,6 +98,7 @@ public sealed class CollectionsModule : IEndpointModule
 		SubmarineDbContext db,
 		IValidator<UpdateCollectionRequest> validator,
 		[FromBody] UpdateCollectionRequest request,
+		IMetadataClient metadata,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
@@ -124,7 +147,10 @@ public sealed class CollectionsModule : IEndpointModule
 		}
 
 		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.Ok(ToDto(collection.Id, collection, 0, 0));
+		var movieCount = await db.Movies.CountAsync(x => x.TmdbCollectionId == collection.TmdbCollectionId, cancellationToken);
+		var existingTmdbIds = await db.Movies.AsNoTracking().Select(x => x.TmdbId).ToListAsync(cancellationToken);
+		var missingCount = await ComputeMissingCountAsync(collection.TmdbCollectionId, existingTmdbIds, metadata, cancellationToken);
+		return TypedResults.Ok(ToDto(collection.Id, collection, movieCount, missingCount));
 	}
 
 	private static async Task<Ok<CollectionAddMissingDto>> AddMissingAsync(

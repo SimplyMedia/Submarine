@@ -40,6 +40,7 @@ public static class HealthServiceCollectionExtensions
 		services.AddScoped<IHealthCheck, ApiKeyValidationHealthCheck>();
 		services.AddScoped<IHealthCheck, SystemTimeHealthCheck>();
 		services.AddScoped<IHealthCheck, UpdateHealthCheck>();
+		services.AddScoped<IHealthCheck, ImportListStatusCheck>();
 		services.AddHostedService<StartupHealthCheckHostedService>();
 
 		return services;

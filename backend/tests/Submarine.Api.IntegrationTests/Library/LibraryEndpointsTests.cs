@@ -483,10 +483,19 @@ public sealed class LibraryEndpointsTests
 			collection.MinimumAvailability.ShouldBe("ANNOUNCED");
 			collection.Monitored.ShouldBeFalse();
 
+			// MissingCount reflects collection movies from the metadata provider not yet in the
+			// library: SecondTmdbId is in the collection's fixture but not added yet.
+			collection.MissingCount.ShouldBe(1);
+			var refetched = await client.GetFromJsonAsync<CollectionDto>($"/api/v1/collections/{collection.Id}");
+			refetched!.MissingCount.ShouldBe(1);
+
 			var addMissing = await client.PostAsJsonAsync($"/api/v1/collections/{collection.Id}/add-missing", new { });
 			addMissing.StatusCode.ShouldBe(HttpStatusCode.OK);
 			var result = await addMissing.Content.ReadFromJsonAsync<AddMissingDto>();
 			result!.Added.ShouldBe(1);
+
+			var afterAddMissing = await client.GetFromJsonAsync<CollectionDto>($"/api/v1/collections/{collection.Id}");
+			afterAddMissing!.MissingCount.ShouldBe(0);
 
 			var movies = (await client.GetFromJsonAsync<PagedDto<MovieListItemDto>>("/api/v1/movies"))!.Items;
 			movies!.Count.ShouldBe(2);
@@ -749,6 +758,213 @@ public sealed class LibraryEndpointsTests
 		{
 			Directory.Delete(root, true);
 		}
+	}
+
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldUnmonitorItemsNotOnAnyList_WhenLevelIsKeepAndUnmonitor()
+	{
+		await using var factory = new LibraryApiFactory();
+		const int onListTvdbId = 810001;
+		const int offListTvdbId = 810002;
+		factory.ImportListHttpHandler = new StubHttpHandler($$"""[{"tvdbId": {{onListTvdbId}}, "title": "On List Show"}]""");
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var onListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, onListTvdbId, "On List Show");
+			var offListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, offListTvdbId, "Off List Show");
+
+			await SetCleanLibraryLevelAsync(client, "KEEP_AND_UNMONITOR");
+			await CreateAutomaticAddCustomListAsync(client, "SERIES", rootId);
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			var series = (await client.GetFromJsonAsync<PagedDto<SeriesListItemDto>>("/api/v1/series"))!.Items!;
+			series.Single(x => x.Id == onListId).Monitored.ShouldBeTrue("the item is still on the list");
+			series.Single(x => x.Id == offListId).Monitored.ShouldBeFalse("the item is no longer on any automatic-add list");
+			Directory.Exists(Path.Combine(root, "On List Show")).ShouldBeTrue();
+			Directory.Exists(Path.Combine(root, "Off List Show")).ShouldBeTrue("unmonitor keeps the item and its files");
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldRemoveButKeepFiles_WhenLevelIsRemoveAndKeep()
+	{
+		await using var factory = new LibraryApiFactory();
+		const int onListTvdbId = 810003;
+		const int offListTvdbId = 810004;
+		factory.ImportListHttpHandler = new StubHttpHandler($$"""[{"tvdbId": {{onListTvdbId}}, "title": "On List Show2"}]""");
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var onListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, onListTvdbId, "On List Show2");
+			var offListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, offListTvdbId, "Off List Show2");
+
+			await SetCleanLibraryLevelAsync(client, "REMOVE_AND_KEEP");
+			await CreateAutomaticAddCustomListAsync(client, "SERIES", rootId);
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			(await client.GetAsync($"/api/v1/series/{onListId}")).StatusCode.ShouldBe(HttpStatusCode.OK, "the item is still on the list");
+			(await client.GetAsync($"/api/v1/series/{offListId}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+			Directory.Exists(Path.Combine(root, "On List Show2")).ShouldBeTrue();
+			Directory.Exists(Path.Combine(root, "Off List Show2")).ShouldBeTrue("remove and keep must not delete the files");
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldRemoveAndDeleteFiles_WhenLevelIsRemoveAndDelete()
+	{
+		await using var factory = new LibraryApiFactory();
+		const int onListTvdbId = 810005;
+		const int offListTvdbId = 810006;
+		factory.ImportListHttpHandler = new StubHttpHandler($$"""[{"tvdbId": {{onListTvdbId}}, "title": "On List Show3"}]""");
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var onListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, onListTvdbId, "On List Show3");
+			var offListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, offListTvdbId, "Off List Show3");
+
+			await SetCleanLibraryLevelAsync(client, "REMOVE_AND_DELETE");
+			await CreateAutomaticAddCustomListAsync(client, "SERIES", rootId);
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			(await client.GetAsync($"/api/v1/series/{onListId}")).StatusCode.ShouldBe(HttpStatusCode.OK, "the item is still on the list");
+			(await client.GetAsync($"/api/v1/series/{offListId}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+			Directory.Exists(Path.Combine(root, "On List Show3")).ShouldBeTrue();
+			Directory.Exists(Path.Combine(root, "Off List Show3")).ShouldBeFalse("remove and delete must delete the files");
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldChangeNothing_WhenLevelIsLogOnly()
+	{
+		await using var factory = new LibraryApiFactory();
+		const int onListTvdbId = 810007;
+		const int offListTvdbId = 810008;
+		factory.ImportListHttpHandler = new StubHttpHandler($$"""[{"tvdbId": {{onListTvdbId}}, "title": "On List Show4"}]""");
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var onListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, onListTvdbId, "On List Show4");
+			var offListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, offListTvdbId, "Off List Show4");
+
+			await SetCleanLibraryLevelAsync(client, "LOG_ONLY");
+			await CreateAutomaticAddCustomListAsync(client, "SERIES", rootId);
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			var series = (await client.GetFromJsonAsync<PagedDto<SeriesListItemDto>>("/api/v1/series"))!.Items!;
+			series.Single(x => x.Id == onListId).Monitored.ShouldBeTrue();
+			series.Single(x => x.Id == offListId).Monitored.ShouldBeTrue("log only never changes monitored state or removes anything");
+			Directory.Exists(Path.Combine(root, "Off List Show4")).ShouldBeTrue();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldNotRun_WhenAnyListFetchFailed()
+	{
+		await using var factory = new LibraryApiFactory();
+		const int offListTvdbId = 810009;
+		factory.ImportListHttpHandler = new FailingHttpHandler();
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var offListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, offListTvdbId, "Off List Show5");
+
+			await SetCleanLibraryLevelAsync(client, "REMOVE_AND_DELETE");
+			await CreateAutomaticAddCustomListAsync(client, "SERIES", rootId);
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			(await client.GetAsync($"/api/v1/series/{offListId}")).StatusCode.ShouldBe(HttpStatusCode.OK, "a failed list fetch must never trigger clean library");
+			Directory.Exists(Path.Combine(root, "Off List Show5")).ShouldBeTrue();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldNotRun_WhenNoAutomaticAddListSynced()
+	{
+		await using var factory = new LibraryApiFactory();
+		const int offListTvdbId = 810010;
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var offListId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, offListTvdbId, "Off List Show6");
+
+			await SetCleanLibraryLevelAsync(client, "REMOVE_AND_DELETE");
+			// No import lists configured at all, so no automatic-add list ever synced.
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			(await client.GetAsync($"/api/v1/series/{offListId}")).StatusCode.ShouldBe(HttpStatusCode.OK);
+			Directory.Exists(Path.Combine(root, "Off List Show6")).ShouldBeTrue();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	private static async Task SetCleanLibraryLevelAsync(HttpClient client, string level)
+	{
+		var response = await client.PutAsJsonAsync("/api/v1/config/import-list", new { cleanLibraryLevel = level });
+		response.StatusCode.ShouldBe(HttpStatusCode.OK);
+	}
+
+	private static async Task CreateAutomaticAddCustomListAsync(HttpClient client, string mediaKind, int rootFolderId)
+	{
+		var response = await client.PostAsJsonAsync("/api/v1/import-lists", new
+		{
+			name = "Custom list",
+			type = "CUSTOM",
+			enable = true,
+			enableAutomaticAdd = true,
+			mediaKind,
+			qualityProfileId = 1,
+			languageProfileId = 1,
+			rootFolderId,
+			settings = new { url = "https://example.com/list.json" }
+		});
+		response.StatusCode.ShouldBe(HttpStatusCode.Created);
 	}
 
 	private static async Task<int> CreateTagAsync(HttpClient client, string label)

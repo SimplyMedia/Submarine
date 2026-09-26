@@ -60,6 +60,8 @@ const addMonitorOptionLabels: Record<AddMonitorOption, string> = {
 	FIRST_SEASON: 'First season',
 	LATEST_SEASON: 'Latest season',
 	NONE: 'None',
+	RECENT: 'Recent and future episodes',
+	SKIP: 'Skip (leave unchanged)',
 }
 
 const metadataProviderLabels: Record<MetadataProvider, string> = {
@@ -127,7 +129,7 @@ export const minimumAvailabilityOptions = toOptions(minimumAvailabilityLabels)
 export const metadataProviderOptions = toOptions(metadataProviderLabels)
 
 export const addMonitorOptionOptions: Array<{ value: AddMonitorOption, label: string }> = (
-	['ALL', 'FUTURE', 'MISSING', 'EXISTING', 'PILOT', 'FIRST_SEASON', 'LATEST_SEASON', 'NONE'] as const
+	['ALL', 'FUTURE', 'MISSING', 'EXISTING', 'PILOT', 'FIRST_SEASON', 'LATEST_SEASON', 'RECENT', 'NONE', 'SKIP'] as const
 ).map(value => ({ value, label: addMonitorOptionLabels[value] }))
 
 /** Display name for a file's quality, e.g. "WebDL-1080p Proper". */

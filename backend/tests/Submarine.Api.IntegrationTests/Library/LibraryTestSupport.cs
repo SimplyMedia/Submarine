@@ -267,6 +267,7 @@ public sealed record TagDetailDto(int Id, List<int> SeriesIds);
 /// <param name="LanguageProfileId">Language profile for new movies.</param>
 /// <param name="MinimumAvailability">Earliest availability before grabbing.</param>
 /// <param name="MovieCount">Movies in library.</param>
+/// <param name="MissingCount">Movies missing from the library.</param>
 public sealed record CollectionDto(
 	int? Id,
 	int TmdbCollectionId,
@@ -276,4 +277,5 @@ public sealed record CollectionDto(
 	int? QualityProfileId,
 	int? LanguageProfileId,
 	string MinimumAvailability,
-	int MovieCount);
+	int MovieCount,
+	int MissingCount);

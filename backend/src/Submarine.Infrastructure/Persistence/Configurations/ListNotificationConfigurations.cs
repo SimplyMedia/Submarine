@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Submarine.Core.Entities;
 
@@ -23,6 +24,18 @@ internal sealed class ImportListExclusionConfiguration : EntityConfiguration<Imp
 	{
 		base.Configure(builder);
 		builder.Property(x => x.Title).HasMaxLength(512);
+	}
+}
+
+/// <summary>Configuration for <see cref="ImportListStatus" />.</summary>
+internal sealed class ImportListStatusConfiguration : EntityConfiguration<ImportListStatus>
+{
+	/// <inheritdoc />
+	public override void Configure(EntityTypeBuilder<ImportListStatus> builder)
+	{
+		base.Configure(builder);
+		builder.HasIndex(x => x.ImportListId).IsUnique();
+		builder.HasOne(x => x.ImportList).WithMany().HasForeignKey(x => x.ImportListId).OnDelete(DeleteBehavior.Cascade);
 	}
 }
 

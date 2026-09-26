@@ -56,3 +56,6 @@ internal sealed class UiConfigConfiguration : SingletonEntityConfiguration<UiCon
 		builder.Property(x => x.Language).HasMaxLength(16);
 	}
 }
+
+/// <summary>Configuration for <see cref="ImportListConfig" />.</summary>
+internal sealed class ImportListConfigConfiguration : SingletonEntityConfiguration<ImportListConfig>;
