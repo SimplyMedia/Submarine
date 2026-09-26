@@ -65,7 +65,8 @@ public sealed class AuthModule : IEndpointModule
 		// Sqlite's WAL mode already gives the reader a snapshot that a later writer cannot silently
 		// invalidate (raises SQLITE_BUSY_SNAPSHOT), and Postgres needs Serializable explicitly to
 		// detect the same read-then-insert race (raises a 40001 serialization failure). Either way
-		// only the first insert commits; the loser's SaveChanges/Commit throws and gets mapped to 409.
+		// only the first insert commits; the loser throws and gets mapped to 409. Npgsql wraps
+		// transient failures such as 40001 in an InvalidOperationException, hence the base check.
 		await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 		try
 		{
@@ -84,7 +85,7 @@ public sealed class AuthModule : IEndpointModule
 			await SignInAsync(httpContext, user, isPersistent: true, timeProvider);
 			return TypedResults.Created($"/api/v1/users/{user.Id}", new UserDto(user.Id, user.Username));
 		}
-		catch (Exception exception) when (exception is DbUpdateException or DbException)
+		catch (Exception exception) when (exception is DbUpdateException || exception.GetBaseException() is DbException)
 		{
 			return SetupConflict();
 		}
