@@ -196,7 +196,8 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 		var queued = context.QueuedReleases.FirstOrDefault(queuedRelease => (candidate.MatchedMovieId is { } movieId && queuedRelease.MovieId == movieId)
 			|| (candidate.EpisodeIds is { Count: > 0 } episodeIds && queuedRelease.EpisodeIds.Any(episodeIds.Contains)));
 
-		if (queued is not null
+		if (!context.IsInteractive
+		    && queued is not null
 		    && !context.QualityProfile.IsQualityUpgrade(
 			    queued.Quality, release.Quality, queued.CustomFormatScore, customFormatScore,
 			    context.QualityProfile.UpgradeAllowed, context.DownloadPropersAndRepacks))

@@ -941,6 +941,24 @@ public class DownloadDecisionMakerTest
 	}
 
 	[Fact]
+	public void Decide_ShouldHoldRelease_WhenTheQueueAlreadyHasOneThatItDoesNotUpgrade()
+	{
+		var context = Context() with { QueuedReleases = [new QueuedRelease([1], null, Quality(QualityResolution.R2160_P), 0)] };
+		var decision = _instance.Decide(Candidate(Release(QualityResolution.R1080_P)) with { EpisodeIds = [1] }, context);
+
+		decision.Approved.ShouldBeFalse();
+	}
+
+	[Fact]
+	public void Decide_ShouldIgnoreTheQueue_ForInteractiveSearch()
+	{
+		var context = Context() with { QueuedReleases = [new QueuedRelease([1], null, Quality(QualityResolution.R2160_P), 0)], IsInteractive = true };
+		var decision = _instance.Decide(Candidate(Release(QualityResolution.R1080_P)) with { EpisodeIds = [1] }, context);
+
+		decision.Approved.ShouldBeTrue();
+	}
+
+	[Fact]
 	public void Decide_ShouldRejectSingleEpisodeInSeasonSearch_WhenSeasonIsOlderThanTheIndexerThreshold()
 	{
 		var candidate = Candidate(Release());
