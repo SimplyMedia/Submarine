@@ -131,6 +131,42 @@ returns 409. Bazarr-compatible resource projection is registered, but native eve
 consumer-level SignalR synchronization are not verified. No Sonarr consumer Docker workflow has
 been run for this change.
 
+## Radarr facade
+
+The Radarr v3 facade is available at `<UrlBase>/compat/radarr/api/v3`. Movie listing and lookup
+use local Submarine IDs while retaining TMDB and IMDb identifiers. Adding, updating, deleting,
+movie-file listing/deletion, editor updates, collection previews, import-list previews and movie
+exclusions operate on the shared native library. Movie updates and file reads use the persisted
+Radarr version binding; deleting one of several versions leaves sibling versions in the native
+catalog and tombstones the Radarr entry.
+
+The `/credits` response comes from TMDB movie cast and crew data. `/extrafile` enumerates matching
+sidecars next to selected-version movie files; their ids are derived deterministically from the
+sidecar's full path rather than a persisted catalog row, because upstream Radarr's `/extrafile`
+route is itself read-only and no researched consumer (Overseerr, Seerr, Bazarr, Recyclarr,
+Unpackerr, Homepage, Notifiarr, Maintainerr, Kometa/ArrAPI, Decluttarr, LunaSea) ever mutates an
+extra file. `/parse`, rename preview/command, and selected-version release search and cached
+release grabs are exposed for Radarr clients. `POST /release` accepts a bare `{guid,indexerId}`
+from any recent search response, exactly like upstream: when the request omits `movieId`, the
+facade resolves it from the cached release candidate the original search already matched to a
+movie.
+
+`PUT /movie/{id}` and `PUT /movie/editor` support root-folder changes (`?moveFiles=` on the single
+update, `moveFiles` in the editor body) through a version-scoped native move operation: only the
+facade-bound `MediaVersion` moves, siblings of a multi-version title are untouched. `GET
+/importlist/movie?includeRecommendations=true` still returns 501: no researched consumer reads
+TMDB recommendations through Radarr's import-list preview, so no native recommendation source was
+built for it.
+
+The Radarr compat SignalR hub (`<UrlBase>/compat/radarr/signalr/messages`) receives `receiveMessage`
+events for `movie` add/update/delete, selected-version movie-file import/delete, and selected-version
+renames, matching the shape Bazarr's realtime client expects. File- and rename-scoped events are
+filtered to the facade's currently bound version so an unselected version's changes are never
+published as the facade movie's changes.
+
+Real Docker workflows with Overseerr, Bazarr, and Recyclarr have not been run in this worktree; the
+consumer-version table is the target contract, not runtime smoke.
+
 ## Limits
 
 - The compat facades implement the consumer route union researched for the versions listed above,

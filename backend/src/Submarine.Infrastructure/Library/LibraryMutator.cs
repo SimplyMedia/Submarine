@@ -468,7 +468,7 @@ public sealed class LibraryMutator(
 
 		db.Movies.Remove(movie);
 		await db.SaveChangesAsync(cancellationToken);
-		await eventBus.PublishAsync(new MovieDeletedEvent(id, movie.Title, deleteFiles), cancellationToken);
+		await eventBus.PublishAsync(new MovieDeletedEvent(id, movie.Title, deleteFiles, movie.TmdbId, movie.Year), cancellationToken);
 	}
 
 	/// <summary>

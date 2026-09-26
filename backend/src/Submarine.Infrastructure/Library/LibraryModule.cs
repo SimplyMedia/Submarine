@@ -18,5 +18,6 @@ public sealed class LibraryModule : IServiceModule
 		services.AddScoped<CollectionSyncService>();
 		services.AddScoped<CollectionAddMissingService>();
 		services.AddScoped<VersionMonitoringService>();
+		services.AddScoped<SelectedMovieDeletionService>();
 	}
 }

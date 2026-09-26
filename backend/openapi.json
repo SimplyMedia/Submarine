@@ -29500,6 +29500,13 @@
               "boolean"
             ],
             "description": "New monitored flag."
+          },
+          "moveFiles": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether files move on disk when the root folder changes."
           }
         },
         "description": "Update version request, null fields keep their value."
