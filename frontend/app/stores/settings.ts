@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { i18n } from '~/i18n'
 import { useApi } from '~/composables/useApi'
 import type { components } from '~/types/api'
 
@@ -40,7 +41,7 @@ export const useSettingsStore = defineStore('settings', () => {
 		const api = useApi()
 		const { data } = await api.GET('/api/v1/custom-formats', { params: { query: { PageSize: 500 } } })
 		if (!data) {
-			customFormatsLoadError.value = 'Could not load custom formats. Check your connection and try again.'
+			customFormatsLoadError.value = i18n.global.t('utils.stores.settings.couldNotLoadCustomFormats')
 			return
 		}
 		customFormatsLoadError.value = ''

@@ -3,6 +3,7 @@
  * Multi-select of a series' episodes, grouped by season, for a manual import
  * row. Fetches the series' episodes whenever `seriesId` changes.
  */
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 
 type EpisodeDto = components['schemas']['EpisodeDto']
@@ -14,6 +15,7 @@ const props = defineProps<{
 const selected = defineModel<number[]>({ default: () => [] })
 
 const api = useApi()
+const { t } = useI18n()
 const episodes = ref<EpisodeDto[]>([])
 const loading = ref(false)
 
@@ -48,16 +50,16 @@ function toggle(id: number, value: boolean) {
 
 const summary = computed(() => {
 	if (props.seriesId == null) {
-		return 'Pick a series first'
+		return t('components.import.EpisodePicker.pickSeriesFirst')
 	}
 	if (selected.value.length === 0) {
-		return 'No episodes'
+		return t('components.import.EpisodePicker.noEpisodes')
 	}
 	if (selected.value.length === 1) {
 		const episode = episodes.value.find(x => x.id === selected.value[0])
-		return episode ? `S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}` : '1 episode'
+		return episode ? `S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}` : t('components.import.EpisodePicker.oneEpisode')
 	}
-	return `${selected.value.length} episodes`
+	return t('components.import.EpisodePicker.episodes', { count: selected.value.length })
 })
 </script>
 
@@ -80,7 +82,7 @@ const summary = computed(() => {
 			<SSpinner v-if="loading" />
 			<SEmptyState
 				v-else-if="episodes.length === 0"
-				message="No episodes found for this series."
+				:message="$t('components.import.EpisodePicker.noEpisodesFound')"
 			/>
 			<div
 				v-else
@@ -92,13 +94,13 @@ const summary = computed(() => {
 					class="episode-picker-season"
 				>
 					<p class="episode-picker-season-label">
-						{{ seasonNumber === 0 ? 'Specials' : `Season ${seasonNumber}` }}
+						{{ seasonNumber === 0 ? $t('components.import.EpisodePicker.specials') : $t('components.import.EpisodePicker.seasonNumber', { number: seasonNumber }) }}
 					</p>
 					<SCheckbox
 						v-for="episode in seasonEpisodes"
 						:key="episode.id"
 						:model-value="selected.includes(episode.id)"
-						:label="`${String(episode.episodeNumber).padStart(2, '0')} — ${episode.title ?? 'TBA'}`"
+						:label="`${String(episode.episodeNumber).padStart(2, '0')} — ${episode.title ?? $t('components.import.EpisodePicker.tba')}`"
 						@update:model-value="value => toggle(episode.id, value)"
 					/>
 				</div>

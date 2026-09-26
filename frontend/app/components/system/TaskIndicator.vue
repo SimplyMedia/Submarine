@@ -25,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { commandLabel } from '~/utils/system-labels'
 import { useCommandsStore } from '~/stores/commands'
 
@@ -39,18 +40,21 @@ withDefaults(defineProps<{
 })
 
 const commandsStore = useCommandsStore()
+const { t } = useI18n()
 const active = computed(() => commandsStore.active)
 
 const label = computed(() => {
 	const count = active.value.length
-	return count === 0 ? 'No tasks running' : `${count} ${count === 1 ? 'task' : 'tasks'} running`
+	return count === 0
+		? t('components.system.TaskIndicator.noTasksRunning')
+		: t('components.system.TaskIndicator.tasksRunning', { count }, count)
 })
 
 const tooltipText = computed(() => {
 	if (active.value.length === 0) {
-		return 'No tasks running'
+		return t('components.system.TaskIndicator.noTasksRunning')
 	}
-	return active.value.map(command => commandLabel(command.name ?? '')).join(', ')
+	return active.value.map(command => t(commandLabel(command.name ?? ''))).join(', ')
 })
 </script>
 

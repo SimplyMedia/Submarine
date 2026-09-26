@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
 import { indexerProxyTypeOptions } from '~/utils/indexer-labels'
@@ -9,15 +10,16 @@ type GeneralConfig = components['schemas']['GeneralConfig']
 type UserDto = components['schemas']['UserDto']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'General' })
+const { t } = useI18n()
+useHead({ title: t('pages.settings.general.title') })
 
 const api = useApi()
 const system = useSystemStore()
 const { toast } = useToast()
 
-const logLevelOptions = ['Verbose', 'Debug', 'Information', 'Warning', 'Error', 'Fatal'].map(value => ({ value, label: value }))
+const logLevelOptions = ['Verbose', 'Debug', 'Information', 'Warning', 'Error', 'Fatal'].map(value => ({ value, label: t(`pages.settings.general.logLevels.${value.toLowerCase()}`) }))
 // FlareSolverr is a per-indexer proxy kind only, not a valid outbound proxy for every request.
-const outboundProxyTypeOptions = indexerProxyTypeOptions.filter(option => option.value !== 'FLARESOLVERR')
+const outboundProxyTypeOptions = indexerProxyTypeOptions.filter(option => option.value !== 'FLARESOLVERR').map(option => ({ ...option, label: t(option.label, option.label) }))
 
 // ---- General config ----
 
@@ -70,11 +72,11 @@ async function save() {
 		if (system.status) {
 			system.status.instanceName = result.data.instanceName ?? 'Submarine'
 		}
-		toast({ title: 'Saved', tone: 'ok' })
+		toast({ title: t('pages.settings.general.saved'), tone: 'ok' })
 	}
 	catch (error) {
 		const apiError = error instanceof ApiError ? error : toApiError(error)
-		toast({ title: 'Could not save', tone: 'danger', description: apiError.message })
+		toast({ title: t('pages.settings.general.saveFailed'), tone: 'danger', description: apiError.message })
 	}
 	finally {
 		saving.value = false
@@ -83,12 +85,12 @@ async function save() {
 
 async function copyApiKey() {
 	await navigator.clipboard.writeText(draft.value.apiKey ?? '')
-	toast({ title: 'Copied', tone: 'ok' })
+	toast({ title: t('pages.settings.general.copied'), tone: 'ok' })
 }
 
 async function copyFeedToken() {
 	await navigator.clipboard.writeText(draft.value.feedToken ?? '')
-	toast({ title: 'Copied', tone: 'ok' })
+	toast({ title: t('pages.settings.general.copied'), tone: 'ok' })
 }
 
 const regenerateOpen = ref(false)
@@ -103,11 +105,11 @@ async function regenerateApiKey() {
 		}
 		patchSnapshot({ apiKey: result.data.apiKey })
 		regenerateOpen.value = false
-		toast({ title: 'API key regenerated', tone: 'ok' })
+		toast({ title: t('pages.settings.general.apiKeyRegenerated'), tone: 'ok' })
 	}
 	catch (error) {
 		const apiError = error instanceof ApiError ? error : toApiError(error)
-		toast({ title: 'Could not regenerate API key', tone: 'danger', description: apiError.message })
+		toast({ title: t('pages.settings.general.apiKeyRegenerateFailed'), tone: 'danger', description: apiError.message })
 	}
 	finally {
 		regenerating.value = false
@@ -130,7 +132,7 @@ async function loadUsers() {
 void loadUsers()
 
 const usersColumns = [
-	{ key: 'username', label: 'Username' },
+	{ key: 'username', label: t('pages.settings.general.username') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -152,7 +154,7 @@ function openAddUser() {
 async function addUser() {
 	addUserError.value = ''
 	if (newPassword.value !== newPasswordConfirm.value) {
-		addUserError.value = 'Passwords do not match.'
+		addUserError.value = t('pages.settings.general.passwordMismatch')
 		return
 	}
 	addingUser.value = true
@@ -161,7 +163,7 @@ async function addUser() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'User added', tone: 'ok' })
+		toast({ title: t('pages.settings.general.userAdded'), tone: 'ok' })
 		addUserOpen.value = false
 		await loadUsers()
 	}
@@ -208,7 +210,7 @@ async function doRename() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'User renamed', tone: 'ok' })
+		toast({ title: t('pages.settings.general.userRenamed'), tone: 'ok' })
 		renameTarget.value = null
 		await loadUsers()
 	}
@@ -249,7 +251,7 @@ async function doChangePassword() {
 	}
 	passwordError.value = ''
 	if (passwordValue.value !== passwordConfirm.value) {
-		passwordError.value = 'Passwords do not match.'
+		passwordError.value = t('pages.settings.general.passwordMismatch')
 		return
 	}
 	changingPassword.value = true
@@ -261,7 +263,7 @@ async function doChangePassword() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Password changed', tone: 'ok' })
+		toast({ title: t('pages.settings.general.passwordChanged'), tone: 'ok' })
 		passwordTarget.value = null
 	}
 	catch (error) {
@@ -303,7 +305,7 @@ async function doDeleteUser() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'User deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.general.userDeleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await loadUsers()
@@ -312,26 +314,26 @@ async function doDeleteUser() {
 
 <template>
 	<div>
-		<SPageHeader title="General" />
+		<SPageHeader :title="t('pages.settings.general.title')" />
 
-		<SSection title="General">
+		<SSection :title="t('pages.settings.general.title')">
 			<SSpinner v-if="loading" />
 			<div
 				v-else
 				class="settings-form"
 			>
 				<SField
-					label="Authentication"
+					:label="t('pages.settings.general.authentication')"
 					control-id="general-auth-method"
 				>
 					<SSelect
 						v-model="draft.authMethod"
 						control-id="general-auth-method"
-						:options="authMethodOptions"
+						:options="authMethodOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 					/>
 				</SField>
 				<SField
-					label="Instance name"
+					:label="t('pages.settings.general.instanceName')"
 					control-id="general-instance-name"
 				>
 					<SInput
@@ -340,8 +342,8 @@ async function doDeleteUser() {
 					/>
 				</SField>
 				<SField
-					label="URL base"
-					hint="e.g. /submarine, empty for root"
+					:label="t('pages.settings.general.urlBase')"
+					:hint="t('pages.settings.general.urlBaseHint')"
 					control-id="general-url-base"
 				>
 					<SInput
@@ -350,8 +352,8 @@ async function doDeleteUser() {
 					/>
 				</SField>
 				<SField
-					label="Application URL"
-					hint="Externally reachable URL of this instance, used in notification links."
+					:label="t('pages.settings.general.applicationUrl')"
+					:hint="t('pages.settings.general.applicationUrlHint')"
 					control-id="general-application-url"
 				>
 					<SInput
@@ -360,7 +362,7 @@ async function doDeleteUser() {
 					/>
 				</SField>
 				<SField
-					label="Log level"
+					:label="t('pages.settings.general.logLevel')"
 					control-id="general-log-level"
 				>
 					<SSelect
@@ -370,7 +372,7 @@ async function doDeleteUser() {
 					/>
 				</SField>
 				<SField
-					label="Branch"
+					:label="t('pages.settings.general.branch')"
 					control-id="general-branch"
 				>
 					<SInput
@@ -379,8 +381,8 @@ async function doDeleteUser() {
 					/>
 				</SField>
 				<SField
-					label="API key"
-					hint="Used by external tools and the realtime event feed."
+					:label="t('pages.settings.general.apiKey')"
+					:hint="t('pages.settings.general.apiKeyHint')"
 					control-id="general-api-key"
 				>
 					<div class="key-row">
@@ -390,7 +392,7 @@ async function doDeleteUser() {
 							disabled
 						/>
 						<SIconButton
-							label="Copy API key"
+							:label="t('pages.settings.general.copyApiKey')"
 							@click="copyApiKey"
 						>
 							<Icon
@@ -402,13 +404,13 @@ async function doDeleteUser() {
 							variant="secondary"
 							@click="regenerateOpen = true"
 						>
-							Regenerate
+							{{ t('pages.settings.general.regenerate') }}
 						</SButton>
 					</div>
 				</SField>
 				<SField
-					label="Feed token"
-					hint="Read-only token for feeds like iCal."
+					:label="t('pages.settings.general.feedToken')"
+					:hint="t('pages.settings.general.feedTokenHint')"
 					control-id="general-feed-token"
 				>
 					<div class="key-row">
@@ -418,7 +420,7 @@ async function doDeleteUser() {
 							disabled
 						/>
 						<SIconButton
-							label="Copy feed token"
+							:label="t('pages.settings.general.copyFeedToken')"
 							@click="copyFeedToken"
 						>
 							<Icon
@@ -431,26 +433,26 @@ async function doDeleteUser() {
 			</div>
 		</SSection>
 
-		<SSection title="Security">
+		<SSection :title="t('pages.settings.general.security')">
 			<SSpinner v-if="loading" />
 			<div
 				v-else
 				class="settings-form"
 			>
 				<SField
-					label="Authentication required"
-					hint="Disabling for local addresses skips the login for loopback, private network and link-local clients."
+					:label="t('pages.settings.general.authenticationRequired')"
+					:hint="t('pages.settings.general.authenticationRequiredHint')"
 					control-id="general-auth-required"
 				>
 					<SSelect
 						v-model="draft.authenticationRequired"
 						control-id="general-auth-required"
-						:options="authenticationRequiredOptions"
+						:options="authenticationRequiredOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 					/>
 				</SField>
 				<SField
-					label="Trusted proxies"
-					hint="Comma separated CIDR ranges allowed to set X-Forwarded-For, e.g. 10.0.0.0/8. Forwarded headers from any other peer are ignored."
+					:label="t('pages.settings.general.trustedProxies')"
+					:hint="t('pages.settings.general.trustedProxiesHint')"
 					control-id="general-trusted-proxies"
 				>
 					<SInput
@@ -459,20 +461,20 @@ async function doDeleteUser() {
 					/>
 				</SField>
 				<SField
-					label="Certificate validation"
-					hint="Whether outbound HTTPS requests reject invalid TLS certificates."
+					:label="t('pages.settings.general.certificateValidation')"
+					:hint="t('pages.settings.general.certificateValidationHint')"
 					control-id="general-cert-validation"
 				>
 					<SSelect
 						v-model="draft.certificateValidation"
 						control-id="general-cert-validation"
-						:options="certificateValidationOptions"
+						:options="certificateValidationOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 					/>
 				</SField>
 			</div>
 		</SSection>
 
-		<SSection title="Proxy">
+		<SSection :title="t('pages.settings.general.proxy')">
 			<SSpinner v-if="loading" />
 			<div
 				v-else
@@ -480,11 +482,11 @@ async function doDeleteUser() {
 			>
 				<SSwitch
 					v-model="draft.proxyEnabled"
-					label="Use an outbound proxy"
+					:label="t('pages.settings.general.useOutboundProxy')"
 				/>
 				<template v-if="draft.proxyEnabled">
 					<SField
-						label="Type"
+						:label="t('pages.settings.general.type')"
 						control-id="general-proxy-type"
 					>
 						<SSelect
@@ -495,7 +497,7 @@ async function doDeleteUser() {
 					</SField>
 					<div class="field-grid">
 						<SField
-							label="Host"
+							:label="t('pages.settings.general.host')"
 							control-id="general-proxy-host"
 						>
 							<SInput
@@ -504,7 +506,7 @@ async function doDeleteUser() {
 							/>
 						</SField>
 						<SField
-							label="Port"
+							:label="t('pages.settings.general.port')"
 							control-id="general-proxy-port"
 						>
 							<SInput
@@ -517,7 +519,7 @@ async function doDeleteUser() {
 					</div>
 					<div class="field-grid">
 						<SField
-							label="Username"
+							:label="t('pages.settings.general.username')"
 							control-id="general-proxy-username"
 						>
 							<SInput
@@ -527,7 +529,7 @@ async function doDeleteUser() {
 							/>
 						</SField>
 						<SField
-							label="Password"
+							:label="t('pages.settings.general.password')"
 							control-id="general-proxy-password"
 						>
 							<SInput
@@ -539,8 +541,8 @@ async function doDeleteUser() {
 						</SField>
 					</div>
 					<SField
-						label="Bypass filter"
-						hint="Comma separated hosts, *.domain wildcards or CIDR ranges that skip the proxy."
+						:label="t('pages.settings.general.bypassFilter')"
+						:hint="t('pages.settings.general.bypassFilterHint')"
 						control-id="general-proxy-bypass"
 					>
 						<SInput
@@ -550,21 +552,21 @@ async function doDeleteUser() {
 					</SField>
 					<SSwitch
 						v-model="draft.proxyBypassLocalAddresses"
-						label="Bypass the proxy for local addresses"
+						:label="t('pages.settings.general.bypassLocalAddresses')"
 					/>
 				</template>
 			</div>
 		</SSection>
 
-		<SSection title="Backup">
+		<SSection :title="t('pages.settings.general.backup')">
 			<SSpinner v-if="loading" />
 			<div
 				v-else
 				class="settings-form"
 			>
 				<SField
-					label="Backup folder"
-					hint="Relative to the app data directory when not an absolute path; empty uses &quot;backups&quot;."
+					:label="t('pages.settings.general.backupFolder')"
+					:hint="t('pages.settings.general.backupFolderHint')"
 					control-id="general-backup-folder"
 				>
 					<SInput
@@ -574,7 +576,7 @@ async function doDeleteUser() {
 				</SField>
 				<div class="field-grid">
 					<SField
-						label="Backup interval (days)"
+						:label="t('pages.settings.general.backupInterval')"
 						control-id="general-backup-interval"
 					>
 						<SInput
@@ -585,7 +587,7 @@ async function doDeleteUser() {
 						/>
 					</SField>
 					<SField
-						label="Retention (backups to keep)"
+						:label="t('pages.settings.general.backupRetention')"
 						control-id="general-backup-retention"
 					>
 						<SInput
@@ -599,7 +601,7 @@ async function doDeleteUser() {
 			</div>
 		</SSection>
 
-		<SSection title="Users">
+		<SSection :title="t('pages.settings.general.users')">
 			<SSpinner v-if="usersLoading" />
 			<STable
 				v-else
@@ -610,13 +612,13 @@ async function doDeleteUser() {
 				<template #cell-actions="{ row }">
 					<SDropdownMenu
 						:items="[
-							{ label: 'Change password', icon: 'lucide:key-round', onSelect: () => openChangePassword(row) },
-							{ label: 'Rename', icon: 'lucide:pencil', onSelect: () => openRename(row) },
-							{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDeleteUser(row) },
+							{ label: t('pages.settings.general.changePassword'), icon: 'lucide:key-round', onSelect: () => openChangePassword(row) },
+							{ label: t('pages.settings.general.rename'), icon: 'lucide:pencil', onSelect: () => openRename(row) },
+							{ label: t('pages.settings.general.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDeleteUser(row) },
 						]"
 					>
 						<template #trigger>
-							<SIconButton label="User actions">
+							<SIconButton :label="t('pages.settings.general.userActions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -626,13 +628,13 @@ async function doDeleteUser() {
 					</SDropdownMenu>
 				</template>
 				<template #empty>
-					<SEmptyState message="Add a user to control who can sign in.">
+					<SEmptyState :message="t('pages.settings.general.usersEmpty')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openAddUser"
 							>
-								Add user
+								{{ t('pages.settings.general.addUser') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -646,7 +648,7 @@ async function doDeleteUser() {
 					variant="primary"
 					@click="openAddUser"
 				>
-					Add user
+					{{ t('pages.settings.general.addUser') }}
 				</SButton>
 			</div>
 		</SSection>
@@ -660,33 +662,33 @@ async function doDeleteUser() {
 
 		<SDialog
 			v-model="regenerateOpen"
-			title="Regenerate API key?"
+			:title="t('pages.settings.general.regenerateApiKeyQuestion')"
 		>
-			<p>Anything using the current key will stop working.</p>
+			<p>{{ t('pages.settings.general.regenerateApiKeyWarning') }}</p>
 			<template #footer>
 				<SButton
 					variant="secondary"
 					:disabled="regenerating"
 					@click="regenerateOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.general.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="regenerating"
 					@click="regenerateApiKey"
 				>
-					Regenerate
+					{{ t('pages.settings.general.regenerate') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="addUserOpen"
-			title="Add user"
+			:title="t('pages.settings.general.addUser')"
 		>
 			<SField
-				label="Username"
+				:label="t('pages.settings.general.username')"
 				control-id="new-user-username"
 			>
 				<SInput
@@ -695,7 +697,7 @@ async function doDeleteUser() {
 				/>
 			</SField>
 			<SField
-				label="Password"
+				:label="t('pages.settings.general.password')"
 				control-id="new-user-password"
 			>
 				<SInput
@@ -705,7 +707,7 @@ async function doDeleteUser() {
 				/>
 			</SField>
 			<SField
-				label="Confirm password"
+				:label="t('pages.settings.general.confirmPassword')"
 				:error="addUserError"
 				control-id="new-user-password-confirm"
 			>
@@ -721,24 +723,24 @@ async function doDeleteUser() {
 					variant="secondary"
 					@click="addUserOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.general.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="addingUser"
 					@click="addUser"
 				>
-					Add user
+					{{ t('pages.settings.general.addUser') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="renameTargetOpen"
-			title="Rename user"
+			:title="t('pages.settings.general.renameUser')"
 		>
 			<SField
-				label="Username"
+				:label="t('pages.settings.general.username')"
 				:error="renameError"
 				control-id="rename-user-username"
 			>
@@ -754,24 +756,24 @@ async function doDeleteUser() {
 					:disabled="renaming"
 					@click="renameTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.general.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="renaming"
 					@click="doRename"
 				>
-					Save changes
+					{{ t('pages.settings.general.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="passwordTargetOpen"
-			title="Change password"
+			:title="t('pages.settings.general.changePassword')"
 		>
 			<SField
-				label="New password"
+				:label="t('pages.settings.general.newPassword')"
 				control-id="change-password-value"
 			>
 				<SInput
@@ -781,7 +783,7 @@ async function doDeleteUser() {
 				/>
 			</SField>
 			<SField
-				label="Confirm new password"
+				:label="t('pages.settings.general.confirmNewPassword')"
 				:error="passwordError"
 				control-id="change-password-confirm"
 			>
@@ -798,24 +800,24 @@ async function doDeleteUser() {
 					:disabled="changingPassword"
 					@click="passwordTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.general.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="changingPassword"
 					@click="doChangePassword"
 				>
-					Save changes
+					{{ t('pages.settings.general.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete user"
+			:title="t('pages.settings.general.deleteUser')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.username }}"? This cannot be undone.
+				{{ t('pages.settings.general.deleteUserConfirm', { username: deleteTarget.username }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -830,14 +832,14 @@ async function doDeleteUser() {
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.general.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDeleteUser"
 				>
-					Delete user
+					{{ t('pages.settings.general.deleteUser') }}
 				</SButton>
 			</template>
 		</SDialog>

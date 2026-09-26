@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 definePageMeta({
 	layout: 'default',
 	middleware: [
@@ -10,7 +12,8 @@ definePageMeta({
 	],
 })
 
-useHead({ title: 'UI reference' })
+const { t } = useI18n()
+useHead({ title: t('pages.dev.ui.title', 'UI reference') })
 
 const { toast } = useToast()
 
@@ -24,9 +27,9 @@ const textValue = ref('')
 const areaValue = ref('')
 
 const tableColumns = [
-	{ key: 'title', label: 'Title' },
-	{ key: 'quality', label: 'Quality' },
-	{ key: 'size', label: 'Size', align: 'right' as const },
+	{ key: 'title', label: t('pages.dev.ui.columnTitle', 'Title') },
+	{ key: 'quality', label: t('pages.dev.ui.columnQuality', 'Quality') },
+	{ key: 'size', label: t('pages.dev.ui.columnSize', 'Size'), align: 'right' as const },
 ]
 
 const tableRows = [
@@ -36,157 +39,157 @@ const tableRows = [
 ]
 
 const tabs = [
-	{ value: 'queue', label: 'Queue' },
-	{ value: 'history', label: 'History' },
-	{ value: 'blocklist', label: 'Blocklist' },
+	{ value: 'queue', label: t('pages.dev.ui.tabQueue', 'Queue') },
+	{ value: 'history', label: t('pages.dev.ui.tabHistory', 'History') },
+	{ value: 'blocklist', label: t('pages.dev.ui.tabBlocklist', 'Blocklist') },
 ]
 
 const selectOptions = [
-	{ value: 'any', label: 'Any' },
-	{ value: 'series', label: 'Series' },
-	{ value: 'movies', label: 'Movies' },
+	{ value: 'any', label: t('pages.dev.ui.optionAny', 'Any') },
+	{ value: 'series', label: t('pages.dev.ui.optionSeries', 'Series') },
+	{ value: 'movies', label: t('pages.dev.ui.optionMovies', 'Movies') },
 ]
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="UI reference">
+		<SPageHeader :title="t('pages.dev.ui.title', 'UI reference')">
 			<template #actions>
 				<ThemeMenu trigger-class="s-btn s-btn-secondary" />
 			</template>
 		</SPageHeader>
 
-		<SSection title="Buttons">
+		<SSection :title="t('pages.dev.ui.buttons', 'Buttons')">
 			<div class="ui-row">
 				<SButton variant="primary">
-					Primary
+					{{ t('pages.dev.ui.primary', 'Primary') }}
 				</SButton>
 				<SButton variant="secondary">
-					Secondary
+					{{ t('pages.dev.ui.secondary', 'Secondary') }}
 				</SButton>
 				<SButton variant="ghost">
-					Ghost
+					{{ t('pages.dev.ui.ghost', 'Ghost') }}
 				</SButton>
 				<SButton variant="danger">
-					Danger
+					{{ t('pages.dev.ui.danger', 'Danger') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					loading
 				>
-					Loading
+					{{ t('pages.dev.ui.loading', 'Loading') }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					disabled
 				>
-					Disabled
+					{{ t('pages.dev.ui.disabled', 'Disabled') }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					size="sm"
 				>
-					Small
+					{{ t('pages.dev.ui.small', 'Small') }}
 				</SButton>
-				<SIconButton label="Search">
+				<SIconButton :label="t('pages.dev.ui.search', 'Search')">
 					<Icon name="lucide:search" />
 				</SIconButton>
 			</div>
 		</SSection>
 
-		<SSection title="Inputs">
+		<SSection :title="t('pages.dev.ui.inputs', 'Inputs')">
 			<div class="ui-grid">
 				<SField
-					label="Title"
-					hint="Used for sorting and search."
+					:label="t('pages.dev.ui.titleField', 'Title')"
+					:hint="t('pages.dev.ui.titleHint', 'Used for sorting and search.')"
 				>
 					<SInput
 						v-model="textValue"
-						placeholder="Release title"
+						:placeholder="t('pages.dev.ui.releaseTitle', 'Release title')"
 					/>
 				</SField>
 				<SField
-					label="With error"
-					error="Enter a path that exists."
+					:label="t('pages.dev.ui.withError', 'With error')"
+					:error="t('pages.dev.ui.pathError', 'Enter a path that exists.')"
 				>
 					<SInput
 						invalid
-						placeholder="/downloads/series"
+						:placeholder="t('pages.dev.ui.downloadsPathPlaceholder', '/downloads/series')"
 					/>
 				</SField>
-				<SField label="Quality profile">
+				<SField :label="t('pages.dev.ui.qualityProfile', 'Quality profile')">
 					<SSelect
 						v-model="selectValue"
 						:options="selectOptions"
 					/>
 				</SField>
-				<SField label="Notes">
+				<SField :label="t('pages.dev.ui.notes', 'Notes')">
 					<STextarea
 						v-model="areaValue"
-						placeholder="Anything worth remembering"
+						:placeholder="t('pages.dev.ui.notesPlaceholder', 'Anything worth remembering')"
 					/>
 				</SField>
 				<SCheckbox
 					v-model="checkValue"
-					label="Monitor new items"
+					:label="t('pages.dev.ui.monitorNewItems', 'Monitor new items')"
 				/>
 				<SSwitch
 					v-model="switchValue"
-					label="Season folder"
+					:label="t('pages.dev.ui.seasonFolder', 'Season folder')"
 				/>
 			</div>
 		</SSection>
 
-		<SSection title="Tabs and badges">
+		<SSection :title="t('pages.dev.ui.tabsAndBadges', 'Tabs and badges')">
 			<STabs
 				v-model="activeTab"
 				:tabs="tabs"
-				label="Activity views"
+				:label="t('pages.dev.ui.activityViews', 'Activity views')"
 			>
 				<template #panel-queue>
 					<p class="ui-note">
-						Queue panel content.
+						{{ t('pages.dev.ui.queuePanel', 'Queue panel content.') }}
 					</p>
 				</template>
 				<template #panel-history>
 					<p class="ui-note">
-						History panel content.
+						{{ t('pages.dev.ui.historyPanel', 'History panel content.') }}
 					</p>
 				</template>
 				<template #panel-blocklist>
 					<p class="ui-note">
-						Blocklist panel content.
+						{{ t('pages.dev.ui.blocklistPanel', 'Blocklist panel content.') }}
 					</p>
 				</template>
 			</STabs>
 			<div class="ui-row ui-row-top">
 				<SBadge tone="ok">
-					Downloaded
+					{{ t('pages.dev.ui.downloaded', 'Downloaded') }}
 				</SBadge>
 				<SBadge tone="warn">
-					Retrying
+					{{ t('pages.dev.ui.retrying', 'Retrying') }}
 				</SBadge>
 				<SBadge tone="danger">
-					Failed
+					{{ t('pages.dev.ui.failed', 'Failed') }}
 				</SBadge>
 				<SBadge tone="info">
-					Queued
+					{{ t('pages.dev.ui.queued', 'Queued') }}
 				</SBadge>
 				<SBadge tone="neutral">
-					Unmonitored
+					{{ t('pages.dev.ui.unmonitored', 'Unmonitored') }}
 				</SBadge>
 			</div>
 		</SSection>
 
-		<SSection title="Progress and loading">
+		<SSection :title="t('pages.dev.ui.progressAndLoading', 'Progress and loading')">
 			<div class="ui-stack">
 				<SProgress
 					:value="35"
-					label="Download progress"
+					:label="t('pages.dev.ui.downloadProgress', 'Download progress')"
 				/>
 				<SProgress
 					:value="80"
-					label="Import progress"
+					:label="t('pages.dev.ui.importProgress', 'Import progress')"
 				/>
 				<div class="ui-row ui-row-top">
 					<SSpinner />
@@ -199,7 +202,7 @@ const selectOptions = [
 			</div>
 		</SSection>
 
-		<SSection title="Data">
+		<SSection :title="t('pages.dev.ui.data', 'Data')">
 			<STable
 				:columns="tableColumns"
 				:rows="tableRows"
@@ -212,46 +215,46 @@ const selectOptions = [
 				</template>
 			</STable>
 			<div class="ui-row ui-row-top">
-				<SPosterImage alt="Long Strange Trip" />
+				<SPosterImage :alt="t('pages.dev.ui.posterAltA', 'Long Strange Trip')" />
 				<SPosterImage
 					src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300'%3E%3Crect width='200' height='300' fill='%23163D3A'/%3E%3C/svg%3E"
-					alt="Deep water documentary"
+					:alt="t('pages.dev.ui.posterAltB', 'Deep water documentary')"
 				/>
-				<SEmptyState message="No results. Try a different search.">
+				<SEmptyState :message="t('pages.dev.ui.noResults', 'No results. Try a different search.')">
 					<template #action>
 						<SButton variant="primary">
-							Search again
+							{{ t('pages.dev.ui.searchAgain', 'Search again') }}
 						</SButton>
 					</template>
 				</SEmptyState>
 			</div>
 		</SSection>
 
-		<SSection title="Overlays">
+		<SSection :title="t('pages.dev.ui.overlays', 'Overlays')">
 			<div class="ui-row">
 				<SButton
 					variant="primary"
 					@click="dialogOpen = true"
 				>
-					Open dialog
+					{{ t('pages.dev.ui.openDialog', 'Open dialog') }}
 				</SButton>
 				<SButton
 					variant="secondary"
 					@click="wideDialogOpen = true"
 				>
-					Open wide dialog
+					{{ t('pages.dev.ui.openWideDialog', 'Open wide dialog') }}
 				</SButton>
 				<SDropdownMenu
 					:items="[
-						{ label: 'Refresh', icon: 'lucide:refresh-cw' },
-						{ label: 'Preview rename', icon: 'lucide:eye' },
+						{ label: t('pages.dev.ui.refresh', 'Refresh'), icon: 'lucide:refresh-cw' },
+						{ label: t('pages.dev.ui.previewRename', 'Preview rename'), icon: 'lucide:eye' },
 						{ separator: true },
-						{ label: 'Delete', icon: 'lucide:trash-2', danger: true },
+						{ label: t('pages.dev.ui.delete', 'Delete'), icon: 'lucide:trash-2', danger: true },
 					]"
 				>
 					<template #trigger>
 						<SButton variant="secondary">
-							Menu
+							{{ t('pages.dev.ui.menu', 'Menu') }}
 							<Icon
 								name="lucide:chevron-down"
 								aria-hidden="true"
@@ -262,70 +265,70 @@ const selectOptions = [
 				<SPopover>
 					<template #trigger>
 						<SButton variant="secondary">
-							Popover
+							{{ t('pages.dev.ui.popover', 'Popover') }}
 						</SButton>
 					</template>
 					<p class="ui-note">
-						Secondary metadata lives here on hover.
+						{{ t('pages.dev.ui.popoverContent', 'Secondary metadata lives here on hover.') }}
 					</p>
 				</SPopover>
-				<STooltip text="Shows what changed">
-					<SIconButton label="Info">
+				<STooltip :text="t('pages.dev.ui.tooltipText', 'Shows what changed')">
+					<SIconButton :label="t('pages.dev.ui.info', 'Info')">
 						<Icon name="lucide:info" />
 					</SIconButton>
 				</STooltip>
 				<SButton
 					variant="secondary"
-					@click="toast({ title: 'Series added', description: 'North of North Island', tone: 'ok' })"
+					@click="toast({ title: t('pages.dev.ui.seriesAdded', 'Series added'), description: t('pages.dev.ui.seriesAddedDescription', 'North of North Island'), tone: 'ok' })"
 				>
-					Success toast
+					{{ t('pages.dev.ui.successToast', 'Success toast') }}
 				</SButton>
 				<SButton
 					variant="secondary"
-					@click="toast({ title: 'Download failed', description: 'No indexers responded', tone: 'danger' })"
+					@click="toast({ title: t('pages.dev.ui.downloadFailed', 'Download failed'), description: t('pages.dev.ui.noIndexersResponded', 'No indexers responded'), tone: 'danger' })"
 				>
-					Error toast
+					{{ t('pages.dev.ui.errorToast', 'Error toast') }}
 				</SButton>
 			</div>
 
 			<SDialog
 				v-model="dialogOpen"
-				title="Add series"
-				description="Search Tvdb by title, then pick the folder and profile."
+				:title="t('pages.dev.ui.addSeries', 'Add series')"
+				:description="t('pages.dev.ui.addSeriesDescription', 'Search Tvdb by title, then pick the folder and profile.')"
 			>
-				<SField label="Path">
-					<SInput placeholder="/data/series" />
+				<SField :label="t('pages.dev.ui.path', 'Path')">
+					<SInput :placeholder="t('pages.dev.ui.dataSeriesPlaceholder', '/data/series')" />
 				</SField>
 				<template #footer>
 					<SButton
 						variant="secondary"
 						@click="dialogOpen = false"
 					>
-						Cancel
+						{{ t('pages.dev.ui.cancel', 'Cancel') }}
 					</SButton>
 					<SButton
 						variant="primary"
 						@click="dialogOpen = false"
 					>
-						Add series
+						{{ t('pages.dev.ui.addSeries', 'Add series') }}
 					</SButton>
 				</template>
 			</SDialog>
 
 			<SDialog
 				v-model="wideDialogOpen"
-				title="Interactive search"
+				:title="t('pages.dev.ui.interactiveSearch', 'Interactive search')"
 				wide
 			>
 				<p class="ui-note">
-					Release results would fill this wide dialog.
+					{{ t('pages.dev.ui.wideDialogContent', 'Release results would fill this wide dialog.') }}
 				</p>
 				<template #footer>
 					<SButton
 						variant="secondary"
 						@click="wideDialogOpen = false"
 					>
-						Close
+						{{ t('pages.dev.ui.close', 'Close') }}
 					</SButton>
 				</template>
 			</SDialog>

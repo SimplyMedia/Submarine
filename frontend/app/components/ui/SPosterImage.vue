@@ -17,6 +17,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const props = defineProps<{
 	src?: string | null
 	alt: string
@@ -31,7 +34,7 @@ watch(() => props.src, () => {
 const initials = computed(() => {
 	const words = props.alt.split(/\s+/).filter(word => /[a-z0-9]/i.test(word))
 	if (words.length === 0) {
-		return '?'
+		return t('components.ui.SPosterImage.unknownInitials')
 	}
 	return words.slice(0, 2).map(word => word[0]!.toUpperCase()).join('')
 })

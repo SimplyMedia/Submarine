@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { backupKindLabel } from '~/utils/system-labels'
 import { formatBytes, formatDateTime } from '~/composables/useFormat'
 import { toApiError } from '~/composables/useApi'
@@ -6,7 +7,8 @@ import { useCommandsStore } from '~/stores/commands'
 import { navChildren } from '~/navigation'
 import type { components } from '~/types/api'
 
-useHead({ title: 'Backups' })
+const { t } = useI18n()
+useHead({ title: t('pages.system.backups.title') })
 
 type BackupEntry = components['schemas']['BackupEntry']
 
@@ -54,10 +56,10 @@ const backupCommand = computed(() =>
 )
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'kind', label: 'Type' },
-	{ key: 'size', label: 'Size', align: 'right' as const },
-	{ key: 'createdAt', label: 'Created' },
+	{ key: 'name', label: t('pages.system.backups.name') },
+	{ key: 'kind', label: t('pages.system.backups.type') },
+	{ key: 'size', label: t('pages.system.backups.size'), align: 'right' as const },
+	{ key: 'createdAt', label: t('pages.system.backups.created') },
 	{ key: 'actions', label: '' },
 ]
 
@@ -67,7 +69,7 @@ async function loadBackups() {
 	const api = useApi()
 	const result = await api.GET('/api/v1/backups')
 	if (!result.data) {
-		loadError.value = 'Could not load backups. Check your connection and try again.'
+		loadError.value = t('pages.system.backups.loadFailed')
 	}
 	backups.value = result.data ?? []
 	loading.value = false
@@ -85,7 +87,7 @@ async function createBackup() {
 		}
 	}
 	catch {
-		toast({ title: 'Could not start the backup', tone: 'danger' })
+		toast({ title: t('pages.system.backups.createFailed'), tone: 'danger' })
 	}
 	finally {
 		creating.value = false
@@ -95,11 +97,11 @@ async function createBackup() {
 watch(backupCommand, (command) => {
 	if (command && (command.status === 'COMPLETED' || command.status === 'FAILED')) {
 		if (command.status === 'COMPLETED') {
-			toast({ title: 'Backup created', tone: 'ok' })
+			toast({ title: t('pages.system.backups.created'), tone: 'ok' })
 			void loadBackups()
 		}
 		else {
-			toast({ title: 'Backup failed', description: command.message ?? undefined, tone: 'danger' })
+			toast({ title: t('pages.system.backups.failed'), description: command.message ?? undefined, tone: 'danger' })
 		}
 		backupCommandId.value = null
 	}
@@ -120,7 +122,7 @@ async function confirmDelete() {
 		deleteTarget.value = null
 	}
 	catch (error) {
-		toast({ title: 'Could not delete the backup', description: error instanceof Error ? error.message : undefined, tone: 'danger' })
+		toast({ title: t('pages.system.backups.deleteFailed'), description: error instanceof Error ? error.message : undefined, tone: 'danger' })
 	}
 	finally {
 		deleting.value = false
@@ -145,12 +147,12 @@ async function confirmRestore() {
 			window.location.reload()
 		}
 		else {
-			toast({ title: 'Restart is taking longer than expected', tone: 'danger' })
+			toast({ title: t('pages.system.backups.restartSlow'), tone: 'danger' })
 			restartingAfterRestore.value = false
 		}
 	}
 	catch (error) {
-		toast({ title: 'Could not restore the backup', description: error instanceof Error ? error.message : undefined, tone: 'danger' })
+		toast({ title: t('pages.system.backups.restoreFailed'), description: error instanceof Error ? error.message : undefined, tone: 'danger' })
 		restoring.value = false
 	}
 }
@@ -163,7 +165,7 @@ function onFileChange(event: Event) {
 
 async function uploadAndRestore() {
 	if (!uploadFile.value) {
-		uploadError.value = 'Choose a backup file'
+		uploadError.value = t('pages.system.backups.chooseFile')
 		return
 	}
 	uploading.value = true
@@ -180,7 +182,7 @@ async function uploadAndRestore() {
 		})
 		if (!response.ok) {
 			const problem = await response.json().catch(() => null) as { title?: string, detail?: string } | null
-			throw new Error(problem?.detail || problem?.title || 'Restore failed')
+			throw new Error(problem?.detail || problem?.title || t('pages.system.backups.restoreErrorFallback'))
 		}
 		uploadOpen.value = false
 		uploadFile.value = null
@@ -190,12 +192,12 @@ async function uploadAndRestore() {
 			window.location.reload()
 		}
 		else {
-			toast({ title: 'Restart is taking longer than expected', tone: 'danger' })
+			toast({ title: t('pages.system.backups.restartSlow'), tone: 'danger' })
 			restartingAfterRestore.value = false
 		}
 	}
 	catch (error) {
-		uploadError.value = error instanceof Error ? error.message : 'Restore failed'
+		uploadError.value = error instanceof Error ? error.message : t('pages.system.backups.restoreErrorFallback')
 	}
 	finally {
 		uploading.value = false
@@ -209,26 +211,26 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Backups">
+		<SPageHeader :title="t('pages.system.backups.title')">
 			<template #actions>
 				<SButton
 					variant="secondary"
 					@click="uploadOpen = true"
 				>
-					Restore from file
+					{{ t('pages.system.backups.restoreFromFile') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="creating"
 					@click="createBackup"
 				>
-					Back up now
+					{{ t('pages.system.backups.backUpNow') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="System"
+			:label="t('pages.system.backups.systemNav')"
 			:items="navChildren('system')"
 		/>
 
@@ -237,7 +239,7 @@ onMounted(() => {
 			class="backups-restarting"
 		>
 			<SSpinner :size="16" />
-			<span>Restoring and restarting, waiting for the application to come back…</span>
+			<span>{{ t('pages.system.backups.restarting') }}</span>
 		</div>
 
 		<template v-else>
@@ -245,7 +247,7 @@ onMounted(() => {
 				<CommandProgress :command="backupCommand" />
 			</SSection>
 
-			<SSection title="Archives">
+			<SSection :title="t('pages.system.backups.archives')">
 				<SEmptyState
 					v-if="loadError"
 					:message="loadError"
@@ -253,7 +255,7 @@ onMounted(() => {
 				>
 					<template #action>
 						<SButton @click="loadBackups">
-							Retry
+							{{ t('pages.system.backups.retry') }}
 						</SButton>
 					</template>
 				</SEmptyState>
@@ -269,7 +271,7 @@ onMounted(() => {
 				>
 					<template #empty>
 						<SEmptyState
-							message="No backups yet. Back up your library to protect against data loss."
+							:message="t('pages.system.backups.emptyState')"
 							icon="lucide:archive"
 						>
 							<template #action>
@@ -278,13 +280,13 @@ onMounted(() => {
 									:loading="creating"
 									@click="createBackup"
 								>
-									Back up now
+									{{ t('pages.system.backups.backUpNow') }}
 								</SButton>
 							</template>
 						</SEmptyState>
 					</template>
 					<template #cell-kind="{ row }">
-						{{ backupKindLabel(row.name) }}
+						{{ t(backupKindLabel(row.name)) }}
 					</template>
 					<template #cell-size="{ row }">
 						{{ formatBytes(row.size) }}
@@ -298,7 +300,7 @@ onMounted(() => {
 								:href="`${baseUrl()}/api/v1/backups/${row.name}/download`"
 								download
 							>
-								<SIconButton label="Download backup">
+								<SIconButton :label="t('pages.system.backups.downloadBackup')">
 									<Icon
 										name="lucide:download"
 										aria-hidden="true"
@@ -306,7 +308,7 @@ onMounted(() => {
 								</SIconButton>
 							</a>
 							<SIconButton
-								label="Restore this backup"
+								:label="t('pages.system.backups.restoreThisBackup')"
 								@click="restoreTarget = row"
 							>
 								<Icon
@@ -315,7 +317,7 @@ onMounted(() => {
 								/>
 							</SIconButton>
 							<SIconButton
-								label="Delete this backup"
+								:label="t('pages.system.backups.deleteThisBackup')"
 								variant="danger"
 								@click="deleteTarget = row"
 							>
@@ -332,18 +334,18 @@ onMounted(() => {
 
 		<ConfirmDialog
 			v-model="deleteTargetOpen"
-			title="Delete backup?"
-			:description="deleteTarget ? `${deleteTarget.name} will be permanently deleted.` : undefined"
-			confirm-label="Delete"
+			:title="t('pages.system.backups.deleteConfirmTitle')"
+			:description="deleteTarget ? t('pages.system.backups.deleteConfirmDescription', { name: deleteTarget.name }) : undefined"
+			:confirm-label="t('pages.system.backups.delete')"
 			danger
 			:busy="deleting"
 			@confirm="confirmDelete"
 		/>
 		<ConfirmDialog
 			v-model="restoreTargetOpen"
-			title="Restore backup?"
-			:description="restoreTarget ? `${restoreTarget.name} will replace the current library data. The application will restart.` : undefined"
-			confirm-label="Restore"
+			:title="t('pages.system.backups.restoreConfirmTitle')"
+			:description="restoreTarget ? t('pages.system.backups.restoreConfirmDescription', { name: restoreTarget.name }) : undefined"
+			:confirm-label="t('pages.system.backups.restore')"
 			danger
 			:busy="restoring"
 			@confirm="confirmRestore"
@@ -351,11 +353,11 @@ onMounted(() => {
 
 		<SDialog
 			v-model="uploadOpen"
-			title="Restore from file"
-			description="Upload a Submarine backup archive. The application will restart once the restore finishes."
+			:title="t('pages.system.backups.restoreFromFile')"
+			:description="t('pages.system.backups.uploadDescription')"
 		>
 			<SField
-				label="Backup file"
+				:label="t('pages.system.backups.backupFile')"
 				control-id="backup-upload-file"
 				:error="uploadError"
 			>
@@ -373,14 +375,14 @@ onMounted(() => {
 					:disabled="uploading"
 					@click="uploadOpen = false"
 				>
-					Cancel
+					{{ t('pages.system.backups.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="uploading"
 					@click="uploadAndRestore"
 				>
-					Restore
+					{{ t('pages.system.backups.restore') }}
 				</SButton>
 			</template>
 		</SDialog>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useCommandsStore } from '~/stores/commands'
 import { navChildren } from '~/navigation'
 import { formatDate, formatDateTime } from '~/composables/useFormat'
 import type { components } from '~/types/api'
 
-useHead({ title: 'Updates' })
+const { t } = useI18n()
+useHead({ title: t('pages.system.updates.title') })
 
 type UpdateInfo = components['schemas']['UpdateDto']
 type ReleaseInfo = components['schemas']['ReleaseInfo']
@@ -54,7 +56,7 @@ async function checkNow() {
 		checkCommandId.value = command.id ?? null
 	}
 	catch {
-		toast({ title: 'Could not start the update check', tone: 'danger' })
+		toast({ title: t('pages.system.updates.checkFailed'), tone: 'danger' })
 	}
 }
 
@@ -72,20 +74,20 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Updates">
+		<SPageHeader :title="t('pages.system.updates.title')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					:loading="checking"
 					@click="checkNow"
 				>
-					Check now
+					{{ t('pages.system.updates.checkNow') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="System"
+			:label="t('pages.system.updates.systemNav')"
 			:items="navChildren('system')"
 		/>
 
@@ -96,20 +98,20 @@ onMounted(() => {
 			/>
 			<SEmptyState
 				v-else-if="loadError"
-				message="Could not check for updates. Check the application's internet connection and try again."
+				:message="t('pages.system.updates.loadFailed')"
 				icon="lucide:cloud-off"
 			/>
 			<template v-else-if="update">
 				<dl class="fact-grid">
 					<div class="fact-row">
-						<dt>Current version</dt>
+						<dt>{{ t('pages.system.updates.currentVersion') }}</dt>
 						<dd>{{ update.current }}</dd>
 					</div>
 					<div
 						v-if="update.latest"
 						class="fact-row"
 					>
-						<dt>Latest version</dt>
+						<dt>{{ t('pages.system.updates.latestVersion') }}</dt>
 						<dd>{{ update.latest }}</dd>
 					</div>
 				</dl>
@@ -117,13 +119,13 @@ onMounted(() => {
 				<div class="updates-status">
 					<template v-if="update.checkFailed">
 						<SBadge tone="warn">
-							Unknown
+							{{ t('pages.system.updates.unknown') }}
 						</SBadge>
-						<span>Could not reach the update server. Check the application's internet connection.</span>
+						<span>{{ t('pages.system.updates.serverUnreachable') }}</span>
 					</template>
 					<template v-else-if="update.updateAvailable">
 						<SBadge tone="info">
-							Update available
+							{{ t('pages.system.updates.updateAvailable') }}
 						</SBadge>
 						<a
 							v-if="update.releaseNotesUrl"
@@ -131,20 +133,20 @@ onMounted(() => {
 							target="_blank"
 							rel="noopener"
 						>
-							View release notes
+							{{ t('pages.system.updates.viewReleaseNotes') }}
 						</a>
 					</template>
 					<template v-else-if="!update.latest">
 						<SBadge tone="ok">
-							No releases yet
+							{{ t('pages.system.updates.noReleasesYet') }}
 						</SBadge>
-						<span>No published releases were found for this branch.</span>
+						<span>{{ t('pages.system.updates.noPublishedReleases') }}</span>
 					</template>
 					<template v-else>
 						<SBadge tone="ok">
-							Up to date
+							{{ t('pages.system.updates.upToDate') }}
 						</SBadge>
-						<span>You're running the latest version.</span>
+						<span>{{ t('pages.system.updates.latestVersionRunning') }}</span>
 					</template>
 				</div>
 
@@ -152,18 +154,18 @@ onMounted(() => {
 					v-if="update.updateAvailable && update.isDocker"
 					class="updates-docker-note"
 				>
-					Pull the new image to update.
+					{{ t('pages.system.updates.dockerNote') }}
 				</p>
 			</template>
 		</SSection>
 
 		<SSection
 			v-if="!loading && !loadError"
-			title="Release history"
+			:title="t('pages.system.updates.releaseHistory')"
 		>
 			<SEmptyState
 				v-if="releases.length === 0"
-				message="No releases have been published yet."
+				:message="t('pages.system.updates.noReleasesPublished')"
 				icon="lucide:package"
 			/>
 			<ul
@@ -181,13 +183,13 @@ onMounted(() => {
 							v-if="release.installed"
 							tone="ok"
 						>
-							Currently installed
+							{{ t('pages.system.updates.currentlyInstalled') }}
 						</SBadge>
 						<SBadge
 							v-if="release.prerelease"
 							tone="info"
 						>
-							Prerelease
+							{{ t('pages.system.updates.prerelease') }}
 						</SBadge>
 						<span
 							class="release-date"
@@ -201,7 +203,7 @@ onMounted(() => {
 							rel="noopener"
 							class="release-link"
 						>
-							View on GitHub
+							{{ t('pages.system.updates.viewOnGitHub') }}
 						</a>
 					</div>
 					<pre

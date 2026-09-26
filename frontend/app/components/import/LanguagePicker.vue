@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 /** Multi-select of the Language enum for a manual import row's language override. */
 import { languageLabel, languageOptions } from '~/utils/settings-labels'
 import type { components } from '~/types/api'
@@ -6,12 +7,13 @@ import type { components } from '~/types/api'
 type Language = components['schemas']['Language']
 
 const selected = defineModel<Language[]>({ default: () => [] })
+const { t } = useI18n()
 
 function toggle(value: Language, checked: boolean) {
 	selected.value = checked ? [...selected.value, value] : selected.value.filter(existing => existing !== value)
 }
 
-const summary = computed(() => (selected.value.length === 0 ? 'Unknown' : selected.value.map(language => languageLabel(language)).join(', ')))
+const summary = computed(() => (selected.value.length === 0 ? t('components.import.LanguagePicker.unknown') : selected.value.map(language => t(languageLabel(language))).join(', ')))
 </script>
 
 <template>
@@ -35,7 +37,7 @@ const summary = computed(() => (selected.value.length === 0 ? 'Unknown' : select
 			>
 				<SCheckbox
 					:model-value="selected.includes(option.value as Language)"
-					:label="option.label"
+					:label="t(option.label)"
 					@update:model-value="value => toggle(option.value as Language, value)"
 				/>
 			</li>

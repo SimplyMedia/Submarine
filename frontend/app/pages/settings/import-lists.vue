@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
 import { useReferenceStore } from '~/stores/reference'
@@ -20,7 +21,8 @@ type ImportListPreviewItemDto = components['schemas']['ImportListPreviewItemDto'
 type ImportListConfigResource = components['schemas']['ImportListConfigResource']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Import lists' })
+const { t } = useI18n()
+useHead({ title: t('pages.settings.importLists.title') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -39,7 +41,7 @@ async function loadConfig() {
 		configDirty.markSaved(result.data)
 	}
 	else {
-		configLoadError.value = 'Could not load library sync settings. Check your connection and try again.'
+		configLoadError.value = t('pages.settings.importLists.configLoadFailed')
 	}
 }
 
@@ -51,11 +53,11 @@ async function saveConfig() {
 	const result = await api.PUT('/api/v1/config/import-list', { body: configDraft.value })
 	configSaving.value = false
 	if (!result.data) {
-		toast({ title: 'Could not save', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.importLists.saveFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
 	configDirty.markSaved(result.data)
-	toast({ title: 'Saved', tone: 'ok' })
+	toast({ title: t('pages.settings.importLists.saved'), tone: 'ok' })
 }
 
 const lists = ref<ImportListDto[]>([])
@@ -68,7 +70,7 @@ const exclusionsLoadError = ref('')
 async function loadLists() {
 	const result = await api.GET('/api/v1/import-lists')
 	if (!result.data) {
-		loadError.value = 'Could not load import lists. Check your connection and try again.'
+		loadError.value = t('pages.settings.importLists.loadFailed')
 	}
 	lists.value = result.data ?? []
 }
@@ -76,7 +78,7 @@ async function loadLists() {
 async function loadExclusions() {
 	const result = await api.GET('/api/v1/import-list-exclusions')
 	if (!result.data) {
-		exclusionsLoadError.value = 'Could not load exclusions. Check your connection and try again.'
+		exclusionsLoadError.value = t('pages.settings.importLists.exclusionsLoadFailed')
 	}
 	exclusions.value = result.data ?? []
 }
@@ -100,10 +102,10 @@ async function load() {
 void load()
 
 const listColumns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'type', label: 'Type' },
-	{ key: 'mediaKind', label: 'Media' },
-	{ key: 'enable', label: 'Enabled' },
+	{ key: 'name', label: t('pages.settings.importLists.name') },
+	{ key: 'type', label: t('pages.settings.importLists.type') },
+	{ key: 'mediaKind', label: t('pages.settings.importLists.media') },
+	{ key: 'enable', label: t('pages.settings.importLists.enabled') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -231,7 +233,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: editingId.value === null ? 'Import list added' : 'Import list saved', tone: 'ok' })
+		toast({ title: t(editingId.value === null ? 'pages.settings.importLists.added' : 'pages.settings.importLists.savedList'), tone: 'ok' })
 		dialogOpen.value = false
 		await loadLists()
 	}
@@ -251,14 +253,14 @@ async function testList(id: number) {
 	const result = await api.POST('/api/v1/import-lists/{id}/test', { params: { path: { id } } })
 	testing.value = false
 	if (!result.data) {
-		toast({ title: 'Test failed', tone: 'danger', description: toApiError(result.error, result.response).message })
+		toast({ title: t('pages.settings.importLists.testFailed'), tone: 'danger', description: toApiError(result.error, result.response).message })
 		return
 	}
 	if (result.data.success) {
-		toast({ title: 'Test succeeded', tone: 'ok', description: `Found ${result.data.itemCount} item${result.data.itemCount === 1 ? '' : 's'}` })
+		toast({ title: t('pages.settings.importLists.testSucceeded'), tone: 'ok', description: t(result.data.itemCount === 1 ? 'pages.settings.importLists.foundOneItem' : 'pages.settings.importLists.foundManyItems', { count: result.data.itemCount }) })
 	}
 	else {
-		toast({ title: 'Test failed', tone: 'danger', description: result.data.message ?? 'The list could not be fetched' })
+		toast({ title: t('pages.settings.importLists.testFailed'), tone: 'danger', description: result.data.message ?? t('pages.settings.importLists.fetchFailed') })
 	}
 }
 
@@ -286,10 +288,10 @@ async function doDelete() {
 	const result = await api.DELETE('/api/v1/import-lists/{id}', { params: { path: { id: deleteTarget.value.id } } })
 	deleting.value = false
 	if (!result.response.ok) {
-		toast({ title: 'Could not delete', tone: 'danger', description: toApiError(result.error, result.response).message })
+		toast({ title: t('pages.settings.importLists.removeFailed'), tone: 'danger', description: toApiError(result.error, result.response).message })
 		return
 	}
-	toast({ title: 'Import list deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.importLists.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	await loadLists()
 }
@@ -301,9 +303,9 @@ const previewLoading = ref(false)
 const previewError = ref('')
 const previewItems = ref<ImportListPreviewItemDto[]>([])
 const previewColumns = [
-	{ key: 'title', label: 'Title' },
-	{ key: 'year', label: 'Year', align: 'right' as const },
-	{ key: 'status', label: 'Status' },
+	{ key: 'title', label: t('pages.settings.importLists.titleColumn') },
+	{ key: 'year', label: t('pages.settings.importLists.year'), align: 'right' as const },
+	{ key: 'status', label: t('pages.settings.importLists.status') },
 ]
 
 async function openPreview(list: ImportListDto) {
@@ -337,18 +339,18 @@ function previewRowKey(row: ImportListPreviewItemDto): string | number {
 
 function rowActions(list: ImportListDto) {
 	return [
-		{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(list) },
-		{ label: 'Preview', icon: 'lucide:eye', onSelect: () => openPreview(list) },
-		{ label: 'Test', icon: 'lucide:play', onSelect: () => testList(list.id) },
-		{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(list) },
+		{ label: t('pages.settings.importLists.edit'), icon: 'lucide:pencil', onSelect: () => openEdit(list) },
+		{ label: t('pages.settings.importLists.preview'), icon: 'lucide:eye', onSelect: () => openPreview(list) },
+		{ label: t('pages.settings.importLists.test'), icon: 'lucide:play', onSelect: () => testList(list.id) },
+		{ label: t('pages.settings.importLists.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(list) },
 	]
 }
 
 // --- Exclusions ---
 
 const exclusionColumns = [
-	{ key: 'title', label: 'Title' },
-	{ key: 'year', label: 'Year', align: 'right' as const },
+	{ key: 'title', label: t('pages.settings.importLists.titleColumn') },
+	{ key: 'year', label: t('pages.settings.importLists.year'), align: 'right' as const },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -384,7 +386,7 @@ async function saveExclusion() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Exclusion added', tone: 'ok' })
+		toast({ title: t('pages.settings.importLists.exclusionAdded'), tone: 'ok' })
 		exclusionDialogOpen.value = false
 		await loadExclusions()
 	}
@@ -400,7 +402,7 @@ async function saveExclusion() {
 async function removeExclusion(exclusion: ImportListExclusionDto) {
 	const result = await api.DELETE('/api/v1/import-list-exclusions/{id}', { params: { path: { id: exclusion.id } } })
 	if (!result.response.ok) {
-		toast({ title: 'Could not remove exclusion', tone: 'danger', description: toApiError(result.error, result.response).message })
+		toast({ title: t('pages.settings.importLists.exclusionRemoveFailed'), tone: 'danger', description: toApiError(result.error, result.response).message })
 		return
 	}
 	await loadExclusions()
@@ -409,18 +411,18 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 
 <template>
 	<div>
-		<SPageHeader title="Import lists">
+		<SPageHeader :title="t('pages.settings.importLists.title')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add import list
+					{{ t('pages.settings.importLists.addImportList') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
-		<SSection title="Library sync">
+		<SSection :title="t('pages.settings.importLists.librarySync')">
 			<SEmptyState
 				v-if="configLoadError"
 				:message="configLoadError"
@@ -428,20 +430,20 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 			>
 				<template #action>
 					<SButton @click="loadConfig">
-						Retry
+						{{ t('pages.settings.importLists.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
 			<template v-else-if="configDraft">
 				<SField
-					label="Clean library level"
-					hint="What to do with library items no longer covered by any automatic-add import list, checked after a full sync where every automatic-add list synced successfully."
+					:label="t('pages.settings.importLists.cleanLibraryLevel')"
+					:hint="t('pages.settings.importLists.cleanLibraryLevelHint')"
 					control-id="clean-library-level"
 				>
 					<SSelect
 						v-model="configDraft.cleanLibraryLevel"
 						control-id="clean-library-level"
-						:options="cleanLibraryLevelOptions"
+						:options="cleanLibraryLevelOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 					/>
 				</SField>
 				<SettingsSaveBar
@@ -461,7 +463,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 			>
 				<template #action>
 					<SButton @click="loadLists">
-						Retry
+						{{ t('pages.settings.importLists.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -473,20 +475,20 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 				:row-key="(row) => row.id"
 			>
 				<template #cell-type="{ row }">
-					{{ importListTypeLabel(row.type) }}
+					{{ t(importListTypeLabel(row.type)) }}
 				</template>
 				<template #cell-mediaKind="{ row }">
-					{{ mediaKindLabel(row.mediaKind) }}
+					{{ t(mediaKindLabel(row.mediaKind)) }}
 				</template>
 				<template #cell-enable="{ row }">
 					<SBadge :tone="row.enable ? 'ok' : 'neutral'">
-						{{ row.enable ? 'Enabled' : 'Disabled' }}
+						{{ row.enable ? t('pages.settings.importLists.enabled') : t('pages.settings.importLists.disabled') }}
 					</SBadge>
 				</template>
 				<template #cell-actions="{ row }">
 					<SDropdownMenu :items="rowActions(row)">
 						<template #trigger>
-							<SIconButton label="Import list actions">
+							<SIconButton :label="t('pages.settings.importLists.actions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -496,13 +498,13 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					</SDropdownMenu>
 				</template>
 				<template #empty>
-					<SEmptyState message="Add an import list to automatically add series or movies from TMDB, Trakt and more.">
+					<SEmptyState :message="t('pages.settings.importLists.emptyState')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openCreate"
 							>
-								Add import list
+								{{ t('pages.settings.importLists.addImportList') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -510,7 +512,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 			</STable>
 		</SSection>
 
-		<SSection title="Excluded from import lists">
+		<SSection :title="t('pages.settings.importLists.excludedTitle')">
 			<SEmptyState
 				v-if="exclusionsLoadError"
 				:message="exclusionsLoadError"
@@ -518,7 +520,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 			>
 				<template #action>
 					<SButton @click="loadExclusions">
-						Retry
+						{{ t('pages.settings.importLists.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -534,17 +536,17 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 						variant="ghost"
 						@click="removeExclusion(row)"
 					>
-						Remove
+						{{ t('pages.settings.importLists.remove') }}
 					</SButton>
 				</template>
 				<template #empty>
-					<SEmptyState message="Exclude a series or movie to keep import lists from re-adding it.">
+					<SEmptyState :message="t('pages.settings.importLists.exclusionsEmpty')">
 						<template #action>
 							<SButton
 								variant="secondary"
 								@click="openAddExclusion"
 							>
-								Add exclusion
+								{{ t('pages.settings.importLists.addExclusion') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -558,14 +560,14 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					variant="secondary"
 					@click="openAddExclusion"
 				>
-					Add exclusion
+					{{ t('pages.settings.importLists.addExclusion') }}
 				</SButton>
 			</div>
 		</SSection>
 
 		<SDialog
 			v-model="dialogOpen"
-			:title="editingId === null ? 'Add import list' : 'Edit import list'"
+			:title="editingId === null ? t('pages.settings.importLists.addImportList') : t('pages.settings.importLists.editImportList')"
 			wide
 		>
 			<div
@@ -576,7 +578,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					v-for="option in importListTypeOptions"
 					:key="option.value"
 					:icon="importListTypeIcon(option.value)"
-					:label="option.label"
+					:label="t(option.label, option.label)"
 					@click="selectType(option.value as ImportListType)"
 				/>
 			</div>
@@ -595,7 +597,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 						name="lucide:arrow-left"
 						aria-hidden="true"
 					/>
-					Change type: {{ importListTypeLabel(selectedType) }}
+					{{ t('pages.settings.importLists.changeType', { type: t(importListTypeLabel(selectedType)) }) }}
 				</button>
 
 				<p
@@ -607,7 +609,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 				</p>
 
 				<SField
-					label="Name"
+					:label="t('pages.settings.importLists.name')"
 					:error="nameError"
 					control-id="list-name"
 				>
@@ -621,31 +623,31 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 				<div class="switch-row">
 					<SSwitch
 						v-model="enable"
-						label="Enable"
+						:label="t('pages.settings.importLists.enable')"
 					/>
 					<SSwitch
 						v-model="enableAutomaticAdd"
-						label="Enable automatic add"
+						:label="t('pages.settings.importLists.enableAutomaticAdd')"
 					/>
 					<SSwitch
 						v-model="searchOnAdd"
-						label="Search on add"
+						:label="t('pages.settings.importLists.searchOnAdd')"
 					/>
 				</div>
 
 				<div class="field-grid">
 					<SField
-						label="Media kind"
+						:label="t('pages.settings.importLists.mediaKind')"
 						control-id="list-media-kind"
 					>
 						<SSelect
 							v-model="mediaKind"
 							control-id="list-media-kind"
-							:options="mediaKindOptions"
+							:options="mediaKindOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
 					<SField
-						label="Quality profile"
+						:label="t('pages.settings.importLists.qualityProfile')"
 						control-id="list-quality-profile"
 					>
 						<SSelect
@@ -655,7 +657,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 						/>
 					</SField>
 					<SField
-						label="Language profile"
+						:label="t('pages.settings.importLists.languageProfile')"
 						control-id="list-language-profile"
 					>
 						<SSelect
@@ -665,7 +667,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 						/>
 					</SField>
 					<SField
-						label="Root folder"
+						:label="t('pages.settings.importLists.rootFolder')"
 						control-id="list-root-folder"
 					>
 						<SSelect
@@ -675,35 +677,35 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 						/>
 					</SField>
 					<SField
-						label="Monitor"
+						:label="t('pages.settings.importLists.monitor')"
 						control-id="list-monitor"
 					>
 						<SSelect
 							v-model="monitor"
 							control-id="list-monitor"
-							:options="monitorNewItemsOptions"
+							:options="monitorNewItemsOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
 					<SField
 						v-if="mediaKind === 'MOVIES'"
-						label="Minimum availability"
+						:label="t('pages.settings.importLists.minimumAvailability')"
 						control-id="list-minimum-availability"
 					>
 						<SSelect
 							v-model="minimumAvailability"
 							control-id="list-minimum-availability"
-							:options="minimumAvailabilityOptions"
+							:options="minimumAvailabilityOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
 					<SField
 						v-if="mediaKind === 'SERIES'"
-						label="Series type"
+						:label="t('pages.settings.importLists.seriesType')"
 						control-id="list-series-type"
 					>
 						<SSelect
 							v-model="seriesType"
 							control-id="list-series-type"
-							:options="seriesTypeOptions"
+							:options="seriesTypeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 						/>
 					</SField>
 				</div>
@@ -711,11 +713,11 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 				<SSwitch
 					v-if="mediaKind === 'SERIES'"
 					v-model="seasonFolder"
-					label="Use season folders"
+					:label="t('pages.settings.importLists.useSeasonFolders')"
 				/>
 
 				<SField
-					label="Tags"
+					:label="t('pages.settings.importLists.tags')"
 					control-id="list-tags"
 				>
 					<TagPicker
@@ -727,6 +729,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 				<SchemaForm
 					v-if="normalizedFields.length > 0"
 					v-model="settingsDraft"
+					provider-type="import-lists"
 					:fields="normalizedFields"
 					:field-errors="fieldErrors"
 				/>
@@ -741,7 +744,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					:disabled="saving"
 					@click="dialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.importLists.cancel') }}
 				</SButton>
 				<SButton
 					v-if="editingId !== null"
@@ -749,24 +752,24 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					:loading="testing"
 					@click="testList(editingId)"
 				>
-					Test
+					{{ t('pages.settings.importLists.test') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					{{ editingId === null ? 'Add import list' : 'Save changes' }}
+					{{ editingId === null ? t('pages.settings.importLists.addImportList') : t('pages.settings.importLists.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete import list"
+			:title="t('pages.settings.importLists.deleteImportList')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ t('pages.settings.importLists.deleteConfirm', { name: deleteTarget.name }) }}
 			</p>
 			<template #footer>
 				<SButton
@@ -774,22 +777,22 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.importLists.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete import list
+					{{ t('pages.settings.importLists.deleteImportList') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="previewOpen"
-			title="Preview"
-			description="Items this list would add, based on its current settings."
+			:title="t('pages.settings.importLists.preview')"
+			:description="t('pages.settings.importLists.previewDescription')"
 			wide
 		>
 			<SSpinner v-if="previewLoading" />
@@ -812,7 +815,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					</SBadge>
 				</template>
 				<template #empty>
-					<SEmptyState message="No items found for this list yet." />
+					<SEmptyState :message="t('pages.settings.importLists.previewEmpty')" />
 				</template>
 			</STable>
 			<template #footer>
@@ -820,17 +823,17 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					variant="secondary"
 					@click="previewOpen = false"
 				>
-					Close
+					{{ t('pages.settings.importLists.close') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="exclusionDialogOpen"
-			title="Add exclusion"
+			:title="t('pages.settings.importLists.addExclusion')"
 		>
 			<SField
-				label="Title"
+				:label="t('pages.settings.importLists.titleColumn')"
 				control-id="exclusion-title"
 			>
 				<SInput
@@ -840,7 +843,7 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 			</SField>
 			<div class="field-grid">
 				<SField
-					label="Year"
+					:label="t('pages.settings.importLists.year')"
 					control-id="exclusion-year"
 				>
 					<SInput
@@ -850,8 +853,8 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					/>
 				</SField>
 				<SField
-					label="TVDB id"
-					hint="For series"
+					:label="t('pages.settings.importLists.tvdbId')"
+					:hint="t('pages.settings.importLists.forSeries')"
 					control-id="exclusion-tvdb"
 				>
 					<SInput
@@ -861,8 +864,8 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					/>
 				</SField>
 				<SField
-					label="TMDB id"
-					hint="For movies"
+					:label="t('pages.settings.importLists.tmdbId')"
+					:hint="t('pages.settings.importLists.forMovies')"
 					control-id="exclusion-tmdb"
 				>
 					<SInput
@@ -885,14 +888,14 @@ async function removeExclusion(exclusion: ImportListExclusionDto) {
 					:disabled="exclusionSaving"
 					@click="exclusionDialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.importLists.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="exclusionSaving"
 					@click="saveExclusion"
 				>
-					Add exclusion
+					{{ t('pages.settings.importLists.addExclusion') }}
 				</SButton>
 			</template>
 		</SDialog>

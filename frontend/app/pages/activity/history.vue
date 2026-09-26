@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { historyEventTypeLabel, qualityLabel } from '~/utils/library-labels'
 import { historyEventTypeOptions } from '~/utils/activity-labels'
 import { languageLabel } from '~/utils/settings-labels'
@@ -10,7 +11,8 @@ import type { components } from '~/types/api'
 type HistoryEvent = components['schemas']['HistoryEventDto']
 type HistoryEventType = NonNullable<components['schemas']['HistoryEventType']>
 
-useHead({ title: 'History' })
+const { t } = useI18n()
+useHead({ title: t('pages.activity.history.title') })
 
 const { toast } = useToast()
 
@@ -27,7 +29,7 @@ const failingId = ref<number | null>(null)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 
-const eventTypeFilterOptions = [{ value: 'ALL', label: 'All events' }, ...historyEventTypeOptions]
+const eventTypeFilterOptions = [{ value: 'ALL', label: t('pages.activity.history.allEvents') }, ...historyEventTypeOptions.map(option => ({ ...option, label: t(option.label) }))]
 
 async function load() {
 	loading.value = true
@@ -44,7 +46,7 @@ async function load() {
 		},
 	})
 	if (!result.data) {
-		loadError.value = 'Could not load history. Check your connection and try again.'
+		loadError.value = t('pages.activity.history.loadFailed')
 	}
 	items.value = result.data?.items ?? []
 	totalCount.value = result.data?.totalCount ?? 0
@@ -75,7 +77,7 @@ function mediaLabel(row: HistoryEvent): string {
 	if (row.seriesTitle) {
 		return row.episodeTitle ? `${row.seriesTitle}: ${row.episodeTitle}` : row.seriesTitle
 	}
-	return row.movieTitle ?? 'None'
+	return row.movieTitle ?? t('pages.activity.history.none')
 }
 
 function toggleExpanded(id: number) {
@@ -90,11 +92,11 @@ async function markFailed(row: HistoryEvent) {
 		if (!result.response.ok) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: 'Marked as failed', tone: 'ok' })
+		toast({ title: t('pages.activity.history.markedFailed'), tone: 'ok' })
 		await load()
 	}
 	catch (error) {
-		toast({ title: 'Could not mark as failed', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('pages.activity.history.markFailedError'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		failingId.value = null
@@ -102,11 +104,11 @@ async function markFailed(row: HistoryEvent) {
 }
 
 const columns = [
-	{ key: 'type', label: 'Event' },
-	{ key: 'media', label: 'Media' },
-	{ key: 'sourceTitle', label: 'Source title' },
-	{ key: 'quality', label: 'Quality' },
-	{ key: 'date', label: 'Date' },
+	{ key: 'type', label: t('pages.activity.history.event') },
+	{ key: 'media', label: t('pages.activity.history.media') },
+	{ key: 'sourceTitle', label: t('pages.activity.history.sourceTitle') },
+	{ key: 'quality', label: t('pages.activity.history.quality') },
+	{ key: 'date', label: t('pages.activity.history.date') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -117,9 +119,9 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="History" />
+		<SPageHeader :title="t('pages.activity.history.title')" />
 		<SubNav
-			label="Activity"
+			:label="t('pages.activity.history.activityNav')"
 			:items="navChildren('activity')"
 		/>
 
@@ -132,7 +134,7 @@ onMounted(() => {
 			<SInput
 				v-model="search"
 				type="search"
-				placeholder="Search source title"
+				:placeholder="t('pages.activity.history.searchPlaceholder')"
 			/>
 		</div>
 
@@ -143,7 +145,7 @@ onMounted(() => {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ t('pages.activity.history.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -156,13 +158,13 @@ onMounted(() => {
 		>
 			<template #empty>
 				<SEmptyState
-					message="No history yet."
+					:message="t('pages.activity.history.emptyState')"
 					icon="lucide:history"
 				/>
 			</template>
 			<template #cell-type="{ row }">
 				<SBadge :tone="row.type === 'FAILED' ? 'danger' : row.type === 'GRABBED' ? 'info' : row.type === 'IMPORTED' || row.type === 'UPGRADED' ? 'ok' : 'neutral'">
-					{{ historyEventTypeLabel(row.type as never) }}
+					{{ t(historyEventTypeLabel(row.type as never)) }}
 				</SBadge>
 			</template>
 			<template #cell-media="{ row }">
@@ -175,7 +177,7 @@ onMounted(() => {
 				<span
 					v-else
 					class="s-cell-muted"
-				>None</span>
+				>{{ t('pages.activity.history.none') }}</span>
 			</template>
 			<template #cell-sourceTitle="{ row }">
 				<div class="history-source-cell">
@@ -186,20 +188,20 @@ onMounted(() => {
 						size="sm"
 						@click="toggleExpanded(row.id)"
 					>
-						{{ expandedId === row.id ? 'Hide details' : 'Show details' }}
+						{{ t(expandedId === row.id ? 'pages.activity.history.hideDetails' : 'pages.activity.history.showDetails') }}
 					</SButton>
 				</div>
 				<div
 					v-if="expandedId === row.id"
 					class="history-details"
 				>
-					<span v-if="row.downloadId">Download id: {{ row.downloadId }}</span>
-					<span v-if="row.languages && row.languages.length > 0">Languages: {{ row.languages.map(l => languageLabel(l)).join(', ') }}</span>
+					<span v-if="row.downloadId">{{ t('pages.activity.history.downloadId', { id: row.downloadId }) }}</span>
+					<span v-if="row.languages && row.languages.length > 0">{{ t('pages.activity.history.languages', { languages: row.languages.map(l => t(languageLabel(l))).join(', ') }) }}</span>
 					<pre v-if="row.data">{{ row.data }}</pre>
 				</div>
 			</template>
 			<template #cell-quality="{ row }">
-				{{ qualityLabel(row.quality) }}
+				{{ t(qualityLabel(row.quality)) }}
 			</template>
 			<template #cell-date="{ row }">
 				<STooltip :text="formatDateTime(row.date)">
@@ -214,7 +216,7 @@ onMounted(() => {
 					:loading="failingId === row.id"
 					@click="markFailed(row)"
 				>
-					Mark as failed
+					{{ t('pages.activity.history.markAsFailed') }}
 				</SButton>
 			</template>
 		</STable>
@@ -229,16 +231,16 @@ onMounted(() => {
 				:disabled="page <= 1"
 				@click="setPage(page - 1)"
 			>
-				Previous
+				{{ t('pages.activity.history.previous') }}
 			</SButton>
-			<span>Page {{ page }} of {{ totalPages }} ({{ totalCount }} total)</span>
+			<span>{{ t('pages.activity.history.page', { page, totalPages, totalCount }) }}</span>
 			<SButton
 				variant="secondary"
 				size="sm"
 				:disabled="page >= totalPages"
 				@click="setPage(page + 1)"
 			>
-				Next
+				{{ t('pages.activity.history.next') }}
 			</SButton>
 		</div>
 	</div>

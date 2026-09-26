@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useReferenceStore } from '~/stores/reference'
 import type { components } from '~/types/api'
@@ -6,7 +7,8 @@ import type { components } from '~/types/api'
 type TagDetailDto = components['schemas']['TagDetailDto']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Tags' })
+const { t } = useI18n()
+useHead({ title: t('pages.settings.tags.title') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -88,14 +90,14 @@ async function save() {
 			if (!result.data) {
 				throw toApiError(result.error, result.response)
 			}
-			toast({ title: 'Tag created', tone: 'ok' })
+			toast({ title: t('pages.settings.tags.created'), tone: 'ok' })
 		}
 		else {
 			const result = await api.PUT('/api/v1/tags/{id}', { params: { path: { id: editingId.value } }, body: { label: label.value } })
 			if (!result.data) {
 				throw toApiError(result.error, result.response)
 			}
-			toast({ title: 'Tag renamed', tone: 'ok' })
+			toast({ title: t('pages.settings.tags.renamed'), tone: 'ok' })
 		}
 		dialogOpen.value = false
 		await load()
@@ -126,28 +128,28 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Tag deleted', tone: 'ok' })
+	toast({ title: t('pages.settings.tags.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await load()
 }
 
 const columns = [
-	{ key: 'label', label: 'Label' },
-	{ key: 'usage', label: 'Used by', align: 'right' as const },
+	{ key: 'label', label: t('pages.settings.tags.label') },
+	{ key: 'usage', label: t('pages.settings.tags.usedBy'), align: 'right' as const },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Tags">
+		<SPageHeader :title="t('pages.settings.tags.title')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add tag
+					{{ t('pages.settings.tags.addTag') }}
 				</SButton>
 			</template>
 		</SPageHeader>
@@ -160,7 +162,7 @@ const columns = [
 			>
 				<template #action>
 					<SButton @click="load">
-						Retry
+						{{ t('pages.settings.tags.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -177,12 +179,12 @@ const columns = [
 				<template #cell-actions="{ row }">
 					<SDropdownMenu
 						:items="[
-							{ label: 'Rename', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-							{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
+							{ label: t('pages.settings.tags.rename'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+							{ label: t('pages.settings.tags.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => confirmDelete(row) },
 						]"
 					>
 						<template #trigger>
-							<SIconButton label="Tag actions">
+							<SIconButton :label="t('pages.settings.tags.tagActions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -192,13 +194,13 @@ const columns = [
 					</SDropdownMenu>
 				</template>
 				<template #empty>
-					<SEmptyState message="No tags yet. Add one to group series, movies and connections.">
+					<SEmptyState :message="t('pages.settings.tags.emptyState')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openCreate"
 							>
-								Add tag
+								{{ t('pages.settings.tags.addTag') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -210,17 +212,17 @@ const columns = [
 
 		<SDialog
 			v-model="dialogOpen"
-			:title="editingId === null ? 'Add tag' : 'Rename tag'"
+			:title="editingId === null ? t('pages.settings.tags.addTag') : t('pages.settings.tags.renameTag')"
 		>
 			<SField
-				label="Label"
+				:label="t('pages.settings.tags.label')"
 				:error="labelError"
 				control-id="tag-label"
 			>
 				<SInput
 					id="tag-label"
 					v-model="label"
-					placeholder="anime"
+					:placeholder="t('pages.settings.tags.placeholder')"
 					:invalid="!!labelError"
 				/>
 			</SField>
@@ -229,27 +231,27 @@ const columns = [
 					variant="secondary"
 					@click="dialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.settings.tags.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					{{ editingId === null ? 'Add tag' : 'Save changes' }}
+					{{ editingId === null ? t('pages.settings.tags.addTag') : t('pages.settings.tags.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete tag"
+			:title="t('pages.settings.tags.deleteTagTitle')"
 		>
 			<p v-if="deleteTarget && deleteTarget.usage > 0">
-				"{{ deleteTarget.label }}" is used in {{ deleteTarget.usage }} place{{ deleteTarget.usage === 1 ? '' : 's' }}. Deleting it removes the tag from all of them.
+				{{ deleteTarget.usage === 1 ? t('pages.settings.tags.deleteUsedSingular', { label: deleteTarget.label }) : t('pages.settings.tags.deleteUsedPlural', { label: deleteTarget.label, count: deleteTarget.usage }) }}
 			</p>
 			<p v-else-if="deleteTarget">
-				Delete "{{ deleteTarget.label }}"? This cannot be undone.
+				{{ t('pages.settings.tags.deleteUnused', { label: deleteTarget.label }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -264,14 +266,14 @@ const columns = [
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.settings.tags.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete tag
+					{{ t('pages.settings.tags.deleteTag') }}
 				</SButton>
 			</template>
 		</SDialog>

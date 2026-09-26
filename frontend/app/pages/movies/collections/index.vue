@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 import { minimumAvailabilityOptions } from '~/utils/library-labels'
 
+const { t } = useI18n()
+
 type CollectionDto = components['schemas']['CollectionDto']
 
-useHead({ title: 'Collections' })
+useHead({ title: t('pages.movies.collections.title') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -22,7 +25,7 @@ async function load() {
 		collections.value = result.data
 	}
 	else {
-		loadError.value = 'Could not load collections. Check your connection and try again.'
+		loadError.value = t('pages.movies.collections.loadError')
 	}
 	loading.value = false
 }
@@ -33,10 +36,10 @@ onMounted(async () => {
 })
 
 const columns = [
-	{ key: 'title', label: 'Collection' },
-	{ key: 'movies', label: 'Movies', align: 'right' as const },
-	{ key: 'missing', label: 'Missing', align: 'right' as const },
-	{ key: 'monitored', label: 'Monitored', align: 'right' as const },
+	{ key: 'title', label: t('pages.movies.collections.collection') },
+	{ key: 'movies', label: t('pages.movies.collections.movies'), align: 'right' as const },
+	{ key: 'missing', label: t('pages.movies.collections.missing'), align: 'right' as const },
+	{ key: 'monitored', label: t('pages.movies.collections.monitored'), align: 'right' as const },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -103,7 +106,7 @@ async function saveEdit() {
 			},
 		})
 		if (result.data) {
-			toast.toast({ title: 'Collection updated', tone: 'ok' })
+			toast.toast({ title: t('pages.movies.collections.updated'), tone: 'ok' })
 			editTarget.value = null
 			await load()
 		}
@@ -119,7 +122,7 @@ async function saveEdit() {
 
 <template>
 	<div>
-		<SPageHeader title="Collections" />
+		<SPageHeader :title="t('pages.movies.collections.title')" />
 
 		<SSpinner v-if="loading && collections.length === 0" />
 		<p
@@ -161,80 +164,80 @@ async function saveEdit() {
 					<span v-else>0</span>
 				</template>
 				<template #cell-monitored="{ row }">
-					<STooltip :text="row.id == null ? 'Configure this collection to enable monitoring' : undefined">
+					<STooltip :text="row.id == null ? t('pages.movies.collections.configureMonitoring') : undefined">
 						<MonitorToggle
 							:model-value="row.monitored"
-							:label="`Toggle monitored for ${row.title}`"
+							:label="t('pages.movies.collections.toggleMonitored', { title: row.title })"
 							:disabled="row.id == null"
 							@update:model-value="toggleMonitored(row, $event)"
 						/>
 					</STooltip>
 				</template>
 				<template #cell-actions="{ row }">
-					<STooltip :text="row.id == null ? 'This collection has no saved settings yet; add one of its movies first, or wait for it to be configured elsewhere' : undefined">
+					<STooltip :text="row.id == null ? t('pages.movies.collections.noSavedSettings') : undefined">
 						<SButton
 							size="sm"
 							:disabled="row.id == null"
 							@click="openEdit(row)"
 						>
-							Edit defaults
+							{{ t('pages.movies.collections.editDefaults') }}
 						</SButton>
 					</STooltip>
 				</template>
 				<template #empty>
-					<SEmptyState message="No collections yet. Collections appear once a movie that belongs to a TMDB collection is added to the library." />
+					<SEmptyState :message="t('pages.movies.collections.empty')" />
 				</template>
 			</STable>
 		</SSection>
 
 		<SDialog
 			v-model="editOpen"
-			title="Collection defaults"
-			:description="editTarget ? `Applied when adding missing movies from ${editTarget.title}.` : undefined"
+			:title="t('pages.movies.collections.defaultsTitle')"
+			:description="editTarget ? t('pages.movies.collections.defaultsDescription', { title: editTarget.title }) : undefined"
 		>
 			<div class="add-form">
-				<SField label="Root folder">
+				<SField :label="t('pages.movies.collections.rootFolder')">
 					<SSelect
 						v-model="editForm.rootFolderId"
 						:options="rootFolderOptions"
-						placeholder="Choose a root folder"
+						:placeholder="t('pages.movies.collections.chooseRootFolder')"
 					/>
 				</SField>
-				<SField label="Quality profile">
+				<SField :label="t('pages.movies.collections.qualityProfile')">
 					<SSelect
 						v-model="editForm.qualityProfileId"
 						:options="qualityOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.movies.collections.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Language profile">
+				<SField :label="t('pages.movies.collections.languageProfile')">
 					<SSelect
 						v-model="editForm.languageProfileId"
 						:options="languageOptions"
-						placeholder="Choose a profile"
+						:placeholder="t('pages.movies.collections.chooseProfile')"
 					/>
 				</SField>
-				<SField label="Minimum availability">
+				<SField :label="t('pages.movies.collections.minimumAvailability')">
 					<SSelect
 						v-model="editForm.minimumAvailability"
-						:options="minimumAvailabilityOptions"
+						:options="minimumAvailabilityOptions.map(option => ({ ...option, label: t(option.label) }))"
 					/>
 				</SField>
 				<SCheckbox
 					v-model="editForm.searchOnAdd"
-					label="Search for a release when adding missing movies"
+					:label="t('pages.movies.collections.searchMissingOnAdd')"
 				/>
 			</div>
 			<template #footer>
 				<SButton @click="editTarget = null">
-					Cancel
+					{{ t('pages.movies.collections.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="savingEdit"
 					@click="saveEdit"
 				>
-					Save changes
+					{{ t('pages.movies.collections.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>

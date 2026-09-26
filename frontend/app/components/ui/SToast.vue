@@ -22,7 +22,7 @@
 			</ToastDescription>
 			<ToastClose
 				class="s-toast-close"
-				aria-label="Dismiss"
+				:aria-label="$t('components.ui.SToast.dismiss')"
 			>
 				<Icon
 					name="lucide:x"

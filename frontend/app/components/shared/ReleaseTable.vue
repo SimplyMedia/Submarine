@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 /**
  * Table of releases returned by a search (manual search page and the
  * interactive search dialog both use this). Owns the grab flow: releases
@@ -36,19 +37,20 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
+const { t } = useI18n()
 
 const tableColumns = computed(() => props.selectable
 	? [{ key: 'select', label: '' }, ...columns]
 	: columns)
 const columns = [
-	{ key: 'title', label: 'Title' },
-	{ key: 'indexer', label: 'Indexer' },
-	{ key: 'protocol', label: 'Protocol' },
-	{ key: 'age', label: 'Age' },
-	{ key: 'size', label: 'Size', align: 'right' as const },
-	{ key: 'peers', label: 'Seeders/leechers', align: 'right' as const },
-	{ key: 'quality', label: 'Quality' },
-	{ key: 'score', label: 'Score', align: 'right' as const },
+	{ key: 'title', label: t('components.shared.ReleaseTable.title') },
+	{ key: 'indexer', label: t('components.shared.ReleaseTable.indexer') },
+	{ key: 'protocol', label: t('components.shared.ReleaseTable.protocol') },
+	{ key: 'age', label: t('components.shared.ReleaseTable.age') },
+	{ key: 'size', label: t('components.shared.ReleaseTable.size'), align: 'right' as const },
+	{ key: 'peers', label: t('components.shared.ReleaseTable.seedersLeechers'), align: 'right' as const },
+	{ key: 'quality', label: t('components.shared.ReleaseTable.quality') },
+	{ key: 'score', label: t('components.shared.ReleaseTable.score'), align: 'right' as const },
 	{ key: 'grab', label: '', align: 'right' as const },
 ]
 
@@ -67,18 +69,18 @@ function bestDecision(release: ReleaseResource): ReleaseVersionDecisionResource 
 }
 
 function versionLabel(id: number): string {
-	return props.versionLabels[id] ?? `Version ${id}`
+	return props.versionLabels[id] ?? t('components.shared.ReleaseTable.versionNumber', { number: id })
 }
 
 function grabDisabledHint(release: ReleaseResource): string | null {
 	if (!hasMatch(release)) {
-		return 'No library match for this release. Add it to your library first.'
+		return t('components.shared.ReleaseTable.noLibraryMatch')
 	}
 	if (release.indexerId == null) {
-		return 'This release has no indexer to download through.'
+		return t('components.shared.ReleaseTable.noIndexer')
 	}
 	if (release.decisions.length === 0) {
-		return 'No compatible media version for this release.'
+		return t('components.shared.ReleaseTable.noCompatibleVersion')
 	}
 	return null
 }
@@ -113,12 +115,12 @@ async function grab(release: ReleaseResource, mediaVersionId: number) {
 		if (!result.response.ok) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: `Grabbed "${release.title}"`, tone: 'ok' })
+		toast({ title: t('components.shared.ReleaseTable.grabbed', { title: release.title }), tone: 'ok' })
 		chooserRelease.value = null
 		emit('grabbed', release)
 	}
 	catch (error) {
-		toast({ title: 'Could not grab release', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('components.shared.ReleaseTable.couldNotGrab'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		grabbingGuid.value = null
@@ -145,14 +147,14 @@ function onGrabClick(release: ReleaseResource) {
 	>
 		<template #empty>
 			<SEmptyState
-				message="No releases found. Try a different search or check your indexers."
+				:message="t('components.shared.ReleaseTable.noReleasesFound')"
 				icon="lucide:search-x"
 			/>
 		</template>
 		<template #cell-select="{ row }">
 			<SCheckbox
 				:model-value="selectedGuids.includes(row.guid)"
-				:aria-label="`Select ${row.title}`"
+				:aria-label="t('components.shared.ReleaseTable.selectRelease', { title: row.title })"
 				@update:model-value="value => emit('update:selectedGuids', value ? [...selectedGuids, row.guid] : selectedGuids.filter(guid => guid !== row.guid))"
 			/>
 		</template>
@@ -170,11 +172,11 @@ function onGrabClick(release: ReleaseResource) {
 			<span
 				v-else
 				class="s-cell-muted"
-			>None</span>
+			> {{ $t('components.shared.ReleaseTable.none') }}</span>
 		</template>
 		<template #cell-protocol="{ row }">
 			<SBadge tone="neutral">
-				{{ protocolLabel(row.protocol) }}
+				{{ t(protocolLabel(row.protocol)) }}
 			</SBadge>
 		</template>
 		<template #cell-age="{ row }">
@@ -182,31 +184,31 @@ function onGrabClick(release: ReleaseResource) {
 			<span
 				v-else
 				class="s-cell-muted"
-			>None</span>
+			> {{ $t('components.shared.ReleaseTable.none') }}</span>
 		</template>
 		<template #cell-size="{ row }">
 			<span v-if="row.size != null">{{ formatBytes(row.size) }}</span>
 			<span
 				v-else
 				class="s-cell-muted"
-			>None</span>
+			> {{ $t('components.shared.ReleaseTable.none') }}</span>
 		</template>
 		<template #cell-peers="{ row }">
 			<span v-if="row.protocol === 'BITTORRENT'">{{ row.seeders ?? 0 }} / {{ row.leechers ?? 0 }}</span>
 			<span
 				v-else
 				class="s-cell-muted"
-			>None</span>
+			> {{ $t('components.shared.ReleaseTable.none') }}</span>
 		</template>
 		<template #cell-quality="{ row }">
 			<div class="release-quality-cell">
 				<SBadge tone="info">
-					{{ row.qualityName || 'Unknown' }}
+					{{ row.qualityName || $t('components.shared.ReleaseTable.unknown') }}
 				</SBadge>
 				<span
 					v-if="row.languages.length > 0"
 					class="release-languages"
-				>{{ row.languages.map(languageLabel).join(', ') }}</span>
+				>{{ row.languages.map(language => t(languageLabel(language))).join(', ') }}</span>
 			</div>
 		</template>
 		<template #cell-score="{ row }">
@@ -214,9 +216,9 @@ function onGrabClick(release: ReleaseResource) {
 				v-if="bestDecision(row)?.rejections.length"
 				:text="bestDecision(row)!.rejections.join('; ')"
 			>
-				<span class="release-score release-score-rejected">{{ bestDecision(row)?.score ?? 'None' }}</span>
+				<span class="release-score release-score-rejected">{{ bestDecision(row)?.score ?? t('components.shared.ReleaseTable.none') }}</span>
 			</STooltip>
-			<span v-else>{{ bestDecision(row)?.score ?? 'None' }}</span>
+			<span v-else>{{ bestDecision(row)?.score ?? t('components.shared.ReleaseTable.none') }}</span>
 		</template>
 		<template #cell-grab="{ row }">
 			<STooltip :text="grabDisabledHint(row) ?? undefined">
@@ -227,7 +229,7 @@ function onGrabClick(release: ReleaseResource) {
 					:loading="grabbingGuid === row.guid"
 					@click="onGrabClick(row)"
 				>
-					Grab
+					{{ $t('components.shared.ReleaseTable.grab') }}
 				</SButton>
 			</STooltip>
 		</template>
@@ -235,7 +237,7 @@ function onGrabClick(release: ReleaseResource) {
 
 	<SDialog
 		v-model="chooserOpen"
-		title="Choose a version"
+		:title="$t('components.shared.ReleaseTable.chooseVersion')"
 		:description="chooserRelease?.title"
 	>
 		<ul
@@ -250,9 +252,9 @@ function onGrabClick(release: ReleaseResource) {
 				<div class="version-chooser-info">
 					<span class="version-chooser-name">{{ versionLabel(decision.mediaVersionId) }}</span>
 					<SBadge :tone="decision.approved ? 'ok' : 'warn'">
-						{{ decision.approved ? 'Approved' : 'Rejected' }}
+						{{ decision.approved ? $t('components.shared.ReleaseTable.approved') : $t('components.shared.ReleaseTable.rejected') }}
 					</SBadge>
-					<span class="version-chooser-score">Score {{ decision.score }}</span>
+					<span class="version-chooser-score">{{ $t('components.shared.ReleaseTable.scoreValue', { score: decision.score }) }}</span>
 				</div>
 				<p
 					v-if="decision.rejections.length > 0"
@@ -265,7 +267,7 @@ function onGrabClick(release: ReleaseResource) {
 					:loading="grabbingGuid === chooserRelease.guid"
 					@click="grab(chooserRelease, decision.mediaVersionId)"
 				>
-					Grab this version
+					{{ $t('components.shared.ReleaseTable.grabThisVersion') }}
 				</SButton>
 			</li>
 		</ul>

@@ -1,20 +1,24 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useReferenceStore } from '~/stores/reference'
 import { useIndexersStore } from '~/stores/indexers'
 import {
 	cardigannFieldToSchemaField,
+	indexerHistoryEventTypeLabel,
 	indexerImplementationIcon,
 	indexerImplementationLabel,
 	indexerImplementationOptions,
 	settingsFieldToSchemaField,
 } from '~/utils/indexer-labels'
-import { protocolLabel, protocolOptions } from '~/utils/settings-labels'
+import { protocolLabel, protocolOptions, humanizeEnumValue, indexerFlagLabel } from '~/utils/settings-labels'
 import { formatDateTime, formatRelative } from '~/composables/useFormat'
 import { navChildren } from '~/navigation'
 import type { IndexerDto, IndexerRequest } from '~/stores/indexers'
 import type { SchemaField } from '~/types/schema-form'
 import type { components } from '~/types/api'
+
+const { t } = useI18n()
 
 type IndexerImplementation = components['schemas']['IndexerImplementation']
 type Protocol = components['schemas']['Protocol']
@@ -25,7 +29,7 @@ type IndexerTestResult = components['schemas']['IndexerTestResult']
 type IndexerHistoryDto = components['schemas']['IndexerHistoryDto']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Indexers' })
+useHead({ title: t('pages.indexers.index.title', 'Indexers') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -67,13 +71,13 @@ onMounted(async () => {
 // --- List ---------------------------------------------------------------------
 const columns = [
 	{ key: 'select', label: '' },
-	{ key: 'name', label: 'Name' },
-	{ key: 'implementation', label: 'Type' },
-	{ key: 'protocol', label: 'Protocol' },
-	{ key: 'modes', label: 'RSS / Auto / Interactive' },
-	{ key: 'priority', label: 'Priority', align: 'right' as const },
-	{ key: 'status', label: 'Status' },
-	{ key: 'tags', label: 'Tags' },
+	{ key: 'name', label: t('pages.indexers.index.name', 'Name') },
+	{ key: 'implementation', label: t('pages.indexers.index.type', 'Type') },
+	{ key: 'protocol', label: t('pages.indexers.index.protocol', 'Protocol') },
+	{ key: 'modes', label: t('pages.indexers.index.modesColumn', 'RSS / Auto / Interactive') },
+	{ key: 'priority', label: t('pages.indexers.index.priority', 'Priority'), align: 'right' as const },
+	{ key: 'status', label: t('pages.indexers.index.statusColumn', 'Status') },
+	{ key: 'tags', label: t('pages.indexers.index.tags', 'Tags') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -122,7 +126,7 @@ async function toggleMode(indexer: IndexerDto, field: 'enableRss' | 'enableAutom
 		await store.updateIndexer(indexer.id, toRequest(indexer, { [field]: !indexer[field] }))
 	}
 	catch (error) {
-		toast({ title: 'Could not update indexer', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.updateError', 'Could not update indexer'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		modeBusyId.value = null
@@ -133,7 +137,7 @@ function disabledReason(indexer: IndexerDto): string | undefined {
 	if (!indexer.status.disabledUntil) {
 		return undefined
 	}
-	return indexer.status.mostRecentFailure ? `Failed ${formatRelative(indexer.status.mostRecentFailure)}` : undefined
+	return indexer.status.mostRecentFailure ? t('pages.indexers.index.failedAgo', { time: formatRelative(indexer.status.mostRecentFailure) }, 'Failed {time}') : undefined
 }
 
 // --- Selection & bulk actions ---------------------------------------------------
@@ -157,7 +161,7 @@ async function bulkSetEnabled(value: boolean) {
 		toast({ title: value ? 'Indexers enabled' : 'Indexers disabled', tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Bulk update failed', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.bulkUpdateFailed', 'Bulk update failed'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		bulkBusy.value = false
@@ -172,10 +176,10 @@ async function applyBulkPriority() {
 	try {
 		await store.bulkUpdate({ ids: selectedIds.value, priority: bulkPriority.value, enableRss: null, enableAutomaticSearch: null, enableInteractiveSearch: null, proxyId: null, tags: null })
 		bulkPriorityOpen.value = false
-		toast({ title: 'Priority updated', tone: 'ok' })
+		toast({ title: t('pages.indexers.index.priorityUpdated', 'Priority updated'), tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Bulk update failed', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.bulkUpdateFailed', 'Bulk update failed'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		bulkBusy.value = false
@@ -200,10 +204,10 @@ async function applyBulkTags() {
 		})
 		bulkTagsOpen.value = false
 		bulkTagIds.value = []
-		toast({ title: 'Tags updated', tone: 'ok' })
+		toast({ title: t('pages.indexers.index.tagsUpdated', 'Tags updated'), tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Bulk update failed', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.bulkUpdateFailed', 'Bulk update failed'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		bulkBusy.value = false
@@ -218,10 +222,10 @@ async function applyBulkDelete() {
 		await store.bulkDelete(selectedIds.value)
 		selectedIds.value = []
 		bulkDeleteOpen.value = false
-		toast({ title: 'Indexers deleted', tone: 'ok' })
+		toast({ title: t('pages.indexers.index.indexersDeleted', 'Indexers deleted'), tone: 'ok' })
 	}
 	catch (error) {
-		toast({ title: 'Bulk delete failed', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.bulkDeleteFailed', 'Bulk delete failed'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		bulkBusy.value = false
@@ -240,7 +244,7 @@ async function testAll() {
 		})
 	}
 	catch (error) {
-		toast({ title: 'Could not test indexers', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.testAllError', 'Could not test indexers'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		testingAll.value = false
@@ -286,9 +290,9 @@ const testResult = ref<IndexerTestResult | null>(null)
 
 const dialogTitle = computed(() => {
 	if (editingId.value !== null) {
-		return 'Edit indexer'
+		return t('pages.indexers.index.editIndexer', 'Edit indexer')
 	}
-	return implementation.value ? `Add ${indexerImplementationLabel(implementation.value)}` : 'Add indexer'
+	return implementation.value ? t('pages.indexers.index.addImplementation', { type: t(indexerImplementationLabel(implementation.value)) }, 'Add {type}') : t('pages.indexers.index.addIndexer', 'Add indexer')
 })
 
 const filteredDefinitions = computed(() => {
@@ -476,11 +480,11 @@ async function save() {
 	try {
 		if (editingId.value === null) {
 			await store.createIndexer(buildRequest())
-			toast({ title: 'Indexer added', tone: 'ok' })
+			toast({ title: t('pages.indexers.index.indexerAdded', 'Indexer added'), tone: 'ok' })
 		}
 		else {
 			await store.updateIndexer(editingId.value, buildRequest())
-			toast({ title: 'Indexer saved', tone: 'ok' })
+			toast({ title: t('pages.indexers.index.indexerSaved', 'Indexer saved'), tone: 'ok' })
 		}
 		dialogOpen.value = false
 	}
@@ -494,7 +498,7 @@ async function save() {
 			}
 		}
 		if (!matched) {
-			toast({ title: 'Could not save indexer', description: apiError.message, tone: 'danger' })
+			toast({ title: t('pages.indexers.index.saveError', 'Could not save indexer'), description: apiError.message, tone: 'danger' })
 		}
 	}
 	finally {
@@ -527,7 +531,7 @@ async function testConnection() {
 		toast({ title: result.data.isValid ? 'Connection successful' : 'Connection failed', description: result.data.message ?? undefined, tone: result.data.isValid ? 'ok' : 'danger' })
 	}
 	catch (error) {
-		toast({ title: 'Connection failed', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.connectionFailed', 'Connection failed'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		testing.value = false
@@ -554,11 +558,11 @@ async function doDelete() {
 	deleting.value = true
 	try {
 		await store.deleteIndexer(deleteTarget.value.id)
-		toast({ title: 'Indexer deleted', tone: 'ok' })
+		toast({ title: t('pages.indexers.index.indexerDeleted', 'Indexer deleted'), tone: 'ok' })
 		deleteTarget.value = null
 	}
 	catch (error) {
-		toast({ title: 'Could not delete indexer', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.index.deleteError', 'Could not delete indexer'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		deleting.value = false
@@ -600,11 +604,11 @@ const historyTargetOpen = computed({
 	},
 })
 const historyColumns = [
-	{ key: 'eventType', label: 'Event' },
-	{ key: 'query', label: 'Query' },
-	{ key: 'source', label: 'Source' },
-	{ key: 'elapsedMs', label: 'Elapsed', align: 'right' as const },
-	{ key: 'date', label: 'Date' },
+	{ key: 'eventType', label: t('pages.indexers.index.event', 'Event') },
+	{ key: 'query', label: t('pages.indexers.index.query', 'Query') },
+	{ key: 'source', label: t('pages.indexers.index.source', 'Source') },
+	{ key: 'elapsedMs', label: t('pages.indexers.index.elapsed', 'Elapsed'), align: 'right' as const },
+	{ key: 'date', label: t('pages.indexers.index.date', 'Date') },
 ]
 const historyEventType = ref<'ALL' | components['schemas']['IndexerHistoryEventType']>('ALL')
 const historySuccessful = ref<'ALL' | 'true' | 'false'>('ALL')
@@ -636,32 +640,32 @@ function indexerUrl(indexer: IndexerDto): string {
 
 async function copyToClipboard(value: string) {
 	await navigator.clipboard.writeText(value)
-	toast({ title: 'Copied to clipboard', tone: 'ok' })
+	toast({ title: t('pages.indexers.index.copiedToClipboard', 'Copied to clipboard'), tone: 'ok' })
 }
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Indexers">
+		<SPageHeader :title="t('pages.indexers.index.title', 'Indexers')">
 			<template #actions>
 				<SButton
 					variant="secondary"
 					:loading="testingAll"
 					@click="testAll"
 				>
-					Test all
+					{{ t('pages.indexers.index.testAll', 'Test all') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add indexer
+					{{ t('pages.indexers.index.addIndexer', 'Add indexer') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="Indexers"
+			:label="t('pages.indexers.index.title', 'Indexers')"
 			:items="navChildren('indexers')"
 		/>
 
@@ -672,7 +676,7 @@ async function copyToClipboard(value: string) {
 		>
 			<template #action>
 				<SButton @click="store.load(true)">
-					Retry
+					{{ t('pages.indexers.index.retry', 'Retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -682,14 +686,14 @@ async function copyToClipboard(value: string) {
 				v-if="selectedIds.length > 0"
 				class="indexers-bulk-toolbar"
 			>
-				<span>{{ selectedIds.length }} selected</span>
+				<span>{{ t('pages.indexers.index.selectedCount', { count: selectedIds.length }, '{count} selected') }}</span>
 				<SButton
 					size="sm"
 					variant="secondary"
 					:loading="bulkBusy"
 					@click="bulkSetEnabled(true)"
 				>
-					Enable
+					{{ t('pages.indexers.index.enable', 'Enable') }}
 				</SButton>
 				<SButton
 					size="sm"
@@ -697,35 +701,35 @@ async function copyToClipboard(value: string) {
 					:loading="bulkBusy"
 					@click="bulkSetEnabled(false)"
 				>
-					Disable
+					{{ t('pages.indexers.index.disable', 'Disable') }}
 				</SButton>
 				<SButton
 					size="sm"
 					variant="secondary"
 					@click="bulkPriorityOpen = true"
 				>
-					Set priority
+					{{ t('pages.indexers.index.setPriority', 'Set priority') }}
 				</SButton>
 				<SButton
 					size="sm"
 					variant="secondary"
 					@click="bulkTagsOpen = true"
 				>
-					Tags
+					{{ t('pages.indexers.index.tags', 'Tags') }}
 				</SButton>
 				<SButton
 					size="sm"
 					variant="danger"
 					@click="bulkDeleteOpen = true"
 				>
-					Delete
+					{{ t('pages.indexers.index.delete', 'Delete') }}
 				</SButton>
 			</div>
 
 			<SCheckbox
 				v-if="store.indexers.length > 0"
 				:model-value="allSelected"
-				label="Select all"
+				:label="t('pages.indexers.index.selectAll', 'Select all')"
 				class="indexers-select-all"
 				@update:model-value="toggleAll"
 			/>
@@ -736,13 +740,13 @@ async function copyToClipboard(value: string) {
 				:row-key="(row) => row.id"
 			>
 				<template #empty>
-					<SEmptyState message="Add an indexer to start searching for releases.">
+					<SEmptyState :message="t('pages.indexers.index.emptyHint', 'Add an indexer to start searching for releases.')">
 						<template #action>
 							<SButton
 								variant="primary"
 								@click="openCreate"
 							>
-								Add indexer
+								{{ t('pages.indexers.index.addIndexer', 'Add indexer') }}
 							</SButton>
 						</template>
 					</SEmptyState>
@@ -750,7 +754,7 @@ async function copyToClipboard(value: string) {
 				<template #cell-select="{ row }">
 					<SCheckbox
 						:model-value="selectedIds.includes(row.id)"
-						:aria-label="`Select ${row.name}`"
+						:aria-label="t('pages.indexers.index.selectIndexer', { name: row.name }, 'Select {name}')"
 						@update:model-value="value => toggleRow(row.id, value)"
 					/>
 				</template>
@@ -758,30 +762,30 @@ async function copyToClipboard(value: string) {
 					{{ row.name }}
 				</template>
 				<template #cell-implementation="{ row }">
-					{{ indexerImplementationLabel(row.implementation) }}
+					{{ t(indexerImplementationLabel(row.implementation), humanizeEnumValue(row.implementation)) }}
 				</template>
 				<template #cell-protocol="{ row }">
 					<SBadge tone="neutral">
-						{{ protocolLabel(row.protocol) }}
+						{{ t(protocolLabel(row.protocol), row.protocol === 'BITTORRENT' ? 'Torrent' : row.protocol === 'USENET' ? 'Usenet' : 'XDCC') }}
 					</SBadge>
 				</template>
 				<template #cell-modes="{ row }">
 					<div class="indexers-modes-cell">
-						<STooltip text="RSS sync">
+						<STooltip :text="t('pages.indexers.index.rssSync', 'RSS sync')">
 							<SSwitch
 								:model-value="row.enableRss"
 								:disabled="modeBusyId === row.id"
 								@update:model-value="toggleMode(row, 'enableRss')"
 							/>
 						</STooltip>
-						<STooltip text="Automatic search">
+						<STooltip :text="t('pages.indexers.index.automaticSearch', 'Automatic search')">
 							<SSwitch
 								:model-value="row.enableAutomaticSearch"
 								:disabled="modeBusyId === row.id"
 								@update:model-value="toggleMode(row, 'enableAutomaticSearch')"
 							/>
 						</STooltip>
-						<STooltip text="Interactive search">
+						<STooltip :text="t('pages.indexers.index.interactiveSearch', 'Interactive search')">
 							<SSwitch
 								:model-value="row.enableInteractiveSearch"
 								:disabled="modeBusyId === row.id"
@@ -795,27 +799,27 @@ async function copyToClipboard(value: string) {
 					<span
 						v-else
 						class="s-cell-muted"
-					>None</span>
+					>{{ t('pages.indexers.index.none', 'None') }}</span>
 				</template>
 				<template #cell-status="{ row }">
 					<STooltip :text="disabledReason(row)">
 						<SBadge :tone="row.status.disabledUntil ? 'danger' : 'ok'">
-							{{ row.status.disabledUntil ? `Disabled until ${formatDateTime(row.status.disabledUntil)}` : 'Enabled' }}
+							{{ row.status.disabledUntil ? t('pages.indexers.index.disabledUntil', { date: formatDateTime(row.status.disabledUntil) }, 'Disabled until {date}') : t('pages.indexers.index.enabled', 'Enabled') }}
 						</SBadge>
 					</STooltip>
 				</template>
 				<template #cell-actions="{ row }">
 					<SDropdownMenu
 						:items="[
-							{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-							{ label: 'Capabilities', icon: 'lucide:list-checks', onSelect: () => openCapabilities(row) },
-							{ label: 'History', icon: 'lucide:history', onSelect: () => openHistory(row) },
-							{ label: 'Copy Newznab URL', icon: 'lucide:copy', onSelect: () => copyToClipboard(indexerUrl(row)) },
-							{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => (deleteTarget = row) },
+							{ label: t('pages.indexers.index.edit', 'Edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+							{ label: t('pages.indexers.index.capabilities', 'Capabilities'), icon: 'lucide:list-checks', onSelect: () => openCapabilities(row) },
+							{ label: t('pages.indexers.index.history', 'History'), icon: 'lucide:history', onSelect: () => openHistory(row) },
+							{ label: t('pages.indexers.index.copyNewznabUrl', 'Copy Newznab URL'), icon: 'lucide:copy', onSelect: () => copyToClipboard(indexerUrl(row)) },
+							{ label: t('pages.indexers.index.delete', 'Delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => (deleteTarget = row) },
 						]"
 					>
 						<template #trigger>
-							<SIconButton label="Indexer actions">
+							<SIconButton :label="t('pages.indexers.index.indexerActions', 'Indexer actions')">
 								<Icon
 									name="lucide:more-horizontal"
 									aria-hidden="true"
@@ -826,14 +830,14 @@ async function copyToClipboard(value: string) {
 				</template>
 			</STable>
 
-			<SSection title="Use Submarine as an indexer in other apps">
+			<SSection :title="t('pages.indexers.index.outboundTitle', 'Use Submarine as an indexer in other apps')">
 				<p class="indexers-outbound-hint">
-					Point Sonarr, Radarr or another Prowlarr-compatible app at this Newznab URL to search every enabled indexer through Submarine.
+					{{ t('pages.indexers.index.outboundDescription', 'Point Sonarr, Radarr or another Prowlarr-compatible app at this Newznab URL to search every enabled indexer through Submarine.') }}
 				</p>
 				<div class="indexers-outbound-row">
 					<code>{{ aggregateUrl }}</code>
 					<SIconButton
-						label="Copy aggregate Newznab URL"
+						:label="t('pages.indexers.index.copyAggregateNewznabUrl', 'Copy aggregate Newznab URL')"
 						@click="copyToClipboard(aggregateUrl)"
 					>
 						<Icon
@@ -857,7 +861,7 @@ async function copyToClipboard(value: string) {
 						v-for="option in indexerImplementationOptions"
 						:key="option.value"
 						:icon="indexerImplementationIcon(option.value as IndexerImplementation)"
-						:label="option.label"
+						:label="t(option.label, humanizeEnumValue(option.value))"
 						@click="pickImplementation(option.value as IndexerImplementation)"
 					/>
 				</div>
@@ -866,7 +870,7 @@ async function copyToClipboard(value: string) {
 				<SInput
 					v-model="definitionSearch"
 					type="search"
-					placeholder="Search Cardigann definitions"
+					:placeholder="t('pages.indexers.index.searchDefinitions', 'Search Cardigann definitions')"
 				/>
 				<ul class="definition-list">
 					<li
@@ -891,12 +895,12 @@ async function copyToClipboard(value: string) {
 				</ul>
 				<SEmptyState
 					v-if="filteredDefinitions.length === 0"
-					message="No definitions match your search."
+					:message="t('pages.indexers.index.noDefinitionsMatch', 'No definitions match your search.')"
 				/>
 			</div>
 			<div v-else>
 				<SField
-					label="Name"
+					:label="t('pages.indexers.index.name', 'Name')"
 					:error="nameError"
 					control-id="idx-name"
 				>
@@ -909,20 +913,20 @@ async function copyToClipboard(value: string) {
 
 				<SField
 					v-if="implementation !== 'CARDIGANN'"
-					label="Base URL"
+					:label="t('pages.indexers.index.baseUrl', 'Base URL')"
 					control-id="idx-base-url"
 				>
 					<SInput
 						id="idx-base-url"
 						v-model="baseUrl"
 						type="url"
-						placeholder="https://example.com"
+						:placeholder="t('pages.indexers.index.exampleUrl', 'https://example.com')"
 					/>
 				</SField>
 				<SField
 					v-else
-					label="Base URL override"
-					hint="Leave blank to use the definition's default"
+					:label="t('pages.indexers.index.baseUrlOverride', 'Base URL override')"
+					:hint="t('pages.indexers.index.baseUrlHint', 'Leave blank to use the definition\'s default')"
 					control-id="idx-base-url"
 				>
 					<SInput
@@ -935,7 +939,7 @@ async function copyToClipboard(value: string) {
 
 				<div class="field-grid">
 					<SField
-						label="Protocol"
+						:label="t('pages.indexers.index.protocol', 'Protocol')"
 						control-id="idx-protocol"
 					>
 						<SSelect
@@ -946,8 +950,8 @@ async function copyToClipboard(value: string) {
 						/>
 					</SField>
 					<SField
-						label="Priority"
-						hint="1-50, lower is tried first"
+						:label="t('pages.indexers.index.priority', 'Priority')"
+						:hint="t('pages.indexers.index.priorityHint', '1-50, lower is tried first')"
 						control-id="idx-priority"
 					>
 						<SInput
@@ -962,21 +966,22 @@ async function copyToClipboard(value: string) {
 				<SchemaForm
 					v-if="genericFields.length > 0"
 					v-model="settingsDraft"
+					:provider-type="implementation === 'CARDIGANN' ? (selectedDefinition?.id ?? '') : (implementation ?? '')"
 					:fields="genericFields"
 					:field-errors="schemaFieldErrors"
 					:option-label="schemaOptionLabel"
 				/>
 
 				<div class="field-grid">
-					<SField label="Categories">
+					<SField :label="t('pages.indexers.index.categories', 'Categories')">
 						<IndexerCategoryPicker
 							v-model="categories"
 							:categories="store.categories"
 						/>
 					</SField>
 					<SField
-						label="VIP expiration"
-						hint="Optional date when indexer access expires"
+						:label="t('pages.indexers.index.vipExpiration', 'VIP expiration')"
+						:hint="t('pages.indexers.index.vipExpirationHint', 'Optional date when indexer access expires')"
 						control-id="idx-vip-expiration"
 					>
 						<input
@@ -987,8 +992,8 @@ async function copyToClipboard(value: string) {
 						>
 					</SField>
 					<SField
-						label="Season search maximum single episode age (days)"
-						hint="Optional maximum age for searching individual season episodes"
+						:label="t('pages.indexers.index.seasonSearchMaxAge', 'Season search maximum single episode age (days)')"
+						:hint="t('pages.indexers.index.seasonSearchMaxAgeHint', 'Optional maximum age for searching individual season episodes')"
 						control-id="idx-season-search-age"
 					>
 						<SInput
@@ -1001,7 +1006,7 @@ async function copyToClipboard(value: string) {
 				</div>
 				<div class="field-grid">
 					<SField
-						label="Query limit"
+						:label="t('pages.indexers.index.queryLimit', 'Query limit')"
 						control-id="idx-query-limit"
 					>
 						<SInput
@@ -1012,7 +1017,7 @@ async function copyToClipboard(value: string) {
 						/>
 					</SField>
 					<SField
-						label="Grab limit"
+						:label="t('pages.indexers.index.grabLimit', 'Grab limit')"
 						control-id="idx-grab-limit"
 					>
 						<SInput
@@ -1023,42 +1028,42 @@ async function copyToClipboard(value: string) {
 						/>
 					</SField>
 					<SField
-						label="Limits unit"
+						:label="t('pages.indexers.index.limitsUnit', 'Limits unit')"
 						control-id="idx-limits-unit"
 					>
 						<SSelect
 							control-id="idx-limits-unit"
 							:model-value="limitsUnit"
-							:options="[{ value: 'DAY', label: 'Per day' }, { value: 'HOUR', label: 'Per hour' }]"
+							:options="[{ value: 'DAY', label: t('pages.indexers.index.perDay', 'Per day') }, { value: 'HOUR', label: t('pages.indexers.index.perHour', 'Per hour') }]"
 							@update:model-value="limitsUnit = $event as components['schemas']['IndexerLimitsUnit']"
 						/>
 					</SField>
 				</div>
 				<SSwitch
 					v-model="redirect"
-					label="Redirect download requests"
+					:label="t('pages.indexers.index.redirectDownloads', 'Redirect download requests')"
 				/>
 				<p
 					v-if="protocol === 'USENET'"
 					class="s-field-hint"
 				>
-					Usenet indexers require redirect mode.
+					{{ t('pages.indexers.index.usenetRedirectHint', 'Usenet indexers require redirect mode.') }}
 				</p>
 				<div
 					v-if="protocol === 'BITTORRENT'"
 					class="field-grid-stack"
 				>
-					<span class="s-field-label">Required release flags</span>
+					<span class="s-field-label">{{ t('pages.indexers.index.requiredReleaseFlags', 'Required release flags') }}</span>
 					<SCheckbox
 						v-for="flag in (['FREELEECH', 'HALFLEECH', 'DOUBLE_UPLOAD', 'INTERNAL', 'SCENE', 'EXCLUSIVE', 'G_FREELEECH'] as const)"
 						:key="flag"
 						:model-value="requiredFlags.includes(flag)"
-						:label="flag.replaceAll('_', ' ').toLowerCase()"
+						:label="t(indexerFlagLabel(flag), humanizeEnumValue(flag))"
 						@update:model-value="requiredFlags = $event ? [...requiredFlags, flag] : requiredFlags.filter(value => value !== flag)"
 					/>
 				</div>
 				<div class="field-grid">
-					<SField label="Anime categories">
+					<SField :label="t('pages.indexers.index.animeCategories', 'Anime categories')">
 						<IndexerCategoryPicker
 							v-model="animeCategories"
 							:categories="store.categories"
@@ -1067,7 +1072,7 @@ async function copyToClipboard(value: string) {
 					<div class="field-grid-stack">
 						<SSwitch
 							v-model="animeStandardFormatSearch"
-							label="Anime uses standard episode numbering"
+							:label="t('pages.indexers.index.animeStandardNumbering', 'Anime uses standard episode numbering')"
 						/>
 					</div>
 				</div>
@@ -1076,7 +1081,7 @@ async function copyToClipboard(value: string) {
 					class="field-grid"
 				>
 					<SField
-						label="Minimum seeders"
+						:label="t('pages.indexers.index.minimumSeeders', 'Minimum seeders')"
 						control-id="idx-min-seeders"
 					>
 						<SInput
@@ -1087,8 +1092,8 @@ async function copyToClipboard(value: string) {
 						/>
 					</SField>
 					<SField
-						label="Seed ratio"
-						hint="Optional"
+						:label="t('pages.indexers.index.seedRatio', 'Seed ratio')"
+						:hint="t('pages.indexers.index.optional', 'Optional')"
 						control-id="idx-seed-ratio"
 					>
 						<SInput
@@ -1099,8 +1104,8 @@ async function copyToClipboard(value: string) {
 						/>
 					</SField>
 					<SField
-						label="Seed time (minutes)"
-						hint="Optional"
+						:label="t('pages.indexers.index.seedTime', 'Seed time (minutes)')"
+						:hint="t('pages.indexers.index.optional', 'Optional')"
 						control-id="idx-seed-time"
 					>
 						<SInput
@@ -1111,8 +1116,8 @@ async function copyToClipboard(value: string) {
 						/>
 					</SField>
 					<SField
-						label="Season pack seed time (minutes)"
-						hint="Optional"
+						:label="t('pages.indexers.index.seasonPackSeedTime', 'Season pack seed time (minutes)')"
+						:hint="t('pages.indexers.index.optional', 'Optional')"
 						control-id="idx-season-seed-time"
 					>
 						<SInput
@@ -1125,38 +1130,38 @@ async function copyToClipboard(value: string) {
 				</div>
 
 				<div class="field-grid">
-					<SField label="Download client override">
+					<SField :label="t('pages.indexers.index.downloadClientOverride', 'Download client override')">
 						<SSelect
 							:model-value="downloadClientId == null ? 'none' : String(downloadClientId)"
-							:options="[{ value: 'none', label: 'Use default' }, ...downloadClients.map(c => ({ value: String(c.id), label: c.name }))]"
+							:options="[{ value: 'none', label: t('pages.indexers.index.useDefault', 'Use default') }, ...downloadClients.map(c => ({ value: String(c.id), label: c.name }))]"
 							@update:model-value="downloadClientId = $event === 'none' ? null : Number($event)"
 						/>
 					</SField>
-					<SField label="Proxy">
+					<SField :label="t('pages.indexers.index.proxy', 'Proxy')">
 						<SSelect
 							:model-value="proxyId == null ? 'none' : String(proxyId)"
-							:options="[{ value: 'none', label: 'No proxy' }, ...proxies.map(p => ({ value: String(p.id), label: p.name }))]"
+							:options="[{ value: 'none', label: t('pages.indexers.index.noProxy', 'No proxy') }, ...proxies.map(p => ({ value: String(p.id), label: p.name }))]"
 							@update:model-value="proxyId = $event === 'none' ? null : Number($event)"
 						/>
 					</SField>
 				</div>
 
-				<SField label="Tags">
+				<SField :label="t('pages.indexers.index.tags', 'Tags')">
 					<TagPicker v-model:tag-ids="tagIds" />
 				</SField>
 
 				<div class="field-grid">
 					<SSwitch
 						v-model="enableRss"
-						label="Enable RSS sync"
+						:label="t('pages.indexers.index.enableRssSync', 'Enable RSS sync')"
 					/>
 					<SSwitch
 						v-model="enableAutomaticSearch"
-						label="Enable automatic search"
+						:label="t('pages.indexers.index.enableAutomaticSearch', 'Enable automatic search')"
 					/>
 					<SSwitch
 						v-model="enableInteractiveSearch"
-						label="Enable interactive search"
+						:label="t('pages.indexers.index.enableInteractiveSearch', 'Enable interactive search')"
 					/>
 				</div>
 
@@ -1165,16 +1170,16 @@ async function copyToClipboard(value: string) {
 					class="indexers-test-result"
 				>
 					<SBadge tone="ok">
-						{{ testResult.capabilities.categoryCount }} categories
+						{{ t('pages.indexers.index.categoryCount', { count: testResult.capabilities.categoryCount }, '{count} categories') }}
 					</SBadge>
 					<SBadge :tone="testResult.capabilities.searchAvailable ? 'ok' : 'neutral'">
-						Search
+						{{ t('pages.indexers.index.search', 'Search') }}
 					</SBadge>
 					<SBadge :tone="testResult.capabilities.tvSearchAvailable ? 'ok' : 'neutral'">
-						TV search
+						{{ t('pages.indexers.index.tvSearch', 'TV search') }}
 					</SBadge>
 					<SBadge :tone="testResult.capabilities.movieSearchAvailable ? 'ok' : 'neutral'">
-						Movie search
+						{{ t('pages.indexers.index.movieSearch', 'Movie search') }}
 					</SBadge>
 				</div>
 			</div>
@@ -1184,7 +1189,7 @@ async function copyToClipboard(value: string) {
 					variant="secondary"
 					@click="dialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.indexers.index.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					v-if="implementation && (implementation !== 'CARDIGANN' || selectedDefinition)"
@@ -1192,7 +1197,7 @@ async function copyToClipboard(value: string) {
 					:loading="testing"
 					@click="testConnection"
 				>
-					Test
+					{{ t('pages.indexers.index.test', 'Test') }}
 				</SButton>
 				<SButton
 					v-if="implementation && (implementation !== 'CARDIGANN' || selectedDefinition)"
@@ -1200,7 +1205,7 @@ async function copyToClipboard(value: string) {
 					:loading="saving"
 					@click="save"
 				>
-					{{ editingId === null ? 'Add indexer' : 'Save changes' }}
+					{{ editingId === null ? t('pages.indexers.index.addIndexer', 'Add indexer') : t('pages.indexers.index.saveChanges', 'Save changes') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -1208,10 +1213,10 @@ async function copyToClipboard(value: string) {
 		<!-- Delete confirm -->
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete indexer"
+			:title="t('pages.indexers.index.deleteIndexer', 'Delete indexer')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ t('pages.indexers.index.confirmDeleteIndexer', { name: deleteTarget.name }, 'Delete "{name}"? This cannot be undone.') }}
 			</p>
 			<template #footer>
 				<SButton
@@ -1219,14 +1224,14 @@ async function copyToClipboard(value: string) {
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.indexers.index.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete indexer
+					{{ t('pages.indexers.index.deleteIndexer', 'Delete indexer') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -1234,11 +1239,11 @@ async function copyToClipboard(value: string) {
 		<!-- Bulk priority -->
 		<SDialog
 			v-model="bulkPriorityOpen"
-			title="Set priority"
+			:title="t('pages.indexers.index.setPriority', 'Set priority')"
 		>
 			<SField
-				label="Priority"
-				hint="1-50, lower is tried first"
+				:label="t('pages.indexers.index.priority', 'Priority')"
+				:hint="t('pages.indexers.index.priorityHint', '1-50, lower is tried first')"
 				control-id="bulk-priority"
 			>
 				<SInput
@@ -1253,14 +1258,14 @@ async function copyToClipboard(value: string) {
 					variant="secondary"
 					@click="bulkPriorityOpen = false"
 				>
-					Cancel
+					{{ t('pages.indexers.index.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="bulkBusy"
 					@click="applyBulkPriority"
 				>
-					Apply
+					{{ t('pages.indexers.index.apply', 'Apply') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -1268,16 +1273,16 @@ async function copyToClipboard(value: string) {
 		<!-- Bulk tags -->
 		<SDialog
 			v-model="bulkTagsOpen"
-			title="Manage tags"
+			:title="t('pages.indexers.index.manageTags', 'Manage tags')"
 		>
-			<SField label="Mode">
+			<SField :label="t('pages.indexers.index.mode', 'Mode')">
 				<SSelect
 					:model-value="bulkTagMode"
-					:options="[{ value: 'add', label: 'Add' }, { value: 'remove', label: 'Remove' }, { value: 'replace', label: 'Replace' }]"
+					:options="[{ value: 'add', label: t('pages.indexers.index.add', 'Add') }, { value: 'remove', label: t('pages.indexers.index.remove', 'Remove') }, { value: 'replace', label: t('pages.indexers.index.replace', 'Replace') }]"
 					@update:model-value="bulkTagMode = $event as 'add' | 'remove' | 'replace'"
 				/>
 			</SField>
-			<SField label="Tags">
+			<SField :label="t('pages.indexers.index.tags', 'Tags')">
 				<TagPicker v-model:tag-ids="bulkTagIds" />
 			</SField>
 			<template #footer>
@@ -1285,14 +1290,14 @@ async function copyToClipboard(value: string) {
 					variant="secondary"
 					@click="bulkTagsOpen = false"
 				>
-					Cancel
+					{{ t('pages.indexers.index.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="bulkBusy"
 					@click="applyBulkTags"
 				>
-					Apply
+					{{ t('pages.indexers.index.apply', 'Apply') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -1300,22 +1305,22 @@ async function copyToClipboard(value: string) {
 		<!-- Bulk delete -->
 		<SDialog
 			v-model="bulkDeleteOpen"
-			title="Delete selected indexers"
+			:title="t('pages.indexers.index.deleteSelectedIndexers', 'Delete selected indexers')"
 		>
-			<p>Delete {{ selectedIds.length }} indexer(s)? This cannot be undone.</p>
+			<p>{{ t('pages.indexers.index.confirmDeleteSelected', { count: selectedIds.length }, 'Delete {count} indexer(s)? This cannot be undone.') }}</p>
 			<template #footer>
 				<SButton
 					variant="secondary"
 					@click="bulkDeleteOpen = false"
 				>
-					Cancel
+					{{ t('pages.indexers.index.cancel', 'Cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="bulkBusy"
 					@click="applyBulkDelete"
 				>
-					Delete
+					{{ t('pages.indexers.index.delete', 'Delete') }}
 				</SButton>
 			</template>
 		</SDialog>
@@ -1323,7 +1328,7 @@ async function copyToClipboard(value: string) {
 		<!-- Capabilities -->
 		<SDialog
 			v-model="capabilitiesTargetOpen"
-			title="Capabilities"
+			:title="t('pages.indexers.index.capabilities', 'Capabilities')"
 			:description="capabilitiesTarget?.name"
 		>
 			<SSpinner v-if="capabilitiesLoading" />
@@ -1332,55 +1337,55 @@ async function copyToClipboard(value: string) {
 				class="indexers-test-result"
 			>
 				<SBadge tone="ok">
-					{{ capabilities.categoryCount }} categories
+					{{ t('pages.indexers.index.categoryCount', { count: capabilities.categoryCount }, '{count} categories') }}
 				</SBadge>
 				<SBadge :tone="capabilities.searchAvailable ? 'ok' : 'neutral'">
-					Search
+					{{ t('pages.indexers.index.search', 'Search') }}
 				</SBadge>
 				<SBadge :tone="capabilities.tvSearchAvailable ? 'ok' : 'neutral'">
-					TV search
+					{{ t('pages.indexers.index.tvSearch', 'TV search') }}
 				</SBadge>
 				<SBadge :tone="capabilities.movieSearchAvailable ? 'ok' : 'neutral'">
-					Movie search
+					{{ t('pages.indexers.index.movieSearch', 'Movie search') }}
 				</SBadge>
 			</div>
 			<SEmptyState
 				v-else
-				message="Capabilities have not been fetched yet. Run a test to load them."
+				:message="t('pages.indexers.index.capabilitiesEmpty', 'Capabilities have not been fetched yet. Run a test to load them.')"
 			/>
 		</SDialog>
 
 		<!-- Per-indexer history -->
 		<SDialog
 			v-model="historyTargetOpen"
-			title="Indexer history"
+			:title="t('pages.indexers.index.historyTitle', 'Indexer history')"
 			:description="historyTarget?.name"
 			wide
 		>
 			<SSpinner v-if="historyLoading" />
 			<template v-else>
 				<div class="history-filters">
-					<SField label="Event type">
+					<SField :label="t('pages.indexers.index.eventType', 'Event type')">
 						<SSelect
 							:model-value="historyEventType"
 							:options="[
-								{ value: 'ALL', label: 'All events' },
-								{ value: 'QUERY', label: 'Query' },
-								{ value: 'RSS', label: 'RSS' },
-								{ value: 'GRAB', label: 'Grab' },
-								{ value: 'AUTH', label: 'Auth' },
-								{ value: 'FAILED', label: 'Failed' },
+								{ value: 'ALL', label: t('pages.indexers.index.allEvents', 'All events') },
+								{ value: 'QUERY', label: t('pages.indexers.index.query', 'Query') },
+								{ value: 'RSS', label: t('pages.indexers.index.rss', 'RSS') },
+								{ value: 'GRAB', label: t('pages.indexers.index.grab', 'Grab') },
+								{ value: 'AUTH', label: t('pages.indexers.index.auth', 'Auth') },
+								{ value: 'FAILED', label: t('pages.indexers.index.failed', 'Failed') },
 							]"
 							@update:model-value="historyEventType = $event as typeof historyEventType; openHistory(historyTarget!)"
 						/>
 					</SField>
-					<SField label="Result">
+					<SField :label="t('pages.indexers.index.result', 'Result')">
 						<SSelect
 							:model-value="historySuccessful"
 							:options="[
-								{ value: 'ALL', label: 'All results' },
-								{ value: 'true', label: 'Successful' },
-								{ value: 'false', label: 'Failed' },
+								{ value: 'ALL', label: t('pages.indexers.index.allResults', 'All results') },
+								{ value: 'true', label: t('pages.indexers.index.successful', 'Successful') },
+								{ value: 'false', label: t('pages.indexers.index.failed', 'Failed') },
 							]"
 							@update:model-value="historySuccessful = $event as typeof historySuccessful; openHistory(historyTarget!)"
 						/>
@@ -1393,7 +1398,7 @@ async function copyToClipboard(value: string) {
 				>
 					<template #cell-eventType="{ row }">
 						<SBadge :tone="row.successful ? 'ok' : 'danger'">
-							{{ row.eventType }}
+							{{ t(indexerHistoryEventTypeLabel(row.eventType), humanizeEnumValue(row.eventType)) }}
 						</SBadge>
 					</template>
 					<template #cell-query="{ row }">
@@ -1401,21 +1406,21 @@ async function copyToClipboard(value: string) {
 						<span
 							v-else
 							class="s-cell-muted"
-						>None</span>
+						>{{ t('pages.indexers.index.none', 'None') }}</span>
 					</template>
 					<template #cell-source="{ row }">
 						<span v-if="row.source">{{ row.source }}</span>
 						<span
 							v-else
 							class="s-cell-muted"
-						>None</span>
+						>{{ t('pages.indexers.index.none', 'None') }}</span>
 					</template>
 					<template #cell-elapsedMs="{ row }">
-						<span v-if="row.elapsedMs != null">{{ row.elapsedMs }} ms</span>
+						<span v-if="row.elapsedMs != null">{{ t('pages.indexers.index.elapsedMs', { milliseconds: row.elapsedMs }, '{milliseconds} ms') }}</span>
 						<span
 							v-else
 							class="s-cell-muted"
-						>None</span>
+						>{{ t('pages.indexers.index.none', 'None') }}</span>
 					</template>
 					<template #cell-date="{ row }">
 						{{ formatDateTime(row.date) }}

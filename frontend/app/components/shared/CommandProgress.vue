@@ -2,16 +2,16 @@
 	<div class="command-progress">
 		<div class="command-progress-head">
 			<div class="command-progress-title">
-				<span class="command-progress-name">{{ commandLabel(command.name ?? '') }}</span>
-				<span class="command-progress-trigger">{{ commandTriggerLabel(command.trigger ?? '') }}</span>
+				<span class="command-progress-name">{{ t(commandLabel(command.name ?? '')) }}</span>
+				<span class="command-progress-trigger">{{ t(commandTriggerLabel(command.trigger ?? '')) }}</span>
 			</div>
 			<div class="command-progress-actions">
 				<SBadge :tone="commandStatusTone(command.status ?? '')">
-					{{ commandStatusLabel(command.status ?? '') }}
+					{{ t(commandStatusLabel(command.status ?? '')) }}
 				</SBadge>
 				<SIconButton
 					v-if="cancellable"
-					label="Cancel command"
+					:label="$t('components.shared.CommandProgress.cancelCommand')"
 					variant="ghost"
 					size="sm"
 					@click="$emit('cancel')"
@@ -26,7 +26,7 @@
 		<SProgress
 			v-if="showProgress"
 			:value="command.progress ?? 0"
-			:label="`${commandLabel(command.name ?? '')} progress`"
+			:label="t('components.shared.CommandProgress.progress', { command: t(commandLabel(command.name ?? '')) })"
 		/>
 		<p
 			v-if="command.message"
@@ -38,12 +38,15 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { commandLabel, commandStatusLabel, commandStatusTone, commandTriggerLabel } from '~/utils/system-labels'
 import type { Command } from '~/stores/commands'
 
 const props = defineProps<{
 	command: Command
 }>()
+
+const { t } = useI18n()
 
 defineEmits<{
 	cancel: []

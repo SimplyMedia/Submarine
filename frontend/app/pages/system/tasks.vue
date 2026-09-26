@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { commandLabel, commandStatusLabel, commandStatusTone, commandTriggerLabel } from '~/utils/system-labels'
 import { formatDateTime, formatDuration, formatRelative } from '~/composables/useFormat'
 import { useCommandsStore } from '~/stores/commands'
 import { navChildren } from '~/navigation'
 import type { components } from '~/types/api'
 
-useHead({ title: 'Tasks' })
+const { t } = useI18n()
+useHead({ title: t('pages.system.tasks.title') })
 
 type ScheduledTask = components['schemas']['ScheduledTask']
 
@@ -24,7 +26,7 @@ async function loadScheduledTasks() {
 	const api = useApi()
 	const result = await api.GET('/api/v1/scheduled-tasks', { params: { query: { PageSize: 100 } } })
 	if (!result.data) {
-		loadError.value = 'Could not load scheduled tasks. Check your connection and try again.'
+		loadError.value = t('pages.system.tasks.loadFailed')
 	}
 	scheduledTasks.value = result.data?.items ?? []
 	loadingTasks.value = false
@@ -43,7 +45,7 @@ async function runNow(task: ScheduledTask) {
 		}
 	}
 	catch {
-		toast({ title: `Could not run ${commandLabel(task.name)}`, tone: 'danger' })
+		toast({ title: t('pages.system.tasks.runFailed', { task: t(commandLabel(task.name)) }), tone: 'danger' })
 	}
 	finally {
 		runningTaskNames.value = { ...runningTaskNames.value, [task.name]: false }
@@ -55,7 +57,7 @@ async function cancelCommand(id: number) {
 		await commandsStore.cancel(id)
 	}
 	catch {
-		toast({ title: 'Could not cancel the command', tone: 'danger' })
+		toast({ title: t('pages.system.tasks.cancelFailed'), tone: 'danger' })
 	}
 }
 
@@ -64,27 +66,27 @@ function toggleException(id: number) {
 }
 
 const taskColumns = [
-	{ key: 'name', label: 'Task' },
-	{ key: 'interval', label: 'Interval' },
-	{ key: 'lastRun', label: 'Last run' },
-	{ key: 'nextRun', label: 'Next run' },
+	{ key: 'name', label: t('pages.system.tasks.task') },
+	{ key: 'interval', label: t('pages.system.tasks.interval') },
+	{ key: 'lastRun', label: t('pages.system.tasks.lastRun') },
+	{ key: 'nextRun', label: t('pages.system.tasks.nextRun') },
 	{ key: 'run', label: '' },
 ]
 
 const historyColumns = [
-	{ key: 'name', label: 'Task' },
-	{ key: 'trigger', label: 'Trigger' },
-	{ key: 'status', label: 'Status' },
-	{ key: 'started', label: 'Started' },
-	{ key: 'duration', label: 'Duration', align: 'right' as const },
+	{ key: 'name', label: t('pages.system.tasks.task') },
+	{ key: 'trigger', label: t('pages.system.tasks.trigger') },
+	{ key: 'status', label: t('pages.system.tasks.status') },
+	{ key: 'started', label: t('pages.system.tasks.started') },
+	{ key: 'duration', label: t('pages.system.tasks.duration'), align: 'right' as const },
 ]
 
 function durationText(command: components['schemas']['Command']): string {
 	if (!command.startedAt || !command.endedAt) {
-		return 'None'
+		return t('pages.system.tasks.none')
 	}
 	const minutes = (new Date(command.endedAt).getTime() - new Date(command.startedAt).getTime()) / 60_000
-	return minutes < 1 ? '< 1m' : formatDuration(minutes)
+	return minutes < 1 ? t('pages.system.tasks.lessThanMinute') : formatDuration(minutes)
 }
 
 onMounted(() => {
@@ -95,13 +97,13 @@ onMounted(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Tasks" />
+		<SPageHeader :title="t('pages.system.tasks.title')" />
 		<SubNav
-			label="System"
+			:label="t('pages.system.tasks.systemNav')"
 			:items="navChildren('system')"
 		/>
 
-		<SSection title="Scheduled tasks">
+		<SSection :title="t('pages.system.tasks.scheduledTasks')">
 			<SEmptyState
 				v-if="loadError"
 				:message="loadError"
@@ -109,7 +111,7 @@ onMounted(() => {
 			>
 				<template #action>
 					<SButton @click="loadScheduledTasks">
-						Retry
+						{{ t('pages.system.tasks.retry') }}
 					</SButton>
 				</template>
 			</SEmptyState>
@@ -124,20 +126,20 @@ onMounted(() => {
 				:row-key="row => row.id ?? row.name ?? ''"
 			>
 				<template #cell-name="{ row }">
-					{{ commandLabel(row.name ?? '') }}
+					{{ t(commandLabel(row.name ?? '')) }}
 				</template>
 				<template #cell-interval="{ row }">
 					{{ formatDuration(row.intervalMinutes ?? 0) }}
 				</template>
 				<template #cell-lastRun="{ row }">
-					{{ row.lastRun ? formatRelative(row.lastRun) : 'Never' }}
+					{{ row.lastRun ? formatRelative(row.lastRun) : t('pages.system.tasks.never') }}
 				</template>
 				<template #cell-nextRun="{ row }">
 					<span v-if="row.nextRun">{{ formatRelative(row.nextRun) }}</span>
 					<span
 						v-else
 						class="s-cell-muted"
-					>None</span>
+					>{{ t('pages.system.tasks.none') }}</span>
 				</template>
 				<template #cell-run="{ row }">
 					<SButton
@@ -145,16 +147,16 @@ onMounted(() => {
 						:loading="runningTaskNames[row.name ?? '']"
 						@click="runNow(row)"
 					>
-						Run now
+						{{ t('pages.system.tasks.runNow') }}
 					</SButton>
 				</template>
 			</STable>
 		</SSection>
 
-		<SSection title="Running and queued">
+		<SSection :title="t('pages.system.tasks.runningAndQueued')">
 			<SEmptyState
 				v-if="commandsStore.active.length === 0"
-				message="No commands are running or queued right now."
+				:message="t('pages.system.tasks.noActiveCommands')"
 				icon="lucide:list-checks"
 			/>
 			<div v-else>
@@ -167,7 +169,7 @@ onMounted(() => {
 			</div>
 		</SSection>
 
-		<SSection title="History">
+		<SSection :title="t('pages.system.tasks.history')">
 			<STable
 				:columns="historyColumns"
 				:rows="commandsStore.history"
@@ -175,20 +177,20 @@ onMounted(() => {
 			>
 				<template #empty>
 					<SEmptyState
-						message="Completed and failed commands will show up here."
+						:message="t('pages.system.tasks.noCommandHistory')"
 						icon="lucide:history"
 					/>
 				</template>
 				<template #cell-name="{ row }">
 					<div class="history-name-cell">
-						<span>{{ commandLabel(row.name ?? '') }}</span>
+						<span>{{ t(commandLabel(row.name ?? '')) }}</span>
 						<SButton
 							v-if="row.exception"
 							variant="ghost"
 							size="sm"
 							@click="toggleException(row.id!)"
 						>
-							{{ expandedException === row.id ? 'Hide error' : 'Show error' }}
+							{{ t(expandedException === row.id ? 'pages.system.tasks.hideError' : 'pages.system.tasks.showError') }}
 						</SButton>
 					</div>
 					<pre
@@ -197,11 +199,11 @@ onMounted(() => {
 					>{{ row.exception }}</pre>
 				</template>
 				<template #cell-trigger="{ row }">
-					{{ commandTriggerLabel(row.trigger ?? '') }}
+					{{ t(commandTriggerLabel(row.trigger ?? '')) }}
 				</template>
 				<template #cell-status="{ row }">
 					<SBadge :tone="commandStatusTone(row.status ?? '')">
-						{{ commandStatusLabel(row.status ?? '') }}
+						{{ t(commandStatusLabel(row.status ?? '')) }}
 					</SBadge>
 				</template>
 				<template #cell-started="{ row }">
@@ -209,7 +211,7 @@ onMounted(() => {
 					<span
 						v-else
 						class="s-cell-muted"
-					>None</span>
+					>{{ t('pages.system.tasks.none') }}</span>
 				</template>
 				<template #cell-duration="{ row }">
 					{{ durationText(row) }}

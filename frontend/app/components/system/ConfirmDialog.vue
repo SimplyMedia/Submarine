@@ -10,7 +10,7 @@
 				:disabled="busy"
 				@click="open = false"
 			>
-				Cancel
+				{{ $t('components.system.ConfirmDialog.cancel') }}
 			</SButton>
 			<SButton
 				:variant="danger ? 'danger' : 'primary'"

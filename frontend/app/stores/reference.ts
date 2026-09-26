@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { i18n } from '~/i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import type { components } from '~/types/api'
 
@@ -40,7 +41,7 @@ export const useReferenceStore = defineStore('reference', () => {
 				api.GET('/api/v1/config/ui'),
 			])
 			loadError.value = [tagsResult, qualityResult, languageResult, rootFolderResult, uiResult].some(result => !result.data)
-				? 'Could not load reference data. Check your connection and try again.'
+				? i18n.global.t('utils.stores.reference.couldNotLoad')
 				: ''
 			if (tagsResult.data) {
 				tags.value = tagsResult.data
@@ -78,28 +79,28 @@ export const useReferenceStore = defineStore('reference', () => {
 	}
 
 	function tagLabel(id: number): string {
-		return tags.value.find(tag => tag.id === id)?.label ?? `Tag ${id}`
+		return tags.value.find(tag => tag.id === id)?.label ?? i18n.global.t('utils.stores.reference.tagFallback', { id })
 	}
 
 	function rootFolderPath(id: number | null | undefined): string {
 		if (id == null) {
-			return 'None'
+			return i18n.global.t('utils.stores.reference.none')
 		}
-		return rootFolders.value.find(folder => folder.id === id)?.path ?? `Folder ${id}`
+		return rootFolders.value.find(folder => folder.id === id)?.path ?? i18n.global.t('utils.stores.reference.folderFallback', { id })
 	}
 
 	function qualityProfileName(id: number | null | undefined): string {
 		if (id == null) {
-			return 'None'
+			return i18n.global.t('utils.stores.reference.none')
 		}
-		return qualityProfiles.value.find(profile => profile.id === id)?.name ?? `Profile ${id}`
+		return qualityProfiles.value.find(profile => profile.id === id)?.name ?? i18n.global.t('utils.stores.reference.profileFallback', { id })
 	}
 
 	function languageProfileName(id: number | null | undefined): string {
 		if (id == null) {
-			return 'None'
+			return i18n.global.t('utils.stores.reference.none')
 		}
-		return languageProfiles.value.find(profile => profile.id === id)?.name ?? `Profile ${id}`
+		return languageProfiles.value.find(profile => profile.id === id)?.name ?? i18n.global.t('utils.stores.reference.profileFallback', { id })
 	}
 
 	return {

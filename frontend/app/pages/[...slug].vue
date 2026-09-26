@@ -1,17 +1,20 @@
 <script setup lang="ts">
-useHead({ title: 'Page not found' })
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+useHead({ title: t('pages.notFound.title') })
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Page not found" />
-		<SEmptyState message="The address does not match any page. Head back to the library.">
+		<SPageHeader :title="t('pages.notFound.title')" />
+		<SEmptyState :message="t('pages.notFound.message')">
 			<template #action>
 				<SButton
 					variant="primary"
 					@click="navigateTo('/series', { replace: true })"
 				>
-					Go to series
+					{{ t('pages.notFound.goToSeries') }}
 				</SButton>
 			</template>
 		</SEmptyState>

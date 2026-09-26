@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { components } from '~/types/api'
 
 type CalendarEvent = components['schemas']['CalendarEventDto']
@@ -13,7 +14,8 @@ interface CalendarDay {
 	events: CalendarEvent[]
 }
 
-useHead({ title: 'Calendar' })
+const { t } = useI18n()
+useHead({ title: t('pages.calendar.title') })
 
 const reference = useReferenceStore()
 const { toast } = useToast()
@@ -27,10 +29,10 @@ const selectedTagIds = ref<number[]>([])
 const feedToken = ref('')
 
 const viewOptions: Array<{ value: ViewMode, label: string }> = [
-	{ value: 'month', label: 'Month' },
-	{ value: 'week', label: 'Week' },
-	{ value: 'day', label: 'Day' },
-	{ value: 'agenda', label: 'Agenda' },
+	{ value: 'month', label: t('pages.calendar.month') },
+	{ value: 'week', label: t('pages.calendar.week') },
+	{ value: 'day', label: t('pages.calendar.day') },
+	{ value: 'agenda', label: t('pages.calendar.agenda') },
 ]
 
 const firstDayOfWeek = computed(() => reference.uiConfig?.firstDayOfWeek ?? 1)
@@ -193,13 +195,13 @@ function eventHref(event: CalendarEvent): string {
 function movieKindLabel(kind: string): string {
 	switch (kind) {
 		case 'inCinemas':
-			return 'In cinemas'
+			return t('pages.calendar.inCinemas')
 		case 'digital':
-			return 'Digital release'
+			return t('pages.calendar.digitalRelease')
 		case 'physical':
-			return 'Physical release'
+			return t('pages.calendar.physicalRelease')
 		default:
-			return 'Movie'
+			return t('pages.calendar.movie')
 	}
 }
 
@@ -245,10 +247,10 @@ async function copyFeedUrl() {
 	}
 	try {
 		await navigator.clipboard.writeText(feedUrl.value)
-		toast({ title: 'Feed URL copied', tone: 'ok' })
+		toast({ title: t('pages.calendar.feedUrlCopied'), tone: 'ok' })
 	}
 	catch {
-		toast({ title: 'Could not copy the feed URL', tone: 'danger' })
+		toast({ title: t('pages.calendar.copyFeedUrlFailed'), tone: 'danger' })
 	}
 }
 
@@ -277,7 +279,7 @@ async function loadEvents() {
 		events.value = result.data
 	}
 	else {
-		toast({ title: 'Could not load the calendar', tone: 'danger' })
+		toast({ title: t('pages.calendar.loadFailed'), tone: 'danger' })
 	}
 	loading.value = false
 }
@@ -295,26 +297,26 @@ onMounted(async () => {
 
 <template>
 	<div>
-		<SPageHeader title="Calendar">
+		<SPageHeader :title="t('pages.calendar.title')">
 			<template #actions>
 				<SPopover>
 					<template #trigger>
 						<SButton variant="secondary">
-							iCal feed
+							{{ t('pages.calendar.icalFeed') }}
 						</SButton>
 					</template>
 					<div class="calendar-feed-popover">
 						<p class="calendar-feed-hint">
-							Subscribe to this URL from any calendar app that supports iCal feeds.
+							{{ t('pages.calendar.feedHint') }}
 						</p>
 						<div class="calendar-feed-row">
 							<SInput
 								:model-value="feedUrl"
 								readonly
-								aria-label="iCal feed URL"
+								:aria-label="t('pages.calendar.feedUrl')"
 							/>
 							<SIconButton
-								label="Copy feed URL"
+								:label="t('pages.calendar.copyFeedUrl')"
 								@click="copyFeedUrl"
 							>
 								<Icon
@@ -331,7 +333,7 @@ onMounted(async () => {
 		<div class="calendar-toolbar">
 			<div class="calendar-nav">
 				<SIconButton
-					label="Previous"
+					:label="t('pages.calendar.previous')"
 					@click="goPrev"
 				>
 					<Icon
@@ -344,10 +346,10 @@ onMounted(async () => {
 					variant="secondary"
 					@click="goToday"
 				>
-					Today
+					{{ t('pages.calendar.today') }}
 				</SButton>
 				<SIconButton
-					label="Next"
+					:label="t('pages.calendar.next')"
 					@click="goNext"
 				>
 					<Icon
@@ -375,7 +377,7 @@ onMounted(async () => {
 		<div class="calendar-filters">
 			<SSwitch
 				v-model="showUnmonitored"
-				label="Show unmonitored"
+				:label="t('pages.calendar.showUnmonitored')"
 			/>
 			<div
 				v-if="reference.tags.length > 0"
@@ -446,7 +448,7 @@ onMounted(async () => {
 				</h3>
 				<SEmptyState
 					v-if="dayViewEvents.length === 0"
-					message="Nothing scheduled for this day."
+					:message="t('pages.calendar.nothingScheduledDay')"
 					icon="lucide:calendar"
 				/>
 				<div
@@ -471,7 +473,7 @@ onMounted(async () => {
 							v-if="!event.monitored"
 							tone="neutral"
 						>
-							Unmonitored
+							{{ t('pages.calendar.unmonitored') }}
 						</SBadge>
 					</NuxtLink>
 				</div>
@@ -483,7 +485,7 @@ onMounted(async () => {
 			>
 				<SEmptyState
 					v-if="events.length === 0"
-					message="Nothing scheduled in the next 14 days."
+					:message="t('pages.calendar.nothingScheduledAgenda')"
 					icon="lucide:calendar"
 				/>
 				<template v-else>
@@ -502,7 +504,7 @@ onMounted(async () => {
 							v-if="day.events.length === 0"
 							class="calendar-agenda-empty"
 						>
-							Nothing scheduled.
+							{{ t('pages.calendar.nothingScheduled') }}
 						</p>
 						<div
 							v-else
@@ -526,7 +528,7 @@ onMounted(async () => {
 									v-if="!event.monitored"
 									tone="neutral"
 								>
-									Unmonitored
+									{{ t('pages.calendar.unmonitored') }}
 								</SBadge>
 							</NuxtLink>
 						</div>

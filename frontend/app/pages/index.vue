@@ -2,12 +2,14 @@
 import type { components } from '~/types/api'
 import type { PosterCardItem } from '~/types/ui'
 import { historyEventTypeLabel } from '~/utils/library-labels'
+import { useI18n } from 'vue-i18n'
 import { useActivityStore } from '~/stores/activity'
 
 type CalendarEvent = components['schemas']['CalendarEventDto']
 type HistoryEvent = components['schemas']['HistoryEventDto']
 
-useHead({ title: 'Submarine' })
+const { t } = useI18n()
+useHead({ title: t('pages.dashboard.title') })
 
 const api = useApi()
 const system = useSystemStore()
@@ -72,7 +74,7 @@ function eventLabel(event: CalendarEvent) {
 	if (event.type === 'episode' && event.seasonNumber != null && event.episodeNumber != null) {
 		return `S${String(event.seasonNumber).padStart(2, '0')}E${String(event.episodeNumber).padStart(2, '0')}`
 	}
-	return event.kind === 'inCinemas' ? 'In cinemas' : event.kind === 'digital' ? 'Digital' : event.kind === 'physical' ? 'Physical' : 'Movie'
+	return event.kind === 'inCinemas' ? t('pages.dashboard.inCinemas') : event.kind === 'digital' ? t('pages.dashboard.digital') : event.kind === 'physical' ? t('pages.dashboard.physical') : t('pages.dashboard.movie')
 }
 
 const dayFormatter = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -89,7 +91,7 @@ const healthTone = computed(() => {
 
 const healthText = computed(() => {
 	const count = system.healthIssues.length
-	return count === 0 ? 'All systems normal' : `${count} health ${count === 1 ? 'issue' : 'issues'}`
+	return count === 0 ? t('pages.dashboard.allSystemsNormal') : t(count === 1 ? 'pages.dashboard.healthIssue' : 'pages.dashboard.healthIssues', { count })
 })
 
 const recentCards = computed<PosterCardItem[]>(() => recentlyAdded.value.map(item => ({
@@ -97,7 +99,7 @@ const recentCards = computed<PosterCardItem[]>(() => recentlyAdded.value.map(ite
 	to: item.kind === 'series' ? `/series/${item.id}` : `/movies/${item.id}`,
 	posterUrl: item.posterUrl,
 	title: item.title,
-	meta: item.kind === 'series' ? 'Series' : 'Movie',
+	meta: item.kind === 'series' ? t('pages.dashboard.series') : t('pages.dashboard.movie'),
 })))
 
 let stopWatchQueue: (() => void) | null = null
@@ -157,11 +159,11 @@ onBeforeUnmount(() => {
 
 <template>
 	<div>
-		<SPageHeader title="Dashboard" />
+		<SPageHeader :title="t('pages.dashboard.title')" />
 
 		<SSpinner v-if="loading" />
 		<template v-else>
-			<SSection title="Schedule">
+			<SSection :title="t('pages.dashboard.schedule')">
 				<div class="schedule-strip">
 					<div
 						v-for="day in days"
@@ -198,23 +200,23 @@ onBeforeUnmount(() => {
 							v-else
 							class="schedule-day-empty"
 						>
-							Nothing scheduled
+							{{ t('pages.dashboard.nothingScheduled') }}
 						</p>
 					</div>
 				</div>
 			</SSection>
 
-			<SSection title="Activity">
+			<SSection :title="t('pages.dashboard.activity')">
 				<div class="activity-grid">
 					<div class="activity-panel">
 						<p class="activity-panel-title">
-							Queue
+							{{ t('pages.dashboard.queue') }}
 						</p>
 						<p
 							v-if="activity.status"
 							class="activity-summary"
 						>
-							{{ activity.status.total }} downloading<span v-if="activity.status.errors">, {{ activity.status.errors }} failed</span>
+							{{ activity.status.total }} {{ t('pages.dashboard.downloading') }}<span v-if="activity.status.errors">, {{ activity.status.errors }} {{ t('pages.dashboard.failed') }}</span>
 						</p>
 						<SEmptyState
 							v-if="activity.loadError"
@@ -223,7 +225,7 @@ onBeforeUnmount(() => {
 						>
 							<template #action>
 								<SButton @click="activity.load(5)">
-									Retry
+									{{ t('pages.dashboard.retry') }}
 								</SButton>
 							</template>
 						</SEmptyState>
@@ -235,7 +237,7 @@ onBeforeUnmount(() => {
 					</div>
 					<div class="activity-panel">
 						<p class="activity-panel-title">
-							Recent activity
+							{{ t('pages.dashboard.recentActivity') }}
 						</p>
 						<ul
 							v-if="recentHistory.length > 0"
@@ -246,17 +248,17 @@ onBeforeUnmount(() => {
 								:key="event.id"
 							>
 								<span class="activity-list-title">{{ event.seriesTitle ?? event.movieTitle ?? event.sourceTitle }}</span>
-								<span class="activity-list-sub">{{ historyEventTypeLabel(event.type as never) }}</span>
+								<span class="activity-list-sub">{{ t(historyEventTypeLabel(event.type as never)) }}</span>
 							</li>
 						</ul>
 						<SEmptyState
 							v-else
-							message="No activity yet"
+							:message="t('pages.dashboard.noActivityYet')"
 						/>
 					</div>
 					<div class="activity-panel">
 						<p class="activity-panel-title">
-							Health
+							{{ t('pages.dashboard.health') }}
 						</p>
 						<p class="activity-summary">
 							<SBadge :tone="healthTone">
@@ -278,20 +280,20 @@ onBeforeUnmount(() => {
 				</div>
 			</SSection>
 
-			<SSection title="Recently added">
+			<SSection :title="t('pages.dashboard.recentlyAdded')">
 				<MediaPosterGrid :items="recentCards">
 					<template #empty>
-						<SEmptyState message="Your library is empty. Add a series or a movie to get started.">
+						<SEmptyState :message="t('pages.dashboard.emptyLibrary')">
 							<template #action>
 								<div class="dashboard-empty-actions">
 									<SButton
 										variant="primary"
 										@click="navigateTo('/series?add=1')"
 									>
-										Add series
+										{{ t('pages.dashboard.addSeries') }}
 									</SButton>
 									<SButton @click="navigateTo('/movies?add=1')">
-										Add movie
+										{{ t('pages.dashboard.addMovie') }}
 									</SButton>
 								</div>
 							</template>

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { i18n } from '~/i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import type { components } from '~/types/api'
 
@@ -52,7 +53,7 @@ export const useIndexersStore = defineStore('indexers', () => {
 				loaded.value = true
 			}
 			else {
-				loadError.value = 'Could not load indexers. Check your connection and try again.'
+				loadError.value = i18n.global.t('utils.stores.indexers.couldNotLoad')
 			}
 		})()
 		try {
@@ -66,9 +67,9 @@ export const useIndexersStore = defineStore('indexers', () => {
 
 	function indexerName(id: number | null | undefined): string {
 		if (id == null) {
-			return 'None'
+			return i18n.global.t('utils.stores.reference.none')
 		}
-		return indexers.value.find(indexer => indexer.id === id)?.name ?? `Indexer ${id}`
+		return indexers.value.find(indexer => indexer.id === id)?.name ?? i18n.global.t('utils.stores.indexers.indexerFallback', { id })
 	}
 
 	async function createIndexer(body: IndexerRequest): Promise<IndexerDto> {

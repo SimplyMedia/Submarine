@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import { useReferenceStore } from '~/stores/reference'
 import type { components } from '~/types/api'
@@ -33,17 +34,18 @@ const deleteTargetOpen = computed({
 	set: (open: boolean) => { if (!open) deleteTarget.value = null },
 })
 
+const { t } = useI18n()
 const types: { value: SpecificationType, label: string }[] = [
-	{ value: 'GENRE', label: 'Genre' },
-	{ value: 'ROOT_FOLDER', label: 'Root folder' },
-	{ value: 'SERIES_TYPE', label: 'Series type' },
-	{ value: 'STATUS', label: 'Status' },
-	{ value: 'YEAR', label: 'Year' },
-	{ value: 'QUALITY_PROFILE', label: 'Quality profile' },
-	{ value: 'MONITORED', label: 'Monitored' },
-	{ value: 'NETWORK_OR_STUDIO', label: 'Network or studio' },
-	{ value: 'ORIGINAL_LANGUAGE', label: 'Original language' },
-	{ value: 'KEYWORD', label: 'Keyword' },
+	{ value: 'GENRE', label: t('components.settings.AutoTaggingRulesPanel.types.genre') },
+	{ value: 'ROOT_FOLDER', label: t('components.settings.AutoTaggingRulesPanel.types.rootFolder') },
+	{ value: 'SERIES_TYPE', label: t('components.settings.AutoTaggingRulesPanel.types.seriesType') },
+	{ value: 'STATUS', label: t('components.settings.AutoTaggingRulesPanel.types.status') },
+	{ value: 'YEAR', label: t('components.settings.AutoTaggingRulesPanel.types.year') },
+	{ value: 'QUALITY_PROFILE', label: t('components.settings.AutoTaggingRulesPanel.types.qualityProfile') },
+	{ value: 'MONITORED', label: t('components.settings.AutoTaggingRulesPanel.types.monitored') },
+	{ value: 'NETWORK_OR_STUDIO', label: t('components.settings.AutoTaggingRulesPanel.types.networkOrStudio') },
+	{ value: 'ORIGINAL_LANGUAGE', label: t('components.settings.AutoTaggingRulesPanel.types.originalLanguage') },
+	{ value: 'KEYWORD', label: t('components.settings.AutoTaggingRulesPanel.types.keyword') },
 ]
 
 function blankForm(): RuleForm {
@@ -113,7 +115,7 @@ async function load() {
 	loading.value = true
 	loadError.value = ''
 	const result = await api.GET('/api/v1/auto-tagging')
-	if (!result.data) loadError.value = 'Could not load auto tagging rules. Check your connection and try again.'
+	if (!result.data) loadError.value = t('components.settings.AutoTaggingRulesPanel.loadError')
 	rules.value = result.data ?? []
 	loading.value = false
 }
@@ -136,7 +138,7 @@ async function save() {
 		formError.value = toApiError(result.error, result.response).message
 		return
 	}
-	toast({ title: editingId.value === null ? 'Auto tagging rule added' : 'Auto tagging rule saved', tone: 'ok' })
+	toast({ title: t(editingId.value === null ? 'components.settings.AutoTaggingRulesPanel.added' : 'components.settings.AutoTaggingRulesPanel.saved'), tone: 'ok' })
 	editorOpen.value = false
 	await load()
 }
@@ -147,10 +149,10 @@ async function removeRule() {
 	const result = await api.DELETE('/api/v1/auto-tagging/{id}', { params: { path: { id: deleteTarget.value.id } } })
 	deleting.value = false
 	if (!result.response.ok) {
-		toast({ title: 'Could not delete rule', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('components.settings.AutoTaggingRulesPanel.couldNotDelete'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
-	toast({ title: 'Auto tagging rule deleted', tone: 'ok' })
+	toast({ title: t('components.settings.AutoTaggingRulesPanel.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	await load()
 }
@@ -159,16 +161,16 @@ void Promise.all([reference.load(), load()])
 </script>
 
 <template>
-	<SSection title="Auto tagging">
+	<SSection :title="$t('components.settings.AutoTaggingRulesPanel.title')">
 		<div class="section-actions">
 			<p class="section-copy">
-				Apply tags to series and movies as they are added or refreshed.
+				{{ $t('components.settings.AutoTaggingRulesPanel.description') }}
 			</p>
 			<SButton
 				variant="secondary"
 				@click="openCreate"
 			>
-				Add rule
+				{{ $t('components.settings.AutoTaggingRulesPanel.addRule') }}
 			</SButton>
 		</div>
 		<SEmptyState
@@ -178,14 +180,14 @@ void Promise.all([reference.load(), load()])
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ $t('components.settings.AutoTaggingRulesPanel.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
 		<SSpinner v-else-if="loading" />
 		<SEmptyState
 			v-else-if="rules.length === 0"
-			message="No automatic tagging rules yet. Add a rule to tag series and movies as they are added or refreshed."
+			:message="$t('components.settings.AutoTaggingRulesPanel.emptyMessage')"
 		/>
 		<div
 			v-else
@@ -200,18 +202,18 @@ void Promise.all([reference.load(), load()])
 					<div class="rule-heading">
 						<h3>{{ rule.name }}</h3>
 						<SBadge :tone="rule.enable ? 'ok' : 'neutral'">
-							{{ rule.enable ? 'Enabled' : 'Disabled' }}
+							{{ rule.enable ? $t('components.settings.AutoTaggingRulesPanel.enabled') : $t('components.settings.AutoTaggingRulesPanel.disabled') }}
 						</SBadge>
 					</div>
 					<p>
-						{{ rule.specifications.length }} specification{{ rule.specifications.length === 1 ? '' : 's' }}
-						· {{ rule.tags.length ? rule.tags.join(', ') : 'No tags' }}
+						{{ t('components.settings.AutoTaggingRulesPanel.specificationCount', { count: rule.specifications.length }, rule.specifications.length) }}
+						· {{ rule.tags.length ? rule.tags.join(', ') : t('components.settings.AutoTaggingRulesPanel.noTags') }}
 					</p>
 					<p
 						v-if="rule.removeTagsAutomatically"
 						class="rule-note"
 					>
-						Removes its tags when a match no longer applies
+						{{ $t('components.settings.AutoTaggingRulesPanel.removeTagsNote') }}
 					</p>
 				</div>
 				<div class="row-actions">
@@ -219,10 +221,10 @@ void Promise.all([reference.load(), load()])
 						variant="secondary"
 						@click="openEdit(rule)"
 					>
-						Edit
+						{{ $t('components.settings.AutoTaggingRulesPanel.edit') }}
 					</SButton>
 					<SIconButton
-						label="Delete rule"
+						:label="$t('components.settings.AutoTaggingRulesPanel.deleteRule')"
 						@click="deleteTarget = rule"
 					>
 						<Icon
@@ -237,11 +239,11 @@ void Promise.all([reference.load(), load()])
 
 	<SDialog
 		v-model="editorOpen"
-		:title="editingId === null ? 'Add auto tagging rule' : 'Edit auto tagging rule'"
+		:title="editingId === null ? $t('components.settings.AutoTaggingRulesPanel.addRuleTitle') : $t('components.settings.AutoTaggingRulesPanel.editRuleTitle')"
 		wide
 	>
 		<SField
-			label="Name"
+			:label="$t('components.settings.AutoTaggingRulesPanel.name')"
 			control-id="auto-tagging-name"
 			:error="formError"
 		>
@@ -254,16 +256,16 @@ void Promise.all([reference.load(), load()])
 		<div class="rule-switches">
 			<SSwitch
 				v-model="form.enable"
-				label="Enable this rule"
+				:label="$t('components.settings.AutoTaggingRulesPanel.enableRule')"
 			/>
 			<SSwitch
 				v-model="form.removeTagsAutomatically"
-				label="Remove tags automatically when the rule no longer matches"
+				:label="$t('components.settings.AutoTaggingRulesPanel.removeTagsAutomatically')"
 			/>
 		</div>
-		<SSection title="Specifications">
+		<SSection :title="$t('components.settings.AutoTaggingRulesPanel.specifications')">
 			<p class="section-copy">
-				Required specifications must match. Optional specifications are evaluated together by type.
+				{{ $t('components.settings.AutoTaggingRulesPanel.specificationsHint') }}
 			</p>
 			<div class="spec-list">
 				<div
@@ -274,8 +276,8 @@ void Promise.all([reference.load(), load()])
 					<SInput
 						v-model="specification.name"
 						class="spec-name"
-						aria-label="Specification name"
-						placeholder="Name"
+						:aria-label="$t('components.settings.AutoTaggingRulesPanel.specificationName')"
+						:placeholder="$t('components.settings.AutoTaggingRulesPanel.name')"
 					/>
 					<SSelect
 						:model-value="specification.type"
@@ -299,7 +301,7 @@ void Promise.all([reference.load(), load()])
 					<SCheckbox
 						v-else-if="specification.type === 'MONITORED'"
 						:model-value="specification.value !== false"
-						label="Monitored"
+						:label="$t('components.settings.AutoTaggingRulesPanel.monitored')"
 						@update:model-value="specification.value = $event"
 					/>
 					<div
@@ -308,13 +310,13 @@ void Promise.all([reference.load(), load()])
 					>
 						<SInput
 							type="number"
-							placeholder="From"
+							:placeholder="$t('components.settings.AutoTaggingRulesPanel.from')"
 							:model-value="String((specification.value as { min?: number | null } | null)?.min ?? '')"
 							@update:model-value="specification.value = { ...(specification.value as object), min: $event === '' ? null : Number($event) }"
 						/>
 						<SInput
 							type="number"
-							placeholder="To"
+							:placeholder="$t('components.settings.AutoTaggingRulesPanel.to')"
 							:model-value="String((specification.value as { max?: number | null } | null)?.max ?? '')"
 							@update:model-value="specification.value = { ...(specification.value as object), max: $event === '' ? null : Number($event) }"
 						/>
@@ -322,19 +324,19 @@ void Promise.all([reference.load(), load()])
 					<SInput
 						v-else
 						:model-value="valueText(specification.value)"
-						:placeholder="['GENRE', 'NETWORK_OR_STUDIO', 'ORIGINAL_LANGUAGE', 'KEYWORD'].includes(specification.type) ? 'Comma-separated values' : 'Match value'"
+						:placeholder="['GENRE', 'NETWORK_OR_STUDIO', 'ORIGINAL_LANGUAGE', 'KEYWORD'].includes(specification.type) ? $t('components.settings.AutoTaggingRulesPanel.commaSeparatedValues') : $t('components.settings.AutoTaggingRulesPanel.matchValue')"
 						@update:model-value="setTextValue(specification, $event)"
 					/>
 					<SCheckbox
 						v-model="specification.negate"
-						label="Negate"
+						:label="$t('components.settings.AutoTaggingRulesPanel.negate')"
 					/>
 					<SCheckbox
 						v-model="specification.required"
-						label="Required"
+						:label="$t('components.settings.AutoTaggingRulesPanel.required')"
 					/>
 					<SIconButton
-						label="Remove specification"
+						:label="$t('components.settings.AutoTaggingRulesPanel.removeSpecification')"
 						@click="form.specifications.splice(index, 1)"
 					>
 						<Icon
@@ -348,10 +350,10 @@ void Promise.all([reference.load(), load()])
 				variant="secondary"
 				@click="addSpecification"
 			>
-				Add specification
+				{{ $t('components.settings.AutoTaggingRulesPanel.addSpecification') }}
 			</SButton>
 		</SSection>
-		<SField label="Tags">
+		<SField :label="$t('components.settings.AutoTaggingRulesPanel.tags')">
 			<TagPicker v-model:tag-ids="form.tagIds" />
 		</SField>
 		<template #footer>
@@ -359,38 +361,38 @@ void Promise.all([reference.load(), load()])
 				variant="secondary"
 				@click="editorOpen = false"
 			>
-				Cancel
+				{{ $t('components.settings.AutoTaggingRulesPanel.cancel') }}
 			</SButton>
 			<SButton
 				variant="primary"
 				:loading="saving"
 				@click="save"
 			>
-				Save changes
+				{{ $t('components.settings.AutoTaggingRulesPanel.saveChanges') }}
 			</SButton>
 		</template>
 	</SDialog>
 
 	<SDialog
 		v-model="deleteTargetOpen"
-		title="Delete auto tagging rule"
+		:title="$t('components.settings.AutoTaggingRulesPanel.deleteRuleTitle')"
 	>
 		<p v-if="deleteTarget">
-			Delete “{{ deleteTarget.name }}”? This cannot be undone.
+			{{ $t('components.settings.AutoTaggingRulesPanel.confirmDelete', { name: deleteTarget.name }) }}
 		</p>
 		<template #footer>
 			<SButton
 				variant="secondary"
 				@click="deleteTarget = null"
 			>
-				Cancel
+				{{ $t('components.settings.AutoTaggingRulesPanel.cancel') }}
 			</SButton>
 			<SButton
 				variant="danger"
 				:loading="deleting"
 				@click="removeRule"
 			>
-				Delete
+				{{ $t('components.settings.AutoTaggingRulesPanel.delete') }}
 			</SButton>
 		</template>
 	</SDialog>

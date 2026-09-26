@@ -3,89 +3,89 @@
  * sheet all render from this list; placeholder titles resolve through it too.
  */
 export interface NavChild {
-	label: string
+	key: string
 	to: string
 }
 
 export interface NavItem {
 	id: string
-	label: string
+	key: string
 	to: string
 	icon: string
 	children?: NavChild[]
 }
 
 export const navigation: NavItem[] = [
-	{ id: 'series', label: 'Series', to: '/series', icon: 'lucide:tv' },
-	{ id: 'movies', label: 'Movies', to: '/movies', icon: 'lucide:film' },
-	{ id: 'calendar', label: 'Calendar', to: '/calendar', icon: 'lucide:calendar' },
+	{ id: 'series', key: 'utils.navigation.series', to: '/series', icon: 'lucide:tv' },
+	{ id: 'movies', key: 'utils.navigation.movies', to: '/movies', icon: 'lucide:film' },
+	{ id: 'calendar', key: 'utils.navigation.calendar', to: '/calendar', icon: 'lucide:calendar' },
 	{
 		id: 'activity',
-		label: 'Activity',
+		key: 'utils.navigation.activity',
 		to: '/activity',
 		icon: 'lucide:activity',
 		children: [
-			{ label: 'Queue', to: '/activity/queue' },
-			{ label: 'History', to: '/activity/history' },
-			{ label: 'Blocklist', to: '/activity/blocklist' },
-			{ label: 'Import', to: '/activity/import' },
+			{ key: 'utils.navigation.queue', to: '/activity/queue' },
+			{ key: 'utils.navigation.history', to: '/activity/history' },
+			{ key: 'utils.navigation.blocklist', to: '/activity/blocklist' },
+			{ key: 'utils.navigation.import', to: '/activity/import' },
 		],
 	},
 	{
 		id: 'wanted',
-		label: 'Wanted',
+		key: 'utils.navigation.wanted',
 		to: '/wanted',
 		icon: 'lucide:flag',
 		children: [
-			{ label: 'Missing', to: '/wanted/missing' },
-			{ label: 'Cut off', to: '/wanted/cutoff' },
+			{ key: 'utils.navigation.missing', to: '/wanted/missing' },
+			{ key: 'utils.navigation.cutoff', to: '/wanted/cutoff' },
 		],
 	},
 	{
 		id: 'indexers',
-		label: 'Indexers',
+		key: 'utils.navigation.indexers',
 		to: '/indexers',
 		icon: 'lucide:rss',
 		children: [
-			{ label: 'Indexers', to: '/indexers' },
-			{ label: 'Search', to: '/indexers/search' },
-			{ label: 'Stats', to: '/indexers/stats' },
-			{ label: 'Proxies', to: '/indexers/proxies' },
-			{ label: 'Definitions', to: '/indexers/definitions' },
+			{ key: 'utils.navigation.indexers', to: '/indexers' },
+			{ key: 'utils.navigation.search', to: '/indexers/search' },
+			{ key: 'utils.navigation.stats', to: '/indexers/stats' },
+			{ key: 'utils.navigation.proxies', to: '/indexers/proxies' },
+			{ key: 'utils.navigation.definitions', to: '/indexers/definitions' },
 		],
 	},
 	{
 		id: 'settings',
-		label: 'Settings',
+		key: 'utils.navigation.settings',
 		to: '/settings',
 		icon: 'lucide:settings',
 		children: [
-			{ label: 'Media management', to: '/settings/media-management' },
-			{ label: 'Profiles', to: '/settings/profiles' },
-			{ label: 'Quality', to: '/settings/quality' },
-			{ label: 'Custom formats', to: '/settings/custom-formats' },
-			{ label: 'Indexers', to: '/settings/indexers' },
-			{ label: 'Download clients', to: '/settings/download-clients' },
-			{ label: 'Import lists', to: '/settings/import-lists' },
-			{ label: 'Connect', to: '/settings/connect' },
-			{ label: 'Metadata', to: '/settings/metadata' },
-			{ label: 'Metadata consumers', to: '/settings/metadata-consumers' },
-			{ label: 'Tags', to: '/settings/tags' },
-			{ label: 'General', to: '/settings/general' },
-			{ label: 'UI', to: '/settings/ui' },
+			{ key: 'utils.navigation.mediaManagement', to: '/settings/media-management' },
+			{ key: 'utils.navigation.profiles', to: '/settings/profiles' },
+			{ key: 'utils.navigation.quality', to: '/settings/quality' },
+			{ key: 'utils.navigation.customFormats', to: '/settings/custom-formats' },
+			{ key: 'utils.navigation.indexers', to: '/settings/indexers' },
+			{ key: 'utils.navigation.downloadClients', to: '/settings/download-clients' },
+			{ key: 'utils.navigation.importLists', to: '/settings/import-lists' },
+			{ key: 'utils.navigation.connect', to: '/settings/connect' },
+			{ key: 'utils.navigation.metadata', to: '/settings/metadata' },
+			{ key: 'utils.navigation.metadataConsumers', to: '/settings/metadata-consumers' },
+			{ key: 'utils.navigation.tags', to: '/settings/tags' },
+			{ key: 'utils.navigation.general', to: '/settings/general' },
+			{ key: 'utils.navigation.ui', to: '/settings/ui' },
 		],
 	},
 	{
 		id: 'system',
-		label: 'System',
+		key: 'utils.navigation.system',
 		to: '/system',
 		icon: 'lucide:cpu',
 		children: [
-			{ label: 'Status', to: '/system/status' },
-			{ label: 'Tasks', to: '/system/tasks' },
-			{ label: 'Backups', to: '/system/backups' },
-			{ label: 'Logs', to: '/system/logs' },
-			{ label: 'Updates', to: '/system/updates' },
+			{ key: 'utils.navigation.status', to: '/system/status' },
+			{ key: 'utils.navigation.tasks', to: '/system/tasks' },
+			{ key: 'utils.navigation.backups', to: '/system/backups' },
+			{ key: 'utils.navigation.logs', to: '/system/logs' },
+			{ key: 'utils.navigation.updates', to: '/system/updates' },
 		],
 	},
 ]

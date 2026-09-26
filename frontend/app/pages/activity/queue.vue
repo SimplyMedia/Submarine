@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { formatDate } from '~/composables/useFormat'
 import { pendingReleaseReasonLabel } from '~/utils/activity-labels'
 import { useActivityStore } from '~/stores/activity'
 import { navChildren } from '~/navigation'
 import type { PendingRelease } from '~/stores/activity'
 
-useHead({ title: 'Queue' })
+const { t } = useI18n()
+useHead({ title: t('pages.activity.queue.title') })
 
 const activity = useActivityStore()
 const { toast } = useToast()
@@ -40,7 +42,7 @@ async function confirmBulkRemove() {
 		bulkDialogOpen.value = false
 	}
 	catch (error) {
-		toast({ title: 'Could not remove selected items', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('pages.activity.queue.removeSelectedFailed'), description: (error as Error).message, tone: 'danger' })
 	}
 	finally {
 		bulkRemoving.value = false
@@ -52,7 +54,7 @@ async function removePendingRelease(id: number) {
 		await activity.removePendingRelease(id)
 	}
 	catch (error) {
-		toast({ title: 'Could not remove pending release', description: (error as Error).message, tone: 'danger' })
+		toast({ title: t('pages.activity.queue.removePendingFailed'), description: (error as Error).message, tone: 'danger' })
 	}
 }
 
@@ -67,16 +69,16 @@ function pendingReleaseTo(row: PendingRelease): string | null {
 }
 
 const pendingColumns = [
-	{ key: 'title', label: 'Title' },
-	{ key: 'reason', label: 'Reason' },
-	{ key: 'added', label: 'Added' },
+	{ key: 'title', label: t('pages.activity.queue.titleColumn') },
+	{ key: 'reason', label: t('pages.activity.queue.reason') },
+	{ key: 'added', label: t('pages.activity.queue.added') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Queue">
+		<SPageHeader :title="t('pages.activity.queue.title')">
 			<template #actions>
 				<SButton
 					variant="danger"
@@ -84,13 +86,13 @@ const pendingColumns = [
 					:disabled="selectedIds.length === 0"
 					@click="bulkDialogOpen = true"
 				>
-					Remove selected ({{ selectedIds.length }})
+					{{ t('pages.activity.queue.removeSelectedCount', { count: selectedIds.length }) }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="Activity"
+			:label="t('pages.activity.queue.activityNav')"
 			:items="navChildren('activity')"
 		/>
 
@@ -99,25 +101,25 @@ const pendingColumns = [
 			class="queue-summary"
 		>
 			<SBadge tone="neutral">
-				{{ activity.status.total }} total
+				{{ t('pages.activity.queue.total', { count: activity.status.total }) }}
 			</SBadge>
 			<SBadge
 				v-if="activity.status.errors > 0"
 				tone="danger"
 			>
-				{{ activity.status.errors }} errors
+				{{ t('pages.activity.queue.errors', { count: activity.status.errors }) }}
 			</SBadge>
 			<SBadge
 				v-if="activity.status.warnings > 0"
 				tone="warn"
 			>
-				{{ activity.status.warnings }} warnings
+				{{ t('pages.activity.queue.warnings', { count: activity.status.warnings }) }}
 			</SBadge>
 			<SBadge
 				v-if="activity.status.unknown > 0"
 				tone="info"
 			>
-				{{ activity.status.unknown }} unmatched
+				{{ t('pages.activity.queue.unmatched', { count: activity.status.unknown }) }}
 			</SBadge>
 		</div>
 
@@ -128,7 +130,7 @@ const pendingColumns = [
 		>
 			<template #action>
 				<SButton @click="activity.load()">
-					Retry
+					{{ t('pages.activity.queue.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -142,7 +144,7 @@ const pendingColumns = [
 
 		<SSection
 			v-if="activity.pendingReleases.length > 0"
-			title="Pending releases"
+			:title="t('pages.activity.queue.pendingReleases')"
 		>
 			<STable
 				:columns="pendingColumns"
@@ -159,14 +161,14 @@ const pendingColumns = [
 					<span v-else>{{ row.title }}</span>
 				</template>
 				<template #cell-reason="{ row }">
-					{{ pendingReleaseReasonLabel(row.reason) }}
+					{{ t(pendingReleaseReasonLabel(row.reason)) }}
 				</template>
 				<template #cell-added="{ row }">
 					{{ formatDate(row.added) }}
 				</template>
 				<template #cell-actions="{ row }">
 					<SIconButton
-						label="Remove pending release"
+						:label="t('pages.activity.queue.removePendingRelease')"
 						@click="removePendingRelease(row.id)"
 					>
 						<Icon
@@ -180,21 +182,21 @@ const pendingColumns = [
 
 		<SDialog
 			v-model="bulkDialogOpen"
-			title="Remove selected"
+			:title="t('pages.activity.queue.removeSelectedTitle')"
 		>
-			<p>Remove {{ selectedIds.length }} item(s) from the queue?</p>
+			<p>{{ t('pages.activity.queue.removeSelectedQuestion', { count: selectedIds.length }) }}</p>
 			<div class="queue-bulk-options">
 				<SCheckbox
 					v-model="bulkRemoveFromClient"
-					label="Remove from the download client"
+					:label="t('pages.activity.queue.removeFromDownloadClient')"
 				/>
 				<SCheckbox
 					v-model="bulkBlocklist"
-					label="Add to blocklist"
+					:label="t('pages.activity.queue.addToBlocklist')"
 				/>
 				<SCheckbox
 					v-model="bulkSkipRedownload"
-					label="Skip redownload"
+					:label="t('pages.activity.queue.skipRedownload')"
 				/>
 			</div>
 			<template #footer>
@@ -203,14 +205,14 @@ const pendingColumns = [
 					:disabled="bulkRemoving"
 					@click="bulkDialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.activity.queue.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="bulkRemoving"
 					@click="confirmBulkRemove"
 				>
-					Remove
+					{{ t('pages.activity.queue.remove') }}
 				</SButton>
 			</template>
 		</SDialog>

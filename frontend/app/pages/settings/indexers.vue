@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { toApiError, useApi } from '~/composables/useApi'
 import { useDirtyForm } from '~/composables/useDirtyForm'
 import type { components } from '~/types/api'
+
+const { t } = useI18n()
 
 type IndexerConfigResource = components['schemas']['IndexerConfigResource']
 type NumberField = keyof IndexerConfigResource
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Indexers' })
+useHead({ title: t('pages.settings.indexers.title') })
 
 const api = useApi()
 const { toast } = useToast()
@@ -26,7 +29,7 @@ async function load() {
 		dirty.markSaved(result.data)
 	}
 	else {
-		loadError.value = 'Could not load indexer settings. Check your connection and try again.'
+		loadError.value = t('pages.settings.indexers.loadError')
 	}
 	loading.value = false
 }
@@ -48,17 +51,17 @@ async function save() {
 	const result = await api.PUT('/api/v1/config/indexer', { body: draft.value })
 	saving.value = false
 	if (!result.data) {
-		toast({ title: 'Could not save', description: toApiError(result.error, result.response).message, tone: 'danger' })
+		toast({ title: t('pages.settings.indexers.saveError'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 		return
 	}
 	dirty.markSaved(result.data)
-	toast({ title: 'Saved', tone: 'ok' })
+	toast({ title: t('common.saved'), tone: 'ok' })
 }
 </script>
 
 <template>
 	<div>
-		<SPageHeader title="Indexers" />
+		<SPageHeader :title="t('pages.settings.indexers.title')" />
 
 		<SEmptyState
 			v-if="loadError"
@@ -67,18 +70,18 @@ async function save() {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ t('pages.settings.indexers.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
 		<SSpinner v-else-if="loading" />
 
 		<template v-else-if="draft">
-			<SSection title="Indexer behavior">
+			<SSection :title="t('pages.settings.indexers.behavior')">
 				<div class="field-grid">
 					<SField
-						label="RSS sync interval (minutes)"
-						hint="Minutes between RSS syncs, 0 disables the sync."
+						:label="t('pages.settings.indexers.rssInterval')"
+						:hint="t('pages.settings.indexers.rssIntervalHint')"
 						control-id="rss-sync-interval"
 					>
 						<SInput
@@ -89,8 +92,8 @@ async function save() {
 						/>
 					</SField>
 					<SField
-						label="Minimum age (minutes)"
-						hint="Minimum age in minutes for usenet releases."
+						:label="t('pages.settings.indexers.minimumAge')"
+						:hint="t('pages.settings.indexers.minimumAgeHint')"
 						control-id="minimum-age"
 					>
 						<SInput
@@ -101,8 +104,8 @@ async function save() {
 						/>
 					</SField>
 					<SField
-						label="Retention (days)"
-						hint="Retention in days required for usenet releases, 0 disables."
+						:label="t('pages.settings.indexers.retention')"
+						:hint="t('pages.settings.indexers.retentionHint')"
 						control-id="retention-days"
 					>
 						<SInput
@@ -113,8 +116,8 @@ async function save() {
 						/>
 					</SField>
 					<SField
-						label="Maximum size (MB)"
-						hint="Maximum release size in MB, 0 disables."
+						:label="t('pages.settings.indexers.maximumSize')"
+						:hint="t('pages.settings.indexers.maximumSizeHint')"
 						control-id="maximum-size"
 					>
 						<SInput
@@ -125,8 +128,8 @@ async function save() {
 						/>
 					</SField>
 					<SField
-						label="Availability delay (days)"
-						hint="Days a movie must be past its release date before grabbing, 0 disables."
+						:label="t('pages.settings.indexers.availabilityDelay')"
+						:hint="t('pages.settings.indexers.availabilityDelayHint')"
 						control-id="availability-delay"
 					>
 						<SInput
@@ -139,15 +142,15 @@ async function save() {
 				</div>
 			</SSection>
 
-			<SSection title="Hardcoded subtitles">
+			<SSection :title="t('pages.settings.indexers.hardcodedSubtitles')">
 				<SSwitch
 					v-model="draft.allowHardcodedSubs"
-					label="Allow releases reporting hardcoded subtitles"
+					:label="t('pages.settings.indexers.allowHardcodedSubs')"
 				/>
 				<SField
 					v-if="!draft.allowHardcodedSubs"
-					label="Whitelisted release groups"
-					hint="Comma separated release groups allowed to have hardcoded subtitles."
+					:label="t('pages.settings.indexers.whitelistedGroups')"
+					:hint="t('pages.settings.indexers.whitelistedGroupsHint')"
 					control-id="hardcoded-subs-whitelist"
 				>
 					<SInput
@@ -165,15 +168,15 @@ async function save() {
 			/>
 		</template>
 
-		<SSection title="Indexer management">
+		<SSection :title="t('pages.settings.indexers.management')">
 			<p class="management-copy">
-				Add and manage indexers, run searches and view stats from the Indexers area.
+				{{ t('pages.settings.indexers.managementCopy') }}
 			</p>
 			<SButton
 				variant="secondary"
 				@click="navigateTo('/indexers')"
 			>
-				Go to indexers
+				{{ t('pages.settings.indexers.goToIndexers') }}
 			</SButton>
 		</SSection>
 	</div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { navChildren } from '~/navigation'
 import { ApiError, toApiError, useApi } from '~/composables/useApi'
 import { useReferenceStore } from '~/stores/reference'
@@ -9,7 +10,8 @@ type IndexerProxyDto = components['schemas']['IndexerProxyDto']
 type IndexerProxyType = components['schemas']['IndexerProxyType']
 
 definePageMeta({ layout: 'default' })
-useHead({ title: 'Proxies' })
+const { t } = useI18n()
+useHead({ title: t('pages.indexers.proxies.title') })
 
 const api = useApi()
 const reference = useReferenceStore()
@@ -22,7 +24,7 @@ const proxies = ref<IndexerProxyDto[]>([])
 async function loadProxies() {
 	const result = await api.GET('/api/v1/indexer-proxies', { params: { query: { PageSize: 200 } } })
 	if (!result.data) {
-		loadError.value = 'Could not load proxies. Check your connection and try again.'
+		loadError.value = t('pages.indexers.proxies.loadFailed')
 	}
 	proxies.value = result.data?.items ?? []
 }
@@ -37,10 +39,10 @@ async function load() {
 onMounted(load)
 
 const columns = [
-	{ key: 'name', label: 'Name' },
-	{ key: 'type', label: 'Type' },
-	{ key: 'host', label: 'Host' },
-	{ key: 'tags', label: 'Tags' },
+	{ key: 'name', label: t('pages.indexers.proxies.name') },
+	{ key: 'type', label: t('pages.indexers.proxies.type') },
+	{ key: 'host', label: t('pages.indexers.proxies.host') },
+	{ key: 'tags', label: t('pages.indexers.proxies.tags') },
 	{ key: 'actions', label: '', align: 'right' as const },
 ]
 
@@ -117,7 +119,7 @@ async function save() {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: editingId.value === null ? 'Proxy added' : 'Proxy saved', tone: 'ok' })
+		toast({ title: t(editingId.value === null ? 'pages.indexers.proxies.added' : 'pages.indexers.proxies.saved'), tone: 'ok' })
 		dialogOpen.value = false
 		await loadProxies()
 	}
@@ -127,7 +129,7 @@ async function save() {
 			nameError.value = (apiError.fieldErrors.name ?? apiError.fieldErrors.Name)![0] ?? ''
 		}
 		else {
-			toast({ title: 'Could not save proxy', description: apiError.message, tone: 'danger' })
+			toast({ title: t('pages.indexers.proxies.saveFailed'), description: apiError.message, tone: 'danger' })
 		}
 	}
 	finally {
@@ -142,10 +144,10 @@ async function testProxy(proxy: IndexerProxyDto) {
 		if (!result.data) {
 			throw toApiError(result.error, result.response)
 		}
-		toast({ title: result.data.isValid ? 'Connection successful' : 'Connection failed', description: result.data.message ?? undefined, tone: result.data.isValid ? 'ok' : 'danger' })
+		toast({ title: t(result.data.isValid ? 'pages.indexers.proxies.connectionSuccessful' : 'pages.indexers.proxies.connectionFailed'), description: result.data.message ?? undefined, tone: result.data.isValid ? 'ok' : 'danger' })
 	}
 	catch (error) {
-		toast({ title: 'Connection failed', description: toApiError(error).message, tone: 'danger' })
+		toast({ title: t('pages.indexers.proxies.connectionFailed'), description: toApiError(error).message, tone: 'danger' })
 	}
 	finally {
 		testing.value = false
@@ -178,7 +180,7 @@ async function doDelete() {
 		deleting.value = false
 		return
 	}
-	toast({ title: 'Proxy deleted', tone: 'ok' })
+	toast({ title: t('pages.indexers.proxies.deleted'), tone: 'ok' })
 	deleteTarget.value = null
 	deleting.value = false
 	await loadProxies()
@@ -187,18 +189,18 @@ async function doDelete() {
 
 <template>
 	<div>
-		<SPageHeader title="Proxies">
+		<SPageHeader :title="t('pages.indexers.proxies.title')">
 			<template #actions>
 				<SButton
 					variant="primary"
 					@click="openCreate"
 				>
-					Add proxy
+					{{ t('pages.indexers.proxies.addProxy') }}
 				</SButton>
 			</template>
 		</SPageHeader>
 		<SubNav
-			label="Indexers"
+			:label="t('pages.indexers.proxies.indexersNav')"
 			:items="navChildren('indexers')"
 		/>
 
@@ -209,7 +211,7 @@ async function doDelete() {
 		>
 			<template #action>
 				<SButton @click="load">
-					Retry
+					{{ t('pages.indexers.proxies.retry') }}
 				</SButton>
 			</template>
 		</SEmptyState>
@@ -221,19 +223,19 @@ async function doDelete() {
 			:row-key="(row) => row.id"
 		>
 			<template #empty>
-				<SEmptyState message="Add a proxy to route indexer requests through it.">
+				<SEmptyState :message="t('pages.indexers.proxies.emptyState')">
 					<template #action>
 						<SButton
 							variant="primary"
 							@click="openCreate"
 						>
-							Add proxy
+							{{ t('pages.indexers.proxies.addProxy') }}
 						</SButton>
 					</template>
 				</SEmptyState>
 			</template>
 			<template #cell-type="{ row }">
-				{{ indexerProxyTypeLabel(row.type) }}
+				{{ t(indexerProxyTypeLabel(row.type)) }}
 			</template>
 			<template #cell-host="{ row }">
 				{{ row.host }}:{{ row.port }}
@@ -243,19 +245,19 @@ async function doDelete() {
 				<span
 					v-else
 					class="s-cell-muted"
-				>None</span>
+				>{{ t('pages.indexers.proxies.none') }}</span>
 			</template>
 			<template #cell-actions="{ row }">
 				<SDropdownMenu
 					:items="[
-						{ label: 'Edit', icon: 'lucide:pencil', onSelect: () => openEdit(row) },
-						{ label: 'Test', icon: 'lucide:plug-zap', onSelect: () => testProxy(row) },
-						{ label: 'Delete', icon: 'lucide:trash-2', danger: true, onSelect: () => (deleteTarget = row) },
+						{ label: t('pages.indexers.proxies.edit'), icon: 'lucide:pencil', onSelect: () => openEdit(row) },
+						{ label: t('pages.indexers.proxies.test'), icon: 'lucide:plug-zap', onSelect: () => testProxy(row) },
+						{ label: t('pages.indexers.proxies.delete'), icon: 'lucide:trash-2', danger: true, onSelect: () => (deleteTarget = row) },
 					]"
 				>
 					<template #trigger>
 						<SIconButton
-							label="Proxy actions"
+							:label="t('pages.indexers.proxies.proxyActions')"
 							:disabled="testing"
 						>
 							<Icon
@@ -270,10 +272,10 @@ async function doDelete() {
 
 		<SDialog
 			v-model="dialogOpen"
-			:title="editingId === null ? 'Add proxy' : 'Edit proxy'"
+			:title="editingId === null ? t('pages.indexers.proxies.addProxy') : t('pages.indexers.proxies.editProxy')"
 		>
 			<SField
-				label="Name"
+				:label="t('pages.indexers.proxies.name')"
 				:error="nameError"
 				control-id="proxy-name"
 			>
@@ -283,16 +285,16 @@ async function doDelete() {
 					:invalid="!!nameError"
 				/>
 			</SField>
-			<SField label="Type">
+			<SField :label="t('pages.indexers.proxies.type')">
 				<SSelect
 					:model-value="type"
-					:options="indexerProxyTypeOptions"
+					:options="indexerProxyTypeOptions.map(option => ({ ...option, label: t(option.label, option.label) }))"
 					@update:model-value="type = $event as IndexerProxyType"
 				/>
 			</SField>
 			<div class="field-grid">
 				<SField
-					:label="type === 'FLARESOLVERR' ? 'FlareSolverr host' : 'Host'"
+					:label="type === 'FLARESOLVERR' ? t('pages.indexers.proxies.flareSolverrHost') : t('pages.indexers.proxies.host')"
 					control-id="proxy-host"
 				>
 					<SInput
@@ -301,7 +303,7 @@ async function doDelete() {
 					/>
 				</SField>
 				<SField
-					label="Port"
+					:label="t('pages.indexers.proxies.port')"
 					control-id="proxy-port"
 				>
 					<SInput
@@ -315,7 +317,7 @@ async function doDelete() {
 			<div class="field-grid">
 				<SField
 					v-if="showUsername"
-					label="Username"
+					:label="t('pages.indexers.proxies.username')"
 					control-id="proxy-username"
 				>
 					<SInput
@@ -325,7 +327,7 @@ async function doDelete() {
 				</SField>
 				<SField
 					v-if="showPassword"
-					label="Password"
+					:label="t('pages.indexers.proxies.password')"
 					control-id="proxy-password"
 				>
 					<SInput
@@ -335,8 +337,8 @@ async function doDelete() {
 					/>
 				</SField>
 				<SField
-					label="Request timeout (seconds)"
-					:hint="type === 'FLARESOLVERR' ? 'Used for the FlareSolverr challenge solve' : undefined"
+					:label="t('pages.indexers.proxies.requestTimeout')"
+					:hint="type === 'FLARESOLVERR' ? t('utils.indexerLabels.captchaHelp') : undefined"
 					control-id="proxy-timeout"
 				>
 					<SInput
@@ -347,7 +349,7 @@ async function doDelete() {
 					/>
 				</SField>
 			</div>
-			<SField label="Tags">
+			<SField :label="t('pages.indexers.proxies.tags')">
 				<TagPicker v-model:tag-ids="tagIds" />
 			</SField>
 			<template #footer>
@@ -355,24 +357,24 @@ async function doDelete() {
 					variant="secondary"
 					@click="dialogOpen = false"
 				>
-					Cancel
+					{{ t('pages.indexers.proxies.cancel') }}
 				</SButton>
 				<SButton
 					variant="primary"
 					:loading="saving"
 					@click="save"
 				>
-					{{ editingId === null ? 'Add proxy' : 'Save changes' }}
+					{{ t(editingId === null ? 'pages.indexers.proxies.addProxy' : 'pages.indexers.proxies.saveChanges') }}
 				</SButton>
 			</template>
 		</SDialog>
 
 		<SDialog
 			v-model="deleteTargetOpen"
-			title="Delete proxy"
+			:title="t('pages.indexers.proxies.deleteProxy')"
 		>
 			<p v-if="deleteTarget">
-				Delete "{{ deleteTarget.name }}"? This cannot be undone.
+				{{ t('pages.indexers.proxies.deleteConfirm', { name: deleteTarget.name }) }}
 			</p>
 			<p
 				v-if="deleteError"
@@ -387,14 +389,14 @@ async function doDelete() {
 					:disabled="deleting"
 					@click="deleteTarget = null"
 				>
-					Cancel
+					{{ t('pages.indexers.proxies.cancel') }}
 				</SButton>
 				<SButton
 					variant="danger"
 					:loading="deleting"
 					@click="doDelete"
 				>
-					Delete proxy
+					{{ t('pages.indexers.proxies.deleteProxy') }}
 				</SButton>
 			</template>
 		</SDialog>

@@ -5,18 +5,18 @@
 				v-if="!iconOnly"
 				type="button"
 				:class="triggerClass"
-				aria-label="Theme"
+				:aria-label="$t('components.app.ThemeMenu.theme')"
 			>
 				<Icon
 					:name="currentIcon"
 					class="theme-menu-icon"
 					aria-hidden="true"
 				/>
-				<span>Theme</span>
+				<span>{{ $t('components.app.ThemeMenu.theme') }}</span>
 			</button>
 			<SIconButton
 				v-else
-				label="Theme"
+				:label="$t('components.app.ThemeMenu.theme')"
 			>
 				<Icon
 					:name="currentIcon"
@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { MenuEntryOrSeparator } from '~/types/ui'
 
 withDefaults(defineProps<{
@@ -41,6 +42,7 @@ withDefaults(defineProps<{
 })
 
 const colorMode = useColorMode()
+const { t } = useI18n()
 
 const currentIcon = computed(() => {
 	if (colorMode.preference === 'light') {
@@ -53,9 +55,9 @@ const currentIcon = computed(() => {
 })
 
 const items = computed<MenuEntryOrSeparator[]>(() => [
-	{ label: 'Light', icon: 'lucide:sun', disabled: colorMode.preference === 'light', onSelect: () => setPreference('light') },
-	{ label: 'Dark', icon: 'lucide:moon', disabled: colorMode.preference === 'dark', onSelect: () => setPreference('dark') },
-	{ label: 'System', icon: 'lucide:monitor', disabled: colorMode.preference === 'system', onSelect: () => setPreference('system') },
+	{ label: t('components.app.ThemeMenu.light'), icon: 'lucide:sun', disabled: colorMode.preference === 'light', onSelect: () => setPreference('light') },
+	{ label: t('components.app.ThemeMenu.dark'), icon: 'lucide:moon', disabled: colorMode.preference === 'dark', onSelect: () => setPreference('dark') },
+	{ label: t('components.app.ThemeMenu.system'), icon: 'lucide:monitor', disabled: colorMode.preference === 'system', onSelect: () => setPreference('system') },
 ])
 
 function setPreference(value: 'light' | 'dark' | 'system') {

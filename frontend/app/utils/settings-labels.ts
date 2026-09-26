@@ -20,12 +20,16 @@ export function humanizeEnumValue(name: string): string {
 		.join(' ')
 }
 
-function toOptions(map: Record<string, string>): LabelOption[] {
-	return Object.entries(map).map(([value, label]) => ({ value, label }))
+function enumKey(name: string): string {
+	return name.toLowerCase().replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
 }
 
-function makeLookup(map: Record<string, string>) {
-	return (value: string | null | undefined) => (value ? (map[value] ?? humanizeEnumValue(value)) : '')
+function toOptions(map: Record<string, string>, group: string): LabelOption[] {
+	return Object.keys(map).map(value => ({ value, label: `utils.settingsLabels.${group}.${enumKey(value)}` }))
+}
+
+function makeLookup(map: Record<string, string>, group: string) {
+	return (value: string | null | undefined) => (value ? (map[value] ? `utils.settingsLabels.${group}.${enumKey(value)}` : humanizeEnumValue(value)) : '')
 }
 
 /** camelCase or PascalCase property name to a sentence case label, with a few domain acronyms preserved. */
@@ -111,7 +115,7 @@ const QUALITY_SOURCE: Record<string, string> = {
 /** Resolution member name (e.g. R1080_P) to display string (e.g. 1080p). */
 export function qualityResolutionLabel(value: string | null | undefined): string {
 	if (!value) {
-		return 'Unknown'
+		return 'utils.settingsLabels.qualityResolution.unknown'
 	}
 	const match = /^R(\d+)_P$/.exec(value)
 	return match ? `${match[1]}p` : humanizeEnumValue(value)
@@ -277,55 +281,55 @@ const LANGUAGE_NAMES = [
 ] as const
 const LANGUAGE: Record<string, string> = Object.fromEntries(LANGUAGE_NAMES.map(name => [name, humanizeEnumValue(name)]))
 
-export const authMethodOptions = toOptions(AUTH_METHOD)
-export const authenticationRequiredOptions = toOptions(AUTHENTICATION_REQUIRED)
-export const certificateValidationOptions = toOptions(CERTIFICATE_VALIDATION)
-export const themeOptions = toOptions(THEME)
-export const colonReplacementOptions = toOptions(COLON_REPLACEMENT)
-export const multiEpisodeStyleOptions = toOptions(MULTI_EPISODE_STYLE)
-export const downloadPropersAndRepacksOptions = toOptions(DOWNLOAD_PROPERS_AND_REPACKS)
-export const cleanLibraryLevelOptions = toOptions(CLEAN_LIBRARY_LEVEL)
-export const mediaKindOptions = toOptions(MEDIA_KIND)
-export const protocolOptions = toOptions(PROTOCOL)
-export const releaseFilterModeOptions = toOptions(RELEASE_FILTER_MODE)
-export const releaseFilterFieldOptions = toOptions(RELEASE_FILTER_FIELD)
-export const qualitySourceOptions = toOptions(QUALITY_SOURCE)
-export const customFormatSpecTypeOptions = toOptions(CUSTOM_FORMAT_SPEC_TYPE)
-export const downloadClientTypeOptions = toOptions(DOWNLOAD_CLIENT_TYPE)
-export const importListTypeOptions = toOptions(IMPORT_LIST_TYPE)
-export const notificationTypeOptions = toOptions(NOTIFICATION_TYPE)
-export const streamingProviderOptions = toOptions(STREAMING_PROVIDER)
-export const releaseFlagOptions = toOptions(RELEASE_FLAG)
-export const indexerFlagOptions = toOptions(INDEXER_FLAG)
-export const releaseTypeOptions = toOptions(RELEASE_TYPE)
-export const qualityModifierOptions = toOptions(QUALITY_MODIFIER)
-export const languageOptions = toOptions(LANGUAGE)
-export const fileDateOptions = toOptions(FILE_DATE)
+export const authMethodOptions = toOptions(AUTH_METHOD, 'authMethod')
+export const authenticationRequiredOptions = toOptions(AUTHENTICATION_REQUIRED, 'authenticationRequired')
+export const certificateValidationOptions = toOptions(CERTIFICATE_VALIDATION, 'certificateValidation')
+export const themeOptions = toOptions(THEME, 'theme')
+export const colonReplacementOptions = toOptions(COLON_REPLACEMENT, 'colonReplacement')
+export const multiEpisodeStyleOptions = toOptions(MULTI_EPISODE_STYLE, 'multiEpisodeStyle')
+export const downloadPropersAndRepacksOptions = toOptions(DOWNLOAD_PROPERS_AND_REPACKS, 'downloadPropersAndRepacks')
+export const cleanLibraryLevelOptions = toOptions(CLEAN_LIBRARY_LEVEL, 'cleanLibraryLevel')
+export const mediaKindOptions = toOptions(MEDIA_KIND, 'mediaKind')
+export const protocolOptions = toOptions(PROTOCOL, 'protocol')
+export const releaseFilterModeOptions = toOptions(RELEASE_FILTER_MODE, 'releaseFilterMode')
+export const releaseFilterFieldOptions = toOptions(RELEASE_FILTER_FIELD, 'releaseFilterField')
+export const qualitySourceOptions = toOptions(QUALITY_SOURCE, 'qualitySource')
+export const customFormatSpecTypeOptions = toOptions(CUSTOM_FORMAT_SPEC_TYPE, 'customFormatSpecType')
+export const downloadClientTypeOptions = toOptions(DOWNLOAD_CLIENT_TYPE, 'downloadClientType')
+export const importListTypeOptions = toOptions(IMPORT_LIST_TYPE, 'importListType')
+export const notificationTypeOptions = toOptions(NOTIFICATION_TYPE, 'notificationType')
+export const streamingProviderOptions = toOptions(STREAMING_PROVIDER, 'streamingProvider')
+export const releaseFlagOptions = toOptions(RELEASE_FLAG, 'releaseFlag')
+export const indexerFlagOptions = toOptions(INDEXER_FLAG, 'indexerFlag')
+export const releaseTypeOptions = toOptions(RELEASE_TYPE, 'releaseType')
+export const qualityModifierOptions = toOptions(QUALITY_MODIFIER, 'qualityModifier')
+export const languageOptions = toOptions(LANGUAGE, 'language')
+export const fileDateOptions = toOptions(FILE_DATE, 'fileDate')
 
-export const authMethodLabel = makeLookup(AUTH_METHOD)
-export const authenticationRequiredLabel = makeLookup(AUTHENTICATION_REQUIRED)
-export const certificateValidationLabel = makeLookup(CERTIFICATE_VALIDATION)
-export const themeLabel = makeLookup(THEME)
-export const colonReplacementLabel = makeLookup(COLON_REPLACEMENT)
-export const multiEpisodeStyleLabel = makeLookup(MULTI_EPISODE_STYLE)
-export const downloadPropersAndRepacksLabel = makeLookup(DOWNLOAD_PROPERS_AND_REPACKS)
-export const cleanLibraryLevelLabel = makeLookup(CLEAN_LIBRARY_LEVEL)
-export const mediaKindLabel = makeLookup(MEDIA_KIND)
-export const protocolLabel = makeLookup(PROTOCOL)
-export const releaseFilterModeLabel = makeLookup(RELEASE_FILTER_MODE)
-export const fileDateLabel = makeLookup(FILE_DATE)
-export const releaseFilterFieldLabel = makeLookup(RELEASE_FILTER_FIELD)
-export const qualitySourceLabel = makeLookup(QUALITY_SOURCE)
-export const customFormatSpecTypeLabel = makeLookup(CUSTOM_FORMAT_SPEC_TYPE)
-export const downloadClientTypeLabel = makeLookup(DOWNLOAD_CLIENT_TYPE)
-export const importListTypeLabel = makeLookup(IMPORT_LIST_TYPE)
-export const notificationTypeLabel = makeLookup(NOTIFICATION_TYPE)
-export const streamingProviderLabel = makeLookup(STREAMING_PROVIDER)
-export const releaseFlagLabel = makeLookup(RELEASE_FLAG)
-export const indexerFlagLabel = makeLookup(INDEXER_FLAG)
-export const releaseTypeLabel = makeLookup(RELEASE_TYPE)
-export const qualityModifierLabel = makeLookup(QUALITY_MODIFIER)
-export const languageLabel = makeLookup(LANGUAGE)
+export const authMethodLabel = makeLookup(AUTH_METHOD, 'authMethod')
+export const authenticationRequiredLabel = makeLookup(AUTHENTICATION_REQUIRED, 'authenticationRequired')
+export const certificateValidationLabel = makeLookup(CERTIFICATE_VALIDATION, 'certificateValidation')
+export const themeLabel = makeLookup(THEME, 'theme')
+export const colonReplacementLabel = makeLookup(COLON_REPLACEMENT, 'colonReplacement')
+export const multiEpisodeStyleLabel = makeLookup(MULTI_EPISODE_STYLE, 'multiEpisodeStyle')
+export const downloadPropersAndRepacksLabel = makeLookup(DOWNLOAD_PROPERS_AND_REPACKS, 'downloadPropersAndRepacks')
+export const cleanLibraryLevelLabel = makeLookup(CLEAN_LIBRARY_LEVEL, 'cleanLibraryLevel')
+export const mediaKindLabel = makeLookup(MEDIA_KIND, 'mediaKind')
+export const protocolLabel = makeLookup(PROTOCOL, 'protocol')
+export const releaseFilterModeLabel = makeLookup(RELEASE_FILTER_MODE, 'releaseFilterMode')
+export const fileDateLabel = makeLookup(FILE_DATE, 'fileDate')
+export const releaseFilterFieldLabel = makeLookup(RELEASE_FILTER_FIELD, 'releaseFilterField')
+export const qualitySourceLabel = makeLookup(QUALITY_SOURCE, 'qualitySource')
+export const customFormatSpecTypeLabel = makeLookup(CUSTOM_FORMAT_SPEC_TYPE, 'customFormatSpecType')
+export const downloadClientTypeLabel = makeLookup(DOWNLOAD_CLIENT_TYPE, 'downloadClientType')
+export const importListTypeLabel = makeLookup(IMPORT_LIST_TYPE, 'importListType')
+export const notificationTypeLabel = makeLookup(NOTIFICATION_TYPE, 'notificationType')
+export const streamingProviderLabel = makeLookup(STREAMING_PROVIDER, 'streamingProvider')
+export const releaseFlagLabel = makeLookup(RELEASE_FLAG, 'releaseFlag')
+export const indexerFlagLabel = makeLookup(INDEXER_FLAG, 'indexerFlag')
+export const releaseTypeLabel = makeLookup(RELEASE_TYPE, 'releaseType')
+export const qualityModifierLabel = makeLookup(QUALITY_MODIFIER, 'qualityModifier')
+export const languageLabel = makeLookup(LANGUAGE, 'language')
 
 /** Icon for a notification/provider type, used by ProviderCard grids. Falls back to a generic bell. */
 export function notificationTypeIcon(type: string): string {

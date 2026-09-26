@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 /**
  * Manual import: scan a folder (or a queue item's output, via ?downloadId=)
  * for candidate media files, map each to a series/movie, episodes, version
@@ -31,7 +32,8 @@ interface RowEdit {
 	releaseGroup: string
 }
 
-useHead({ title: 'Manual import' })
+const { t } = useI18n()
+useHead({ title: t('pages.activity.import.title') })
 
 const api = useApi()
 const { toast } = useToast()
@@ -61,12 +63,12 @@ const importing = ref(false)
 const scanned = ref(false)
 
 const importModeOptions = [
-	{ value: 'move', label: 'Move' },
-	{ value: 'copy', label: 'Copy' },
+	{ value: 'move', label: t('pages.activity.import.move') },
+	{ value: 'copy', label: t('pages.activity.import.copy') },
 ]
 
 const qualityOptions = computed(() => [
-	{ value: '', label: 'Keep parsed quality' },
+	{ value: '', label: t('pages.activity.import.keepParsedQuality') },
 	...qualityDefinitions.value.map(definition => ({ value: `${definition.source ?? ''}|${definition.resolution ?? ''}`, label: definition.title })),
 ])
 
@@ -122,7 +124,7 @@ function initRow(candidate: ManualImportCandidateDto): RowEdit {
 
 async function scan() {
 	if (!folder.value.trim()) {
-		toast({ title: 'Choose a folder to scan', tone: 'danger' })
+		toast({ title: t('pages.activity.import.chooseFolder'), tone: 'danger' })
 		return
 	}
 	scanning.value = true
@@ -235,13 +237,14 @@ function buildQuality(key: string): QualityModel | null {
 
 const columns = [
 	{ key: 'select', label: '' },
-	{ key: 'file', label: 'File' },
-	{ key: 'match', label: 'Match' },
-	{ key: 'episodes', label: 'Episodes' },
-	{ key: 'version', label: 'Version' },
-	{ key: 'quality', label: 'Quality' },
-	{ key: 'languages', label: 'Languages' },
-	{ key: 'releaseGroup', label: 'Release group' },
+	{ key: 'file', label: t('pages.activity.import.file') },
+	{ key: 'match', label: t('pages.activity.import.match') },
+	{ key: 'episodes', label: t('pages.activity.import.episodes') },
+	{ key: 'version', label: t('pages.activity.import.version') },
+	{ key: 'quality', label: t('pages.activity.import.quality') },
+	{ key: 'languages', label: t('pages.activity.import.languages') },
+	{ key: 'releaseGroup', label: t('pages.activity.import.releaseGroup') },
+
 ]
 
 async function runImport() {
@@ -250,12 +253,12 @@ async function runImport() {
 		.filter((row): row is { path: string, candidate: ManualImportCandidateDto, edit: RowEdit } => row.candidate != null && row.edit != null)
 
 	if (rows.length === 0) {
-		toast({ title: 'Select at least one file to import', tone: 'danger' })
+		toast({ title: t('pages.activity.import.selectAtLeastOneFile'), tone: 'danger' })
 		return
 	}
 	const invalid = rows.filter(({ edit }) => (edit.seriesId == null && edit.movieId == null) || edit.mediaVersionId == null)
 	if (invalid.length > 0) {
-		toast({ title: `${invalid.length} selected file(s) need a match and a version before importing`, tone: 'danger' })
+		toast({ title: t('pages.activity.import.filesNeedMatchAndVersion', { count: invalid.length }), tone: 'danger' })
 		return
 	}
 
@@ -278,7 +281,7 @@ async function runImport() {
 			},
 		})
 		if (!result.data) {
-			toast({ title: 'Could not import selected files', description: toApiError(result.error, result.response).message, tone: 'danger' })
+			toast({ title: t('pages.activity.import.importFailed'), description: toApiError(result.error, result.response).message, tone: 'danger' })
 			return
 		}
 		for (const file of result.data.files) {
@@ -293,8 +296,8 @@ async function runImport() {
 		selected.value = selected.value.filter(path => !importedPaths.has(path))
 		const failedCount = rows.length - importedPaths.size
 		toast({
-			title: importedPaths.size > 0 ? `Imported ${importedPaths.size} file(s)` : 'No files were imported',
-			description: failedCount > 0 ? `${failedCount} file(s) failed. See details below.` : undefined,
+			title: importedPaths.size > 0 ? t('pages.activity.import.importedFiles', { count: importedPaths.size }) : t('pages.activity.import.noFilesImported'),
+			description: failedCount > 0 ? t('pages.activity.import.filesFailed', { count: failedCount }) : undefined,
 			tone: importedPaths.size > 0 ? 'ok' : 'danger',
 		})
 	}
@@ -306,7 +309,7 @@ async function runImport() {
 
 <template>
 	<div>
-		<SPageHeader title="Manual import">
+		<SPageHeader :title="t('pages.activity.import.title')">
 			<template #actions>
 				<SSelect
 					v-model="importMode"
@@ -318,34 +321,34 @@ async function runImport() {
 					:disabled="selected.length === 0"
 					@click="runImport"
 				>
-					Import selected ({{ selected.length }})
+					{{ t('pages.activity.import.importSelected', { count: selected.length }) }}
 				</SButton>
 			</template>
 		</SPageHeader>
 
 		<SubNav
-			label="Activity"
+			:label="t('pages.activity.import.activityNav')"
 			:items="navChildren('activity')"
 		/>
 
 		<SSection>
 			<div class="import-scan-bar">
 				<SField
-					label="Folder"
+					:label="t('pages.activity.import.folder')"
 					control-id="import-folder"
 					class="import-scan-field"
 				>
 					<PathPicker
 						v-model="folder"
 						control-id="import-folder"
-						placeholder="/downloads/tv"
+						:placeholder="t('pages.activity.import.folderPlaceholder')"
 					/>
 				</SField>
 				<SButton
 					:loading="scanning"
 					@click="scan"
 				>
-					Scan folder
+					{{ t('pages.activity.import.scanFolder') }}
 				</SButton>
 			</div>
 			<p
@@ -360,13 +363,13 @@ async function runImport() {
 		<SSpinner v-if="scanning && !scanned" />
 		<SEmptyState
 			v-else-if="scanned && candidates.length === 0"
-			message="No candidate files found in that folder."
+			:message="t('pages.activity.import.noCandidateFiles')"
 			icon="lucide:folder-search"
 		/>
 		<template v-else-if="candidates.length > 0">
 			<SCheckbox
 				:model-value="allSelected"
-				label="Select all"
+				:label="t('pages.activity.import.selectAll')"
 				class="import-select-all"
 				@update:model-value="toggleAll"
 			/>
@@ -378,7 +381,7 @@ async function runImport() {
 				<template #cell-select="{ row }">
 					<SCheckbox
 						:model-value="selected.includes(row.path)"
-						:aria-label="`Select ${fileName(row.path)}`"
+						:aria-label="t('pages.activity.import.selectFile', { file: fileName(row.path) })"
 						@update:model-value="value => toggleRow(row.path, value)"
 					/>
 				</template>
@@ -389,24 +392,24 @@ async function runImport() {
 						<span
 							v-if="row.rejection"
 							class="import-file-rejection"
-						>{{ humanizeEnumValue(row.rejection) }}</span>
+						>{{ t(humanizeEnumValue(row.rejection)) }}</span>
 						<span
 							v-if="importResults[row.path] && !importResults[row.path]!.imported"
 							class="import-file-rejection"
-						>{{ importResults[row.path]!.message ?? 'Import failed' }}</span>
+						>{{ importResults[row.path]!.message ?? t('pages.activity.import.importFailedFallback') }}</span>
 					</div>
 				</template>
 				<template #cell-match="{ row }">
 					<div class="import-match-cell">
 						<LibraryMediaPicker
 							:options="seriesOptions"
-							placeholder="Pick a series"
+							:placeholder="t('pages.activity.import.pickSeries')"
 							:model-value="edits[row.path]?.seriesId ?? null"
 							@update:model-value="value => onSeriesPick(row.path, value)"
 						/>
 						<LibraryMediaPicker
 							:options="movieOptions"
-							placeholder="Pick a movie"
+							:placeholder="t('pages.activity.import.pickMovie')"
 							:model-value="edits[row.path]?.movieId ?? null"
 							@update:model-value="value => onMoviePick(row.path, value)"
 						/>
@@ -424,7 +427,7 @@ async function runImport() {
 						v-if="edits[row.path]"
 						:model-value="edits[row.path]!.mediaVersionId != null ? String(edits[row.path]!.mediaVersionId) : undefined"
 						:options="versionOptionsFor(edits[row.path]!)"
-						placeholder="Choose a version"
+						:placeholder="t('pages.activity.import.chooseVersion')"
 						@update:model-value="value => { edits[row.path]!.mediaVersionId = Number(value) }"
 					/>
 				</template>
@@ -434,7 +437,7 @@ async function runImport() {
 						v-model="edits[row.path]!.qualityKey"
 						:options="qualityOptions"
 					/>
-					<span class="import-parsed-quality">{{ qualityLabel(row.quality) }} parsed</span>
+					<span class="import-parsed-quality">{{ t(qualityLabel(row.quality)) }} {{ t('pages.activity.import.parsed') }}</span>
 				</template>
 				<template #cell-languages="{ row }">
 					<LanguagePicker
@@ -446,7 +449,7 @@ async function runImport() {
 					<SInput
 						v-if="edits[row.path]"
 						v-model="edits[row.path]!.releaseGroup"
-						placeholder="Release group"
+						:placeholder="t('pages.activity.import.releaseGroup')"
 					/>
 				</template>
 			</STable>
