@@ -37,6 +37,7 @@ public sealed record BackupEntry(string Name, long Size, DateTime CreatedAt, Bac
 /// </summary>
 public sealed partial class BackupService(
 	IConfiguration configuration,
+	DataDirectory dataDirectory,
 	TimeProvider timeProvider,
 	ILogger<BackupService> logger)
 {
@@ -62,7 +63,6 @@ public sealed partial class BackupService(
 			{
 				using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
 				await AddDatabaseAsync(archive, cancellationToken);
-				await AddFileIfExistsAsync(archive, "appsettings.json", AppSettingsPath(), cancellationToken);
 				await AddDefinitionsAsync(archive, cancellationToken);
 			}
 
@@ -191,19 +191,10 @@ public sealed partial class BackupService(
 	}
 
 	/// <summary>
-	///     The directory holding the application data, the Sqlite database directory or data under the content root.
+	///     The persisted data directory, used for both providers so backups and disk-space
+	///     reporting land on the mounted volume rather than the container overlay.
 	/// </summary>
-	public string AppData()
-	{
-		if (SubmarineDatabase.Provider(configuration) == SubmarineDatabase.Postgres)
-		{
-			return Path.Combine(ContentRoot(), "data");
-		}
-
-		var builder = new SqliteConnectionStringBuilder(SubmarineDatabase.SqliteConnectionString(configuration));
-		var dataSource = Path.GetFullPath(builder.DataSource, ContentRoot());
-		return Path.GetDirectoryName(dataSource) ?? ContentRoot();
-	}
+	public string AppData() => dataDirectory.Path;
 
 	private async Task AddDatabaseAsync(ZipArchive archive, CancellationToken cancellationToken)
 	{
@@ -300,7 +291,7 @@ public sealed partial class BackupService(
 		ValidateSqliteFile(stagedDb);
 
 		var builder = new SqliteConnectionStringBuilder(SubmarineDatabase.SqliteConnectionString(configuration));
-		var liveDb = Path.GetFullPath(builder.DataSource, ContentRoot());
+		var liveDb = Path.Combine(dataDirectory.Path, Path.GetFileName(builder.DataSource));
 		var pendingPath = liveDb + ".restore";
 		Directory.CreateDirectory(Path.GetDirectoryName(liveDb)!);
 
@@ -462,7 +453,7 @@ public sealed partial class BackupService(
 
 	private async Task AddDefinitionsAsync(ZipArchive archive, CancellationToken cancellationToken)
 	{
-		var definitions = Path.Combine(AppContext.BaseDirectory, "definitions");
+		var definitions = Path.Combine(dataDirectory.Path, "definitions");
 		if (!Directory.Exists(definitions))
 		{
 			return;
@@ -508,13 +499,6 @@ public sealed partial class BackupService(
 			? Path.Combine(AppData(), "backups")
 			: Path.GetFullPath(configured, AppData());
 	}
-
-	private string AppSettingsPath()
-		=> Path.Combine(ContentRoot(), "appsettings.json");
-
-	private string ContentRoot()
-		=> configuration.GetValue<string>("Submarine:ContentRoot")
-			?? Environment.CurrentDirectory;
 
 	private static string? FindOnPath(string fileName)
 		=> Environment.GetEnvironmentVariable("PATH")?

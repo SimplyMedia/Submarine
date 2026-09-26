@@ -39,14 +39,14 @@ public sealed class SystemExtrasModule : IEndpointModule
 
 	private static async Task<Ok<DiskSpaceReportDto>> DiskSpaceAsync(
 		SubmarineDbContext db,
-		IWebHostEnvironment environment,
+		DataDirectory dataDirectory,
 		CancellationToken cancellationToken)
 	{
 		var folders = await db.RootFolders.AsNoTracking().ToListAsync(cancellationToken);
 		var appData = new DiskSpaceDto(
-			environment.ContentRootPath,
-			DiskSpace.Query(environment.ContentRootPath)?.FreeBytes,
-			DiskSpace.Query(environment.ContentRootPath)?.TotalBytes);
+			dataDirectory.Path,
+			DiskSpace.Query(dataDirectory.Path)?.FreeBytes,
+			DiskSpace.Query(dataDirectory.Path)?.TotalBytes);
 		var rootFolders = folders
 			.Select(folder => DiskSpace.Query(folder.Path) is { } space
 				? new DiskSpaceDto(folder.Path, space.FreeBytes, space.TotalBytes)

@@ -23,7 +23,7 @@ public class IndexerDefinitionLoaderTests : IDisposable
 		_appData = Path.Combine(root, "appdata");
 		Directory.CreateDirectory(_bundled);
 		Directory.CreateDirectory(_appData);
-		_loader = new IndexerDefinitionLoader(new NullLogger<IndexerDefinitionLoader>(), _bundled, _appData);
+		_loader = new IndexerDefinitionLoader(new NullLogger<IndexerDefinitionLoader>(), _appData, _bundled);
 	}
 
 	public void Dispose()
@@ -83,7 +83,7 @@ public class IndexerDefinitionLoaderTests : IDisposable
 
 	[Fact]
 	public void LoadAll_ShouldReturnEmpty_WhenFoldersMissing()
-		=> new IndexerDefinitionLoader(new NullLogger<IndexerDefinitionLoader>(), "/does/not/exist", "/also/missing")
+		=> new IndexerDefinitionLoader(new NullLogger<IndexerDefinitionLoader>(), "/also/missing", "/does/not/exist")
 			.LoadAll().ShouldBeEmpty();
 
 	[Fact]

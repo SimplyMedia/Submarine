@@ -11,12 +11,15 @@ namespace Submarine.Infrastructure.Indexers.Cardigann;
 ///     Loads bundled and user supplied Cardigann definitions from the definitions folders
 /// </summary>
 /// <param name="logger">The logger</param>
+/// <param name="appDataPath">
+///     The user supplied definitions folder, normally &lt;DataDirectory&gt;/definitions so synced
+///     definitions live under the persisted data volume instead of the read-only application directory
+/// </param>
 /// <param name="bundledPath">Overrides the bundled definitions folder, for tests</param>
-/// <param name="appDataPath">Overrides the app data definitions folder, for tests</param>
 public sealed class IndexerDefinitionLoader(
 	ILogger<IndexerDefinitionLoader> logger,
-	string? bundledPath = null,
-	string? appDataPath = null)
+	string appDataPath,
+	string? bundledPath = null)
 {
 	/// <summary>
 	///     The bundled definitions folder next to the application
@@ -26,14 +29,7 @@ public sealed class IndexerDefinitionLoader(
 	/// <summary>
 	///     The user supplied definitions folder inside the app data directory
 	/// </summary>
-	public string AppDataPath { get; } = appDataPath ?? ResolveAppDataPath();
-
-	private static string ResolveAppDataPath()
-	{
-		var baseData = Environment.GetEnvironmentVariable("SUBMARINE__DATA")
-			?? Path.Combine(Environment.CurrentDirectory, "data");
-		return Path.Combine(baseData, "definitions");
-	}
+	public string AppDataPath { get; } = appDataPath;
 
 	/// <summary>
 	///     Loads all definitions, app data definitions win over bundled ones on id conflicts

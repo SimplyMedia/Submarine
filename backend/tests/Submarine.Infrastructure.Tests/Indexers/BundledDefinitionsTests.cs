@@ -98,8 +98,8 @@ public class BundledDefinitionsTests
 
 		var loader = new IndexerDefinitionLoader(
 			new NullLogger<IndexerDefinitionLoader>(),
-			FindDefinitionsFolder(),
-			Path.Combine(Path.GetTempPath(), "submarine-factory-test-" + Guid.NewGuid().ToString("N")));
+			Path.Combine(Path.GetTempPath(), "submarine-factory-test-" + Guid.NewGuid().ToString("N")),
+			FindDefinitionsFolder());
 		var factory = new IndexerFactory(
 			new IndexerHttpClientFactory(provider.GetRequiredService<IHttpClientFactory>(), new NullLogger<IndexerHttpClientFactory>()),
 			loader,

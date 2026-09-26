@@ -23,7 +23,9 @@ public sealed class InfrastructureServiceModule : IServiceModule
 
 		services.AddSingleton<IndexerHttpClientFactory>();
 		services.AddSingleton<IndexerDefinitionLoader>(provider =>
-			new IndexerDefinitionLoader(provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<IndexerDefinitionLoader>>()));
+			new IndexerDefinitionLoader(
+				provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<IndexerDefinitionLoader>>(),
+				System.IO.Path.Combine(provider.GetRequiredService<Persistence.DataDirectory>().Path, "definitions")));
 		services.AddHttpClient<IndexerDefinitionSyncClient>(client =>
 		{
 			client.Timeout = TimeSpan.FromSeconds(60);

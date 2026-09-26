@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 using Submarine.Infrastructure.Backups;
+using Submarine.Infrastructure.Persistence;
 using Xunit;
 
 namespace Submarine.Infrastructure.Tests.Backups;
@@ -49,7 +50,7 @@ public sealed class BackupServiceTests : IDisposable
 				["Backup:Retention"] = retention.ToString()
 			})
 			.Build();
-		return new BackupService(configuration, _clock, NullLogger<BackupService>.Instance);
+		return new BackupService(configuration, new DataDirectory(Path.GetDirectoryName(_dbPath)!), _clock, NullLogger<BackupService>.Instance);
 	}
 
 	private static void CreateDatabase(string path, Action<SqliteConnection> seed)
@@ -95,6 +96,32 @@ public sealed class BackupServiceTests : IDisposable
 		var extracted = Path.Combine(_root, "extracted.db");
 		dbEntry.ExtractToFile(extracted);
 		CountRows(extracted).ShouldBe(1);
+	}
+
+	[Fact]
+	public void AppData_ShouldReturnDataDirectory_RegardlessOfProvider()
+	{
+		var configuration = new ConfigurationBuilder()
+			.AddInMemoryCollection(new Dictionary<string, string?> { ["Database:Provider"] = "Postgres" })
+			.Build();
+		var service = new BackupService(configuration, new DataDirectory("/config"), _clock, NullLogger<BackupService>.Instance);
+
+		service.AppData().ShouldBe("/config");
+	}
+
+	[Fact]
+	public async Task Create_ShouldIncludeUserDefinitions_ButNotAppSettingsOrBundled()
+	{
+		var definitionsDir = Path.Combine(_root, "data", "definitions");
+		Directory.CreateDirectory(definitionsDir);
+		await File.WriteAllTextAsync(Path.Combine(definitionsDir, "custom.yml"), "id: custom", TestContext.Current.CancellationToken);
+		var service = CreateService();
+
+		var entry = await service.CreateAsync(BackupKind.MANUAL, TestContext.Current.CancellationToken);
+
+		using var archive = ZipFile.OpenRead(Path.Combine(_root, "backups", entry.Name));
+		archive.GetEntry("definitions/custom.yml").ShouldNotBeNull();
+		archive.GetEntry("appsettings.json").ShouldBeNull();
 	}
 
 	[Fact]
