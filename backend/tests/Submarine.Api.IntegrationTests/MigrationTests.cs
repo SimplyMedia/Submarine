@@ -4,6 +4,7 @@ using Submarine.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Submarine.Infrastructure.Persistence;
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.Data.Sqlite;
 using Shouldly;
 using Testcontainers.PostgreSql;
@@ -93,6 +94,41 @@ public sealed class PostgresMigrationTests
 			// Ready implies both contexts migrated successfully, otherwise startup fails.
 			(await client.GetAsync("/_status/ready")).StatusCode.ShouldBe(HttpStatusCode.OK);
 			(await client.GetAsync("/_status/healthz")).StatusCode.ShouldBe(HttpStatusCode.OK);
+		}
+		finally
+		{
+			await container.DisposeAsync();
+		}
+	}
+
+	[Fact]
+	public async Task Setup_ShouldBeAtomic_OnPostgres_WhenRequestsRaceForTheFirstUser()
+	{
+		if (!DockerAvailable())
+		{
+			Assert.Skip("Docker is not available, skipping Postgres setup race test");
+		}
+
+		var container = new PostgreSqlBuilder("postgres:17-alpine")
+			.WithDatabase("submarine")
+			.WithUsername("submarine")
+			.WithPassword("submarine")
+			.Build();
+		await container.StartAsync();
+		try
+		{
+			await PostgresReadiness.WaitAsync(container.GetConnectionString());
+			await using var factory = new SubmarineApiFactory
+			{
+				PostgresConnectionString = container.GetConnectionString()
+			};
+
+			// Serialization failures (40001) on the losing transactions must map to 409, not 500.
+			var responses = await Task.WhenAll(Enumerable.Range(0, 6).Select(i => factory.CreateClient()
+				.PostAsJsonAsync("/api/v1/setup", new { username = $"admin{i}", password = "correct-horse" })));
+
+			responses.Select(r => r.StatusCode).Order().ShouldBe([HttpStatusCode.Created, .. Enumerable.Repeat(HttpStatusCode.Conflict, 5)]);
+			(await factory.WithDbAsync(db => db.Users.CountAsync())).ShouldBe(1);
 		}
 		finally
 		{
