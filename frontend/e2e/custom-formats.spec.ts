@@ -14,9 +14,9 @@ test('custom formats: create every spec type, export and re-import TRaSH JSON', 
 	}
 
 	await page.goto('/settings/custom-formats')
-	await page.getByRole('button', { name: 'Add custom format' }).click()
+	await page.getByRole('button', { name: 'Add custom format' }).first().click()
 	const dialog = page.getByRole('dialog', { name: 'Add custom format' })
-	await dialog.getByLabel('Name').fill(name)
+	await dialog.getByLabel('Name', { exact: true }).fill(name)
 	const specs = [
 		{ type: 'RELEASE_TITLE', label: 'Release title', value: 'E2E release title' },
 		{ type: 'RELEASE_GROUP', label: 'Release group', value: 'E2E group' },
@@ -38,8 +38,10 @@ test('custom formats: create every spec type, export and re-import TRaSH JSON', 
 		await dialog.getByRole('button', { name: 'Add specification' }).click()
 		const row = dialog.locator('.spec-row').nth(index)
 		await row.getByPlaceholder('Specification name').fill(spec.type)
+		await row.locator('button.s-select-trigger').nth(0).scrollIntoViewIfNeeded()
 		await row.locator('button.s-select-trigger').nth(0).click()
-		await page.getByRole('option', { name: spec.label, exact: true }).click()
+		await page.keyboard.type(spec.label, { delay: 50 })
+		await page.keyboard.press('Enter')
 		if (spec.range) {
 			await row.getByPlaceholder('Min').fill(spec.type === 'SIZE' ? '1' : '2010')
 			await row.getByPlaceholder('Max').fill(spec.type === 'SIZE' ? '20' : '2025')
@@ -47,9 +49,12 @@ test('custom formats: create every spec type, export and re-import TRaSH JSON', 
 		else {
 			const valueSelect = row.locator('button.s-select-trigger').nth(1)
 			if (await valueSelect.count()) {
+				await valueSelect.scrollIntoViewIfNeeded()
 				await valueSelect.click()
-				const value = spec.value ? page.getByRole('option', { name: spec.value, exact: true }) : page.getByRole('option').first()
-				await value.click()
+				if (spec.value) {
+					await page.keyboard.type(spec.value, { delay: 50 })
+				}
+				await page.keyboard.press('Enter')
 			}
 			else if (spec.type !== 'HARDCODED_SUBS') {
 				await row.getByPlaceholder('Text or /regex/').fill(spec.value!)
@@ -57,6 +62,7 @@ test('custom formats: create every spec type, export and re-import TRaSH JSON', 
 		}
 	}
 
+	await dialog.getByRole('button', { name: 'Save changes' }).click()
 	const formatRow = page.getByRole('row').filter({ hasText: name })
 	await expect(formatRow).toBeVisible()
 	const apiFormats = (await (await page.request.get('/api/v1/custom-formats')).json() as { items: { id: number, name: string, specifications: { type: string, value: unknown }[] }[] }).items

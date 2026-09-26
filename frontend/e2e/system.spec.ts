@@ -76,15 +76,39 @@ test('backups: creating a backup completes and can be downloaded', async ({ page
 	await expect(restoreDialog).toBeHidden()
 })
 
-test('system logs: displays stored log entries and filter controls', async ({ page }) => {
+test('system logs: filters by level and lists downloadable log files', async ({ page }) => {
 	await page.goto('/system/logs')
 	await expect(page.getByRole('heading', { level: 1, name: 'Logs' })).toBeVisible()
 	await expect(page.getByPlaceholder('Search message or logger')).toBeVisible()
-	await expect(page.getByText('ERROR', { exact: true })).toBeVisible()
-	const table = page.getByRole('table')
-	await expect(table).toBeVisible()
-	await expect(table.getByRole('row').first()).toContainText(/Time|Level|Logger|Message/)
 
+	const logRows = page.getByRole('table').getByRole('row')
+	await expect(logRows.first()).toContainText(/Time|Level|Logger|Message/)
+	await expect(logRows.filter({ hasText: 'Information' }).first()).toBeVisible()
+
+	await page.getByRole('button', { name: 'Information', exact: true }).click()
+	await expect(async () => {
+		const rows = await logRows.allInnerTexts()
+		expect(rows.length).toBeGreaterThan(1)
+		expect(rows.slice(1).every(row => row.includes('Information'))).toBe(true)
+	}).toPass()
+	await expect(page.getByRole('button', { name: 'Information', exact: true })).toHaveClass(/s-badge-info/)
+
+	await page.getByRole('tab', { name: 'Log files' }).click()
+	const files = await page.request.get('/api/v1/logs/files')
+	expect(files.ok(), await files.text()).toBe(true)
+	const logFiles = await files.json() as { name: string }[]
+	const filesTable = page.getByRole('table')
+	if (logFiles.length) {
+		const fileName = logFiles[0]!.name
+		const fileRow = filesTable.getByRole('row', { name: new RegExp(fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })
+		await expect(fileRow).toBeVisible()
+		const downloadPromise = page.waitForEvent('download')
+		await fileRow.getByRole('link').click()
+		expect((await downloadPromise).suggestedFilename()).toBe(fileName)
+	}
+	else {
+		await expect(filesTable).toContainText('No rolling log files on disk yet.')
+	}
 })
 
 test('system status: shows a root-folder warning and clears it after the folder is restored', async ({ page }) => {

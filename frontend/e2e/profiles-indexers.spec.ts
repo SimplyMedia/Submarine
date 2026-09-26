@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 import { ensureLibrary, ensureStubTrackerIndexer, signIn, STUB_TRACKER_NAME } from './setup'
 
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
+const metadataPort = process.env.E2E_MOCK_PORT_BASE ? Number(process.env.E2E_MOCK_PORT_BASE) : 5100
+
 
 test('profiles: create language, delay with protocol switches, and release profiles', async ({ page }) => {
 	await signIn(page)
@@ -11,9 +13,10 @@ test('profiles: create language, delay with protocol switches, and release profi
 	const delayName = 'E2E delay profile'
 	const releaseName = 'E2E release profile'
 	const clean = async (endpoint: string, name: string) => {
-		const response = await page.request.get(endpoint)
+		const response = await page.request.get(endpoint, { params: { PageSize: 200 } })
 		if (!response.ok()) return
-		const rows = await response.json() as { id: number, name: string }[]
+		const body = await response.json() as { id: number, name: string }[] | { items: { id: number, name: string }[] }
+		const rows = Array.isArray(body) ? body : body.items
 		for (const row of rows.filter(item => item.name === name)) await page.request.delete(`${endpoint}/${row.id}`)
 	}
 	await clean('/api/v1/language-profiles', languageName)
@@ -94,7 +97,7 @@ test('indexer proxies and stats: add and test a proxy, then inspect search stati
 	await dialog.locator('button.s-select-trigger').first().click()
 	await page.getByRole('option', { name: 'FlareSolverr', exact: true }).click()
 	await dialog.getByLabel('FlareSolverr host').fill('127.0.0.1')
-	await dialog.getByLabel('Port').fill('5100')
+	await dialog.getByLabel('Port').fill(String(metadataPort))
 	await dialog.getByRole('button', { name: 'Add proxy' }).click()
 	const proxyRow = page.getByRole('row').filter({ hasText: name })
 	await expect(proxyRow).toBeVisible()

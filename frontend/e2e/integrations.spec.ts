@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test'
 import { signIn } from './setup'
 
 test.skip(!process.env.E2E_BASE_URL, 'Set E2E_BASE_URL to a running Submarine API to run e2e')
+const metadataPort = process.env.E2E_MOCK_PORT_BASE ? Number(process.env.E2E_MOCK_PORT_BASE) : 5100
+
 
 test('connect: add and test a webhook, then preserve its enabled event selections', async ({ page }) => {
 	await signIn(page)
@@ -17,8 +19,8 @@ test('connect: add and test a webhook, then preserve its enabled event selection
 	await page.getByRole('button', { name: 'Add connection' }).first().click()
 	const dialog = page.getByRole('dialog', { name: 'Add connection' })
 	await dialog.getByRole('button', { name: 'Webhook', exact: true }).click()
-	await dialog.getByLabel('Name').fill(name)
-	await dialog.getByLabel('URL').fill('http://localhost:5100/webhook')
+	await dialog.getByLabel('Name', { exact: true }).fill(name)
+	await dialog.getByLabel('URL').fill(`http://localhost:${metadataPort}/webhook`)
 	await dialog.getByLabel('Grab').check()
 	await dialog.getByLabel('Import').uncheck()
 	await dialog.getByRole('button', { name: 'Test connection' }).click()
@@ -104,7 +106,7 @@ test('import lists: add and sync custom JSON, manage an exclusion, and save clea
 	await dialog.getByLabel('Enable automatic add').uncheck()
 	await dialog.getByLabel('Media kind').click()
 	await page.getByRole('option', { name: 'Movies', exact: true }).click()
-	await dialog.getByLabel('URL').fill('http://localhost:5100/custom-import-list')
+	await dialog.getByLabel('URL').fill(`http://localhost:${metadataPort}/custom-import-list`)
 	await dialog.getByRole('button', { name: 'Add import list' }).click()
 	const row = page.getByRole('row').filter({ hasText: name })
 	await expect(row).toBeVisible()
@@ -130,6 +132,7 @@ test('import lists: add and sync custom JSON, manage an exclusion, and save clea
 	const exclusionDialog = page.getByRole('dialog', { name: 'Add exclusion' })
 	await exclusionDialog.getByLabel('Title').fill('E2E excluded mock movie')
 	await exclusionDialog.getByLabel('Year').fill('2025')
+	await exclusionDialog.getByLabel('TMDB id').fill('999901')
 	await exclusionDialog.getByRole('button', { name: 'Add exclusion' }).click()
 	const exclusion = page.getByRole('row').filter({ hasText: 'E2E excluded mock movie' })
 	await expect(exclusion).toBeVisible()

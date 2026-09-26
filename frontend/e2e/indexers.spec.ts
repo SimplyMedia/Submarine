@@ -128,7 +128,7 @@ test('interactive search: shows rejected releases with decision reasons', async 
 		const score = rejected.locator('.release-score-rejected')
 		await expect(score).toBeVisible()
 		await score.hover()
-		await expect(page.getByRole('tooltip')).toContainText('E2E-NOT-FOUND')
+		await expect(page.locator('.s-tooltip')).toContainText('E2E-NOT-FOUND')
 	}
 	finally {
 		await page.request.delete(`/api/v1/release-profiles/${releaseProfile.id}`)
