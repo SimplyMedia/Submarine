@@ -167,6 +167,9 @@ const metadata = http.createServer((req, res) => {
 	const url = new URL(req.url, `http://localhost:${metadataPort}`)
 	const p = url.pathname
 	let m
+	if (p === '/' && req.method === 'GET') return send(res, 200, { msg: 'FlareSolverr is ready' })
+	if (p === '/webhook' && ['POST', 'PUT'].includes(req.method ?? '')) return send(res, 200, { received: true })
+	if (p === '/custom-import-list') return send(res, 200, [{ tmdbId: 671, title: 'Mock Import Film', year: 2020 }])
 	if (p === '/_status/healthz') return send(res, 200, { status: 'ok' })
 	if ((m = p.match(/^\/img\/poster\/(\d+)\.svg$/))) {
 		const id = Number(m[1])

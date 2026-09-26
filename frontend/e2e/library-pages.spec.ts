@@ -34,6 +34,17 @@ async function ensureMovie(request: Parameters<typeof ensureLibrary>[0], tmdbId:
 	} })
 	expect(added.ok(), await added.text()).toBe(true)
 }
+test.afterEach(async ({ page }) => {
+	for (const tmdbId of COLLECTION_MOVIE_IDS) {
+		const response = await page.request.get('/api/v1/movies', { params: { PageSize: 200 } })
+		if (!response.ok()) continue
+		const movies = (await response.json() as { items: { id: number, tmdbId: number }[] }).items
+		for (const movie of movies.filter(item => item.tmdbId === tmdbId)) {
+			const removed = await page.request.delete(`/api/v1/movies/${movie.id}`)
+			expect(removed.ok(), await removed.text()).toBe(true)
+		}
+	}
+})
 
 test('collections: list a metadata-backed collection and add its missing movies', async ({ page }) => {
 	for (const tmdbId of COLLECTION_MOVIE_IDS) {
