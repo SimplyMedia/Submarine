@@ -123,6 +123,23 @@ public sealed class ParseAndConfigApiTests : IClassFixture<SubmarineApiFactory>
 	}
 
 	[Fact]
+	public async Task IndexerConfig_HardcodedSubsFields_ShouldRoundTrip()
+	{
+		var client = ApiClient();
+
+		var current = await client.GetFromJsonAsync<IndexerConfigDto>("/api/v1/config/indexer");
+		var updated = current! with { AllowHardcodedSubs = true, WhitelistedHardcodedSubs = "FLUX,EVO" };
+
+		var put = await client.PutAsJsonAsync("/api/v1/config/indexer", updated);
+		put.StatusCode.ShouldBe(HttpStatusCode.OK, await put.Content.ReadAsStringAsync());
+		var saved = await put.Content.ReadFromJsonAsync<IndexerConfigDto>();
+		saved!.AllowHardcodedSubs.ShouldBeTrue();
+		saved.WhitelistedHardcodedSubs.ShouldBe("FLUX,EVO");
+
+		await client.PutAsJsonAsync("/api/v1/config/indexer", current);
+	}
+
+	[Fact]
 	public async Task DownloadConfig_GetPut_ShouldRoundTrip()
 	{
 		var client = ApiClient();
@@ -212,7 +229,9 @@ public sealed class ParseAndConfigApiTests : IClassFixture<SubmarineApiFactory>
 		int MinimumAgeMinutes,
 		int RetentionDays,
 		int MaximumSizeMb,
-		int AvailabilityDelayDays);
+		int AvailabilityDelayDays,
+		bool AllowHardcodedSubs,
+		string WhitelistedHardcodedSubs);
 
 	private sealed record DownloadConfigDto(
 		bool EnableCompletedDownloadHandling,

@@ -851,6 +851,159 @@ public class DownloadDecisionMakerTest
 		result[0].Candidate.Info.Size.ShouldBe(600L * 1024 * 1024);
 	}
 
+	[Fact]
+	public void Decide_ShouldRejectUnmonitoredMedia()
+	{
+		var decision = _instance.Decide(Candidate(Release()), Context() with { MediaMonitored = false });
+
+		decision.Approved.ShouldBeFalse();
+		decision.Rejections.ShouldContain(rejection => rejection.Reason.Contains("not monitored"));
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectWhenNoRequestedEpisodesAreMonitored()
+	{
+		var context = Context() with { EpisodeCount = 2, MonitoredEpisodeCount = 0 };
+		var decision = _instance.Decide(Candidate(Release()), context);
+
+		decision.Approved.ShouldBeFalse();
+		decision.Rejections.ShouldContain(rejection => rejection.Reason.Contains("no episodes"));
+	}
+
+	[Fact]
+	public void Decide_ShouldBypassMonitoredAndAvailabilityChecks_ForInteractiveSearch()
+	{
+		var context = Context(minimumAvailabilityMet: false) with { MediaMonitored = false, IsInteractive = true };
+		var decision = _instance.Decide(Candidate(Release()), context);
+
+		decision.Approved.ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectWhenIndexerTagsDoNotMatchTheMediaTags()
+	{
+		var candidate = Candidate(Release());
+		candidate = candidate with { Info = candidate.Info with { IndexerId = 7 } };
+		var context = Context() with
+		{
+			MediaTagIds = [1],
+			IndexerTagIds = new Dictionary<int, IReadOnlyList<int>> { [7] = [2] }
+		};
+
+		var decision = _instance.Decide(candidate, context);
+
+		decision.Approved.ShouldBeFalse();
+		decision.Rejections.ShouldContain(rejection => rejection.Reason.Contains("indexer tags"));
+	}
+
+	[Fact]
+	public void Decide_ShouldAcceptWhenIndexerTagsIntersectTheMediaTags()
+	{
+		var candidate = Candidate(Release());
+		candidate = candidate with { Info = candidate.Info with { IndexerId = 7 } };
+		var context = Context() with
+		{
+			MediaTagIds = [1, 2],
+			IndexerTagIds = new Dictionary<int, IReadOnlyList<int>> { [7] = [2, 3] }
+		};
+
+		var decision = _instance.Decide(candidate, context);
+
+		decision.Approved.ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectWhenARecentGrabAlreadyMeetsOrExceedsTheRelease()
+	{
+		var context = Context() with { RecentGrabQuality = Quality(QualityResolution.R2160_P) };
+		var decision = _instance.Decide(Candidate(Release(QualityResolution.R1080_P)), context);
+
+		decision.Approved.ShouldBeFalse();
+		decision.Rejections.ShouldContain(rejection => rejection.Reason.Contains("recent grab"));
+	}
+
+	[Fact]
+	public void Decide_ShouldAcceptWhenTheReleaseUpgradesTheRecentGrab()
+	{
+		var context = Context() with { RecentGrabQuality = Quality(QualityResolution.R720_P) };
+		var decision = _instance.Decide(Candidate(Release(QualityResolution.R2160_P)), context);
+
+		decision.Approved.ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Decide_ShouldBypassRecentGrabCheck_ForInteractiveSearch()
+	{
+		var context = Context() with { RecentGrabQuality = Quality(QualityResolution.R2160_P), IsInteractive = true };
+		var decision = _instance.Decide(Candidate(Release(QualityResolution.R1080_P)), context);
+
+		decision.Approved.ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectSingleEpisodeInSeasonSearch_WhenSeasonIsOlderThanTheIndexerThreshold()
+	{
+		var candidate = Candidate(Release());
+		candidate = candidate with { Info = candidate.Info with { IndexerId = 3 } };
+		var context = Context() with
+		{
+			IsSeasonSearch = true,
+			SeriesType = SeriesType.STANDARD,
+			EpisodeCount = 1,
+			DaysSinceSeasonLastAired = 30,
+			IndexerSeasonSearchMaxAge = new Dictionary<int, int> { [3] = 14 }
+		};
+
+		var decision = _instance.Decide(candidate, context);
+
+		decision.Approved.ShouldBeFalse();
+		decision.Rejections.ShouldContain(rejection => rejection.Reason.Contains("season pack required"));
+	}
+
+	[Fact]
+	public void Decide_ShouldAcceptSingleEpisodeInSeasonSearch_WhenSeasonIsRecent()
+	{
+		var candidate = Candidate(Release());
+		candidate = candidate with { Info = candidate.Info with { IndexerId = 3 } };
+		var context = Context() with
+		{
+			IsSeasonSearch = true,
+			SeriesType = SeriesType.STANDARD,
+			EpisodeCount = 1,
+			DaysSinceSeasonLastAired = 5,
+			IndexerSeasonSearchMaxAge = new Dictionary<int, int> { [3] = 14 }
+		};
+
+		var decision = _instance.Decide(candidate, context);
+
+		decision.Approved.ShouldBeTrue();
+	}
+
+	[Fact]
+	public void Decide_ShouldRejectProperForAFileOlderThanSevenDays()
+	{
+		var release = Release(QualityResolution.R1080_P, revision: new Revision(1, IsProper: true), releaseGroup: "FLUX");
+		var context = Context(existing: Quality(QualityResolution.R1080_P), seasonReleaseGroup: "FLUX")
+			with { ExistingFileAddedDate = DateTime.UtcNow.AddDays(-30) };
+
+		var decision = _instance.Decide(Candidate(release), context);
+
+		decision.Approved.ShouldBeFalse();
+		decision.Rejections.ShouldContain(rejection => rejection.Reason.Contains("older than 7 days"));
+	}
+
+	[Fact]
+	public void Decide_ShouldAcceptProperForARecentFile()
+	{
+		var release = Release(QualityResolution.R1080_P, revision: new Revision(1, IsProper: true), releaseGroup: "FLUX");
+		var context = Context(existing: Quality(QualityResolution.R1080_P), seasonReleaseGroup: "FLUX")
+			with { ExistingFileAddedDate = DateTime.UtcNow.AddDays(-1) };
+
+		var decision = _instance.Decide(Candidate(release), context);
+
+		decision.Approved.ShouldBeTrue();
+	}
+
 	private static BaseRelease Release(
 		QualityResolution resolution = QualityResolution.R1080_P,
 		Revision? revision = null,

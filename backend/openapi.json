@@ -19204,8 +19204,6 @@
         "required": [
           "name",
           "preferredProtocol",
-          "enableUsenet",
-          "enableTorrent",
           "usenetDelayMinutes",
           "torrentDelayMinutes",
           "bypassIfHighestQuality",
@@ -19222,14 +19220,6 @@
           "preferredProtocol": {
             "description": "Protocol preferred when both are available.",
             "$ref": "#/components/schemas/Protocol"
-          },
-          "enableUsenet": {
-            "type": "boolean",
-            "description": "Whether usenet releases are grabbed for tagged media."
-          },
-          "enableTorrent": {
-            "type": "boolean",
-            "description": "Whether torrent releases are grabbed for tagged media."
           },
           "usenetDelayMinutes": {
             "type": "integer",
@@ -19264,6 +19254,16 @@
               "format": "int32"
             },
             "description": "Tag ids this profile applies to."
+          },
+          "enableUsenet": {
+            "type": "boolean",
+            "description": "Whether usenet releases are grabbed for tagged media.",
+            "default": true
+          },
+          "enableTorrent": {
+            "type": "boolean",
+            "description": "Whether torrent releases are grabbed for tagged media.",
+            "default": true
           }
         },
         "description": "Create or update request for a delay profile."

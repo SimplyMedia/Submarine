@@ -31,10 +31,14 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 	///     and which held file(s) the candidate is compared against: only episodes in this set are considered, and the
 	///     comparison uses the worst quality among them so a season pack still has to upgrade the weakest covered episode.
 	/// </param>
+	/// <param name="isInteractive">Whether this decision is for a user initiated interactive search.</param>
+	/// <param name="isSeasonSearch">Whether this decision is for an interactive season-level search covering multiple episodes.</param>
 	/// <param name="cancellationToken">Cancellation token.</param>
 	public async Task<DecisionContext> BuildAsync(
 		MediaVersion version,
 		IReadOnlyCollection<int>? episodeIds = null,
+		bool isInteractive = false,
+		bool isSeasonSearch = false,
 		CancellationToken cancellationToken = default)
 	{
 		var qualityProfile = await db.QualityProfiles.AsNoTracking()
@@ -45,6 +49,7 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 		SeriesType? seriesType = null;
 		int? runtimeMinutes = null;
 		bool? minimumAvailabilityMet = null;
+		var mediaMonitored = true;
 		var tagIds = new List<int>();
 
 		if (version.SeriesId is { } seriesId)
@@ -54,6 +59,7 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 			seriesType = series?.Type;
 			runtimeMinutes = series?.Runtime;
 			tagIds = series?.Tags.Select(tag => tag.Id).ToList() ?? [];
+			mediaMonitored = series?.Monitored ?? true;
 		}
 		else if (version.MovieId is { } movieId)
 		{
@@ -61,6 +67,7 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 				.FirstOrDefaultAsync(entity => entity.Id == movieId, cancellationToken);
 			runtimeMinutes = movie?.Runtime;
 			tagIds = movie?.Tags.Select(tag => tag.Id).ToList() ?? [];
+			mediaMonitored = movie?.Monitored ?? true;
 			minimumAvailabilityMet = movie is null ? null : IsAvailabilityMet(movie, DateTime.UtcNow);
 		}
 
@@ -83,7 +90,10 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 		IReadOnlyList<Language>? existingLanguages = null;
 		var existingScore = 0;
 		string? seasonReleaseGroup = null;
+		DateTime? existingFileAddedDate = null;
 		var existingFileCoversMoreEpisodes = false;
+		int? monitoredEpisodeCount = null;
+		int? daysSinceSeasonLastAired = null;
 
 		if (version.SeriesId is not null)
 		{
@@ -114,6 +124,30 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 				existingLanguages = worst.Languages;
 				existingScore = ScoreExistingFile(qualityProfile, worst.SceneName ?? worst.RelativePath, worst.Quality, worst.Languages, worst.ReleaseGroup, customFormats);
 				seasonReleaseGroup = worst.ReleaseGroup;
+				existingFileAddedDate = worst.DateAdded;
+			}
+			if (episodeIds is { Count: > 0 })
+			{
+				monitoredEpisodeCount = await db.Episodes.AsNoTracking()
+					.Where(episode => episodeIds.Contains(episode.Id))
+					.CountAsync(episode => episode.Monitored, cancellationToken);
+
+				if (isSeasonSearch)
+				{
+					var seasonNumber = await db.Episodes.AsNoTracking()
+						.Where(episode => episodeIds.Contains(episode.Id))
+						.Select(episode => (int?)episode.SeasonNumber)
+						.FirstOrDefaultAsync(cancellationToken);
+
+					if (seasonNumber is { } season)
+					{
+						var lastAired = await db.Episodes.AsNoTracking()
+							.Where(episode => episode.SeriesId == version.SeriesId && episode.SeasonNumber == season && episode.AirDateUtc != null)
+							.MaxAsync(episode => (DateTime?)episode.AirDateUtc, cancellationToken);
+
+						daysSinceSeasonLastAired = lastAired is { } aired ? (int)(DateTime.UtcNow - aired).TotalDays : null;
+					}
+				}
 			}
 		}
 		else if (version.MovieId is not null)
@@ -125,6 +159,7 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 				existingLanguages = file.Languages;
 				existingScore = ScoreExistingFile(qualityProfile, file.SceneName ?? file.RelativePath, file.Quality, file.Languages, file.ReleaseGroup, customFormats);
 				seasonReleaseGroup = file.ReleaseGroup;
+				existingFileAddedDate = file.DateAdded;
 			}
 		}
 
@@ -192,6 +227,36 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 				indexer => (IReadOnlyList<IndexerFlag>)indexer.RequiredFlags,
 				cancellationToken);
 
+		var indexerTagIds = await db.Indexers.AsNoTracking().Include(indexer => indexer.Tags)
+			.Where(indexer => indexer.Tags.Count > 0)
+			.ToDictionaryAsync(
+				indexer => indexer.Id,
+				indexer => (IReadOnlyList<int>)indexer.Tags.Select(tag => tag.Id).ToList(),
+				cancellationToken);
+
+		var indexerSeasonSearchMaxAge = await db.Indexers.AsNoTracking()
+			.Where(indexer => indexer.SeasonSearchMaximumSingleEpisodeAge > 0)
+			.ToDictionaryAsync(indexer => indexer.Id, indexer => indexer.SeasonSearchMaximumSingleEpisodeAge, cancellationToken);
+
+		QualityModel? recentGrabQuality = null;
+		var recentGrabCustomFormatScore = 0;
+		var recentGrabQuery = db.HistoryEvents.AsNoTracking()
+			.Where(entry => entry.Type == HistoryEventType.GRABBED && entry.Date > DateTime.UtcNow.AddHours(-12));
+
+		recentGrabQuery = version.SeriesId is not null
+			? episodeIds is { Count: > 0 }
+				? recentGrabQuery.Where(entry => entry.EpisodeId != null && episodeIds.Contains(entry.EpisodeId.Value))
+				: recentGrabQuery.Where(entry => false)
+			: recentGrabQuery.Where(entry => entry.MovieId == version.MovieId);
+
+		var recentGrab = await recentGrabQuery.OrderByDescending(entry => entry.Date).FirstOrDefaultAsync(cancellationToken);
+		if (recentGrab?.Quality is { } grabbedQuality)
+		{
+			recentGrabQuality = grabbedQuality;
+			recentGrabCustomFormatScore = ScoreExistingFile(
+				qualityProfile, recentGrab.SourceTitle, grabbedQuality, recentGrab.Languages ?? [], null, customFormats);
+		}
+
 		var queuedStates = new[] { TrackedDownloadState.DOWNLOADING, TrackedDownloadState.IMPORT_PENDING, TrackedDownloadState.IMPORTING };
 		var tracked = await db.TrackedDownloads.AsNoTracking()
 			.Where(download => download.MediaVersionId == version.Id && download.Quality != null && queuedStates.Contains(download.State))
@@ -233,7 +298,18 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 			MinimumFreeSpaceMb = mediaManagementConfig?.MinimumFreeSpaceMb ?? 100,
 			AlreadyImportedTitles = alreadyImportedTitles,
 			AlreadyImportedInfoHashes = alreadyImportedInfoHashes,
-			IndexerRequiredFlags = indexerRequiredFlags
+			IndexerRequiredFlags = indexerRequiredFlags,
+			IsInteractive = isInteractive,
+			MediaMonitored = mediaMonitored,
+			MonitoredEpisodeCount = monitoredEpisodeCount,
+			MediaTagIds = tagIds,
+			IndexerTagIds = indexerTagIds,
+			RecentGrabQuality = recentGrabQuality,
+			RecentGrabCustomFormatScore = recentGrabCustomFormatScore,
+			ExistingFileAddedDate = existingFileAddedDate,
+			IsSeasonSearch = isSeasonSearch,
+			DaysSinceSeasonLastAired = daysSinceSeasonLastAired,
+			IndexerSeasonSearchMaxAge = indexerSeasonSearchMaxAge
 		};
 	}
 

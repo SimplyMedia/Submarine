@@ -216,11 +216,11 @@ public sealed record DelayProfileResource(
 public sealed record DelayProfileRequest(
 	string Name,
 	Protocol PreferredProtocol,
-	bool EnableUsenet,
-	bool EnableTorrent,
 	int UsenetDelayMinutes,
 	int TorrentDelayMinutes,
 	bool BypassIfHighestQuality,
 	bool BypassIfAboveCustomFormatScore,
 	int MinimumCustomFormatScore,
-	IReadOnlyList<int>? Tags);
+	IReadOnlyList<int>? Tags,
+	bool EnableUsenet = true,
+	bool EnableTorrent = true);

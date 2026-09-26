@@ -17847,10 +17847,6 @@ export interface components {
             name: string;
             /** @description Protocol preferred when both are available. */
             preferredProtocol: components["schemas"]["Protocol"];
-            /** @description Whether usenet releases are grabbed for tagged media. */
-            enableUsenet: boolean;
-            /** @description Whether torrent releases are grabbed for tagged media. */
-            enableTorrent: boolean;
             /**
              * Format: int32
              * @description Delay in minutes for usenet releases.
@@ -17872,6 +17868,16 @@ export interface components {
             minimumCustomFormatScore: number;
             /** @description Tag ids this profile applies to. */
             tags: null | number[];
+            /**
+             * @description Whether usenet releases are grabbed for tagged media.
+             * @default true
+             */
+            enableUsenet: boolean;
+            /**
+             * @description Whether torrent releases are grabbed for tagged media.
+             * @default true
+             */
+            enableTorrent: boolean;
         };
         /** @description A delay profile resource. */
         DelayProfileResource: {

@@ -74,11 +74,50 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			rejections.Add(new RejectionReason("multi-season releases are not supported", RejectionType.PERMANENT));
 		}
 
+		if (context.IsSeasonSearch
+		    && context.SeriesType == SeriesType.STANDARD
+		    && context.EpisodeCount == 1
+		    && release.SeriesReleaseData?.ReleaseType != SeriesReleaseType.FULL_SEASON
+		    && candidate.Info.IndexerId is { } seasonPackIndexerId
+		    && context.IndexerSeasonSearchMaxAge.TryGetValue(seasonPackIndexerId, out var maxSingleEpisodeAge)
+		    && maxSingleEpisodeAge > 0
+		    && context.DaysSinceSeasonLastAired is { } daysSinceAired
+		    && daysSinceAired > maxSingleEpisodeAge)
+		{
+			rejections.Add(new RejectionReason(
+				$"last episode in this season aired more than {maxSingleEpisodeAge} days ago, season pack required",
+				RejectionType.PERMANENT));
+		}
+
 		if (context.ExistingFileCoversMoreEpisodes)
 		{
 			rejections.Add(new RejectionReason(
 				"the episode file on disk contains more episodes than this release contains",
 				RejectionType.PERMANENT));
+		}
+
+		// interactive searches bypass the monitored check, matching Sonarr/Radarr's UserInvokedSearch bypass: the
+		// user explicitly asked for this release regardless of monitored state
+		if (!context.IsInteractive)
+		{
+			if (!context.MediaMonitored)
+			{
+				rejections.Add(new RejectionReason("series or movie is not monitored", RejectionType.PERMANENT));
+			}
+			else if (context.MonitoredEpisodeCount is { } monitoredCount && monitoredCount != context.EpisodeCount)
+			{
+				rejections.Add(new RejectionReason(
+					monitoredCount == 0 ? "no episodes in the release are monitored" : "one or more episodes in the release is not monitored",
+					RejectionType.PERMANENT));
+			}
+		}
+
+		if (candidate.Info.IndexerId is { } tagIndexerId
+		    && context.IndexerTagIds.TryGetValue(tagIndexerId, out var indexerTags)
+		    && indexerTags.Count > 0
+		    && !indexerTags.Any(tag => context.MediaTagIds.Contains(tag)))
+		{
+			rejections.Add(new RejectionReason("series or movie tags do not match any of the indexer tags", RejectionType.PERMANENT));
 		}
 
 		var qualityUpgrade = false;
@@ -101,9 +140,10 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			// a repack, proper or anime version bump replacing the held file at the same quality tier only counts as
 			// a genuine upgrade when the release group matches: a different group is likely a different encode, not
 			// a repack of the same source
-			if (qualityIndex == existingIndex
-			    && QualityProfileExtensions.IsRevisionUpgrade(existingQuality.Revision, release.Quality.Revision, context.DownloadPropersAndRepacks)
-			    && (release.Quality.Revision.IsRepack || context.SeriesType == SeriesType.ANIME))
+			var isSameTierRevisionUpgrade = qualityIndex == existingIndex
+				&& QualityProfileExtensions.IsRevisionUpgrade(existingQuality.Revision, release.Quality.Revision, context.DownloadPropersAndRepacks);
+
+			if (isSameTierRevisionUpgrade && (release.Quality.Revision.IsRepack || context.SeriesType == SeriesType.ANIME))
 			{
 				if (string.IsNullOrWhiteSpace(context.SeasonReleaseGroup) || string.IsNullOrWhiteSpace(release.ReleaseGroup))
 				{
@@ -117,6 +157,16 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 						$"repack/version release group '{release.ReleaseGroup}' does not match the existing release group '{context.SeasonReleaseGroup}'",
 						RejectionType.PERMANENT));
 				}
+			}
+
+			// a proper/repack/version upgrade for a file added more than 7 days ago is not worth churning; only
+			// applies outside interactive search, matching Sonarr/Radarr's RssSync-only ProperSpecification
+			if (isSameTierRevisionUpgrade
+			    && !context.IsInteractive
+			    && context.ExistingFileAddedDate is { } addedDate
+			    && addedDate < evaluatedAt.AddDays(-7))
+			{
+				rejections.Add(new RejectionReason("proper/repack for a file older than 7 days", RejectionType.PERMANENT));
 			}
 		}
 
@@ -165,6 +215,17 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			rejections.Add(new RejectionReason(
 				"has the same title as a release already grabbed and imported",
 				RejectionType.PERMANENT));
+		}
+
+		if (!context.IsInteractive
+		    && context.RecentGrabQuality is { } recentQuality
+		    && !context.QualityProfile.IsQualityUpgrade(
+			    recentQuality, release.Quality, context.RecentGrabCustomFormatScore, customFormatScore,
+			    context.QualityProfile.UpgradeAllowed, context.DownloadPropersAndRepacks))
+		{
+			rejections.Add(new RejectionReason(
+				"a recent grab in history already meets or exceeds this release",
+				RejectionType.TEMPORARY));
 		}
 
 		if (customFormatScore < context.QualityProfile.MinFormatScore)
@@ -220,7 +281,7 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 				RejectionType.PERMANENT));
 		}
 
-		if (IsWithinDelayWindow(candidate, context, qualityIndex, customFormatScore, evaluatedAt))
+		if (!context.IsInteractive && IsWithinDelayWindow(candidate, context, qualityIndex, customFormatScore, evaluatedAt))
 		{
 			rejections.Add(new RejectionReason("waiting for delay window", RejectionType.TEMPORARY));
 		}
@@ -257,7 +318,7 @@ public sealed class DownloadDecisionMaker : IDownloadDecisionMaker
 			}
 		}
 
-		if (context.MinimumAvailabilityMet == false)
+		if (!context.IsInteractive && context.MinimumAvailabilityMet == false)
 		{
 			rejections.Add(new RejectionReason("minimum availability not met", RejectionType.TEMPORARY));
 		}

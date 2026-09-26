@@ -158,7 +158,7 @@ public sealed class AutomaticSearchService(
 					continue;
 				}
 
-				var context = await contextFactory.BuildAsync(version, episodeIds, cancellationToken);
+				var context = await contextFactory.BuildAsync(version, episodeIds, cancellationToken: cancellationToken);
 				var decisions = decisionMaker.DecideAll([.. group], context);
 				if (await GrabBestAsync(decisions, version, seriesId, null, cancellationToken))
 				{

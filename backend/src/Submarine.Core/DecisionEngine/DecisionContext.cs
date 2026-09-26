@@ -87,6 +87,43 @@ public sealed record DecisionContext
 	/// <summary>Torrent flags required per indexer id before a release from that indexer is grabbed.</summary>
 	public IReadOnlyDictionary<int, IReadOnlyList<IndexerFlag>> IndexerRequiredFlags { get; init; } =
 		new Dictionary<int, IReadOnlyList<IndexerFlag>>();
+
+	/// <summary>Whether this decision is for an interactive (user initiated) search, which bypasses the delay window,
+	/// the availability check, the monitored check and the recent-grab history check, matching Sonarr/Radarr's
+	/// UserInvokedSearch bypass.</summary>
+	public bool IsInteractive { get; init; }
+
+	/// <summary>Whether the matched series or movie is monitored.</summary>
+	public bool MediaMonitored { get; init; } = true;
+
+	/// <summary>How many of the candidate's requested episodes are monitored, null when not applicable (movies).</summary>
+	public int? MonitoredEpisodeCount { get; init; }
+
+	/// <summary>Tag ids of the matched series or movie.</summary>
+	public IReadOnlyList<int> MediaTagIds { get; init; } = [];
+
+	/// <summary>Tag ids required per indexer id, only present for indexers that have tags.</summary>
+	public IReadOnlyDictionary<int, IReadOnlyList<int>> IndexerTagIds { get; init; } =
+		new Dictionary<int, IReadOnlyList<int>>();
+
+	/// <summary>Quality of the most recent grab within the recency window, if any, used to dedupe RSS/automatic re-grabs.</summary>
+	public QualityModel? RecentGrabQuality { get; init; }
+
+	/// <summary>Custom format score of the most recent grab within the recency window.</summary>
+	public int RecentGrabCustomFormatScore { get; init; }
+
+	/// <summary>Date the currently held file was added, used to hold back propers/repacks for old files.</summary>
+	public DateTime? ExistingFileAddedDate { get; init; }
+
+	/// <summary>Whether this decision is for an interactive season-level search covering multiple episodes.</summary>
+	public bool IsSeasonSearch { get; init; }
+
+	/// <summary>Days since the requested episodes' season last aired an episode, null when the season has not fully aired.</summary>
+	public int? DaysSinceSeasonLastAired { get; init; }
+
+	/// <summary>Per indexer id, the maximum age in days a season may reach before single episodes are held back for a
+	/// season pack instead.</summary>
+	public IReadOnlyDictionary<int, int> IndexerSeasonSearchMaxAge { get; init; } = new Dictionary<int, int>();
 }
 
 /// <summary>

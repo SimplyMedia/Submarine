@@ -959,6 +959,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<int?>("SeasonPackSeedTimeMinutes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("SeasonSearchMaximumSingleEpisodeAge")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double?>("SeedRatio")
                         .HasColumnType("REAL");
 
