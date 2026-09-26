@@ -1584,6 +1584,66 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.ToTable("MediaVersions");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionEpisodeMonitoring", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EpisodeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MediaVersionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Monitored")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EpisodeId");
+
+                    b.HasIndex("MediaVersionId", "EpisodeId")
+                        .IsUnique();
+
+                    b.ToTable("MediaVersionEpisodeMonitorings", (string)null);
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionSeasonMonitoring", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MediaVersionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Monitored")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeasonNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaVersionId", "SeasonNumber")
+                        .IsUnique();
+
+                    b.ToTable("MediaVersionSeasonMonitorings", (string)null);
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.MetadataConsumer", b =>
                 {
                     b.Property<int>("Id")
@@ -2940,6 +3000,36 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Navigation("Movie");
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionEpisodeMonitoring", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.Episode", "Episode")
+                        .WithMany()
+                        .HasForeignKey("EpisodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Submarine.Core.Entities.MediaVersion", "MediaVersion")
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Episode");
+
+                    b.Navigation("MediaVersion");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionSeasonMonitoring", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.MediaVersion", "MediaVersion")
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MediaVersion");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.MovieFile", b =>

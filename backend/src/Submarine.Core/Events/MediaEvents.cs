@@ -30,7 +30,7 @@ public sealed record SeriesAddedEvent(int SeriesId) : IDomainEvent;
 
 public sealed record SeriesUpdatedEvent(int SeriesId) : IDomainEvent;
 
-public sealed record SeriesDeletedEvent(int SeriesId, string Title, bool DeletedFiles) : IDomainEvent;
+public sealed record SeriesDeletedEvent(int SeriesId, string Title, bool DeletedFiles, int Year = 0) : IDomainEvent;
 
 public sealed record MovieAddedEvent(int MovieId) : IDomainEvent;
 
@@ -39,6 +39,8 @@ public sealed record MovieUpdatedEvent(int MovieId) : IDomainEvent;
 public sealed record MovieDeletedEvent(int MovieId, string Title, bool DeletedFiles) : IDomainEvent;
 
 public sealed record ReleaseGrabbedEvent(GrabbedRelease Release) : IDomainEvent;
+
+public sealed record EpisodeUpdatedEvent(int EpisodeId) : IDomainEvent;
 
 public sealed record EpisodeFileImportedEvent(
 	int SeriesId,
