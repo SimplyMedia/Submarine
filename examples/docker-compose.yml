@@ -5,7 +5,7 @@
 
 services:
   submarine:
-    image: ghcr.io/simplymedia/submarine:${SUBMARINE_TAG:-latest}
+    image: ghcr.io/simplymedia/submarine-api:${SUBMARINE_TAG:-latest}
     container_name: submarine
     ports:
       - "8989:8080"

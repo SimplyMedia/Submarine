@@ -1,7 +1,7 @@
 # Submarine
 
-[![Test](https://github.com/SimplyMedia/Submarine/actions/workflows/test.yml/badge.svg)](https://github.com/SimplyMedia/Submarine/actions/workflows/test.yml)
-[![Image](https://img.shields.io/badge/image-ghcr.io%2Fsimplymedia%2Fsubmarine-blue?logo=docker&logoColor=white)](https://github.com/SimplyMedia/Submarine/pkgs/container/submarine)
+[![Build](https://github.com/SimplyMedia/Submarine/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/SimplyMedia/Submarine/actions/workflows/build.yml)
+[![Image](https://img.shields.io/badge/image-ghcr.io%2Fsimplymedia%2Fsubmarine--api-blue?logo=docker&logoColor=white)](https://github.com/orgs/SimplyMedia/packages/container/package/submarine-api)
 
 Find, download, import, and rename TV series, anime, and movies from Usenet and BitTorrent. One app instead of Sonarr, Radarr, and Prowlarr, with its own metadata and scene numbering services.
 
@@ -19,7 +19,7 @@ Find, download, import, and rename TV series, anime, and movies from Usenet and 
 | Notifications | Discord, Telegram, Slack, Pushover, Pushbullet, Gotify, ntfy, Apprise, email, webhooks, scripts, Kodi, Plex, Emby, Jellyfin |
 | System | Health checks, scheduled tasks, backups with restore, logs, users, API key |
 
-Submarine runs as three containers. `submarine` is the app and web UI. `submarine-metadata` fetches and caches TMDB and TVDB, like Skyhook. `submarine-mappings` holds scene numbering and AniList mappings, like TheXEM. Each can run on its own host.
+Submarine runs as three containers. `submarine-api` is the app and web UI. `submarine-metadata` fetches and caches TMDB and TVDB, like Skyhook. `submarine-mappings` holds scene numbering and AniList mappings, like TheXEM. Each can run on its own host.
 
 ## Quick start
 
@@ -31,7 +31,7 @@ curl -LO https://raw.githubusercontent.com/SimplyMedia/Submarine/develop/example
 curl -Lo .env https://raw.githubusercontent.com/SimplyMedia/Submarine/develop/examples/.env.example
 ```
 
-Fill in `.env`, then start it. Until the first release is tagged, set `SUBMARINE_TAG=develop`.
+Fill in `.env`, then start it. Until this version reaches `master`, set `SUBMARINE_TAG=develop`.
 
 ```sh
 # Shared secret between the three containers
@@ -63,11 +63,12 @@ Set a URL base in Settings > General to serve Submarine under a sub path. Data, 
 
 | Tag | Contents |
 |---|---|
-| `latest` | The current release from `master` |
-| `1.2.3`, `1.2` | Versioned releases |
-| `develop`, `develop-<sha>` | Development builds from `develop` |
+| `latest`, `master` | The current state of `master` |
+| `develop` | Development builds from `develop` |
+| `<short sha>` | One specific commit from `master` or `develop` |
+| `v1.5.5`, `v1.5`, `v1` | Versioned releases, once they are tagged |
 
-The same tags exist for `submarine-metadata` and `submarine-mappings`.
+The same tags exist for `submarine-metadata` and `submarine-mappings`. Images build for `linux/amd64` and `linux/arm64` after all tests pass.
 
 ## Development
 
@@ -92,7 +93,7 @@ cd frontend && pnpm install && pnpm dev
 
 ## Contributing
 
-Issues and pull requests are welcome. Keep changes focused, target `develop`, and make sure CI passes. Use [Conventional Commits](https://www.conventionalcommits.org/).
+Issues and pull requests are welcome. Keep changes focused, target `develop`, and make sure the tests pass. Use [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## License
 
