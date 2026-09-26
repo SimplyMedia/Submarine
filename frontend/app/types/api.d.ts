@@ -19312,12 +19312,14 @@ export interface components {
             type: string;
             /** @description Field descriptors. */
             fields: components["schemas"]["NotificationFieldDescriptor"][];
+            /** @description Events this notification type can deliver, driving which toggles the UI shows. */
+            supportedEvents: string[];
         };
         /**
          * @description Type of a notification.
          * @enum {unknown}
          */
-        NotificationType: "DISCORD" | "TELEGRAM" | "WEBHOOK" | "SLACK" | "PUSHOVER" | "PUSHBULLET" | "GOTIFY" | "KODI" | "CUSTOM_SCRIPT" | "PLEX" | "EMBY" | "JELLYFIN" | "EMAIL" | "NTFY" | "APPRISE";
+        NotificationType: "DISCORD" | "TELEGRAM" | "WEBHOOK" | "SLACK" | "PUSHOVER" | "PUSHBULLET" | "GOTIFY" | "KODI" | "CUSTOM_SCRIPT" | "PLEX" | "EMBY" | "JELLYFIN" | "EMAIL" | "NTFY" | "APPRISE" | "JOIN" | "MAILGUN" | "NOTIFIARR" | "PROWL" | "PUSHCUT" | "PUSHSAFER" | "SENDGRID" | "SIGNAL" | "SIMPLEPUSH" | "SYNOLOGY_INDEXER" | "TWITTER";
         /** @description A single page of items. */
         PagedResultOfBlocklistItemDto: {
             items: components["schemas"]["BlocklistItemDto"][];

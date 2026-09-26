@@ -195,6 +195,39 @@ public sealed class WebhookSender(IHttpClientFactory httpClientFactory) : INotif
 		=> SendAsync(NotificationSenderHttp.TestMessage(), settingsJson, cancellationToken);
 }
 
+/// <summary>
+///     Notifiarr relay sender. Posts the same generic webhook payload as <see cref="WebhookSender" /> to
+///     Notifiarr's per-application ingest endpoint, authenticated with an API key header.
+/// </summary>
+public sealed class NotifiarrSender(IHttpClientFactory httpClientFactory) : INotificationSender
+{
+	// Notifiarr routes webhooks per source application; Submarine reports under the Sonarr integration
+	// until Notifiarr ships a dedicated Submarine integration.
+	private const string ApiUrl = "https://notifiarr.com/api/v1/notification/sonarr";
+
+	/// <inheritdoc />
+	public NotificationType Type => NotificationType.NOTIFIARR;
+
+	/// <inheritdoc />
+	public async Task SendAsync(NotificationMessage message, string settingsJson, CancellationToken cancellationToken = default)
+	{
+		var settings = (NotifiarrSettings)NotificationSettingsJson.Parse(Type, settingsJson);
+		using var request = new HttpRequestMessage(HttpMethod.Post, ApiUrl)
+		{
+			Content = new StringContent(JsonSerializer.Serialize(message, SubmarineJson.Default), Encoding.UTF8, "application/json")
+		};
+		request.Headers.Add("X-API-Key", settings.ApiKey);
+
+		var client = httpClientFactory.CreateClient(NotificationSenderFactory.HttpClientName);
+		using var response = await client.SendAsync(request, cancellationToken);
+		response.EnsureSuccessStatusCode();
+	}
+
+	/// <inheritdoc />
+	public Task TestAsync(string settingsJson, CancellationToken cancellationToken = default)
+		=> SendAsync(NotificationSenderHttp.TestMessage(), settingsJson, cancellationToken);
+}
+
 /// <summary>Shared helpers for http based senders.</summary>
 public static class NotificationSenderHttp
 {

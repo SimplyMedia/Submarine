@@ -341,6 +341,253 @@ public sealed class NotificationSenderTests
 		request.HasHeader("Authorization", "MediaBrowser Token=\"key\"").ShouldBeTrue();
 	}
 
+	[Fact]
+	public async Task Join_ShouldPostApiKeyTitleTextAndPriority()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new JoinSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"jk","priority":1}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldContain("apikey=jk");
+		request.Url.ShouldContain("title=Imported");
+		request.Url.ShouldContain("priority=1");
+		request.Url.ShouldContain("deviceId=group.all");
+	}
+
+	[Fact]
+	public async Task Join_ShouldUseDeviceNames_WhenSet()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new JoinSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"jk","deviceNames":"phone,tablet"}""", TestContext.Current.CancellationToken);
+
+		stub.Requests.Single().Url.ShouldContain("deviceNames=phone%2Ctablet");
+	}
+
+	[Fact]
+	public async Task Mailgun_ShouldPostFormWithBasicAuth()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new MailgunSender(factory);
+		var settings = """{"apiKey":"mg-key","from":"a@b.c","senderDomain":"mg.example.com","recipients":["d@e.f","g@h.i"]}""";
+
+		await sender.SendAsync(Message(), settings, TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://api.mailgun.net/v3/mg.example.com/messages");
+		request.HasHeader("Authorization", $"Basic {Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("api:mg-key"))}").ShouldBeTrue();
+		request.Body!.ShouldContain("from=a%40b.c");
+		request.Body!.ShouldContain("to=d%40e.f");
+		request.Body!.ShouldContain("to=g%40h.i");
+		request.Body!.ShouldContain("subject=Imported");
+	}
+
+	[Fact]
+	public async Task Mailgun_ShouldUseEuEndpoint_WhenConfigured()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new MailgunSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"k","useEuEndpoint":true,"from":"a@b.c","senderDomain":"d.com","recipients":["e@f.g"]}""", TestContext.Current.CancellationToken);
+
+		stub.Requests.Single().Url.ShouldBe("https://api.eu.mailgun.net/v3/d.com/messages");
+	}
+
+	[Fact]
+	public async Task Notifiarr_ShouldPostWebhookPayload_WithApiKeyHeader()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new NotifiarrSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"nr-key"}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://notifiarr.com/api/v1/notification/sonarr");
+		request.HasHeader("X-API-Key", "nr-key").ShouldBeTrue();
+		request.Body!.ShouldContain("\"eventType\":\"IMPORT\"");
+	}
+
+	[Fact]
+	public async Task Prowl_ShouldPostFormWithApiKeyAndPriority()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new ProwlSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"pk","priority":2}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://api.prowlapp.com/publicapi/add");
+		request.Body!.ShouldContain("apikey=pk");
+		request.Body!.ShouldContain("application=Submarine");
+		request.Body!.ShouldContain("priority=2");
+	}
+
+	[Fact]
+	public async Task Pushcut_ShouldPostToNotificationPath_WithApiKeyHeader()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new PushcutSender(factory);
+
+		await sender.SendAsync(Message(), """{"notificationName":"Submarine Alert","apiKey":"pc","timeSensitive":true}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://api.pushcut.io/v1/notifications/Submarine Alert");
+		request.HasHeader("API-Key", "pc").ShouldBeTrue();
+		request.Body!.ShouldContain("\"isTimeSensitive\":true");
+	}
+
+	[Fact]
+	public async Task Pushsafer_ShouldPostFormWithDevicesAndPriority()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new PushsaferSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"ps","deviceIds":["111","222"],"priority":0}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://pushsafer.com/api");
+		request.Body!.ShouldContain("k=ps");
+		request.Body!.ShouldContain("d=111%7C222");
+		request.Body!.ShouldNotContain("re=");
+	}
+
+	[Fact]
+	public async Task Pushsafer_ShouldIncludeRetryAndExpire_ForEmergencyPriority()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new PushsaferSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"ps","priority":2,"retry":120,"expire":3600}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Body!.ShouldContain("re=120");
+		request.Body!.ShouldContain("ex=3600");
+	}
+
+	[Fact]
+	public async Task SendGrid_ShouldPostBearerAuthAndPersonalizations()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new SendGridSender(factory);
+
+		await sender.SendAsync(Message(), """{"apiKey":"sg","from":"a@b.c","recipients":["d@e.f"]}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://api.sendgrid.com/v3/mail/send");
+		request.HasHeader("Authorization", "Bearer sg").ShouldBeTrue();
+		request.Body!.ShouldContain("\"email\":\"d@e.f\"");
+		request.Body!.ShouldContain("\"email\":\"a@b.c\"");
+	}
+
+	[Fact]
+	public async Task Signal_ShouldPostJson_WithBasicAuthWhenConfigured()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new SignalSender(factory);
+		var settings = """{"host":"signal","port":8080,"senderNumber":"1000","receiverId":"2000","authUsername":"u","authPassword":"p"}""";
+
+		await sender.SendAsync(Message(), settings, TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("http://signal:8080/v2/send");
+		request.HasHeader("Authorization", "Basic dTpw").ShouldBeTrue();
+		request.Body!.ShouldContain("\"number\":\"1000\"");
+		request.Body!.ShouldContain("\"recipients\":[\"2000\"]");
+	}
+
+	[Fact]
+	public async Task Simplepush_ShouldPostFormWithKeyAndEvent()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new SimplepushSender(factory);
+
+		await sender.SendAsync(Message(), """{"key":"spk","event":"encpass"}""", TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://api.simplepush.io/send");
+		request.Body!.ShouldContain("key=spk");
+		request.Body!.ShouldContain("event=encpass");
+	}
+
+	[Fact]
+	public async Task SynologyIndexer_ShouldAddFile_OnImport()
+	{
+		var process = new FakeSynologyIndexerProcess();
+		var sender = new SynologyIndexerSender(process);
+
+		await sender.SendAsync(Message(NotificationEventType.IMPORT), """{"updateLibrary":true}""", TestContext.Current.CancellationToken);
+
+		process.Calls.Single().ShouldBe("-a \"/media/tv/Some Show/S01E01.mkv\"");
+	}
+
+	[Fact]
+	public async Task SynologyIndexer_ShouldDeleteFile_OnDelete()
+	{
+		var process = new FakeSynologyIndexerProcess();
+		var sender = new SynologyIndexerSender(process);
+
+		await sender.SendAsync(Message(NotificationEventType.DELETE), """{"updateLibrary":true}""", TestContext.Current.CancellationToken);
+
+		process.Calls.Single().ShouldBe("-d \"/media/tv/Some Show/S01E01.mkv\"");
+	}
+
+	[Fact]
+	public async Task SynologyIndexer_ShouldSkip_WhenUpdateLibraryDisabled()
+	{
+		var process = new FakeSynologyIndexerProcess();
+		var sender = new SynologyIndexerSender(process);
+
+		await sender.SendAsync(Message(NotificationEventType.IMPORT), """{"updateLibrary":false}""", TestContext.Current.CancellationToken);
+
+		process.Calls.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task Twitter_ShouldSignRequest_AndPostStatus()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new TwitterSender(factory);
+		var settings = """{"consumerKey":"ck","consumerSecret":"cs","accessToken":"at","accessTokenSecret":"ats","directMessage":false}""";
+
+		await sender.SendAsync(Message(), settings, TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://api.twitter.com/1.1/statuses/update.json");
+		var auth = request.Headers.Authorization!.ToString();
+		auth.ShouldStartWith("OAuth ");
+		auth.ShouldContain("oauth_consumer_key=\"ck\"");
+		auth.ShouldContain("oauth_signature=");
+		request.Body!.ShouldContain("status=");
+	}
+
+	[Fact]
+	public async Task Twitter_ShouldSendDirectMessage_WhenConfigured()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new TwitterSender(factory);
+		var settings = """{"consumerKey":"ck","consumerSecret":"cs","accessToken":"at","accessTokenSecret":"ats","directMessage":true,"mention":"someone"}""";
+
+		await sender.SendAsync(Message(), settings, TestContext.Current.CancellationToken);
+
+		var request = stub.Requests.Single();
+		request.Url.ShouldBe("https://api.twitter.com/1.1/direct_messages/new.json");
+		request.Body!.ShouldContain("screen_name=someone");
+	}
+
+	private sealed class FakeSynologyIndexerProcess : ISynologyIndexerProcess
+	{
+		public List<string> Calls { get; } = [];
+
+		public Task RunAsync(string arguments, bool treatStdOutAsError = true, CancellationToken cancellationToken = default)
+		{
+			Calls.Add(arguments);
+			return Task.CompletedTask;
+		}
+	}
+
 	private static (IHttpClientFactory Factory, StubHttpHandler Stub) CreateFactoryWithSections(
 		string tvLocation = "/media/tv")
 		=> CreateFactory((request, _) =>

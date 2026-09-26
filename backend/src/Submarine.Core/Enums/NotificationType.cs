@@ -48,5 +48,38 @@ public enum NotificationType
 	NTFY,
 
 	/// <summary>Apprise.</summary>
-	APPRISE
+	APPRISE,
+
+	/// <summary>Join push notification.</summary>
+	JOIN,
+
+	/// <summary>Mailgun email API.</summary>
+	MAILGUN,
+
+	/// <summary>Notifiarr webhook relay.</summary>
+	NOTIFIARR,
+
+	/// <summary>Prowl push notification.</summary>
+	PROWL,
+
+	/// <summary>Pushcut push notification.</summary>
+	PUSHCUT,
+
+	/// <summary>Pushsafer push notification.</summary>
+	PUSHSAFER,
+
+	/// <summary>SendGrid email API.</summary>
+	SENDGRID,
+
+	/// <summary>Signal messenger via signal-cli REST API.</summary>
+	SIGNAL,
+
+	/// <summary>Simplepush push notification.</summary>
+	SIMPLEPUSH,
+
+	/// <summary>Synology DiskStation media indexer.</summary>
+	SYNOLOGY_INDEXER,
+
+	/// <summary>Twitter/X status update or direct message.</summary>
+	TWITTER
 }

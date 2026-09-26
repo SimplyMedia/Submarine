@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Submarine.Core.Entities;
 
@@ -35,5 +36,17 @@ internal sealed class NotificationConfiguration : EntityConfiguration<Notificati
 		base.Configure(builder);
 		builder.Property(x => x.Name).HasMaxLength(256);
 		builder.HasMany(x => x.Tags).WithMany();
+	}
+}
+
+/// <summary>Configuration for <see cref="NotificationStatus" />.</summary>
+internal sealed class NotificationStatusConfiguration : EntityConfiguration<NotificationStatus>
+{
+	/// <inheritdoc />
+	public override void Configure(EntityTypeBuilder<NotificationStatus> builder)
+	{
+		base.Configure(builder);
+		builder.HasIndex(x => x.NotificationId).IsUnique();
+		builder.HasOne(x => x.Notification).WithMany().HasForeignKey(x => x.NotificationId).OnDelete(DeleteBehavior.Cascade);
 	}
 }

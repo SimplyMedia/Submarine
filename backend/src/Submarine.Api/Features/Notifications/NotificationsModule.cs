@@ -40,7 +40,10 @@ public sealed class NotificationsModule : IEndpointModule
 
 	private static Ok<List<NotificationSchemaDto>> SchemaAsync()
 		=> TypedResults.Ok(NotificationSettingsJson.DescribeAll()
-			.Select(pair => new NotificationSchemaDto(pair.Key.ToString(), pair.Value))
+			.Select(pair => new NotificationSchemaDto(
+				pair.Key.ToString(),
+				pair.Value,
+				NotificationCapabilities.SupportedEvents(pair.Key).Select(e => e.ToString()).ToList()))
 			.ToList());
 
 	private static async Task<Created<NotificationDto>> CreateAsync(
@@ -244,7 +247,8 @@ public sealed record NotificationDto(
 /// <summary>Field descriptors of one notification type.</summary>
 /// <param name="Type">Notification implementation name.</param>
 /// <param name="Fields">Field descriptors.</param>
-public sealed record NotificationSchemaDto(string Type, IReadOnlyList<NotificationFieldDescriptor> Fields);
+/// <param name="SupportedEvents">Events this notification type can deliver, driving which toggles the UI shows.</param>
+public sealed record NotificationSchemaDto(string Type, IReadOnlyList<NotificationFieldDescriptor> Fields, IReadOnlyList<string> SupportedEvents);
 
 /// <summary>Validator for <see cref="SaveNotificationRequest" />.</summary>
 public sealed class SaveNotificationRequestValidator : AbstractValidator<SaveNotificationRequest>

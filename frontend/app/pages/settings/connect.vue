@@ -28,17 +28,23 @@ interface FormState {
 
 type BooleanFormKey = { [K in keyof FormState]: FormState[K] extends boolean ? K : never }[keyof FormState]
 
-const EVENT_FIELDS: ReadonlyArray<{ key: BooleanFormKey, label: string }> = [
-	{ key: 'onGrab', label: 'Grab' },
-	{ key: 'onImport', label: 'Import' },
-	{ key: 'onUpgrade', label: 'Upgrade' },
-	{ key: 'onRename', label: 'Rename' },
-	{ key: 'onDelete', label: 'Delete' },
-	{ key: 'onHealthIssue', label: 'Health issue' },
-	{ key: 'onHealthRestored', label: 'Health restored' },
-	{ key: 'onApplicationUpdate', label: 'Application update' },
-	{ key: 'onManualInteractionRequired', label: 'Manual interaction required' },
+const EVENT_FIELDS: ReadonlyArray<{ key: BooleanFormKey, label: string, event: string }> = [
+	{ key: 'onGrab', label: 'Grab', event: 'GRAB' },
+	{ key: 'onImport', label: 'Import', event: 'IMPORT' },
+	{ key: 'onUpgrade', label: 'Upgrade', event: 'UPGRADE' },
+	{ key: 'onRename', label: 'Rename', event: 'RENAME' },
+	{ key: 'onDelete', label: 'Delete', event: 'DELETE' },
+	{ key: 'onHealthIssue', label: 'Health issue', event: 'HEALTH' },
+	{ key: 'onHealthRestored', label: 'Health restored', event: 'HEALTH_RESTORED' },
+	{ key: 'onApplicationUpdate', label: 'Application update', event: 'APPLICATION_UPDATE' },
+	{ key: 'onManualInteractionRequired', label: 'Manual interaction required', event: 'MANUAL_INTERACTION' },
 ]
+
+/** Event toggles the given notification type can actually deliver, per its schema's supportedEvents. */
+function eventFieldsFor(type: string) {
+	const supported = settings.notificationSchemas.find(s => s.type === type)?.supportedEvents
+	return supported ? EVENT_FIELDS.filter(f => supported.includes(f.event)) : EVENT_FIELDS
+}
 
 definePageMeta({ layout: 'default' })
 useHead({ title: 'Connect' })
@@ -470,7 +476,7 @@ const columns = [
 				</p>
 				<div class="connect-events-grid">
 					<SCheckbox
-						v-for="ev in EVENT_FIELDS"
+						v-for="ev in eventFieldsFor(selectedType)"
 						:key="ev.key"
 						v-model="form[ev.key]"
 						:label="ev.label"

@@ -23438,7 +23438,8 @@
       "NotificationSchemaDto": {
         "required": [
           "type",
-          "fields"
+          "fields",
+          "supportedEvents"
         ],
         "type": "object",
         "properties": {
@@ -23452,6 +23453,13 @@
               "$ref": "#/components/schemas/NotificationFieldDescriptor"
             },
             "description": "Field descriptors."
+          },
+          "supportedEvents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Events this notification type can deliver, driving which toggles the UI shows."
           }
         },
         "description": "Field descriptors of one notification type."
@@ -23472,7 +23480,18 @@
           "JELLYFIN",
           "EMAIL",
           "NTFY",
-          "APPRISE"
+          "APPRISE",
+          "JOIN",
+          "MAILGUN",
+          "NOTIFIARR",
+          "PROWL",
+          "PUSHCUT",
+          "PUSHSAFER",
+          "SENDGRID",
+          "SIGNAL",
+          "SIMPLEPUSH",
+          "SYNOLOGY_INDEXER",
+          "TWITTER"
         ],
         "description": "Type of a notification."
       },

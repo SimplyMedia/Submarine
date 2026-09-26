@@ -18,6 +18,7 @@ namespace Submarine.Infrastructure.Notifications;
 public sealed class NotificationDispatcher(
 	SubmarineDbContext db,
 	INotificationSenderFactory senderFactory,
+	INotificationStatusService statusService,
 	ILogger<NotificationDispatcher> logger) :
 	IEventHandler<ReleaseGrabbedEvent>,
 	IEventHandler<EpisodeFileImportedEvent>,
@@ -272,13 +273,14 @@ public sealed class NotificationDispatcher(
 	{
 		foreach (var notification in notifications)
 		{
-			if (notification.Type is NotificationType.PLEX or NotificationType.EMBY or NotificationType.JELLYFIN
-				&& message.EventType
-					is not (NotificationEventType.IMPORT
-						or NotificationEventType.UPGRADE
-						or NotificationEventType.RENAME
-						or NotificationEventType.DELETE))
+			if (!NotificationCapabilities.Supports(notification.Type, message.EventType))
 			{
+				continue;
+			}
+
+			if (!await statusService.IsAvailableAsync(notification.Id, cancellationToken))
+			{
+				logger.LogDebug("Notification {Name} skipped: disabled by backoff", notification.Name);
 				continue;
 			}
 
@@ -296,6 +298,7 @@ public sealed class NotificationDispatcher(
 			try
 			{
 				await sender.SendAsync(message, notification.SettingsJson, cancellationToken);
+				await statusService.RecordSuccessAsync(notification.Id, cancellationToken);
 			}
 			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
 			{
@@ -305,6 +308,7 @@ public sealed class NotificationDispatcher(
 			{
 				logger.LogError(ex, "Notification {Name} ({Type}) failed for {Event}",
 					notification.Name, notification.Type, message.EventType);
+				await statusService.RecordFailureAsync(notification.Id, cancellationToken);
 			}
 		}
 	}

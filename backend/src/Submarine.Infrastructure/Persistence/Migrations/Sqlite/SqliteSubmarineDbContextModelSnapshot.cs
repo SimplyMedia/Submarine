@@ -1615,6 +1615,41 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DisabledUntil")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EscalationLevel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("InitialFailure")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("MostRecentFailure")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NotificationId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NotificationId")
+                        .IsUnique();
+
+                    b.ToTable("NotificationStatuses");
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>
                 {
                     b.Property<int>("Id")
@@ -2579,6 +2614,17 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Navigation("MediaVersion");
 
                     b.Navigation("Movie");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.NotificationStatus", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.Notification", "Notification")
+                        .WithMany()
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Notification");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.PendingRelease", b =>
