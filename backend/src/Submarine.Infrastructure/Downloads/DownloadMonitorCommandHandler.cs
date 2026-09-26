@@ -192,6 +192,7 @@ public sealed class DownloadMonitorCommandHandler(
 
 		if (download.State == TrackedDownloadState.IMPORTED
 			&& downloadConfig.RemoveCompletedDownloads
+			&& client.Entity.RemoveCompleted
 			&& item.CanBeRemoved
 			&& (item.Protocol != Protocol.BITTORRENT || item.CanMoveFiles))
 		{
@@ -271,7 +272,7 @@ public sealed class DownloadMonitorCommandHandler(
 			}
 		}
 
-		if (downloadConfig.RemoveFailedDownloads)
+		if (downloadConfig.RemoveFailedDownloads && client.Entity.RemoveFailed)
 		{
 			try
 			{

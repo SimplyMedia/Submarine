@@ -91,6 +91,12 @@ public static class DownloadClientSettingsJson
 			DownloadClientType.NZBGET => typeof(NzbGetSettings),
 			DownloadClientType.TORRENT_BLACKHOLE => typeof(TorrentBlackholeSettings),
 			DownloadClientType.USENET_BLACKHOLE => typeof(UsenetBlackholeSettings),
+			DownloadClientType.VUZE => typeof(TransmissionSettings),
+			DownloadClientType.HADOUKEN => typeof(HadoukenSettings),
+			DownloadClientType.NZBVORTEX => typeof(NzbVortexSettings),
+			DownloadClientType.PNEUMATIC => typeof(PneumaticSettings),
+			DownloadClientType.FREEBOX_DOWNLOAD => typeof(FreeboxDownloadSettings),
+			DownloadClientType.RQBIT => typeof(RQbitSettings),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown download client type")
 		};
 
@@ -146,6 +152,27 @@ public static class DownloadClientSettingsJson
 			case UsenetBlackholeSettings s:
 				Require(errors, s.NzbFolder, "nzbFolder");
 				Require(errors, s.WatchFolder, "watchFolder");
+				break;
+			case HadoukenSettings s:
+				Require(errors, s.Host, "host");
+				Require(errors, s.Username, "username");
+				Require(errors, s.Password, "password");
+				break;
+			case NzbVortexSettings s:
+				Require(errors, s.Host, "host");
+				Require(errors, s.ApiKey, "apiKey");
+				break;
+			case PneumaticSettings s:
+				Require(errors, s.NzbFolder, "nzbFolder");
+				Require(errors, s.StrmFolder, "strmFolder");
+				break;
+			case FreeboxDownloadSettings s:
+				Require(errors, s.Host, "host");
+				Require(errors, s.AppId, "appId");
+				Require(errors, s.AppToken, "appToken");
+				break;
+			case RQbitSettings s:
+				Require(errors, s.Host, "host");
 				break;
 			default:
 				throw new ArgumentOutOfRangeException(nameof(settings), settings, "Unknown download client settings");

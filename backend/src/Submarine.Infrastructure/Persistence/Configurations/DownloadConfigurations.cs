@@ -15,6 +15,8 @@ internal sealed class DownloadClientConfiguration : EntityConfiguration<Download
 	{
 		base.Configure(builder);
 		builder.Property(x => x.Name).HasMaxLength(256);
+		builder.Property(x => x.RemoveCompleted).HasDefaultValue(true);
+		builder.Property(x => x.RemoveFailed).HasDefaultValue(true);
 		builder.HasMany(x => x.Tags).WithMany();
 	}
 }

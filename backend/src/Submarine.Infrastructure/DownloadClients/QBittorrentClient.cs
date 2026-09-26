@@ -96,6 +96,9 @@ public sealed class QBittorrentClient(
 		if (Settings.FirstAndLast)
 			fields.Add(new KeyValuePair<string, string>("firstLastPiecePrio", "true"));
 
+		if (Settings.ContentLayout != QBittorrentContentLayout.DEFAULT)
+			fields.Add(new KeyValuePair<string, string>("contentLayout", Settings.ContentLayout.ToString()));
+
 		// season pack seed time is not distinguishable at add, so the regular seed time wins when both are set
 		if (seedCriteria?.Ratio is { } ratio)
 			fields.Add(new KeyValuePair<string, string>("ratioLimit", ratio.ToString(CultureInfo.InvariantCulture)));
@@ -162,6 +165,16 @@ public sealed class QBittorrentClient(
 	private async Task<HttpResponseMessage> AuthenticatedAsync(Func<HttpRequestMessage> requestFactory,
 		CancellationToken cancellationToken)
 	{
+		if (Settings.ApiKey is { Length: > 0 } apiKey)
+		{
+			var apiKeyRequest = requestFactory();
+			apiKeyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+			var apiKeyResponse = await SendAsync(() => apiKeyRequest, cancellationToken);
+			EnsureSuccess(apiKeyResponse, $"qBittorrent {ClientName} request");
+
+			return apiKeyResponse;
+		}
+
 		if (_sid is null)
 			await LoginAsync(cancellationToken);
 

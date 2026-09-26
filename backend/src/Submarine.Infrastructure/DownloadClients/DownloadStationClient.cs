@@ -45,6 +45,8 @@ public sealed class DownloadStationClient(
 		};
 		if (Settings.Directory is { Length: > 0 })
 			query["destination"] = Settings.Directory;
+		else if (Settings.Category is { Length: > 0 })
+			query["destination"] = Settings.Category;
 
 		await ApiGetAsync("DownloadStation/task.cgi", query, cancellationToken);
 

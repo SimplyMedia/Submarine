@@ -29,6 +29,39 @@ public record FloodSettings : DownloadClientSettings, IDownloadClientEndpoint
 	/// <summary>Tags added torrents receive and are owned by</summary>
 	public IReadOnlyList<string> Tags { get; init; } = [];
 
+	/// <summary>Tags added torrents receive after import, in addition to <see cref="Tags" /></summary>
+	public IReadOnlyList<string> PostImportTags { get; init; } = [];
+
+	/// <summary>Per-release metadata tags added torrents receive, in addition to <see cref="Tags" /></summary>
+	public IReadOnlyList<FloodAdditionalTag> AdditionalTags { get; init; } = [];
+
 	/// <summary>Whether torrents are added paused</summary>
 	public bool AddPaused { get; init; }
+}
+
+/// <summary>
+///     Per-release metadata Flood can tag added torrents with
+/// </summary>
+public enum FloodAdditionalTag
+{
+	/// <summary>Slugified series or movie title</summary>
+	TITLE_SLUG,
+
+	/// <summary>Quality source and resolution</summary>
+	QUALITY,
+
+	/// <summary>Parsed languages</summary>
+	LANGUAGES,
+
+	/// <summary>Release group</summary>
+	RELEASE_GROUP,
+
+	/// <summary>First-air or release year</summary>
+	YEAR,
+
+	/// <summary>Indexer the release came from</summary>
+	INDEXER,
+
+	/// <summary>Series broadcast network; not set for movies</summary>
+	NETWORK
 }

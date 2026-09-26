@@ -19956,7 +19956,13 @@
           "SABNZBD",
           "NZBGET",
           "TORRENT_BLACKHOLE",
-          "USENET_BLACKHOLE"
+          "USENET_BLACKHOLE",
+          "VUZE",
+          "HADOUKEN",
+          "NZBVORTEX",
+          "PNEUMATIC",
+          "FREEBOX_DOWNLOAD",
+          "RQBIT"
         ]
       },
       "DownloadConfigResource": {

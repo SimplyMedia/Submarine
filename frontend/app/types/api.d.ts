@@ -18330,7 +18330,7 @@ export interface components {
             };
         };
         /** @enum {unknown} */
-        DownloadClientType: "QBITTORRENT" | "TRANSMISSION" | "DELUGE" | "RTORRENT" | "UTORRENT" | "ARIA2" | "FLOOD" | "DOWNLOAD_STATION" | "SABNZBD" | "NZBGET" | "TORRENT_BLACKHOLE" | "USENET_BLACKHOLE";
+        DownloadClientType: "QBITTORRENT" | "TRANSMISSION" | "DELUGE" | "RTORRENT" | "UTORRENT" | "ARIA2" | "FLOOD" | "DOWNLOAD_STATION" | "SABNZBD" | "NZBGET" | "TORRENT_BLACKHOLE" | "USENET_BLACKHOLE" | "VUZE" | "HADOUKEN" | "NZBVORTEX" | "PNEUMATIC" | "FREEBOX_DOWNLOAD" | "RQBIT";
         /** @description Download handling configuration resource. */
         DownloadConfigResource: {
             /** @description Import completed downloads automatically. */

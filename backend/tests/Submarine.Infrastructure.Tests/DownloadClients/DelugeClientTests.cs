@@ -215,4 +215,45 @@ public class DelugeClientTests
 
 		logins.ShouldBe(2);
 	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldSetPostImportLabel_WhenDifferentFromCategory()
+	{
+		string? capturedMethod = null;
+		string[]? capturedParams = null;
+		var handler = new StubHttpHandler((_, body) =>
+		{
+			var root = JsonDocument.Parse(body!).RootElement;
+			var method = root.GetProperty("method").GetString();
+			if (method == "auth.login")
+				return Rpc(true, setCookie: true);
+
+			capturedMethod = method;
+			capturedParams = [.. root.GetProperty("params").EnumerateArray().Select(p => p.GetString()!)];
+			return Rpc(null);
+		});
+		var client = new DelugeClient(Settings() with { PostImportCategory = "imported" }, 1, "deluge",
+			new HttpClient(handler));
+
+		await client.MarkImportedAsync("aaaa", TestContext.Current.CancellationToken);
+
+		capturedMethod.ShouldBe("label.set_torrent");
+		capturedParams.ShouldBe(["aaaa", "imported"]);
+	}
+
+	[Fact]
+	public async Task MarkImportedAsync_ShouldNotCallApi_WhenPostImportCategoryMatchesCategory()
+	{
+		var handler = new StubHttpHandler((_, body) =>
+		{
+			var method = JsonDocument.Parse(body!).RootElement.GetProperty("method").GetString();
+			return method == "auth.login" ? Rpc(true, setCookie: true) : Rpc(null);
+		});
+		var client = new DelugeClient(Settings() with { PostImportCategory = "tv" }, 1, "deluge",
+			new HttpClient(handler));
+
+		await client.MarkImportedAsync("aaaa", TestContext.Current.CancellationToken);
+
+		handler.Requests.Count.ShouldBe(0);
+	}
 }

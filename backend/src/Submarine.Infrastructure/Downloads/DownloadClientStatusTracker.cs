@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Submarine.Core.Events;
+using Submarine.Core.Provider;
 
 namespace Submarine.Infrastructure.Downloads;
 
@@ -11,6 +12,7 @@ public sealed class DownloadClientStatusTracker(IEventBus eventBus, TimeProvider
 	private static readonly int[] BackoffMinutes = [5, 15, 30, 60, 180, 360, 720, 1440];
 
 	private readonly ConcurrentDictionary<int, State> _states = new();
+	private readonly ConcurrentDictionary<Protocol, int> _lastUsedClientId = new();
 
 	/// <inheritdoc />
 	public bool IsAvailable(int clientId)
@@ -42,6 +44,14 @@ public sealed class DownloadClientStatusTracker(IEventBus eventBus, TimeProvider
 			await eventBus.PublishAsync(new DownloadClientStatusChangedEvent(clientId), cancellationToken);
 		}
 	}
+
+	/// <inheritdoc />
+	public int GetLastUsedClientId(Protocol protocol)
+		=> _lastUsedClientId.GetValueOrDefault(protocol);
+
+	/// <inheritdoc />
+	public void SetLastUsedClientId(Protocol protocol, int clientId)
+		=> _lastUsedClientId[protocol] = clientId;
 
 	private sealed class State
 	{
