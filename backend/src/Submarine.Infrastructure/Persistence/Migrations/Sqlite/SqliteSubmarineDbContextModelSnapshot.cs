@@ -17,6 +17,21 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("AutoTaggingRuleTag", b =>
+                {
+                    b.Property<int>("AutoTaggingRuleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagsId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("AutoTaggingRuleId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("AutoTaggingRuleTag");
+                });
+
             modelBuilder.Entity("DelayProfileTag", b =>
                 {
                     b.Property<int>("DelayProfileId")
@@ -200,6 +215,38 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.HasIndex("SeriesId");
 
                     b.ToTable("AlternativeTitles");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.AutoTaggingRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enable")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("RemoveTagsAutomatically")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Specifications")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AutoTaggingRules");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.BlocklistItem", b =>
@@ -1399,6 +1446,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("FileDate")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("ImportExtraFiles")
                         .HasColumnType("INTEGER");
 
@@ -1423,9 +1473,6 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("UseHardlinks")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("WriteNfo")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -1482,6 +1529,38 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.ToTable("MediaVersions");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.MetadataConsumer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enable")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SettingsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MetadataConsumers");
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.Movie", b =>
                 {
                     b.Property<int>("Id")
@@ -1521,6 +1600,10 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<bool>("IsAnime")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Keywords")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("LastRefreshedAt")
                         .HasColumnType("TEXT");
 
@@ -1532,6 +1615,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
 
                     b.Property<bool>("Monitored")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("OriginalLanguage")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("OriginalTitle")
                         .HasColumnType("TEXT");
@@ -2196,6 +2282,9 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Property<int>("Numbering")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("OriginalLanguage")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Overview")
                         .HasColumnType("TEXT");
 
@@ -2442,6 +2531,21 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("AutoTaggingRuleTag", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.AutoTaggingRule", null)
+                        .WithMany()
+                        .HasForeignKey("AutoTaggingRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Submarine.Core.Entities.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DelayProfileTag", b =>

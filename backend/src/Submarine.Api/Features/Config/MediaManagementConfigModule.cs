@@ -43,7 +43,7 @@ public sealed class MediaManagementConfigModule : IEndpointModule
 /// <param name="ExtraFileExtensions">Comma separated extensions considered extra files.</param>
 /// <param name="MinimumFreeSpaceMb">Minimum free space in MB before importing.</param>
 /// <param name="SkipFreeSpaceCheck">Skip the free space check.</param>
-/// <param name="WriteNfo">Write Kodi compatible NFO files.</param>
+/// <param name="FileDate">Which date is applied to a media file's modified timestamp on import and rescan.</param>
 /// <param name="RecycleBinPath">Recycle bin path, empty to delete immediately.</param>
 /// <param name="RecycleBinCleanupDays">Days to keep files in the recycle bin.</param>
 /// <param name="CreateEmptySeriesFolders">Create empty series folders on add.</param>
@@ -61,7 +61,7 @@ public sealed record MediaManagementConfigResource(
 	string ExtraFileExtensions,
 	int MinimumFreeSpaceMb,
 	bool SkipFreeSpaceCheck,
-	bool WriteNfo,
+	FileDate FileDate,
 	string RecycleBinPath,
 	int RecycleBinCleanupDays,
 	bool CreateEmptySeriesFolders,
@@ -82,7 +82,7 @@ public sealed record MediaManagementConfigResource(
 			config.ExtraFileExtensions,
 			config.MinimumFreeSpaceMb,
 			config.SkipFreeSpaceCheck,
-			config.WriteNfo,
+			config.FileDate,
 			config.RecycleBinPath,
 			config.RecycleBinCleanupDays,
 			config.CreateEmptySeriesFolders,

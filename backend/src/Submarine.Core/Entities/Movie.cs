@@ -25,6 +25,12 @@ public sealed class Movie : Entity
 	/// <summary>Original language title.</summary>
 	public string? OriginalTitle { get; set; }
 
+	/// <summary>Original language code.</summary>
+	public string? OriginalLanguage { get; set; }
+
+	/// <summary>TMDB keywords.</summary>
+	public List<string> Keywords { get; set; } = [];
+
 	/// <summary>Overview.</summary>
 	public string? Overview { get; set; }
 

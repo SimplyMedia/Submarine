@@ -105,7 +105,15 @@ public class TvdbClientTests
 	public async Task GetSeriesByTvdb_ShouldMapSeriesWithAllOrderings_WhenEveryOrderingCoversAllEpisodes()
 	{
 		var handler = new StubHttpMessageHandler()
-			.EnqueueTvdbSeries(Fixtures.TvdbEpisodesDvd, Fixtures.TvdbEpisodesAbsolute);
+			.Respond(HttpStatusCode.OK, Fixtures.TvdbLoginA)
+			.Respond(HttpStatusCode.OK, Fixtures.TvdbSeriesExtended.Replace(
+				"\"id\":75760",
+				"\"id\":75760,\"originalLanguage\":\"sv\"",
+				StringComparison.Ordinal))
+			.Respond(HttpStatusCode.OK, Fixtures.TvdbEpisodesDefault)
+			.Respond(HttpStatusCode.OK, Fixtures.TvdbEpisodesDvd)
+			.Respond(HttpStatusCode.OK, Fixtures.TvdbEpisodesAbsolute)
+			.Respond(HttpStatusCode.OK, Fixtures.TvdbTranslations);
 		using var host = MetadataTestHost.Create(handler);
 
 		var series = await host.Service.GetSeriesByTvdbAsync(75760, TestContext.Current.CancellationToken);
@@ -117,6 +125,7 @@ public class TvdbClientTests
 		series.Title.ShouldBe("Wallander");
 		series.SortTitle.ShouldBe("wallander");
 		series.Status.ShouldBe(SeriesStatus.ENDED);
+		series.OriginalLanguage.ShouldBe("sv");
 		series.Network.ShouldBe("TV4");
 		series.Runtime.ShouldBe(90);
 		series.Year.ShouldBe(2005);

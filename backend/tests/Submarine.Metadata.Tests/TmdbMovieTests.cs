@@ -11,7 +11,11 @@ public class TmdbMovieTests
 	[Fact]
 	public async Task GetMovie_ShouldMapReleaseDatesPerType_WhenReleaseDatesExist()
 	{
-		var handler = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, Fixtures.TmdbMovieDetail);
+		var detail = Fixtures.TmdbMovieDetail.Replace(
+			"\"id\":27205",
+			"\"id\":27205,\"original_language\":\"en\",\"keywords\":{\"keywords\":[{\"id\":1,\"name\":\"dreams\"},{\"id\":2,\"name\":\"heist\"}]}",
+			StringComparison.Ordinal);
+		var handler = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, detail);
 		using var host = MetadataTestHost.Create(handler);
 
 		var movie = await host.Service.GetMovieAsync(27205, TestContext.Current.CancellationToken);
@@ -27,7 +31,23 @@ public class TmdbMovieTests
 		movie.Year.ShouldBe(2010);
 		movie.Runtime.ShouldBe(148);
 		movie.PosterUrl.ShouldBe("https://image.tmdb.org/t/p/original/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg");
-		handler.RequestPaths[0].ShouldContain("append_to_response=release_dates,alternative_titles,videos,external_ids");
+		movie.OriginalLanguage.ShouldBe("en");
+		movie.Keywords.ShouldBe(["dreams", "heist"]);
+		handler.RequestPaths[0].ShouldContain("append_to_response=release_dates,alternative_titles,videos,external_ids,keywords");
+	}
+
+	[Fact]
+	public async Task GetMovieList_ShouldMapOriginalLanguageFromSummary_WhenPresent()
+	{
+		var handler = new StubHttpMessageHandler().Respond(
+			HttpStatusCode.OK,
+			"""{"id":1,"name":"List","overview":null,"items":[{"id":27205,"title":"Inception","original_title":"Inception","original_language":"en"}]}""");
+		using var host = MetadataTestHost.Create(handler);
+
+		var movies = await host.Service.GetMovieListAsync(1, TestContext.Current.CancellationToken);
+
+		movies.ShouldHaveSingleItem().OriginalLanguage.ShouldBe("en");
+		movies[0].Keywords.ShouldBeEmpty();
 	}
 
 	[Fact]

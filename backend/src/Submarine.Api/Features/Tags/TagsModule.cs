@@ -55,7 +55,8 @@ public sealed class TagsModule : IServiceModule, IEndpointModule
 			await db.Notifications.Where(x => x.Tags.Any(t => t.Id == id)).Select(x => x.Id).ToListAsync(cancellationToken),
 			await db.DelayProfiles.Where(x => x.Tags.Any(t => t.Id == id)).Select(x => x.Id).ToListAsync(cancellationToken),
 			await db.ReleaseProfiles.Where(x => x.Tags.Any(t => t.Id == id)).Select(x => x.Id).ToListAsync(cancellationToken),
-			await db.ImportLists.Where(x => x.Tags.Any(t => t.Id == id)).Select(x => x.Id).ToListAsync(cancellationToken)));
+			await db.ImportLists.Where(x => x.Tags.Any(t => t.Id == id)).Select(x => x.Id).ToListAsync(cancellationToken),
+			await db.AutoTaggingRules.Where(x => x.Tags.Any(t => t.Id == id)).Select(x => x.Id).ToListAsync(cancellationToken)));
 	}
 
 	private static async Task<Results<Created<TagDto>, ProblemHttpResult>> CreateAsync(
@@ -120,6 +121,7 @@ public sealed class TagRequestValidator : AbstractValidator<TagRequest>
 /// <param name="DelayProfileIds">Delay profiles using the tag.</param>
 /// <param name="ReleaseProfileIds">Release profiles using the tag.</param>
 /// <param name="ImportListIds">Import lists using the tag.</param>
+/// <param name="AutoTaggingRuleIds">Auto tagging rules using the tag.</param>
 public sealed record TagDetailDto(
 	int Id,
 	List<int> SeriesIds,
@@ -128,4 +130,5 @@ public sealed record TagDetailDto(
 	List<int> NotificationIds,
 	List<int> DelayProfileIds,
 	List<int> ReleaseProfileIds,
-	List<int> ImportListIds);
+	List<int> ImportListIds,
+	List<int> AutoTaggingRuleIds);

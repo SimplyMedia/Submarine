@@ -69,6 +69,7 @@ export const navigation: NavItem[] = [
 			{ label: 'Import lists', to: '/settings/import-lists' },
 			{ label: 'Connect', to: '/settings/connect' },
 			{ label: 'Metadata', to: '/settings/metadata' },
+			{ label: 'Metadata consumers', to: '/settings/metadata-consumers' },
 			{ label: 'Tags', to: '/settings/tags' },
 			{ label: 'General', to: '/settings/general' },
 			{ label: 'UI', to: '/settings/ui' },

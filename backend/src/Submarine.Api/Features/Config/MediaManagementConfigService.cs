@@ -16,6 +16,7 @@ public static class MediaManagementConfigService
 		config.ImportExtraFiles = request.ImportExtraFiles;
 		config.ExtraFileExtensions = request.ExtraFileExtensions;
 		config.MinimumFreeSpaceMb = request.MinimumFreeSpaceMb;
+		config.FileDate = request.FileDate;
 		config.SkipFreeSpaceCheck = request.SkipFreeSpaceCheck;
 		config.WriteNfo = request.WriteNfo;
 		config.RecycleBinPath = request.RecycleBinPath;

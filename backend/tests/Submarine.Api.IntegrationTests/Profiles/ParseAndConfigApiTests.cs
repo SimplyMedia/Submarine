@@ -211,7 +211,7 @@ public sealed class ParseAndConfigApiTests : IClassFixture<SubmarineApiFactory>
 		string ExtraFileExtensions,
 		int MinimumFreeSpaceMb,
 		bool SkipFreeSpaceCheck,
-		bool WriteNfo,
+		string FileDate,
 		string RecycleBinPath,
 		int RecycleBinCleanupDays,
 		bool CreateEmptySeriesFolders,

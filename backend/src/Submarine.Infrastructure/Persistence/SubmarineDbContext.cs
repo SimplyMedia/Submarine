@@ -150,6 +150,12 @@ public class SubmarineDbContext(DbContextOptions options, TimeProvider timeProvi
 	/// <summary>Health issues.</summary>
 	public DbSet<HealthIssue> HealthIssues => Set<HealthIssue>();
 
+	/// <summary>Metadata consumers.</summary>
+	public DbSet<MetadataConsumer> MetadataConsumers => Set<MetadataConsumer>();
+
+	/// <summary>Auto tagging rules.</summary>
+	public DbSet<AutoTaggingRule> AutoTaggingRules => Set<AutoTaggingRule>();
+
 	/// <inheritdoc />
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{

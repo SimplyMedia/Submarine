@@ -9405,6 +9405,340 @@
         }
       }
     },
+    "/api/v1/metadata-consumers": {
+      "get": {
+        "tags": [
+          "MetadataConsumersModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetadataConsumerDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MetadataConsumersModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMetadataConsumerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataConsumerDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metadata-consumers/schema": {
+      "get": {
+        "tags": [
+          "MetadataConsumersModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetadataConsumerSchemaDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metadata-consumers/{id}": {
+      "put": {
+        "tags": [
+          "MetadataConsumersModule"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMetadataConsumerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataConsumerDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MetadataConsumersModule"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/series/{seriesId}/versions": {
       "get": {
         "tags": [
@@ -18369,6 +18703,278 @@
         }
       }
     },
+    "/api/v1/auto-tagging": {
+      "get": {
+        "tags": [
+          "AutoTaggingModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AutoTaggingRuleDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AutoTaggingModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAutoTaggingRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoTaggingRuleDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auto-tagging/{id}": {
+      "put": {
+        "tags": [
+          "AutoTaggingModule"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAutoTaggingRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoTaggingRuleDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AutoTaggingModule"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "tags": [
@@ -19005,6 +19611,100 @@
           "EXTERNAL"
         ],
         "description": "Authentication modes of the application."
+      },
+      "AutoTaggingRuleDto": {
+        "required": [
+          "id",
+          "name",
+          "enable",
+          "removeTagsAutomatically",
+          "specifications",
+          "tags"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "enable": {
+            "type": "boolean"
+          },
+          "removeTagsAutomatically": {
+            "type": "boolean"
+          },
+          "specifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutoTaggingSpecification"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A saved auto tagging rule."
+      },
+      "AutoTaggingSpecification": {
+        "required": [
+          "name",
+          "type",
+          "negate",
+          "required",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "type": {
+            "description": "Specification type.",
+            "$ref": "#/components/schemas/AutoTaggingSpecificationType"
+          },
+          "negate": {
+            "type": "boolean",
+            "description": "Invert the match result."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "The series or movie must match for the rule to apply."
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Type specific value, for example a genre list, enum member or min/max range.",
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          }
+        },
+        "description": "One specification of an auto tagging rule. The shape of JsonElement? AutoTaggingSpecification.Value depends on AutoTaggingSpecificationType AutoTaggingSpecification.Type."
+      },
+      "AutoTaggingSpecificationType": {
+        "enum": [
+          "GENRE",
+          "ROOT_FOLDER",
+          "SERIES_TYPE",
+          "STATUS",
+          "YEAR",
+          "QUALITY_PROFILE",
+          "MONITORED",
+          "NETWORK_OR_STUDIO",
+          "ORIGINAL_LANGUAGE",
+          "KEYWORD"
+        ],
+        "description": "Type of an auto tagging rule specification."
       },
       "BackupEntry": {
         "required": [
@@ -20670,6 +21370,16 @@
           }
         },
         "description": "Regenerated feed token."
+      },
+      "FileDate": {
+        "enum": [
+          "NONE",
+          "LOCAL_AIR_DATE",
+          "UTC_AIR_DATE",
+          "IN_CINEMAS",
+          "RELEASE"
+        ],
+        "description": "Which date, when available, is applied to a media file's modified timestamp on import and rescan."
       },
       "FileSystemEntryDto": {
         "required": [
@@ -23535,7 +24245,7 @@
           "extraFileExtensions",
           "minimumFreeSpaceMb",
           "skipFreeSpaceCheck",
-          "writeNfo",
+          "fileDate",
           "recycleBinPath",
           "recycleBinCleanupDays",
           "createEmptySeriesFolders",
@@ -23571,9 +24281,9 @@
             "type": "boolean",
             "description": "Skip the free space check."
           },
-          "writeNfo": {
-            "type": "boolean",
-            "description": "Write Kodi compatible NFO files."
+          "fileDate": {
+            "description": "Which date is applied to a media file's modified timestamp on import and rescan.",
+            "$ref": "#/components/schemas/FileDate"
           },
           "recycleBinPath": {
             "type": "string",
@@ -23622,6 +24332,97 @@
           }
         },
         "description": "Media management configuration resource."
+      },
+      "MetadataConsumerDto": {
+        "required": [
+          "id",
+          "name",
+          "type",
+          "enable",
+          "settingsJson"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "enable": {
+            "type": "boolean"
+          },
+          "settingsJson": {
+            "type": "string"
+          }
+        },
+        "description": "A saved metadata consumer."
+      },
+      "MetadataConsumerFieldDescriptor": {
+        "required": [
+          "name",
+          "label",
+          "helpText",
+          "default"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Field name as it appears in the settings JSON."
+          },
+          "label": {
+            "type": "string",
+            "description": "Human readable label."
+          },
+          "helpText": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Short explanation, often the resulting file name."
+          },
+          "default": {
+            "type": "boolean",
+            "description": "Default value."
+          }
+        },
+        "description": "One configurable field of a metadata consumer type, used by the schema endpoint."
+      },
+      "MetadataConsumerSchemaDto": {
+        "required": [
+          "type",
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Consumer implementation name."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetadataConsumerFieldDescriptor"
+            },
+            "description": "Field descriptors."
+          }
+        },
+        "description": "Field descriptors of one metadata consumer type."
+      },
+      "MetadataConsumerType": {
+        "enum": [
+          "KODI",
+          "PLEX",
+          "EMBY",
+          "ROKSBOX",
+          "WDTV"
+        ],
+        "description": "Implementation of a metadata consumer, writing companion files and images next to imported media."
       },
       "MetadataProvider": {
         "enum": [
@@ -26779,6 +27580,45 @@
         },
         "description": "Free and total space of a root folder drive."
       },
+      "SaveAutoTaggingRuleRequest": {
+        "required": [
+          "name",
+          "enable",
+          "removeTagsAutomatically",
+          "specifications",
+          "tags"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "enable": {
+            "type": "boolean",
+            "description": "Whether the rule is active."
+          },
+          "removeTagsAutomatically": {
+            "type": "boolean",
+            "description": "Remove the tags automatically when the item no longer matches."
+          },
+          "specifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutoTaggingSpecification"
+            },
+            "description": "Specifications all or some of which must match, depending on Required flags."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tag labels applied when the rule matches."
+          }
+        },
+        "description": "Create or replace an auto tagging rule request."
+      },
       "SaveImportListExclusionRequest": {
         "required": [
           "tvdbId",
@@ -26953,6 +27793,34 @@
           }
         },
         "description": "Create or update import list request."
+      },
+      "SaveMetadataConsumerRequest": {
+        "required": [
+          "name",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "type": {
+            "description": "Consumer implementation.",
+            "$ref": "#/components/schemas/MetadataConsumerType"
+          },
+          "enable": {
+            "type": "boolean",
+            "description": "Whether the consumer is active.",
+            "default": true
+          },
+          "settingsJson": {
+            "type": "string",
+            "description": "Implementation settings as JSON.",
+            "default": "{}"
+          }
+        },
+        "description": "Create or replace a metadata consumer request."
       },
       "SaveNotificationRequest": {
         "required": [
@@ -28056,7 +28924,8 @@
           "notificationIds",
           "delayProfileIds",
           "releaseProfileIds",
-          "importListIds"
+          "importListIds",
+          "autoTaggingRuleIds"
         ],
         "type": "object",
         "properties": {
@@ -28120,6 +28989,14 @@
               "format": "int32"
             },
             "description": "Import lists using the tag."
+          },
+          "autoTaggingRuleIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Auto tagging rules using the tag."
           }
         },
         "description": "Usage detail of a tag."
@@ -29209,6 +30086,9 @@
       "name": "MovieFilesModule"
     },
     {
+      "name": "MetadataConsumersModule"
+    },
+    {
       "name": "MediaVersionsModule"
     },
     {
@@ -29282,6 +30162,9 @@
     },
     {
       "name": "BackupsModule"
+    },
+    {
+      "name": "AutoTaggingModule"
     },
     {
       "name": "AuthModule"

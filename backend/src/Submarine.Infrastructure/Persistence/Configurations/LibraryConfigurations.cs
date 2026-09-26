@@ -84,6 +84,7 @@ internal sealed class MovieConfiguration : EntityConfiguration<Movie>
 		builder.Property(x => x.Title).HasMaxLength(512);
 		builder.Property(x => x.ImdbId).HasMaxLength(32);
 		builder.Property(x => x.Genres).HasConversion(JsonValueConverter<List<string>>.Instance);
+		builder.Property(x => x.Keywords).HasConversion(JsonValueConverter<List<string>>.Instance);
 		builder.HasMany(x => x.Versions).WithOne(x => x.Movie).HasForeignKey(x => x.MovieId).OnDelete(DeleteBehavior.Cascade);
 		builder.HasMany(x => x.Files).WithOne(x => x.Movie).HasForeignKey(x => x.MovieId).OnDelete(DeleteBehavior.Cascade);
 		builder.HasMany(x => x.Tags).WithMany();

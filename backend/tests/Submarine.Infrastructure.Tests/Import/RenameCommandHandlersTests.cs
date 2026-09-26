@@ -10,6 +10,7 @@ using Submarine.Core.Naming;
 using Submarine.Core.Quality;
 using Submarine.Infrastructure.Commands;
 using Submarine.Infrastructure.Import;
+using Submarine.Infrastructure.Metadata;
 using Submarine.Infrastructure.Persistence;
 using Xunit;
 
@@ -80,7 +81,7 @@ public sealed class RenameCommandHandlersTests : IDisposable
 		var collidingTargetPath = Path.Combine(seasonFolder, "Test Show - S01E01 - Pilot.mkv");
 		File.WriteAllText(collidingTargetPath, "untracked-content");
 
-		var handler = new RenameSeriesCommandHandler(_db, new NamingService(), _eventBus, _time);
+		var handler = new RenameSeriesCommandHandler(_db, new NamingService(), Substitute.For<IMetadataConsumerWriter>(), _eventBus, _time);
 		await handler.ExecuteAsync(new RenameSeriesCommand(series.Id), _context, TestContext.Current.CancellationToken);
 
 		File.ReadAllText(collidingTargetPath).ShouldBe("untracked-content", "the untracked file must never be overwritten");
