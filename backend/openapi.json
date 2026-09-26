@@ -15835,6 +15835,132 @@
         }
       }
     },
+    "/api/v1/config/import-list": {
+      "get": {
+        "tags": [
+          "ImportListConfigModule"
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportListConfigResource"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ImportListConfigModule"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportListConfigResource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportListConfigResource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/indexer": {
       "get": {
         "tags": [
@@ -18031,6 +18157,8 @@
           "FIRST_SEASON",
           "LATEST_SEASON",
           "NONE",
+          "RECENT",
+          "SKIP",
           null
         ]
       },
@@ -18787,6 +18915,16 @@
           }
         },
         "description": "One calendar entry."
+      },
+      "CleanLibraryLevel": {
+        "enum": [
+          "DISABLED",
+          "LOG_ONLY",
+          "KEEP_AND_UNMONITOR",
+          "REMOVE_AND_KEEP",
+          "REMOVE_AND_DELETE"
+        ],
+        "description": "What to do with library items no longer covered by any automatic-add import list, checked\nat the end of a full import list sync."
       },
       "CollectionAddMissingDto": {
         "required": [
@@ -20462,6 +20600,19 @@
         "type": "string",
         "format": "binary"
       },
+      "ImportListConfigResource": {
+        "required": [
+          "cleanLibraryLevel"
+        ],
+        "type": "object",
+        "properties": {
+          "cleanLibraryLevel": {
+            "description": "What to do with library items no longer covered by any automatic-add import list.",
+            "$ref": "#/components/schemas/CleanLibraryLevel"
+          }
+        },
+        "description": "Import list behaviour configuration resource."
+      },
       "ImportListDto": {
         "required": [
           "id",
@@ -20479,7 +20630,9 @@
           "minimumAvailability",
           "seriesType",
           "seasonFolder",
-          "tagIds"
+          "tagIds",
+          "minRefreshIntervalMinutes",
+          "status"
         ],
         "type": "object",
         "properties": {
@@ -20577,6 +20730,15 @@
               "format": "int32"
             },
             "description": "Tags applied to added items."
+          },
+          "minRefreshIntervalMinutes": {
+            "type": "integer",
+            "description": "Minimum minutes between automatic scheduled fetches of this list type.",
+            "format": "int32"
+          },
+          "status": {
+            "description": "Runtime sync and backoff state.",
+            "$ref": "#/components/schemas/ImportListStatusSummary"
           }
         },
         "description": "An import list."
@@ -20735,6 +20897,38 @@
         },
         "description": "One preview item."
       },
+      "ImportListStatusSummary": {
+        "required": [
+          "lastSyncAt",
+          "disabledUntil",
+          "escalationLevel"
+        ],
+        "type": "object",
+        "properties": {
+          "lastSyncAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Last successful fetch, null when never synced.",
+            "format": "date-time"
+          },
+          "disabledUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Disabled by backoff until this time, null when not disabled.",
+            "format": "date-time"
+          },
+          "escalationLevel": {
+            "type": "integer",
+            "description": "Current backoff escalation level.",
+            "format": "int32"
+          }
+        },
+        "description": "Runtime sync and backoff state of an import list."
+      },
       "ImportListTestDto": {
         "required": [
           "success",
@@ -20776,7 +20970,11 @@
           "SONARR",
           "RADARR",
           "STEVEN_LU",
-          "CUSTOM"
+          "CUSTOM",
+          "SIMKL",
+          "IMDB",
+          "MYANIMELIST",
+          "RSS"
         ],
         "description": "Type of an import list."
       },
@@ -28104,6 +28302,9 @@
     },
     {
       "name": "DownloadConfigModule"
+    },
+    {
+      "name": "ImportListConfigModule"
     },
     {
       "name": "IndexerConfigModule"

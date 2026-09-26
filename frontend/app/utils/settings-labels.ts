@@ -68,6 +68,13 @@ const DOWNLOAD_PROPERS_AND_REPACKS: Record<string, string> = {
 	DO_NOT_UPGRADE: 'Do not prefer',
 	DO_NOT_PREFER: 'Do not prefer or upgrade',
 }
+const CLEAN_LIBRARY_LEVEL: Record<string, string> = {
+	DISABLED: 'Disabled',
+	LOG_ONLY: 'Log only',
+	KEEP_AND_UNMONITOR: 'Keep and unmonitor',
+	REMOVE_AND_KEEP: 'Remove and keep files',
+	REMOVE_AND_DELETE: 'Remove and delete files',
+}
 const MEDIA_KIND: Record<string, string> = { SERIES: 'Series', MOVIES: 'Movies' }
 const PROTOCOL: Record<string, string> = { BITTORRENT: 'Torrent', USENET: 'Usenet', XDCC: 'XDCC' }
 const RELEASE_FILTER_MODE: Record<string, string> = { ALLOW: 'Allow', BLOCK: 'Block', PREFER: 'Prefer' }
@@ -146,6 +153,10 @@ const IMPORT_LIST_TYPE: Record<string, string> = {
 	RADARR: 'Radarr',
 	STEVEN_LU: 'StevenLu',
 	CUSTOM: 'Custom',
+	SIMKL: 'Simkl',
+	IMDB: 'IMDb list',
+	MYANIMELIST: 'MyAnimeList',
+	RSS: 'RSS list',
 }
 
 const NOTIFICATION_TYPE: Record<string, string> = {
@@ -224,6 +235,7 @@ export const themeOptions = toOptions(THEME)
 export const colonReplacementOptions = toOptions(COLON_REPLACEMENT)
 export const multiEpisodeStyleOptions = toOptions(MULTI_EPISODE_STYLE)
 export const downloadPropersAndRepacksOptions = toOptions(DOWNLOAD_PROPERS_AND_REPACKS)
+export const cleanLibraryLevelOptions = toOptions(CLEAN_LIBRARY_LEVEL)
 export const mediaKindOptions = toOptions(MEDIA_KIND)
 export const protocolOptions = toOptions(PROTOCOL)
 export const releaseFilterModeOptions = toOptions(RELEASE_FILTER_MODE)
@@ -243,6 +255,7 @@ export const themeLabel = makeLookup(THEME)
 export const colonReplacementLabel = makeLookup(COLON_REPLACEMENT)
 export const multiEpisodeStyleLabel = makeLookup(MULTI_EPISODE_STYLE)
 export const downloadPropersAndRepacksLabel = makeLookup(DOWNLOAD_PROPERS_AND_REPACKS)
+export const cleanLibraryLevelLabel = makeLookup(CLEAN_LIBRARY_LEVEL)
 export const mediaKindLabel = makeLookup(MEDIA_KIND)
 export const protocolLabel = makeLookup(PROTOCOL)
 export const releaseFilterModeLabel = makeLookup(RELEASE_FILTER_MODE)
@@ -314,6 +327,10 @@ export function importListTypeIcon(type: string): string {
 		RADARR: 'lucide:film',
 		STEVEN_LU: 'lucide:list',
 		CUSTOM: 'lucide:link',
+		SIMKL: 'lucide:tv',
+		IMDB: 'lucide:star',
+		MYANIMELIST: 'lucide:sparkles',
+		RSS: 'lucide:rss',
 	}
 	return icons[type] ?? 'lucide:list'
 }

@@ -19,5 +19,10 @@ public sealed class ImportListsModule : IServiceModule
 		services.AddScoped<IImportList, PlexImportList>();
 		services.AddScoped<IImportList, InstanceImportList>();
 		services.AddScoped<IImportList, JsonFeedImportList>();
+		services.AddScoped<IImportList, SimklImportList>();
+		services.AddScoped<IImportList, ImdbImportList>();
+		services.AddScoped<IImportList, MyAnimeListImportList>();
+		services.AddScoped<IImportList, RssImportList>();
+		services.AddScoped<IImportListStatusService, ImportListStatusService>();
 	}
 }

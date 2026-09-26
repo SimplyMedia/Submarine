@@ -27,5 +27,11 @@ public enum AddMonitorOption
 	LATEST_SEASON,
 
 	/// <summary>Monitor nothing.</summary>
-	NONE
+	NONE,
+
+	/// <summary>Monitor episodes with no air date yet, airing in the future, or aired within the last 90 days.</summary>
+	RECENT,
+
+	/// <summary>Leave season and episode monitored flags untouched.</summary>
+	SKIP
 }

@@ -42,5 +42,17 @@ public enum ImportListType
 	STEVEN_LU,
 
 	/// <summary>Custom list.</summary>
-	CUSTOM
+	CUSTOM,
+
+	/// <summary>Simkl user list, series or movies depending on the list's media kind.</summary>
+	SIMKL,
+
+	/// <summary>IMDb list export.</summary>
+	IMDB,
+
+	/// <summary>MyAnimeList user list.</summary>
+	MYANIMELIST,
+
+	/// <summary>Generic RSS/XML feed.</summary>
+	RSS
 }

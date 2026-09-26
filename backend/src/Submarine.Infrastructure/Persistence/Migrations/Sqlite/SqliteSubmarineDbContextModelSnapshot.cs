@@ -851,6 +851,22 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.ToTable("ImportLists");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.ImportListConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CleanLibraryLevel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImportListConfig");
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.ImportListExclusion", b =>
                 {
                     b.Property<int>("Id")
@@ -880,6 +896,44 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.ToTable("ImportListExclusions");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DisabledUntil")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EscalationLevel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ImportListId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("InitialFailure")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastSyncAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("MostRecentFailure")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImportListId")
+                        .IsUnique();
+
+                    b.ToTable("ImportListStatuses");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>
@@ -2504,6 +2558,17 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Sqlite
                     b.Navigation("Movie");
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.ImportListStatus", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.ImportList", "ImportList")
+                        .WithMany()
+                        .HasForeignKey("ImportListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ImportList");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.Indexer", b =>

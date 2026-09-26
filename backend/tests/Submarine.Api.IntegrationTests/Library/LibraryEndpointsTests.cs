@@ -483,10 +483,19 @@ public sealed class LibraryEndpointsTests
 			collection.MinimumAvailability.ShouldBe("ANNOUNCED");
 			collection.Monitored.ShouldBeFalse();
 
+			// MissingCount reflects collection movies from the metadata provider not yet in the
+			// library: SecondTmdbId is in the collection's fixture but not added yet.
+			collection.MissingCount.ShouldBe(1);
+			var refetched = await client.GetFromJsonAsync<CollectionDto>($"/api/v1/collections/{collection.Id}");
+			refetched!.MissingCount.ShouldBe(1);
+
 			var addMissing = await client.PostAsJsonAsync($"/api/v1/collections/{collection.Id}/add-missing", new { });
 			addMissing.StatusCode.ShouldBe(HttpStatusCode.OK);
 			var result = await addMissing.Content.ReadFromJsonAsync<AddMissingDto>();
 			result!.Added.ShouldBe(1);
+
+			var afterAddMissing = await client.GetFromJsonAsync<CollectionDto>($"/api/v1/collections/{collection.Id}");
+			afterAddMissing!.MissingCount.ShouldBe(0);
 
 			var movies = (await client.GetFromJsonAsync<PagedDto<MovieListItemDto>>("/api/v1/movies"))!.Items;
 			movies!.Count.ShouldBe(2);

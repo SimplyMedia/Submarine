@@ -40,7 +40,8 @@ public sealed class ImportListsModule : IEndpointModule
 	private static async Task<Ok<List<ImportListDto>>> ListAsync(SubmarineDbContext db, CancellationToken cancellationToken)
 	{
 		var lists = await db.ImportLists.AsNoTracking().Include(x => x.Tags).OrderBy(x => x.Name).ToListAsync(cancellationToken);
-		return TypedResults.Ok(lists.Select(ImportListMapper.ToDto).ToList());
+		var statuses = await db.ImportListStatuses.AsNoTracking().ToDictionaryAsync(x => x.ImportListId, cancellationToken);
+		return TypedResults.Ok(lists.Select(x => ImportListMapper.ToDto(x, statuses.GetValueOrDefault(x.Id))).ToList());
 	}
 
 	private static Ok<IReadOnlyList<ImportListTypeSchema>> SchemaAsync()
@@ -50,7 +51,8 @@ public sealed class ImportListsModule : IEndpointModule
 	{
 		var list = await db.ImportLists.AsNoTracking().Include(x => x.Tags).FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
 			?? throw new KeyNotFoundException($"Import list {id} not found");
-		return TypedResults.Ok(ImportListMapper.ToDto(list));
+		var status = await db.ImportListStatuses.AsNoTracking().FirstOrDefaultAsync(x => x.ImportListId == id, cancellationToken);
+		return TypedResults.Ok(ImportListMapper.ToDto(list, status));
 	}
 
 	private static async Task<Created<ImportListDto>> CreateAsync(
@@ -369,8 +371,8 @@ public sealed record ImportListExclusionDto(int Id, int? TvdbId, int? TmdbId, st
 /// <summary>Maps import list entities to API records.</summary>
 public static class ImportListMapper
 {
-	/// <summary>Map an import list entity.</summary>
-	public static ImportListDto ToDto(ImportList list)
+	/// <summary>Map an import list entity, with its runtime status when known.</summary>
+	public static ImportListDto ToDto(ImportList list, ImportListStatus? status = null)
 	{
 		using var settings = JsonDocument.Parse(
 			string.IsNullOrWhiteSpace(list.SettingsJson) ? "{}" : list.SettingsJson,
@@ -391,9 +393,17 @@ public static class ImportListMapper
 			list.MinimumAvailability,
 			list.SeriesType,
 			list.SeasonFolder,
-			[.. list.Tags.Select(x => x.Id)]);
+			[.. list.Tags.Select(x => x.Id)],
+			(int)ImportListSchemas.MinRefreshInterval(list.Type).TotalMinutes,
+			new ImportListStatusSummary(status?.LastSyncAt, status?.DisabledUntil, status?.EscalationLevel ?? 0));
 	}
 }
+
+/// <summary>Runtime sync and backoff state of an import list.</summary>
+/// <param name="LastSyncAt">Last successful fetch, null when never synced.</param>
+/// <param name="DisabledUntil">Disabled by backoff until this time, null when not disabled.</param>
+/// <param name="EscalationLevel">Current backoff escalation level.</param>
+public sealed record ImportListStatusSummary(DateTime? LastSyncAt, DateTime? DisabledUntil, int EscalationLevel);
 
 /// <summary>An import list.</summary>
 /// <param name="Id">List id.</param>
@@ -412,6 +422,8 @@ public static class ImportListMapper
 /// <param name="SeriesType">Series type for added series.</param>
 /// <param name="SeasonFolder">Whether added series use season folders.</param>
 /// <param name="TagIds">Tags applied to added items.</param>
+/// <param name="MinRefreshIntervalMinutes">Minimum minutes between automatic scheduled fetches of this list type.</param>
+/// <param name="Status">Runtime sync and backoff state.</param>
 public sealed record ImportListDto(
 	int Id,
 	string Name,
@@ -428,4 +440,6 @@ public sealed record ImportListDto(
 	MinimumAvailability? MinimumAvailability,
 	SeriesType? SeriesType,
 	bool SeasonFolder,
-	List<int> TagIds);
+	List<int> TagIds,
+	int MinRefreshIntervalMinutes,
+	ImportListStatusSummary Status);

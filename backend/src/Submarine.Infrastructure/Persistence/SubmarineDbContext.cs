@@ -31,6 +31,9 @@ public class SubmarineDbContext(DbContextOptions options, TimeProvider timeProvi
 	/// <summary>UI configuration singleton.</summary>
 	public DbSet<UiConfig> UiConfig => Set<UiConfig>();
 
+	/// <summary>Import list configuration singleton.</summary>
+	public DbSet<ImportListConfig> ImportListConfig => Set<ImportListConfig>();
+
 	/// <summary>Tags.</summary>
 	public DbSet<Tag> Tags => Set<Tag>();
 
@@ -126,6 +129,9 @@ public class SubmarineDbContext(DbContextOptions options, TimeProvider timeProvi
 
 	/// <summary>Import list exclusions.</summary>
 	public DbSet<ImportListExclusion> ImportListExclusions => Set<ImportListExclusion>();
+
+	/// <summary>Import list runtime statuses.</summary>
+	public DbSet<ImportListStatus> ImportListStatuses => Set<ImportListStatus>();
 
 	/// <summary>Notifications.</summary>
 	public DbSet<Notification> Notifications => Set<Notification>();

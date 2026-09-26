@@ -16,6 +16,11 @@ public static class MonitorRules
 	/// <param name="now">Current UTC time, used by the FUTURE and EXISTING options.</param>
 	public static void Apply(Series series, AddMonitorOption option, bool monitorSpecials, DateTime now)
 	{
+		if (option == AddMonitorOption.SKIP)
+		{
+			return;
+		}
+
 		foreach (var season in series.Seasons)
 		{
 			if (season.SeasonNumber == 0)
@@ -63,6 +68,7 @@ public static class MonitorRules
 			AddMonitorOption.FIRST_SEASON => episode.SeasonNumber == FirstRealSeason(series),
 			AddMonitorOption.LATEST_SEASON => episode.SeasonNumber == LatestRealSeason(series),
 			AddMonitorOption.NONE => false,
+			AddMonitorOption.RECENT => !aired || episode.AirDateUtc >= now.AddDays(-90),
 			_ => true
 		};
 	}
