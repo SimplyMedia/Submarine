@@ -20,10 +20,25 @@ public static class HealthServiceCollectionExtensions
 	{
 		services.AddHttpClient("health", client => client.Timeout = TimeSpan.FromSeconds(15));
 		services.AddScoped<IHealthCheck, IndexerHealthCheck>();
+		services.AddScoped<IHealthCheck, IndexerStatusHealthCheck>();
+		services.AddScoped<IHealthCheck, IndexerLongTermStatusHealthCheck>();
+		services.AddScoped<IHealthCheck, IndexerRssHealthCheck>();
+		services.AddScoped<IHealthCheck, IndexerSearchHealthCheck>();
+		services.AddScoped<IHealthCheck, IndexerDownloadClientHealthCheck>();
+		services.AddScoped<IHealthCheck, IndexerJackettAllHealthCheck>();
 		services.AddScoped<IHealthCheck, DownloadClientHealthCheck>();
+		services.AddScoped<IHealthCheck, DownloadClientRootFolderHealthCheck>();
+		services.AddScoped<IHealthCheck, RemotePathMappingHealthCheck>();
+		services.AddScoped<IHealthCheck, ImportMechanismHealthCheck>();
 		services.AddScoped<IHealthCheck, RootFolderHealthCheck>();
+		services.AddScoped<IHealthCheck, MountHealthCheck>();
+		services.AddScoped<IHealthCheck, RecyclingBinHealthCheck>();
+		services.AddScoped<IHealthCheck, ImportListRootFolderHealthCheck>();
+		services.AddScoped<IHealthCheck, MovieCollectionRootFolderHealthCheck>();
 		services.AddScoped<IHealthCheck, ServiceHealthCheck>();
 		services.AddScoped<IHealthCheck, SettingsHealthCheck>();
+		services.AddScoped<IHealthCheck, ApiKeyValidationHealthCheck>();
+		services.AddScoped<IHealthCheck, SystemTimeHealthCheck>();
 		services.AddScoped<IHealthCheck, UpdateHealthCheck>();
 		services.AddScoped<IHealthCheck, ProxyHealthCheck>();
 		services.AddHostedService<StartupHealthCheckHostedService>();

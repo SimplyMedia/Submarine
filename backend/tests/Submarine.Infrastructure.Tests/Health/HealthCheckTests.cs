@@ -58,47 +58,20 @@ public sealed class HealthCheckTests : IAsyncLifetime
 	[Fact]
 	public async Task IndexerCheck_ShouldWarn_WhenNoIndexersConfigured()
 	{
-		var issues = await new IndexerHealthCheck(Db, _provider.GetRequiredService<TimeProvider>())
-			.CheckAsync(TestContext.Current.CancellationToken);
+		var issues = await new IndexerHealthCheck(Db).CheckAsync(TestContext.Current.CancellationToken);
 
 		issues.ShouldContain(x => x.Type == HealthIssueType.WARNING && x.Message == "No indexers are configured");
 	}
 
 	[Fact]
-	public async Task IndexerCheck_ShouldWarn_WhenNoRssOrAutomaticSearch()
+	public async Task IndexerCheck_ShouldBeEmpty_WhenIndexersConfigured()
 	{
-		Db.Indexers.Add(new Indexer
-		{
-			Name = "Quiet",
-			EnableRss = false,
-			EnableAutomaticSearch = false
-		});
+		Db.Indexers.Add(new Indexer { Name = "Quiet" });
 		await Db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-		var issues = await new IndexerHealthCheck(Db, _provider.GetRequiredService<TimeProvider>())
-			.CheckAsync(TestContext.Current.CancellationToken);
+		var issues = await new IndexerHealthCheck(Db).CheckAsync(TestContext.Current.CancellationToken);
 
-		issues.ShouldContain(x => x.Message == "No indexers have RSS sync enabled");
-		issues.ShouldContain(x => x.Message == "No indexers have automatic search enabled");
-	}
-
-	[Fact]
-	public async Task IndexerCheck_ShouldWarn_WhenDisabledByFailures()
-	{
-		var indexer = new Indexer { Name = "Flaky" };
-		Db.Indexers.Add(indexer);
-		Db.IndexerStatuses.Add(new IndexerStatus
-		{
-			IndexerId = indexer.Id,
-			Indexer = indexer,
-			DisabledUntil = DateTime.UtcNow.AddHours(1)
-		});
-		await Db.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-		var issues = await new IndexerHealthCheck(Db, _provider.GetRequiredService<TimeProvider>())
-			.CheckAsync(TestContext.Current.CancellationToken);
-
-		issues.ShouldContain(x => x.Message.Contains("Flaky is disabled until"));
+		issues.ShouldBeEmpty();
 	}
 
 	[Fact]
@@ -189,17 +162,15 @@ public sealed class HealthCheckTests : IAsyncLifetime
 	}
 
 	[Fact]
-	public async Task SettingsCheck_ShouldReportDisabledRss_RecycleBinAndAuth()
+	public async Task SettingsCheck_ShouldReportDisabledRssAndAuth()
 	{
 		Db.IndexerConfig.First().RssSyncIntervalMinutes = 0;
-		Db.MediaManagementConfig.First().RecycleBinPath = "/definitely/not/here";
 		Db.GeneralConfig.First().AuthMethod = AuthMethod.NONE;
 		await Db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
 		var issues = await new SettingsHealthCheck(Db).CheckAsync(TestContext.Current.CancellationToken);
 
 		issues.ShouldContain(x => x.Source == "RSS sync" && x.Type == HealthIssueType.WARNING);
-		issues.ShouldContain(x => x.Source == "Recycle bin" && x.Type == HealthIssueType.WARNING);
 		issues.ShouldContain(x => x.Source == "Authentication" && x.Type == HealthIssueType.NOTICE);
 	}
 
