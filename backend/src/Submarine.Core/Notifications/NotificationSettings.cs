@@ -59,6 +59,15 @@ public sealed record WebhookSettings : NotificationSettings
 
 	/// <summary>Extra request headers.</summary>
 	public Dictionary<string, string> Headers { get; init; } = [];
+
+	/// <summary>Payload dialect: Native or SonarrRadarrCompatible.</summary>
+	public string PayloadFormat { get; init; } = "Native";
+
+	/// <summary>Facade used for events without an associated media kind.</summary>
+	public string Facade { get; init; } = "Sonarr";
+
+	/// <summary>Absolute facade root URL used in compatible payloads.</summary>
+	public string? ApplicationUrl { get; init; }
 }
 
 /// <summary>Slack webhook settings.</summary>
