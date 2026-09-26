@@ -213,7 +213,12 @@ internal sealed record TmdbMovieDetail(
 	TmdbVideos? Videos,
 	[property: JsonPropertyName("external_ids")] TmdbExternalIds? ExternalIds,
 	[property: JsonPropertyName("original_language")] string? OriginalLanguage,
-	TmdbKeywordsWrapper? Keywords);
+	TmdbKeywordsWrapper? Keywords,
+	TmdbCredits? Credits);
+
+internal sealed record TmdbCredits(IReadOnlyList<TmdbCastCredit>? Cast, IReadOnlyList<TmdbCrewCredit>? Crew);
+internal sealed record TmdbCastCredit(int Id, string? Name, string? Character, int? Order, [property: JsonPropertyName("profile_path")] string? ProfilePath);
+internal sealed record TmdbCrewCredit(int Id, string? Name, string? Department, string? Job, [property: JsonPropertyName("profile_path")] string? ProfilePath);
 
 internal sealed record TmdbKeyword(string? Name);
 

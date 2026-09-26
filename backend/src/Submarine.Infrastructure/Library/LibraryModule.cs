@@ -17,5 +17,6 @@ public sealed class LibraryModule : IServiceModule
 		services.AddScoped<LibraryRefresher>();
 		services.AddScoped<CollectionSyncService>();
 		services.AddScoped<CollectionAddMissingService>();
+		services.AddScoped<SelectedMovieDeletionService>();
 	}
 }

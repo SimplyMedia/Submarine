@@ -82,6 +82,24 @@ excludes that entry rather than exposing a sibling version; re-adding it must ex
 the binding.
 
 
+## Radarr facade
+
+The Radarr v3 facade is available at `<UrlBase>/compat/radarr/api/v3`. Movie listing and lookup
+use local Submarine IDs while retaining TMDB and IMDb identifiers. Adding, updating, deleting,
+movie-file listing/deletion, editor updates, collection previews, import-list previews and movie
+exclusions operate on the shared native library. Movie updates and file reads use the persisted
+Radarr version binding; deleting one of several versions leaves sibling versions in the native
+catalog and tombstones the Radarr entry.
+
+The `/credits` response comes from TMDB movie cast and crew data. `/extrafile` enumerates matching
+sidecars next to selected-version movie files. `/parse`, rename preview/command, and selected-version
+release search and cached release grabs are exposed for Radarr clients.
+
+The facade does not support root-folder moves from a movie PUT/editor update or TMDB recommendation
+previews. Extra-file IDs are path-derived rather than persisted catalog IDs. Real Docker workflows
+with Overseerr, Bazarr, and Recyclarr have not been run in this worktree; the consumer-version table
+is the target contract, not runtime smoke.
+
 ## Limits
 
 - The compat facades implement the consumer route union researched for the versions listed above,

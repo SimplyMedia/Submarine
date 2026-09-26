@@ -37,6 +37,26 @@ public class TmdbMovieTests
 	}
 
 	[Fact]
+	public async Task GetMovie_ShouldMapCastAndCrewCreditsFromTmdb()
+	{
+		var detail = Fixtures.TmdbMovieDetail.Replace(
+			"\"id\":27205",
+			"\"id\":27205,\"credits\":{\"cast\":[{\"id\":42,\"name\":\"Cast member\",\"character\":\"Lead\",\"order\":0,\"profile_path\":\"/cast.jpg\"}],\"crew\":[{\"id\":43,\"name\":\"Crew member\",\"department\":\"Directing\",\"job\":\"Director\",\"profile_path\":\"/crew.jpg\"}]}",
+			StringComparison.Ordinal);
+		var handler = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, detail);
+		using var host = MetadataTestHost.Create(handler);
+
+		var movie = await host.Service.GetMovieAsync(27205, TestContext.Current.CancellationToken);
+
+		movie.ShouldNotBeNull();
+		movie.Credits.ShouldNotBeNull();
+		movie.Credits!.Count.ShouldBe(2);
+		movie.Credits[0].ShouldBe(new MovieCreditResource(42, "Cast member", "https://image.tmdb.org/t/p/original/cast.jpg", "Acting", null, "Lead", 0));
+		movie.Credits[1].ShouldBe(new MovieCreditResource(43, "Crew member", "https://image.tmdb.org/t/p/original/crew.jpg", "Directing", "Director", null, null));
+		handler.RequestPaths[0].ShouldContain(",credits");
+	}
+
+	[Fact]
 	public async Task GetMovieList_ShouldMapOriginalLanguageFromSummary_WhenPresent()
 	{
 		var handler = new StubHttpMessageHandler().Respond(

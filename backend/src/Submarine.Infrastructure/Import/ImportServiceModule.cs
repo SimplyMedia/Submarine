@@ -17,5 +17,6 @@ public sealed class ImportServiceModule : IServiceModule
 		services.AddSingleton<IFileDateService, FileDateService>();
 		services.AddScoped<IImportService, ImportService>();
 		services.AddScoped<ILibraryImportService, LibraryImportService>();
+		services.AddScoped<MovieFileOperationService>();
 	}
 }
