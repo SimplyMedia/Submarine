@@ -98,6 +98,8 @@ public sealed class IndexersModule : IEndpointModule
 		int id,
 		SubmarineDbContext db,
 		[AsParameters] PagingQuery query,
+		[FromQuery] IndexerHistoryEventType? eventType,
+		[FromQuery] bool? successful,
 		CancellationToken cancellationToken)
 	{
 		if (!await db.Indexers.AnyAsync(entity => entity.Id == id, cancellationToken))
@@ -106,6 +108,16 @@ public sealed class IndexersModule : IEndpointModule
 		}
 
 		var entries = db.IndexerHistories.AsNoTracking().Where(entry => entry.IndexerId == id);
+		if (eventType is not null)
+		{
+			entries = entries.Where(entry => entry.EventType == eventType);
+		}
+
+		if (successful is not null)
+		{
+			entries = entries.Where(entry => entry.Successful == successful);
+		}
+
 		return TypedResults.Ok(await PagedResult<IndexerHistoryDto>.CreateAsync(entries.Select(HistoryDtoExpression), query, cancellationToken));
 	}
 
@@ -379,6 +391,13 @@ public sealed class IndexersModule : IEndpointModule
 		indexer.SeedTimeMinutes = request.SeedTimeMinutes;
 		indexer.SeasonPackSeedTimeMinutes = request.SeasonPackSeedTimeMinutes;
 		indexer.AnimeStandardFormatSearch = request.AnimeStandardFormatSearch;
+		indexer.VipExpiration = request.VipExpiration;
+		indexer.QueryLimit = request.QueryLimit;
+		indexer.GrabLimit = request.GrabLimit;
+		indexer.LimitsUnit = request.LimitsUnit;
+		indexer.Redirect = request.Redirect;
+		indexer.RequiredFlags = request.RequiredFlags ?? [];
+		indexer.SeasonSearchMaximumSingleEpisodeAge = request.SeasonSearchMaximumSingleEpisodeAge;
 
 		if (request.TagIds is not null)
 		{
@@ -451,7 +470,14 @@ public sealed class IndexersModule : IEndpointModule
 			indexer.AnimeStandardFormatSearch,
 			[.. indexer.Tags.Select(tag => tag.Id)],
 			new IndexerStatusSummary(status?.DisabledUntil, status?.MostRecentFailure, status?.EscalationLevel ?? 0),
-			summary);
+			summary,
+			indexer.VipExpiration,
+			indexer.QueryLimit,
+			indexer.GrabLimit,
+			indexer.LimitsUnit,
+			indexer.Redirect,
+			indexer.RequiredFlags,
+			indexer.SeasonSearchMaximumSingleEpisodeAge);
 	}
 
 	private static readonly System.Linq.Expressions.Expression<Func<IndexerHistory, IndexerHistoryDto>> HistoryDtoExpression
@@ -499,7 +525,14 @@ public sealed record IndexerDto(
 	bool AnimeStandardFormatSearch,
 	IReadOnlyList<int> TagIds,
 	IndexerStatusSummary Status,
-	IndexerCapabilitiesSummary? Capabilities);
+	IndexerCapabilitiesSummary? Capabilities,
+	string? VipExpiration,
+	int? QueryLimit,
+	int? GrabLimit,
+	IndexerLimitsUnit LimitsUnit,
+	bool Redirect,
+	IReadOnlyList<IndexerFlag> RequiredFlags,
+	int SeasonSearchMaximumSingleEpisodeAge);
 
 /// <summary>Create or update request for an indexer.</summary>
 public sealed record IndexerRequest(
@@ -522,7 +555,14 @@ public sealed record IndexerRequest(
 	int? SeedTimeMinutes,
 	int? SeasonPackSeedTimeMinutes,
 	bool AnimeStandardFormatSearch,
-	List<int>? TagIds);
+	List<int>? TagIds,
+	string? VipExpiration,
+	int? QueryLimit,
+	int? GrabLimit,
+	IndexerLimitsUnit LimitsUnit,
+	bool Redirect,
+	List<IndexerFlag>? RequiredFlags,
+	int SeasonSearchMaximumSingleEpisodeAge);
 
 /// <summary>Test request for settings not yet saved.</summary>
 public sealed record IndexerTestRequest(IndexerImplementation Implementation, string? DefinitionId, JsonElement Settings);
@@ -575,6 +615,9 @@ public sealed class IndexerRequestValidator : AbstractValidator<IndexerRequest>
 		RuleFor(request => request.Priority).InclusiveBetween(1, 50);
 		RuleFor(request => request.DefinitionId).NotEmpty().When(request => request.Implementation == IndexerImplementation.CARDIGANN);
 		RuleFor(request => request.BaseUrl).NotEmpty().When(request => request.Implementation != IndexerImplementation.CARDIGANN);
+		RuleFor(request => request.QueryLimit).GreaterThan(0).When(request => request.QueryLimit.HasValue).WithMessage("Should be greater than zero");
+		RuleFor(request => request.GrabLimit).GreaterThan(0).When(request => request.GrabLimit.HasValue).WithMessage("Should be greater than zero");
+		RuleFor(request => request.Redirect).Equal(true).When(request => request.Protocol == Protocol.USENET).WithMessage("Redirect must be enabled for Usenet indexers");
 	}
 }
 

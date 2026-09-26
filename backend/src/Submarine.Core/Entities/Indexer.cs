@@ -1,3 +1,4 @@
+using Submarine.Core.Enums;
 using Submarine.Core.Indexers;
 using Submarine.Core.Provider;
 
@@ -70,6 +71,24 @@ public sealed class Indexer : Entity
 
 	/// <summary>Search standard anime episode formats.</summary>
 	public bool AnimeStandardFormatSearch { get; set; }
+
+	/// <summary>VIP expiration date as an ISO 8601 string, when the indexer reports one. Null when not a VIP indexer.</summary>
+	public string? VipExpiration { get; set; }
+
+	/// <summary>Maximum queries (search and RSS) allowed per <see cref="LimitsUnit" /> window. Null for no limit.</summary>
+	public int? QueryLimit { get; set; }
+
+	/// <summary>Maximum grabs allowed per <see cref="LimitsUnit" /> window. Null for no limit.</summary>
+	public int? GrabLimit { get; set; }
+
+	/// <summary>Window unit that <see cref="QueryLimit" /> and <see cref="GrabLimit" /> are measured over.</summary>
+	public IndexerLimitsUnit LimitsUnit { get; set; } = IndexerLimitsUnit.DAY;
+
+	/// <summary>
+	///     When true, the outbound download proxy redirects the caller straight to the release link instead of
+	///     fetching and re-serving it. Required for Usenet indexers.
+	/// </summary>
+	public bool Redirect { get; set; }
 
 	/// <summary>
 	///     Torrent flags at least one of which a release must carry to be grabbed, empty allows any. Ignored for usenet.

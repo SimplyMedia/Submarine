@@ -26,13 +26,24 @@ public sealed class ReleaseSearchService(
 	///     Searches every indexer enabled for the mode, aggregating results. Never throws for individual indexer
 	///     failures; they are recorded and skipped.
 	/// </summary>
+	/// <param name="request">The search to run.</param>
+	/// <param name="mode">Which indexers to include, by search mode.</param>
+	/// <param name="source">Label recorded on the resulting history entries.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <param name="indexerIds">When given, restricts the search to this subset of the enabled indexers.</param>
 	public async Task<IReadOnlyList<ReleaseInfo>> SearchAsync(
 		SearchRequest request,
 		IndexerSearchMode mode,
 		string source,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default,
+		IReadOnlyList<int>? indexerIds = null)
 	{
 		var indexers = await indexerProvider.GetEnabledAsync(mode, cancellationToken);
+		if (indexerIds is not null)
+		{
+			indexers = [.. indexers.Where(configured => indexerIds.Contains(configured.Entity.Id))];
+		}
+
 		try
 		{
 			var outcomes = await Task.WhenAll(indexers.Select(configured => FetchAsync(configured, request, cancellationToken)));

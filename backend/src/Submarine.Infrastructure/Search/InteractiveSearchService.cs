@@ -50,6 +50,22 @@ public sealed class InteractiveSearchService(
 	///     Searches for a series, a season, an episode, a movie or free text, scoring results against every media
 	///     version of the matched item, or only <paramref name="mediaVersionId" /> when given.
 	/// </summary>
+	/// <param name="seriesId">The series to search, alone or with <paramref name="seasonNumber" />.</param>
+	/// <param name="seasonNumber">The season to search, requires <paramref name="seriesId" />.</param>
+	/// <param name="episodeId">The episode to search.</param>
+	/// <param name="movieId">The movie to search.</param>
+	/// <param name="term">Free text query, used when none of the library scopes above are given.</param>
+	/// <param name="mediaVersionId">Restricts scoring to one media version instead of every applicable one.</param>
+	/// <param name="categories">
+	///     Standard category ids to restrict the search to. Only applied to the free text <paramref name="term" />
+	///     search; the library-scoped searches already carry an implicit type.
+	/// </param>
+	/// <param name="indexerIds">When given, restricts the search to this subset of the enabled indexers.</param>
+	/// <param name="type">
+	///     Search type for the free text <paramref name="term" /> search: "tvsearch", "movie", "music" or "book";
+	///     anything else (including null) searches basic. Ignored for the library-scoped searches.
+	/// </param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	public async Task<IReadOnlyList<SearchResult>> SearchAsync(
 		int? seriesId,
 		int? seasonNumber,
@@ -57,6 +73,9 @@ public sealed class InteractiveSearchService(
 		int? movieId,
 		string? term,
 		int? mediaVersionId,
+		IReadOnlyList<int>? categories = null,
+		IReadOnlyList<int>? indexerIds = null,
+		string? type = null,
 		CancellationToken cancellationToken = default)
 	{
 		Series? series = null;
@@ -70,33 +89,33 @@ public sealed class InteractiveSearchService(
 			series = await db.Series.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == episode.SeriesId, cancellationToken)
 				?? throw new KeyNotFoundException($"Series {episode.SeriesId} not found");
 			var requests = await episodePlanner.BuildAsync(series, episode, cancellationToken);
-			releases = await SearchManyAsync(requests, cancellationToken);
+			releases = await SearchManyAsync(requests, indexerIds, cancellationToken);
 		}
 		else if (seriesId is { } targetSeriesId && seasonNumber is { } targetSeason)
 		{
 			series = await db.Series.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == targetSeriesId, cancellationToken)
 				?? throw new KeyNotFoundException($"Series {targetSeriesId} not found");
 			var request = SearchRequestBuilder.BuildSeasonQuery(series.Title, targetSeason, series.TvdbId, series.TmdbId, series.ImdbId);
-			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken);
+			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken, indexerIds);
 		}
 		else if (seriesId is { } onlySeriesId)
 		{
 			series = await db.Series.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == onlySeriesId, cancellationToken)
 				?? throw new KeyNotFoundException($"Series {onlySeriesId} not found");
 			var request = SearchRequestBuilder.BuildSeriesQuery(series.Title, series.TvdbId, series.TmdbId, series.ImdbId);
-			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken);
+			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken, indexerIds);
 		}
 		else if (movieId is { } targetMovieId)
 		{
 			movie = await db.Movies.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == targetMovieId, cancellationToken)
 				?? throw new KeyNotFoundException($"Movie {targetMovieId} not found");
 			var request = SearchRequestBuilder.BuildMovieQuery(movie.Title, movie.Year, movie.ImdbId, movie.TmdbId);
-			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken);
+			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken, indexerIds);
 		}
 		else if (!string.IsNullOrWhiteSpace(term))
 		{
-			var request = SearchRequestBuilder.BuildTextQuery(term);
-			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken);
+			var request = SearchRequestBuilder.BuildTextQuery(term, categories, type);
+			releases = await searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken, indexerIds);
 		}
 		else
 		{
@@ -152,10 +171,11 @@ public sealed class InteractiveSearchService(
 		return [.. results.OrderByDescending(BestScore)];
 	}
 
-	private async Task<IReadOnlyList<ReleaseInfo>> SearchManyAsync(IReadOnlyList<SearchRequest> requests, CancellationToken cancellationToken)
+	private async Task<IReadOnlyList<ReleaseInfo>> SearchManyAsync(
+		IReadOnlyList<SearchRequest> requests, IReadOnlyList<int>? indexerIds, CancellationToken cancellationToken)
 	{
 		var batches = await Task.WhenAll(requests.Select(request =>
-			searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken)));
+			searchService.SearchAsync(request, IndexerSearchMode.INTERACTIVE, "interactive", cancellationToken, indexerIds)));
 		return [.. batches.SelectMany(batch => batch).GroupBy(info => (info.IndexerId, info.Guid)).Select(group => group.First())];
 	}
 

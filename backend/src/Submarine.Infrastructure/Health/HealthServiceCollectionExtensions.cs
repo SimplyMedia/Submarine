@@ -20,6 +20,7 @@ public static class HealthServiceCollectionExtensions
 	{
 		services.AddHttpClient("health", client => client.Timeout = TimeSpan.FromSeconds(15));
 		services.AddScoped<IHealthCheck, IndexerHealthCheck>();
+		services.AddScoped<IHealthCheck, IndexerVipHealthCheck>();
 		services.AddScoped<IHealthCheck, IndexerStatusHealthCheck>();
 		services.AddScoped<IHealthCheck, IndexerLongTermStatusHealthCheck>();
 		services.AddScoped<IHealthCheck, IndexerRssHealthCheck>();

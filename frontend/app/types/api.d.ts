@@ -950,6 +950,11 @@ export interface paths {
                     movieId?: number;
                     term?: string;
                     mediaVersionId?: number;
+                    categories?: string;
+                    indexerIds?: string;
+                    type?: string;
+                    page?: number;
+                    pageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -1187,6 +1192,23 @@ export interface paths {
                     /** @description Offset into the results. */
                     Offset?: number;
                     apikey?: string;
+                    /** @description Artist name, for t=music. */
+                    Artist?: string;
+                    /** @description Album name, for t=music. */
+                    Album?: string;
+                    /** @description Record label, for t=music. */
+                    Label?: string;
+                    /** @description Track name, for t=music. */
+                    Track?: string;
+                    /** @description Genre, for t=music or t=book. */
+                    Genre?: string;
+                    /** @description Author name, for t=book. */
+                    Author?: string;
+                    title?: string;
+                    /** @description Publisher, for t=book. */
+                    Publisher?: string;
+                    /** @description Release year, for t=music or t=book. */
+                    Year?: number;
                 };
                 header?: never;
                 path: {
@@ -1269,6 +1291,23 @@ export interface paths {
                     /** @description Offset into the results. */
                     Offset?: number;
                     apikey?: string;
+                    /** @description Artist name, for t=music. */
+                    Artist?: string;
+                    /** @description Album name, for t=music. */
+                    Album?: string;
+                    /** @description Record label, for t=music. */
+                    Label?: string;
+                    /** @description Track name, for t=music. */
+                    Track?: string;
+                    /** @description Genre, for t=music or t=book. */
+                    Genre?: string;
+                    /** @description Author name, for t=book. */
+                    Author?: string;
+                    title?: string;
+                    /** @description Publisher, for t=book. */
+                    Publisher?: string;
+                    /** @description Release year, for t=music or t=book. */
+                    Year?: number;
                 };
                 header?: never;
                 path?: never;
@@ -1349,6 +1388,23 @@ export interface paths {
                     /** @description Offset into the results. */
                     Offset?: number;
                     apikey?: string;
+                    /** @description Artist name, for t=music. */
+                    Artist?: string;
+                    /** @description Album name, for t=music. */
+                    Album?: string;
+                    /** @description Record label, for t=music. */
+                    Label?: string;
+                    /** @description Track name, for t=music. */
+                    Track?: string;
+                    /** @description Genre, for t=music or t=book. */
+                    Genre?: string;
+                    /** @description Author name, for t=book. */
+                    Author?: string;
+                    title?: string;
+                    /** @description Publisher, for t=book. */
+                    Publisher?: string;
+                    /** @description Release year, for t=music or t=book. */
+                    Year?: number;
                 };
                 header?: never;
                 path?: never;
@@ -10402,6 +10458,8 @@ export interface paths {
                     SortKey?: string;
                     /** @description ascending or descending, defaults to ascending. */
                     SortDirection?: string;
+                    eventType?: components["schemas"]["IndexerHistoryEventType"];
+                    successful?: boolean;
                 };
                 header?: never;
                 path: {
@@ -18971,7 +19029,22 @@ export interface components {
             tagIds: number[];
             status: components["schemas"]["IndexerStatusSummary"];
             capabilities: null | components["schemas"]["IndexerCapabilitiesSummary"];
+            vipExpiration: null | string;
+            /** Format: int32 */
+            queryLimit: null | number;
+            /** Format: int32 */
+            grabLimit: null | number;
+            limitsUnit: components["schemas"]["IndexerLimitsUnit"];
+            redirect: boolean;
+            requiredFlags: components["schemas"]["IndexerFlag"][];
+            /** Format: int32 */
+            seasonSearchMaximumSingleEpisodeAge: null | number;
         };
+        /**
+         * @description Indexer specific flags of a release
+         * @enum {unknown}
+         */
+        IndexerFlag: "FREELEECH" | "HALFLEECH" | "DOUBLE_UPLOAD" | "INTERNAL" | "SCENE" | "EXCLUSIVE" | "G_FREELEECH";
         /** @description One indexer request history entry. */
         IndexerHistoryDto: {
             /** Format: int32 */
@@ -18998,6 +19071,11 @@ export interface components {
             implementation: components["schemas"]["IndexerImplementation"];
             fields: components["schemas"]["SettingsFieldSchema"][];
         };
+        /**
+         * @description Interval unit for a per-indexer query or grab limit.
+         * @enum {unknown}
+         */
+        IndexerLimitsUnit: "DAY" | "HOUR";
         /** @description A configured indexer proxy. The password is never returned. */
         IndexerProxyDto: {
             /** Format: int32 */
@@ -19064,6 +19142,16 @@ export interface components {
             seasonPackSeedTimeMinutes: null | number;
             animeStandardFormatSearch: boolean;
             tagIds: null | number[];
+            vipExpiration: null | string;
+            /** Format: int32 */
+            queryLimit: null | number;
+            /** Format: int32 */
+            grabLimit: null | number;
+            limitsUnit: components["schemas"]["IndexerLimitsUnit"];
+            redirect: boolean;
+            requiredFlags: null | components["schemas"]["IndexerFlag"][];
+            /** Format: int32 */
+            seasonSearchMaximumSingleEpisodeAge: null | number;
         };
         /** @description Implementation schemas plus every known Cardigann definition. */
         IndexerSchemaResponse: {

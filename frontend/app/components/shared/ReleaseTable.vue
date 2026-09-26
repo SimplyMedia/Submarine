@@ -21,15 +21,25 @@ const props = withDefaults(defineProps<{
 	releases: ReleaseResource[]
 	loading?: boolean
 	versionLabels?: Record<number, string>
+	selectable?: boolean
+	selectedGuids?: string[]
 }>(), {
 	loading: false,
 	versionLabels: () => ({}),
+	selectable: false,
+	selectedGuids: () => [],
 })
 
-const emit = defineEmits<{ grabbed: [ReleaseResource] }>()
+const emit = defineEmits<{
+	'grabbed': [ReleaseResource]
+	'update:selectedGuids': [string[]]
+}>()
 
 const { toast } = useToast()
 
+const tableColumns = computed(() => props.selectable
+	? [{ key: 'select', label: '' }, ...columns]
+	: columns)
 const columns = [
 	{ key: 'title', label: 'Title' },
 	{ key: 'indexer', label: 'Indexer' },
@@ -129,7 +139,7 @@ function onGrabClick(release: ReleaseResource) {
 
 <template>
 	<STable
-		:columns="columns"
+		:columns="tableColumns"
 		:rows="releases"
 		:row-key="rowKey"
 	>
@@ -137,6 +147,13 @@ function onGrabClick(release: ReleaseResource) {
 			<SEmptyState
 				message="No releases found. Try a different search or check your indexers."
 				icon="lucide:search-x"
+			/>
+		</template>
+		<template #cell-select="{ row }">
+			<SCheckbox
+				:model-value="selectedGuids.includes(row.guid)"
+				:aria-label="`Select ${row.title}`"
+				@update:model-value="value => emit('update:selectedGuids', value ? [...selectedGuids, row.guid] : selectedGuids.filter(guid => guid !== row.guid))"
 			/>
 		</template>
 		<template #cell-title="{ row }">

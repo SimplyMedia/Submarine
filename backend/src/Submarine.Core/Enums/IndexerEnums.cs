@@ -55,3 +55,15 @@ public enum IndexerHistoryEventType
 	/// <summary>Failure.</summary>
 	FAILED
 }
+
+/// <summary>
+///     Interval unit for a per-indexer query or grab limit.
+/// </summary>
+public enum IndexerLimitsUnit
+{
+	/// <summary>24 hour window.</summary>
+	DAY,
+
+	/// <summary>1 hour window.</summary>
+	HOUR
+}

@@ -79,7 +79,17 @@ public static class SearchRequestBuilder
 		string title, int? year, string? imdbId, int? tmdbId, IReadOnlyList<int>? categories = null)
 		=> new(Query: title, Year: year, ImdbId: imdbId, TmdbId: tmdbId, Categories: categories);
 
-	/// <summary>Builds a free text search request.</summary>
-	public static BasicSearchRequest BuildTextQuery(string term, IReadOnlyList<int>? categories = null)
-		=> new(Query: term, Categories: categories);
+	/// <summary>
+	///     Builds a free text search request. <paramref name="type" /> selects the request shape: "tvsearch"/"tv",
+	///     "movie", "music" or "book"; anything else (including null) builds a basic search.
+	/// </summary>
+	public static SearchRequest BuildTextQuery(string term, IReadOnlyList<int>? categories = null, string? type = null)
+		=> type?.ToLowerInvariant() switch
+		{
+			"tvsearch" or "tv" => new TvSearchRequest(Query: term, Categories: categories),
+			"movie" => new MovieSearchRequest(Query: term, Categories: categories),
+			"music" => new MusicSearchRequest(Query: term, Categories: categories),
+			"book" => new BookSearchRequest(Query: term, Categories: categories),
+			_ => new BasicSearchRequest(Query: term, Categories: categories)
+		};
 }

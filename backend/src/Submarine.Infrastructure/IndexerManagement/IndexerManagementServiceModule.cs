@@ -15,6 +15,7 @@ public sealed class IndexerManagementServiceModule : IServiceModule
 		services.AddSingleton<IndexerCapabilityCache>();
 		services.AddScoped<IIndexerProvider, IndexerProvider>();
 		services.AddScoped<IIndexerStatusService, IndexerStatusService>();
+		services.AddScoped<IIndexerLimitService, IndexerLimitService>();
 		services.AddScoped<IndexerHistoryRecorder>();
 	}
 }
