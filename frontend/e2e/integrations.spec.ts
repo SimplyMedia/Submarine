@@ -85,7 +85,7 @@ test('download clients: add a blackhole client, test it, and persist removal tog
 	await expect(row).toBeVisible()
 	await row.getByRole('button', { name: 'Download client actions' }).click()
 	await page.getByRole('menuitem', { name: 'Test' }).click()
-	await expect(page.locator('.s-toast-title', { hasText: 'Connection successful' })).toBeVisible()
+	await expect(page.locator('.s-toast-title', { hasText: 'Connection successful' }).last()).toBeVisible()
 	await row.getByRole('button', { name: 'Download client actions' }).click()
 	await page.getByRole('menuitem', { name: 'Edit' }).click()
 	const edit = page.getByRole('dialog')
