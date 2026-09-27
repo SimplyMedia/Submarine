@@ -432,6 +432,63 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.ToTable("Commands");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.CompatLibraryBinding", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Excluded")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Facade")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<int?>("MediaVersionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MovieId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaVersionId");
+
+                    b.HasIndex("MovieId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("Facade", "MediaVersionId")
+                        .IsUnique()
+                        .HasFilter("\"MediaVersionId\" IS NOT NULL");
+
+                    b.HasIndex("Facade", "MovieId")
+                        .IsUnique()
+                        .HasFilter("\"MovieId\" IS NOT NULL");
+
+                    b.HasIndex("Facade", "SeriesId")
+                        .IsUnique()
+                        .HasFilter("\"SeriesId\" IS NOT NULL");
+
+                    b.ToTable("CompatLibraryBindings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CompatLibraryBindings_FacadeTitle", "(\"Facade\" = 'sonarr' AND \"SeriesId\" IS NOT NULL AND \"MovieId\" IS NULL) OR (\"Facade\" = 'radarr' AND \"SeriesId\" IS NULL AND \"MovieId\" IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.CustomFormat", b =>
                 {
                     b.Property<int>("Id")
@@ -1576,6 +1633,70 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.HasIndex("SeriesId");
 
                     b.ToTable("MediaVersions");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionEpisodeMonitoring", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EpisodeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MediaVersionId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Monitored")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EpisodeId");
+
+                    b.HasIndex("MediaVersionId", "EpisodeId")
+                        .IsUnique();
+
+                    b.ToTable("MediaVersionEpisodeMonitorings", (string)null);
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionSeasonMonitoring", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MediaVersionId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Monitored")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SeasonNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaVersionId", "SeasonNumber")
+                        .IsUnique();
+
+                    b.ToTable("MediaVersionSeasonMonitorings", (string)null);
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.MetadataConsumer", b =>
@@ -2822,6 +2943,30 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Navigation("Series");
                 });
 
+            modelBuilder.Entity("Submarine.Core.Entities.CompatLibraryBinding", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.MediaVersion", "MediaVersion")
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Submarine.Core.Entities.Movie", "Movie")
+                        .WithMany()
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Submarine.Core.Entities.Series", "Series")
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("MediaVersion");
+
+                    b.Navigation("Movie");
+
+                    b.Navigation("Series");
+                });
+
             modelBuilder.Entity("Submarine.Core.Entities.Episode", b =>
                 {
                     b.HasOne("Submarine.Core.Entities.Series", "Series")
@@ -2948,6 +3093,36 @@ namespace Submarine.Infrastructure.Persistence.Migrations.Postgres
                     b.Navigation("Movie");
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionEpisodeMonitoring", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.Episode", "Episode")
+                        .WithMany()
+                        .HasForeignKey("EpisodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Submarine.Core.Entities.MediaVersion", "MediaVersion")
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Episode");
+
+                    b.Navigation("MediaVersion");
+                });
+
+            modelBuilder.Entity("Submarine.Core.Entities.MediaVersionSeasonMonitoring", b =>
+                {
+                    b.HasOne("Submarine.Core.Entities.MediaVersion", "MediaVersion")
+                        .WithMany()
+                        .HasForeignKey("MediaVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MediaVersion");
                 });
 
             modelBuilder.Entity("Submarine.Core.Entities.MovieFile", b =>

@@ -23,7 +23,10 @@ public record MovieResource(
 	string? CollectionTitle,
 	IReadOnlyList<AlternateTitleResource> AlternateTitles,
 	string? OriginalLanguage = null,
-	IReadOnlyList<string>? Keywords = null);
+	IReadOnlyList<string>? Keywords = null,
+	IReadOnlyList<MovieCreditResource>? Credits = null);
+
+public sealed record MovieCreditResource(int TmdbPersonId, string Name, string? ProfileUrl, string? Department, string? Job, string? Character, int? Order);
 
 public record CollectionResource(
 	int TmdbCollectionId,

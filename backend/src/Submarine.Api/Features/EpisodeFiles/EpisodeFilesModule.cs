@@ -6,11 +6,9 @@ using Submarine.Api.Common;
 using Submarine.Api.Features.MediaFiles;
 using Submarine.Api.Modules;
 using Submarine.Core.Entities;
-using Submarine.Core.Enums;
-using Submarine.Core.Events;
 using Submarine.Core.Languages;
+using Submarine.Core.Modules;
 using Submarine.Core.Quality;
-using Submarine.Infrastructure.Import;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Api.Features.EpisodeFiles;
@@ -18,8 +16,12 @@ namespace Submarine.Api.Features.EpisodeFiles;
 /// <summary>
 ///     Episode file inspection, editing and deletion.
 /// </summary>
-public sealed class EpisodeFilesModule : IEndpointModule
+public sealed class EpisodeFilesModule : IEndpointModule, IServiceModule
 {
+	/// <inheritdoc />
+	public void Register(IServiceCollection services, IConfiguration configuration)
+		=> services.AddScoped<EpisodeFileDeletionService>();
+
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
 	{
@@ -103,78 +105,22 @@ public sealed class EpisodeFilesModule : IEndpointModule
 
 	private static async Task<Results<NoContent, NotFound>> DeleteAsync(
 		int id,
-		SubmarineDbContext db,
-		IRecycleBinService recycleBinService,
-		IEventBus eventBus,
-		TimeProvider timeProvider,
+		EpisodeFileDeletionService deletionService,
 		CancellationToken cancellationToken)
 	{
-		var file = await db.EpisodeFiles.Include(x => x.Episodes).Include(x => x.MediaVersion).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-		if (file is null)
-		{
-			return TypedResults.NotFound();
-		}
-
-		await DeleteOneAsync(file, db, recycleBinService, eventBus, timeProvider, cancellationToken);
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.NoContent();
+		var deleted = await deletionService.DeleteAsync(id, cancellationToken);
+		return deleted ? TypedResults.NoContent() : TypedResults.NotFound();
 	}
 
 	private static async Task<Ok<BulkEpisodeFileDeleteResult>> BulkDeleteAsync(
-		SubmarineDbContext db,
-		IRecycleBinService recycleBinService,
-		IEventBus eventBus,
-		TimeProvider timeProvider,
+		EpisodeFileDeletionService deletionService,
 		IValidator<BulkEpisodeFileDeleteRequest> validator,
 		[FromBody] BulkEpisodeFileDeleteRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		var files = await db.EpisodeFiles.Include(x => x.Episodes).Include(x => x.MediaVersion)
-			.Where(x => request.Ids.Contains(x.Id))
-			.ToListAsync(cancellationToken);
-
-		foreach (var file in files)
-		{
-			await DeleteOneAsync(file, db, recycleBinService, eventBus, timeProvider, cancellationToken);
-		}
-
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.Ok(new BulkEpisodeFileDeleteResult(files.Count));
-	}
-
-	private static async Task DeleteOneAsync(
-		EpisodeFile file,
-		SubmarineDbContext db,
-		IRecycleBinService recycleBinService,
-		IEventBus eventBus,
-		TimeProvider timeProvider,
-		CancellationToken cancellationToken)
-	{
-		var root = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == file.MediaVersion.RootFolderId, cancellationToken);
-		if (root is not null)
-		{
-			var mediaManagement = await db.MediaManagementConfig.AsNoTracking().SingleAsync(cancellationToken);
-			var fullPath = Path.GetFullPath(Path.Combine(root.Path, file.MediaVersion.Path, file.RelativePath));
-			recycleBinService.Recycle(fullPath, root.Path, mediaManagement.RecycleBinPath, timeProvider);
-			await eventBus.PublishAsync(
-				new EpisodeFileDeletedEvent(file.SeriesId, file.MediaVersionId, [.. file.Episodes.Select(x => x.Id)], fullPath, FileDeleteReason.MANUAL),
-				cancellationToken);
-		}
-
-		db.HistoryEvents.Add(new HistoryEvent
-		{
-			Type = HistoryEventType.DELETED,
-			SeriesId = file.SeriesId,
-			EpisodeId = file.Episodes.FirstOrDefault()?.Id,
-			MediaVersionId = file.MediaVersionId,
-			SourceTitle = file.SceneName ?? file.RelativePath,
-			Quality = file.Quality,
-			Languages = file.Languages,
-			Date = timeProvider.GetUtcNow().UtcDateTime
-		});
-
-		db.EpisodeFiles.Remove(file);
+		var deleted = await deletionService.DeleteManyAsync(request.Ids, cancellationToken);
+		return TypedResults.Ok(new BulkEpisodeFileDeleteResult(deleted));
 	}
 
 	private static IQueryable<EpisodeFile> Base(SubmarineDbContext db)

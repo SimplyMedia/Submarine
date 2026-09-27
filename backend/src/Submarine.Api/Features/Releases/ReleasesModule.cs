@@ -33,43 +33,14 @@ public sealed class ReleasesModule : IEndpointModule
 	}
 
 	private static async Task<Results<Ok<GrabResultResource>, NotFound>> GrabAsync(
-		SubmarineDbContext db,
-		ReleaseResultCache cache,
-		DecisionContextFactory contextFactory,
-		IDownloadDecisionMaker decisionMaker,
-		IGrabService grabService,
+		ReleaseGrabOperation operation,
 		IValidator<GrabReleaseRequest> validator,
 		[FromBody] GrabReleaseRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-
-		if (!cache.TryGet(request.Guid, request.IndexerId, out var candidate))
-		{
-			return TypedResults.NotFound();
-		}
-
-		var version = await db.MediaVersions.AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == request.MediaVersionId, cancellationToken);
-		if (version is null
-		    || (request.SeriesId is { } requestSeriesId && version.SeriesId != requestSeriesId)
-		    || (request.MovieId is { } requestMovieId && version.MovieId != requestMovieId))
-		{
-			return TypedResults.NotFound();
-		}
-
-		candidate = ApplyOverrides(candidate, request);
-
-		var context = await contextFactory.BuildAsync(version, request.EpisodeIds, isInteractive: true, cancellationToken: cancellationToken);
-
-		var decision = decisionMaker.Decide(candidate, context);
-		if (request.Override && !decision.Approved)
-		{
-			decision = decision with { Approved = true, Rejections = [] };
-		}
-
-		var outcome = await grabService.GrabAsync(decision, request.MediaVersionId, request.SeriesId, request.EpisodeIds, request.MovieId, cancellationToken);
-
-		return TypedResults.Ok(ToResource(outcome));
+		var result = await operation.ExecuteAsync(request, cancellationToken);
+		return result is null ? TypedResults.NotFound() : TypedResults.Ok(result);
 	}
 
 	private static async Task<Ok<GrabResultResource>> PushAsync(

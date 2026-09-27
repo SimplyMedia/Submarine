@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Submarine.Api.Features.Compat.Shared;
 using Submarine.Api.Common;
 using Submarine.Api.Features.Series;
 using Submarine.Core.Enums;
@@ -24,7 +25,10 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 {
 	/// <inheritdoc />
 	public void Register(IServiceCollection services, IConfiguration configuration)
-		=> services.AddScoped<LibraryAdderAdapter>();
+	{
+		services.AddScoped<LibraryAdderAdapter>();
+		services.AddScoped<MediaVersionMover>();
+	}
 
 	/// <inheritdoc />
 	public void Map(IEndpointRouteBuilder endpoints)
@@ -122,6 +126,7 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 	private static async Task<Ok<VersionDto>> UpdateAsync(
 		int id,
 		SubmarineDbContext db,
+		MediaVersionMover mover,
 		IValidator<UpdateMediaVersionRequest> validator,
 		[FromBody] UpdateMediaVersionRequest request,
 		CancellationToken cancellationToken)
@@ -149,19 +154,6 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 			version.LanguageProfileId = languageProfileId;
 		}
 
-		if (request.RootFolderId is { } rootFolderId)
-		{
-			var root = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == rootFolderId, cancellationToken)
-				?? throw new KeyNotFoundException($"Root folder {rootFolderId} not found");
-			var kind = version.SeriesId is null ? MediaKind.MOVIES : MediaKind.SERIES;
-			if (root.MediaKind != kind)
-			{
-				throw new FluentValidation.ValidationException($"Root folder '{root.Path}' does not match the version");
-			}
-
-			version.RootFolderId = rootFolderId;
-		}
-
 		if (request.Path is { } path)
 		{
 			version.Path = path;
@@ -172,6 +164,11 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 			version.Monitored = monitored;
 		}
 
+		if (request.RootFolderId is { } rootFolderId)
+		{
+			await mover.ChangeRootFolderAsync(id, rootFolderId, request.MoveFiles ?? false, cancellationToken);
+		}
+
 		await db.SaveChangesAsync(cancellationToken);
 		return TypedResults.Ok(SeriesMapper.ToDto(version, await RootPathsAsync(db, cancellationToken)));
 	}
@@ -179,6 +176,7 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 	private static async Task<NoContent> DeleteAsync(
 		int id,
 		SubmarineDbContext db,
+		CompatVersionSelection selection,
 		[FromQuery] bool deleteFiles = false,
 		CancellationToken cancellationToken = default)
 	{
@@ -194,6 +192,11 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 		{
 			throw new ConflictException("The last version of a series or movie cannot be deleted");
 		}
+		await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+		if (version.SeriesId is { } seriesId)
+			await selection.RebindSeriesBeforeVersionRemovalAsync(seriesId, id, cancellationToken);
+		else if (version.MovieId is { } movieId)
+			await selection.RebindMovieBeforeVersionRemovalAsync(movieId, id, cancellationToken);
 
 		if (deleteFiles)
 		{
@@ -228,6 +231,7 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 
 		db.MediaVersions.Remove(version);
 		await db.SaveChangesAsync(cancellationToken);
+		await transaction.CommitAsync(cancellationToken);
 		return TypedResults.NoContent();
 	}
 
@@ -242,13 +246,15 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 /// <param name="RootFolderId">New root folder.</param>
 /// <param name="Path">New folder name inside the root folder.</param>
 /// <param name="Monitored">New monitored flag.</param>
+/// <param name="MoveFiles">Whether files move on disk when the root folder changes.</param>
 public sealed record UpdateMediaVersionRequest(
 	string? Name,
 	int? QualityProfileId,
 	int? LanguageProfileId,
 	int? RootFolderId,
 	string? Path,
-	bool? Monitored);
+	bool? Monitored,
+	bool? MoveFiles = null);
 
 /// <summary>Validator for <see cref="AddVersionRequest" /> (shared with the series add request).</summary>
 public sealed class AddVersionRequestValidator : AbstractValidator<AddVersionRequest>

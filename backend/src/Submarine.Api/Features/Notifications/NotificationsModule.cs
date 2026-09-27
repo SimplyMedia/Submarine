@@ -94,43 +94,31 @@ public sealed class NotificationsModule : IEndpointModule
 			.ToList());
 
 	private static async Task<Created<NotificationDto>> CreateAsync(
-		SubmarineDbContext db,
+		NotificationConfigurationService configuration,
 		IValidator<SaveNotificationRequest> validator,
 		SaveNotificationRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateAndThrowAsync(request, cancellationToken);
-		var notification = new Notification();
-		Apply(notification, request);
-		notification.Tags = await ResolveTagsAsync(db, request.Tags ?? [], cancellationToken);
-		db.Notifications.Add(notification);
-		await db.SaveChangesAsync(cancellationToken);
-		await db.Entry(notification).Collection(n => n.Tags).LoadAsync(cancellationToken);
+		var notification = await configuration.SaveAsync(null, ToConfiguration(request), cancellationToken);
 		return TypedResults.Created($"/api/v1/notifications/{notification.Id}", ToDto(notification));
 	}
 
 	private static async Task<Ok<NotificationDto>> UpdateAsync(
 		int id,
-		SubmarineDbContext db,
+		NotificationConfigurationService configuration,
 		IValidator<SaveNotificationRequest> validator,
 		SaveNotificationRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateAndThrowAsync(request, cancellationToken);
-		var notification = await db.Notifications.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id, cancellationToken)
-			?? throw new KeyNotFoundException($"Notification {id} does not exist");
-		Apply(notification, request);
-		notification.Tags = await ResolveTagsAsync(db, request.Tags ?? [], cancellationToken);
-		await db.SaveChangesAsync(cancellationToken);
+		var notification = await configuration.SaveAsync(id, ToConfiguration(request), cancellationToken);
 		return TypedResults.Ok(ToDto(notification));
 	}
 
-	private static async Task<NoContent> DeleteAsync(int id, SubmarineDbContext db, CancellationToken cancellationToken)
+	private static async Task<NoContent> DeleteAsync(int id, NotificationConfigurationService configuration, CancellationToken cancellationToken)
 	{
-		var notification = await db.Notifications.FirstOrDefaultAsync(n => n.Id == id, cancellationToken)
-			?? throw new KeyNotFoundException($"Notification {id} does not exist");
-		db.Notifications.Remove(notification);
-		await db.SaveChangesAsync(cancellationToken);
+		await configuration.DeleteAsync(id, cancellationToken);
 		return TypedResults.NoContent();
 	}
 
@@ -194,44 +182,13 @@ public sealed class NotificationsModule : IEndpointModule
 			notification.IncludeHealthWarnings,
 			notification.Tags.Select(t => t.Label).OrderBy(l => l, StringComparer.OrdinalIgnoreCase).ToList());
 
-	private static void Apply(Notification notification, SaveNotificationRequest request)
-	{
-		notification.Name = request.Name;
-		notification.Type = request.Type;
-		notification.Enable = request.Enable;
-		notification.SettingsJson = request.SettingsJson;
-		notification.OnGrab = request.OnGrab;
-		notification.OnImport = request.OnImport;
-		notification.OnUpgrade = request.OnUpgrade;
-		notification.OnRename = request.OnRename;
-		notification.OnDelete = request.OnDelete;
-		notification.OnHealthIssue = request.OnHealthIssue;
-		notification.OnHealthRestored = request.OnHealthRestored;
-		notification.OnApplicationUpdate = request.OnApplicationUpdate;
-		notification.OnManualInteractionRequired = request.OnManualInteractionRequired;
-		notification.IncludeHealthWarnings = request.IncludeHealthWarnings;
-	}
+	private static NotificationConfiguration ToConfiguration(SaveNotificationRequest request)
+		=> new(
+			request.Name, request.Type, request.Enable, request.SettingsJson, request.OnGrab, request.OnImport,
+			request.OnUpgrade, request.OnRename, request.OnDelete, request.OnHealthIssue, request.OnHealthRestored,
+			request.OnApplicationUpdate, request.OnManualInteractionRequired, request.IncludeHealthWarnings, request.Tags ?? []);
 
-	private static async Task<List<Tag>> ResolveTagsAsync(
-		SubmarineDbContext db,
-		IReadOnlyList<string> labels,
-		CancellationToken cancellationToken)
-	{
-		var resolved = new List<Tag>();
-		foreach (var label in labels.Distinct(StringComparer.OrdinalIgnoreCase))
-		{
-			var tag = await db.Tags.FirstOrDefaultAsync(t => t.Label == label, cancellationToken);
-			if (tag is null)
-			{
-				tag = new Tag { Label = label };
-				db.Tags.Add(tag);
-			}
 
-			resolved.Add(tag);
-		}
-
-		return resolved;
-	}
 }
 
 /// <summary>Create or replace a notification request.</summary>

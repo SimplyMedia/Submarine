@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Submarine.Core.Enums;
 using Submarine.Core.Notifications;
+using Submarine.Infrastructure.Notifications.Compat;
 
 namespace Submarine.Infrastructure.Notifications;
 
@@ -16,9 +17,11 @@ public static class NotificationsServiceCollectionExtensions
 	{
 		services.AddHttpClient(NotificationSenderFactory.HttpClientName,
 			client => client.Timeout = NotificationSenderFactory.HttpTimeout);
+		services.AddScoped<ICompatWebhookPayloadProjector, CompatWebhookPayloadProjector>();
+		services.AddScoped<NotificationConfigurationService>();
 		services.AddSingleton<INotificationSender, DiscordSender>();
 		services.AddSingleton<INotificationSender, TelegramSender>();
-		services.AddSingleton<INotificationSender, WebhookSender>();
+		services.AddScoped<INotificationSender, WebhookSender>();
 		services.AddSingleton<INotificationSender, SlackSender>();
 		services.AddSingleton<INotificationSender, PushoverSender>();
 		services.AddSingleton<INotificationSender, PushbulletSender>();
@@ -33,7 +36,7 @@ public static class NotificationsServiceCollectionExtensions
 		services.AddSingleton<INotificationSender, AppriseSender>();
 		services.AddSingleton<INotificationSender, JoinSender>();
 		services.AddSingleton<INotificationSender, MailgunSender>();
-		services.AddSingleton<INotificationSender, NotifiarrSender>();
+		services.AddScoped<INotificationSender, NotifiarrSender>();
 		services.AddSingleton<INotificationSender, ProwlSender>();
 		services.AddSingleton<INotificationSender, PushcutSender>();
 		services.AddSingleton<INotificationSender, PushsaferSender>();

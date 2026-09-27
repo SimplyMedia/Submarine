@@ -5,6 +5,7 @@ using System.Text.Json;
 using Submarine.Core.Common;
 using Submarine.Core.Enums;
 using Submarine.Core.Notifications;
+using Submarine.Infrastructure.Notifications.Compat;
 
 namespace Submarine.Infrastructure.Notifications;
 
@@ -157,8 +158,8 @@ public sealed class TelegramSender(IHttpClientFactory httpClientFactory) : INoti
 		=> SendAsync(NotificationSenderHttp.TestMessage(), settingsJson, cancellationToken);
 }
 
-/// <summary>Generic webhook sender posting the message as JSON.</summary>
-public sealed class WebhookSender(IHttpClientFactory httpClientFactory) : INotificationSender
+/// <summary>Generic webhook sender posting native or Servarr-compatible JSON.</summary>
+public sealed class WebhookSender(IHttpClientFactory httpClientFactory, ICompatWebhookPayloadProjector? compatProjector = null) : INotificationSender
 {
 	/// <inheritdoc />
 	public NotificationType Type => NotificationType.WEBHOOK;
@@ -167,9 +168,13 @@ public sealed class WebhookSender(IHttpClientFactory httpClientFactory) : INotif
 	public async Task SendAsync(NotificationMessage message, string settingsJson, CancellationToken cancellationToken = default)
 	{
 		var settings = (WebhookSettings)NotificationSettingsJson.Parse(Type, settingsJson);
+		var payload = settings.PayloadFormat == "Native"
+			? JsonSerializer.Serialize(message, SubmarineJson.Default)
+			: JsonSerializer.Serialize(await (compatProjector ?? throw new InvalidOperationException("Compatible webhook projection is unavailable"))
+				.ProjectAsync(message, settings.Facade, settings.ApplicationUrl, cancellationToken), SubmarineJson.Default);
 		using var request = new HttpRequestMessage(new HttpMethod(settings.Method), settings.Url)
 		{
-			Content = new StringContent(JsonSerializer.Serialize(message, SubmarineJson.Default), Encoding.UTF8, "application/json")
+			Content = new StringContent(payload, Encoding.UTF8, "application/json")
 		};
 		if (!string.IsNullOrEmpty(settings.Username))
 		{
@@ -178,8 +183,7 @@ public sealed class WebhookSender(IHttpClientFactory httpClientFactory) : INotif
 
 		foreach (var (name, value) in settings.Headers)
 		{
-			if (!request.Headers.TryAddWithoutValidation(name, value)
-				&& request.Content is not null)
+			if (!request.Headers.TryAddWithoutValidation(name, value) && request.Content is not null)
 			{
 				request.Content.Headers.TryAddWithoutValidation(name, value);
 			}
@@ -195,13 +199,8 @@ public sealed class WebhookSender(IHttpClientFactory httpClientFactory) : INotif
 		=> SendAsync(NotificationSenderHttp.TestMessage(), settingsJson, cancellationToken);
 }
 
-/// <summary>
-///     Notifiarr relay sender. Posts the same generic webhook payload as <see cref="WebhookSender" /> to
-///     Notifiarr's per-application ingest endpoint, authenticated with an API key header. Notifiarr routes
-///     webhooks per source application, so movie events report under the radarr integration and everything
-///     else (series events, health, application update, ...) reports under the sonarr integration.
-/// </summary>
-public sealed class NotifiarrSender(IHttpClientFactory httpClientFactory) : INotificationSender
+/// <summary>Notifiarr relay sender using the Sonarr/Radarr-compatible event envelope.</summary>
+public sealed class NotifiarrSender(IHttpClientFactory httpClientFactory, ICompatWebhookPayloadProjector? compatProjector = null) : INotificationSender
 {
 	private const string BaseUrl = "https://notifiarr.com/api/v1/notification";
 
@@ -213,9 +212,11 @@ public sealed class NotifiarrSender(IHttpClientFactory httpClientFactory) : INot
 	{
 		var settings = (NotifiarrSettings)NotificationSettingsJson.Parse(Type, settingsJson);
 		var integration = message.MovieId is not null && message.SeriesId is null ? "radarr" : "sonarr";
+		var payload = JsonSerializer.Serialize(await (compatProjector ?? throw new InvalidOperationException("Compatible webhook projection is unavailable"))
+			.ProjectAsync(message, integration, null, cancellationToken), SubmarineJson.Default);
 		using var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/{integration}")
 		{
-			Content = new StringContent(JsonSerializer.Serialize(message, SubmarineJson.Default), Encoding.UTF8, "application/json")
+			Content = new StringContent(payload, Encoding.UTF8, "application/json")
 		};
 		request.Headers.Add("X-API-Key", settings.ApiKey);
 

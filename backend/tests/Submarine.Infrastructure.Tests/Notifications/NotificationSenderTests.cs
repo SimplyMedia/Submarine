@@ -6,6 +6,7 @@ using Submarine.Core.Languages;
 using Submarine.Core.Notifications;
 using Submarine.Core.Quality;
 using Submarine.Infrastructure.Notifications;
+using Submarine.Infrastructure.Notifications.Compat;
 using Submarine.Infrastructure.Tests.DownloadClients;
 using Xunit;
 
@@ -127,6 +128,40 @@ public sealed class NotificationSenderTests
 		request.Body!.ShouldContain("\"mediaTitle\":\"Some Show\"");
 	}
 
+	[Fact]
+	public async Task Webhook_ShouldUseServarrPayloadOnlyWhenSelected()
+	{
+		var (factory, stub) = CreateFactory();
+		var sender = new WebhookSender(factory, new TestCompatWebhookPayloadProjector());
+		await sender.SendAsync(
+			Message(),
+			"""{"url":"https://hook.example/notify","payloadFormat":"SonarrRadarrCompatible","facade":"Radarr","applicationUrl":"https://media.example/compat/radarr"}""",
+			TestContext.Current.CancellationToken);
+
+		var body = stub.Requests.Single().Body!;
+		body.ShouldContain("\"eventType\":\"Download\"");
+		body.ShouldContain("\"applicationUrl\":\"https://media.example/compat/radarr\"");
+		body.ShouldContain("\"series\"");
+		body.ShouldNotContain("\"mediaTitle\"");
+	}
+
+	private sealed class TestCompatWebhookPayloadProjector : ICompatWebhookPayloadProjector
+	{
+		public Task<object> ProjectAsync(NotificationMessage message, string? facade, string? applicationUrl, CancellationToken cancellationToken = default)
+		{
+			var app = message.MovieId is not null && message.SeriesId is null ? "radarr" : "sonarr";
+			var eventType = message.EventType is NotificationEventType.IMPORT or NotificationEventType.UPGRADE ? "Download" : message.EventType.ToString();
+			object payload = new
+			{
+				eventType,
+				instanceName = "Submarine",
+				applicationUrl,
+				series = app == "sonarr" ? new { id = message.SeriesId, title = message.MediaTitle, year = message.Year } : null,
+				movie = app == "radarr" ? new { id = message.MovieId, title = message.MediaTitle, year = message.Year } : null
+			};
+			return Task.FromResult(payload);
+		}
+	}
 	[Fact]
 	public async Task Pushover_ShouldPostFormPerDevice()
 	{
@@ -436,21 +471,21 @@ public sealed class NotificationSenderTests
 	public async Task Notifiarr_ShouldPostWebhookPayload_WithApiKeyHeader()
 	{
 		var (factory, stub) = CreateFactory();
-		var sender = new NotifiarrSender(factory);
+		var sender = new NotifiarrSender(factory, new TestCompatWebhookPayloadProjector());
 
 		await sender.SendAsync(Message(), """{"apiKey":"nr-key"}""", TestContext.Current.CancellationToken);
 
 		var request = stub.Requests.Single();
 		request.Url.ShouldBe("https://notifiarr.com/api/v1/notification/sonarr");
 		request.HasHeader("X-API-Key", "nr-key").ShouldBeTrue();
-		request.Body!.ShouldContain("\"eventType\":\"IMPORT\"");
+		request.Body!.ShouldContain("\"eventType\":\"Download\"");
 	}
 
 	[Fact]
 	public async Task Notifiarr_ShouldRouteMovieEvents_ToRadarrIntegration()
 	{
 		var (factory, stub) = CreateFactory();
-		var sender = new NotifiarrSender(factory);
+		var sender = new NotifiarrSender(factory, new TestCompatWebhookPayloadProjector());
 
 		await sender.SendAsync(Message() with { SeriesId = null, MovieId = 5 }, """{"apiKey":"nr-key"}""", TestContext.Current.CancellationToken);
 

@@ -227,6 +227,7 @@ app.MapFallback(async (HttpContext context, IndexHtmlCache indexHtml, IAuthConfi
 {
 	if (context.Request.Path.StartsWithSegments("/api")
 		|| context.Request.Path.StartsWithSegments("/hubs")
+		|| context.Request.Path.StartsWithSegments("/compat")
 		|| context.Request.Path.StartsWithSegments("/scalar")
 		|| context.Request.Path.StartsWithSegments("/openapi"))
 	{

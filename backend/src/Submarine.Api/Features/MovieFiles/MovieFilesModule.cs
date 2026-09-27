@@ -103,73 +103,19 @@ public sealed class MovieFilesModule : IEndpointModule
 
 	private static async Task<Results<NoContent, NotFound>> DeleteAsync(
 		int id,
-		SubmarineDbContext db,
-		IRecycleBinService recycleBinService,
-		IEventBus eventBus,
-		TimeProvider timeProvider,
+		MovieFileOperationService movieFiles,
 		CancellationToken cancellationToken)
-	{
-		var file = await db.MovieFiles.Include(x => x.MediaVersion).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-		if (file is null)
-		{
-			return TypedResults.NotFound();
-		}
-
-		await DeleteOneAsync(file, db, recycleBinService, eventBus, timeProvider, cancellationToken);
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.NoContent();
-	}
+		=> await movieFiles.DeleteAsync(id, cancellationToken) ? TypedResults.NoContent() : TypedResults.NotFound();
 
 	private static async Task<Ok<BulkMovieFileDeleteResult>> BulkDeleteAsync(
-		SubmarineDbContext db,
-		IRecycleBinService recycleBinService,
-		IEventBus eventBus,
-		TimeProvider timeProvider,
+		MovieFileOperationService movieFiles,
 		IValidator<BulkMovieFileDeleteRequest> validator,
 		[FromBody] BulkMovieFileDeleteRequest request,
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
-		var files = await db.MovieFiles.Include(x => x.MediaVersion).Where(x => request.Ids.Contains(x.Id)).ToListAsync(cancellationToken);
-
-		foreach (var file in files)
-		{
-			await DeleteOneAsync(file, db, recycleBinService, eventBus, timeProvider, cancellationToken);
-		}
-
-		await db.SaveChangesAsync(cancellationToken);
-		return TypedResults.Ok(new BulkMovieFileDeleteResult(files.Count));
-	}
-
-	private static async Task DeleteOneAsync(
-		MovieFile file,
-		SubmarineDbContext db,
-		IRecycleBinService recycleBinService,
-		IEventBus eventBus,
-		TimeProvider timeProvider,
-		CancellationToken cancellationToken)
-	{
-		var root = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == file.MediaVersion.RootFolderId, cancellationToken);
-		if (root is not null)
-		{
-			var mediaManagement = await db.MediaManagementConfig.AsNoTracking().SingleAsync(cancellationToken);
-			var fullPath = Path.GetFullPath(Path.Combine(root.Path, file.MediaVersion.Path, file.RelativePath));
-			recycleBinService.Recycle(fullPath, root.Path, mediaManagement.RecycleBinPath, timeProvider);
-			await eventBus.PublishAsync(new MovieFileDeletedEvent(file.MovieId, file.MediaVersionId, fullPath, FileDeleteReason.MANUAL), cancellationToken);
-		}
-
-		db.HistoryEvents.Add(new HistoryEvent
-		{
-			Type = HistoryEventType.DELETED,
-			MovieId = file.MovieId,
-			MediaVersionId = file.MediaVersionId,
-			SourceTitle = file.SceneName ?? file.RelativePath,
-			Quality = file.Quality,
-			Languages = file.Languages,
-			Date = timeProvider.GetUtcNow().UtcDateTime
-		});
-
-		db.MovieFiles.Remove(file);
+		var count = await movieFiles.DeleteManyAsync(request.Ids, cancellationToken);
+		return TypedResults.Ok(new BulkMovieFileDeleteResult(count));
 	}
 
 	private static IQueryable<MovieFile> Base(SubmarineDbContext db)

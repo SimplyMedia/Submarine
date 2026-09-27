@@ -9,6 +9,7 @@ using Submarine.Core.Profiles;
 using Submarine.Core.MediaFiles;
 using Submarine.Core.Quality;
 using Submarine.Infrastructure.Health;
+using Submarine.Infrastructure.Library;
 using Submarine.Infrastructure.Persistence;
 
 namespace Submarine.Infrastructure.Search;
@@ -59,7 +60,7 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 			seriesType = series?.Type;
 			runtimeMinutes = series?.Runtime;
 			tagIds = series?.Tags.Select(tag => tag.Id).ToList() ?? [];
-			mediaMonitored = series?.Monitored ?? true;
+			mediaMonitored = (series?.Monitored ?? true) && version.Monitored;
 		}
 		else if (version.MovieId is { } movieId)
 		{
@@ -128,9 +129,21 @@ public sealed class DecisionContextFactory(SubmarineDbContext db, IBlocklistServ
 			}
 			if (episodeIds is { Count: > 0 })
 			{
-				monitoredEpisodeCount = await db.Episodes.AsNoTracking()
+				var episodeMonitoring = await db.Episodes.AsNoTracking()
 					.Where(episode => episodeIds.Contains(episode.Id))
-					.CountAsync(episode => episode.Monitored, cancellationToken);
+					.Select(episode => new { episode.Id, episode.Monitored, episode.SeasonNumber })
+					.ToListAsync(cancellationToken);
+				var seasonNumbers = episodeMonitoring.Select(episode => episode.SeasonNumber).Distinct().ToList();
+				var seasonOverrides = await db.MediaVersionSeasonMonitorings.AsNoTracking()
+					.Where(x => x.MediaVersionId == version.Id && seasonNumbers.Contains(x.SeasonNumber))
+					.ToDictionaryAsync(x => x.SeasonNumber, x => x.Monitored, cancellationToken);
+				var episodeOverrides = await db.MediaVersionEpisodeMonitorings.AsNoTracking()
+					.Where(x => x.MediaVersionId == version.Id && episodeIds.Contains(x.EpisodeId))
+					.ToDictionaryAsync(x => x.EpisodeId, x => x.Monitored, cancellationToken);
+				monitoredEpisodeCount = episodeMonitoring.Count(episode => VersionMonitoringService.Resolve(
+					mediaMonitored && episode.Monitored,
+					seasonOverrides.TryGetValue(episode.SeasonNumber, out var seasonOverride) ? seasonOverride : null,
+					episodeOverrides.TryGetValue(episode.Id, out var episodeOverride) ? episodeOverride : null));
 
 				if (isSeasonSearch)
 				{

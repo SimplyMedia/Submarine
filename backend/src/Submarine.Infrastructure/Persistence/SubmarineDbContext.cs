@@ -66,6 +66,14 @@ public class SubmarineDbContext(DbContextOptions options, TimeProvider timeProvi
 
 	/// <summary>Alternative titles.</summary>
 	public DbSet<AlternativeTitle> AlternativeTitles => Set<AlternativeTitle>();
+	/// <summary>Stable Sonarr and Radarr identities bound to native media versions.</summary>
+	public DbSet<CompatLibraryBinding> CompatLibraryBindings => Set<CompatLibraryBinding>();
+
+	/// <summary>Per-version season monitoring overrides.</summary>
+	public DbSet<MediaVersionSeasonMonitoring> MediaVersionSeasonMonitorings => Set<MediaVersionSeasonMonitoring>();
+
+	/// <summary>Per-version episode monitoring overrides.</summary>
+	public DbSet<MediaVersionEpisodeMonitoring> MediaVersionEpisodeMonitorings => Set<MediaVersionEpisodeMonitoring>();
 
 	/// <summary>Quality profiles.</summary>
 	public DbSet<QualityProfile> QualityProfiles => Set<QualityProfile>();
