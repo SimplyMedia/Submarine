@@ -42,7 +42,7 @@ test('connect: add and test a webhook, then preserve its enabled event selection
 	const dialog = page.getByRole('dialog', { name: 'Add connection' })
 	await dialog.getByRole('button', { name: 'Webhook', exact: true }).click()
 	await dialog.getByLabel('Name', { exact: true }).fill(name)
-	await dialog.getByLabel('URL').fill(`http://localhost:${metadataPort}/webhook`)
+	await dialog.getByLabel('URL', { exact: true }).fill(`http://localhost:${metadataPort}/webhook`)
 	await dialog.getByLabel('Grab').check()
 	await dialog.getByLabel('Import').uncheck()
 	await dialog.getByRole('button', { name: 'Test connection' }).click()
