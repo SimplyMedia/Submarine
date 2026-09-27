@@ -503,12 +503,17 @@ public sealed class LibraryEndpointsTests
 			{
 				var own = await db.MediaVersions.Where(x => x.MovieId == movieId).Select(x => x.Id).ToListAsync();
 				var foreign = await db.MediaVersions.Where(x => x.MovieId == otherMovieId).Select(x => x.Id).SingleAsync();
-				db.CompatLibraryBindings.Add(new CompatLibraryBinding
+				// The realtime forwarder may already have bound both movies; free the foreign version, then point
+				// this movie's binding at it to simulate a corrupted binding.
+				db.CompatLibraryBindings.RemoveRange(db.CompatLibraryBindings.Where(x => x.Facade == "radarr" && x.MovieId == otherMovieId));
+				await db.SaveChangesAsync();
+				var binding = await db.CompatLibraryBindings.SingleOrDefaultAsync(x => x.Facade == "radarr" && x.MovieId == movieId);
+				if (binding is null)
 				{
-					Facade = "radarr",
-					MovieId = movieId,
-					MediaVersionId = foreign
-				});
+					binding = new CompatLibraryBinding { Facade = "radarr", MovieId = movieId };
+					db.CompatLibraryBindings.Add(binding);
+				}
+				binding.MediaVersionId = foreign;
 				await db.SaveChangesAsync();
 				return own;
 			});
