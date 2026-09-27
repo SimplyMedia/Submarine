@@ -113,7 +113,7 @@
       "TagPicker": {
         "removeTag": "Remove {tag}",
         "addTag": "Add tag",
-        "createTag": "Create \"{tag}\""
+        "createTag": "Create \"{query}\""
       },
       "VersionEditor": {
         "name": "Name",
@@ -243,7 +243,7 @@
         "saveChanges": "Save changes",
         "deleteTitle": "Delete delay profile",
         "delete": "Delete",
-        "preferred": "{protocol} preferred",
+        "preferred": "preferred",
         "usenetDelay": "Usenet {minutes}m",
         "torrentDelay": "Torrent {minutes}m",
         "confirmDelete": "Delete \"{name}\"? This cannot be undone.",
@@ -1318,7 +1318,7 @@
         "result": "Result",
         "allResults": "All results",
         "successful": "Successful",
-        "elapsedMs": "{value} ms"
+        "elapsedMs": "{milliseconds} ms"
       },
       "proxies": {
         "title": "Proxies",
@@ -1603,7 +1603,7 @@
       "tagAction": "Tag action",
       "deleteSelected": "Delete selected",
       "deleteMoviesTitle": "Delete movies",
-      "deleteDescription": "This removes {title} from the library.",
+      "deleteDescription": "This removes {count} movies from the library.",
       "movieDeleted": "{title} deleted",
       "inCinemas": "In cinemas",
       "digital": "Digital",
@@ -1647,7 +1647,7 @@
       "notFound": "This series could not be found.",
       "backToSeries": "Back to series",
       "toggleMonitored": "Toggle monitored for {title}",
-      "minutes": "{minutes} minutes",
+      "minutes": "{count} min",
       "tags": "Tags",
       "actionsLabel": "Actions",
       "versions": "Versions",
@@ -1741,7 +1741,7 @@
       "tagAction": "Tag action",
       "deleteSelected": "Delete selected",
       "deleteSeries": "Delete series",
-      "deleteDescription": "This removes {title} from the library.",
+      "deleteDescription": "This removes {count} series from the library.",
       "deleteFilesOnDisk": "Delete files on disk",
       "addImportListExclusion": "Add an import list exclusion",
       "deletedToast": "{title} deleted",
@@ -1876,7 +1876,7 @@
         "importCustomFormats": "Import custom formats",
         "importDescription": "Paste a TRaSH Guides custom format JSON object, or an array of them.",
         "trashJson": "TRaSH JSON",
-        "importPlaceholder": "{\"name\": \"...\", \"specifications\": [...] }",
+        "importPlaceholder": "{'{'}\"name\": \"...\", \"specifications\": [...] {'}'}",
         "testReleaseTitle": "Test a release title",
         "releaseTitle": "Release title",
         "releaseTitlePlaceholder": "Some.Series.S01E01.1080p.WEB-DL.DDP5.1.H.264-GROUP",
@@ -1895,7 +1895,7 @@
         "importedMany": "Imported {count} custom formats",
         "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
         "addQualityOverride": "Add quality override",
-        "deleteOverrideConfirm": "Delete \"{releaseGroup}\"? This cannot be undone.",
+        "deleteOverrideConfirm": "Delete \"{group}\"? This cannot be undone.",
         "editCustomFormat": "Edit custom format",
         "editQualityOverride": "Edit quality override",
         "editReleaseFilter": "Edit release filter"
@@ -1912,10 +1912,11 @@
         "tags": "Tags",
         "dialog": {
           "edit": "Edit download client",
-          "addType": "Add {count}",
+          "addType": "Add {type}",
           "add": "Add download client"
         },
         "added": "Download client added",
+        "savedExisting": "Download client saved",
         "connectionSuccessful": "Connection successful",
         "connectionFailed": "Connection failed",
         "deleted": "Download client deleted",
@@ -2263,7 +2264,7 @@
         "importDialogTitle": "Import quality sizes",
         "importDialogDescription": "Paste a TRaSH Guides quality-size JSON document, or an array of quality entries.",
         "trashJson": "TRaSH JSON",
-        "jsonPlaceholder": "{\"qualities\": [...] }",
+        "jsonPlaceholder": "{'{'}\"qualities\": [...] {'}'}",
         "cancel": "Cancel",
         "skippedUnrecognised": "Skipped unrecognised: {values}",
         "updatedOne": "Updated {count} quality definition",
@@ -2288,8 +2289,8 @@
         "deleteTag": "Delete tag",
         "renameTag": "Rename tag",
         "placeholder": "anime",
-        "deleteUsedSingular": "Delete \"{label}\"? Used by {count} item.",
-        "deleteUsedPlural": "Delete \"{label}\"? Used by {count} items.",
+        "deleteUsedSingular": "\"{label}\" is used in 1 place. Deleting it removes the tag from all of them.",
+        "deleteUsedPlural": "\"{label}\" is used in {count} places. Deleting it removes the tag from all of them.",
         "deleteUnused": "Delete \"{label}\"? This cannot be undone."
       }
     },

@@ -104,10 +104,10 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { humanizeEnumValue } from '~/utils/settings-labels'
+import { humanizeEnumValue, humanizeFieldName } from '~/utils/settings-labels'
 import type { SchemaField } from '~/types/schema-form'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 const props = withDefaults(defineProps<{
 	fields: SchemaField[]
@@ -124,13 +124,17 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [Record<string, unknown>] }>()
 
 function label(field: SchemaField): string {
-	return t(`schema.${props.providerType}.${field.name}.label`, field.label)
+	const key = `schema.${props.providerType}.${field.name}.label`
+	const defaultLabel = field.label === 'Url' ? humanizeFieldName(field.name) : field.label
+	return te(key) ? t(key) : defaultLabel
 }
 
 function helpText(field: SchemaField): string | null {
-	return field.helpText
-		? t(`schema.${props.providerType}.${field.name}.helpText`, field.helpText)
-		: null
+	if (!field.helpText) {
+		return null
+	}
+	const key = `schema.${props.providerType}.${field.name}.helpText`
+	return te(key) ? t(key) : field.helpText
 }
 
 function rawValue(field: SchemaField): unknown {

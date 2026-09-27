@@ -572,7 +572,7 @@ async function confirmDelete() {
 				>
 					{{ t('pages.movies.previous') }}
 				</SButton>
-				<span>{{ t('pages.movies.pageOf', { page, total: totalPages }) }}</span>
+				<span>{{ t('pages.movies.pageOf', { page, totalPages }) }}</span>
 				<SButton
 					size="sm"
 					:disabled="page >= totalPages"
