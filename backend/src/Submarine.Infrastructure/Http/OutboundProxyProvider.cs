@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,21 @@ public sealed record OutboundProxySnapshot(
 	string? Password,
 	string BypassFilter,
 	bool BypassLocalAddresses,
-	CertificateValidationType CertificateValidation);
+	CertificateValidationType CertificateValidation)
+	{
+		private WebProxy? _bypassProbe;
+
+		/// <summary>
+		///     Cached WebProxy probe for SOCKS bypass checks.
+		/// </summary>
+		public WebProxy GetBypassProbe() => LazyInitializer.EnsureInitialized(
+			ref _bypassProbe,
+			() => new WebProxy(Host, Port)
+			{
+				BypassProxyOnLocal = BypassLocalAddresses,
+				BypassList = OutboundProxyResolver.ParseBypassList(BypassFilter)
+			})!;
+	}
 
 /// <summary>
 ///     Provides the current outbound proxy configuration with a short cache, read by every

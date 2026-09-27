@@ -8,6 +8,7 @@ using Submarine.Contracts.Metadata;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
 using Submarine.Core.Languages;
+using Submarine.Core.Events;
 using Xunit;
 
 namespace Submarine.Api.IntegrationTests;
@@ -116,6 +117,48 @@ public sealed class CompatRadarrTests
 	}
 
 	[Fact]
+	public async Task PostCommitEventFailureDoesNotExcludeMovieFromRadarr()
+	{
+		await using var factory = new LibraryApiFactory { EventBusOverride = new FailingMovieDeleteEventBus() };
+		var ids = await SeedMovieAsync(factory);
+		var versionIds = await factory.WithDbAsync(async db =>
+		{
+			var main = await db.MediaVersions.SingleAsync(x => x.MovieId == ids.MovieId);
+			var sibling = new MediaVersion
+			{
+				Name = "sibling", MovieId = ids.MovieId, QualityProfileId = main.QualityProfileId,
+				LanguageProfileId = main.LanguageProfileId, RootFolderId = main.RootFolderId, Path = "Sibling"
+			};
+			db.MediaVersions.Add(sibling);
+			db.MovieFiles.Add(new MovieFile { MovieId = ids.MovieId, MediaVersionId = main.Id, RelativePath = "movie.mkv" });
+			await db.SaveChangesAsync();
+			return (Main: main.Id, Sibling: sibling.Id);
+		});
+		var client = await factory.CreateAuthorizedClientAsync();
+		(await client.GetAsync("/compat/radarr/api/v3/movie")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+		try
+		{
+			await client.DeleteAsync($"/compat/radarr/api/v3/movie/{ids.MovieId}");
+		}
+		catch (InvalidOperationException)
+		{
+			// TestServer may surface the injected event failure directly.
+		}
+
+		var state = await factory.WithDbAsync(async db => new
+		{
+			MovieExists = await db.Movies.AnyAsync(x => x.Id == ids.MovieId),
+			Versions = await db.MediaVersions.Where(x => x.MovieId == ids.MovieId).Select(x => x.Id).ToListAsync(),
+			Binding = await db.CompatLibraryBindings.SingleAsync(x => x.Facade == "radarr" && x.MovieId == ids.MovieId)
+		});
+		state.MovieExists.ShouldBeTrue();
+		state.Versions.ShouldBe([versionIds.Sibling]);
+		state.Binding.Excluded.ShouldBeFalse();
+		state.Binding.MediaVersionId.ShouldBeNull();
+	}
+
+	[Fact]
 	public async Task ImportListMoviesWithoutRecommendationsFlagReturnsList()
 	{
 		await using var factory = new LibraryApiFactory();
@@ -159,6 +202,16 @@ public sealed class CompatRadarrTests
 		state.Movie.TmdbId.ShouldBe(tmdbId);
 		state.Binding.MediaVersionId.ShouldBe(state.Version.Id);
 		state.Binding.Excluded.ShouldBeFalse();
+	}
+	
+	private sealed class FailingMovieDeleteEventBus : IEventBus
+	{
+		public ValueTask PublishAsync(IDomainEvent @event, CancellationToken cancellationToken = default)
+		{
+			if (@event is MovieFileDeletedEvent)
+				return ValueTask.FromException(new InvalidOperationException("Injected movie delete event failure"));
+			return ValueTask.CompletedTask;
+		}
 	}
 
 	private static async Task<(int MovieId, int TmdbId, int QualityProfileId, string RootPath)> SeedMovieAsync(LibraryApiFactory factory)

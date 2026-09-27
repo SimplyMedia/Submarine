@@ -63,35 +63,33 @@ public static class AuthenticationSetup
 	{
 		options.ForwardDefaultSelector = context =>
 		{
-			if (context.Request.Headers.ContainsKey("X-Api-Key")
+			if (!string.IsNullOrEmpty(context.Request.Headers["X-Api-Key"].ToString())
 				|| context.Request.Query.ContainsKey("apikey"))
 			{
 				return ApiKeyScheme;
 			}
 
-			// Cached for 30 seconds, so the blocking wait completes synchronously.
-			var snapshot = context.RequestServices
-				.GetRequiredService<IAuthConfigProvider>()
-				.GetSnapshotAsync()
-				.GetAwaiter()
-				.GetResult();
-
-			// The forwarded-headers middleware (Program.cs, runs before routing) has already
-			// resolved the connection's remote address against the trusted proxy list, so this
-			// check cannot be fooled by a spoofed X-Forwarded-For from an untrusted peer.
-			if (snapshot.AuthenticationRequired == AuthenticationRequiredType.DISABLED_FOR_LOCAL_ADDRESSES
-				&& context.Connection.RemoteIpAddress is { } remoteIp
-				&& remoteIp.IsLocalAddress())
+			if (context.Items.TryGetValue(TrustedForwardedHeadersMiddleware.AuthSnapshotItemKey, out var value)
+				&& value is AuthSnapshot snapshot)
 			{
-				return AnonymousScheme;
+				// TrustedForwardedHeadersMiddleware asynchronously prefetched this snapshot before
+				// authentication; never block a thread on the database/cache here.
+				if (snapshot.AuthenticationRequired == AuthenticationRequiredType.DISABLED_FOR_LOCAL_ADDRESSES
+					&& context.Connection.RemoteIpAddress is { } remoteIp
+					&& remoteIp.IsLocalAddress())
+				{
+					return AnonymousScheme;
+				}
+
+				return snapshot.Method switch
+				{
+					AuthMethod.NONE or AuthMethod.EXTERNAL => AnonymousScheme,
+					AuthMethod.BASIC => BasicScheme,
+					_ => CookieScheme
+				};
 			}
 
-			return snapshot.Method switch
-			{
-				AuthMethod.NONE or AuthMethod.EXTERNAL => AnonymousScheme,
-				AuthMethod.BASIC => BasicScheme,
-				_ => CookieScheme
-			};
+			return CookieScheme;
 		};
 	}
 
@@ -234,7 +232,8 @@ public sealed class BasicAuthenticationHandler(
 	IOptionsMonitor<AuthenticationSchemeOptions> options,
 	ILoggerFactory logger,
 	System.Text.Encodings.Web.UrlEncoder encoder,
-	IUserCredentialVerifier verifier)
+	IUserCredentialVerifier verifier,
+	IAuthenticationAttemptLimiter attemptLimiter)
 	: AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
 	private const string Prefix = "Basic ";
@@ -264,6 +263,23 @@ public sealed class BasicAuthenticationHandler(
 			return AuthenticateResult.Fail("Malformed Basic authorization header");
 		}
 
+		var snapshot = Context.Items.TryGetValue(TrustedForwardedHeadersMiddleware.AuthSnapshotItemKey, out var snapshotValue)
+			? snapshotValue as AuthSnapshot
+			: null;
+		var forwardedFromUnknownProxy = snapshot is { TrustedNetworks.Count: 0 }
+			&& !string.IsNullOrWhiteSpace(Request.Headers["X-Forwarded-For"])
+			&& Context.Connection.RemoteIpAddress is { } peer
+			&& peer.IsLocalAddress();
+		var normalizedUsername = parts[0].Trim().ToUpperInvariant();
+		var partition = forwardedFromUnknownProxy || Context.Connection.RemoteIpAddress is not { } remoteIp
+			? $"user:{normalizedUsername}"
+			: $"{remoteIp}:user:{normalizedUsername}";
+		if (!attemptLimiter.TryAcquire(partition))
+		{
+			Response.StatusCode = StatusCodes.Status429TooManyRequests;
+			return AuthenticateResult.Fail("Too many authentication attempts");
+		}
+
 		var user = await verifier.VerifyAsync(parts[0], parts[1], Context.RequestAborted);
 		if (user is null)
 		{
@@ -279,8 +295,11 @@ public sealed class BasicAuthenticationHandler(
 	/// <inheritdoc />
 	protected override Task HandleChallengeAsync(AuthenticationProperties properties)
 	{
-		Response.Headers.WWWAuthenticate = $"Basic realm=\"{AuthenticationSetup.DisplayName}\"";
-		Response.StatusCode = StatusCodes.Status401Unauthorized;
+		if (Response.StatusCode != StatusCodes.Status429TooManyRequests)
+		{
+			Response.Headers.WWWAuthenticate = $"Basic realm=\"{AuthenticationSetup.DisplayName}\"";
+			Response.StatusCode = StatusCodes.Status401Unauthorized;
+		}
 		return Task.CompletedTask;
 	}
 }

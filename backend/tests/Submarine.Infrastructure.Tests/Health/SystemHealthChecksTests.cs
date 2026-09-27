@@ -65,6 +65,21 @@ public sealed class SystemHealthChecksTests : IAsyncLifetime
 	}
 
 	[Fact]
+	public async Task TrustedProxyAuthenticationCheck_ShouldWarn_WhenLocalAuthHasNoTrustedProxies()
+	{
+		Db.GeneralConfig.Add(new GeneralConfig
+		{
+			AuthenticationRequired = AuthenticationRequiredType.DISABLED_FOR_LOCAL_ADDRESSES,
+			TrustedProxies = string.Empty
+		});
+		await Db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+		var issues = await new TrustedProxyAuthenticationHealthCheck(Db).CheckAsync(TestContext.Current.CancellationToken);
+
+		issues.ShouldContain(x => x.Type == HealthIssueType.WARNING && x.Source == "Authentication");
+	}
+
+	[Fact]
 	public async Task SystemTimeCheck_ShouldError_WhenClockIsOffByMoreThanADay()
 	{
 		var timeProvider = new FakeTimeProvider(DateTimeOffset.UtcNow);

@@ -49,6 +49,7 @@ public static class OutboundProxyResolver
 
 			case Submarine.Core.Enums.IndexerProxyType.SOCKS4:
 			case Submarine.Core.Enums.IndexerProxyType.SOCKS5:
+				handler.UseProxy = false;
 				handler.ConnectCallback = async (context, cancellationToken) =>
 				{
 					if (ShouldBypass(snapshot, BuildUri(context.DnsEndPoint)))
@@ -75,11 +76,7 @@ public static class OutboundProxyResolver
 	/// </summary>
 	public static bool ShouldBypass(OutboundProxySnapshot snapshot, Uri uri)
 	{
-		var probe = new WebProxy(snapshot.Host, snapshot.Port)
-		{
-			BypassProxyOnLocal = snapshot.BypassLocalAddresses,
-			BypassList = ParseBypassList(snapshot.BypassFilter)
-		};
+		var probe = snapshot.GetBypassProbe();
 		if (probe.IsBypassed(uri))
 		{
 			return true;
@@ -112,6 +109,23 @@ public static class OutboundProxyResolver
 
 		return entries;
 	}
+
+	/// <summary>
+	///     Whether a bypass filter can be compiled by <see cref="WebProxy" />.
+	/// </summary>
+	public static bool IsValidBypassFilter(string bypassFilter)
+	{
+		try
+		{
+			_ = new WebProxy(new Uri("http://localhost"), false, ParseBypassList(bypassFilter));
+			return true;
+		}
+		catch (ArgumentException)
+		{
+			return false;
+		}
+	}
+
 
 	/// <summary>
 	///     Certificate validation callback for outbound HttpClients, honouring

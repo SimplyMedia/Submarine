@@ -616,6 +616,18 @@ public sealed class LibraryMutator(
 					throw new ValidationException("Version path must be a single relative folder segment (no separators, not '.' or '..')");
 				}
 
+				var existingPaths = await db.MediaVersions
+					.Where(x => x.RootFolderId == version.RootFolderId && x.Id != version.Id)
+					.Select(x => x.Path)
+					.ToListAsync(cancellationToken);
+				if (existingPaths.Any(existing => string.Equals(existing, path, StringComparison.OrdinalIgnoreCase))
+					|| db.MediaVersions.Local.Any(existing => existing.Id != version.Id
+						&& existing.RootFolderId == version.RootFolderId
+						&& string.Equals(existing.Path, path, StringComparison.OrdinalIgnoreCase)))
+				{
+					throw new ValidationException($"Version path '{path}' is already used in this root folder");
+				}
+
 				version.Path = path;
 			}
 		}

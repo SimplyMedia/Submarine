@@ -19,13 +19,17 @@ public sealed class BasicAuthenticationHandlerTests
 {
 	private const string SchemeName = "Submarine.Basic";
 	private readonly IUserCredentialVerifier _verifier = Substitute.For<IUserCredentialVerifier>();
+	private readonly IAuthenticationAttemptLimiter _attemptLimiter = new AuthenticationAttemptLimiter(
+		new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()),
+		TimeProvider.System);
 
 	private BasicAuthenticationHandler CreateHandler()
 		=> new(
 			new OptionsMonitorStub<AuthenticationSchemeOptions>(new AuthenticationSchemeOptions()),
 			NullLoggerFactory.Instance,
 			UrlEncoder.Default,
-			_verifier);
+			_verifier,
+			_attemptLimiter);
 
 	private async Task<AuthenticateResult> AuthenticateAsync(string? authorizationHeader)
 	{
@@ -66,6 +70,19 @@ public sealed class BasicAuthenticationHandlerTests
 		var result = await AuthenticateAsync(BasicHeader("admin", "wrong"));
 
 		result.Succeeded.ShouldBeFalse();
+	}
+
+	[Fact]
+	public async Task HandleAuthenticateAsync_ShouldRateLimitRepeatedFailures_BeforePasswordVerification()
+	{
+		_verifier.VerifyAsync("admin", "wrong", Arg.Any<CancellationToken>()).Returns((User?)null);
+
+		for (var i = 0; i < 11; i++)
+		{
+			await AuthenticateAsync(BasicHeader("admin", "wrong"));
+		}
+
+		await _verifier.Received(10).VerifyAsync("admin", "wrong", Arg.Any<CancellationToken>());
 	}
 
 	[Fact]

@@ -33,9 +33,18 @@ public static class ForwardedForResolver
 		var index = forwardedFor.Count - 1;
 		while (IsTrusted(current, trustedNetworks) && index >= 0)
 		{
-			if (!IPAddress.TryParse(forwardedFor[index], out var candidate))
+			var entry = forwardedFor[index];
+			IPAddress? candidate;
+			if (!IPAddress.TryParse(entry, out candidate))
 			{
-				break;
+				candidate = IPEndPoint.TryParse(entry, out var endpoint) ? endpoint?.Address : null;
+			}
+
+			if (candidate is null)
+			{
+				// Never leave the trusted proxy as the effective address: it may be local,
+				// which would incorrectly grant the local-address authentication bypass.
+				return IPAddress.None;
 			}
 
 			current = candidate.Unmap();

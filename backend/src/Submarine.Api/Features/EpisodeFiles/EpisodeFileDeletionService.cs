@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Submarine.Core.Entities;
 using Submarine.Core.Enums;
 using Submarine.Core.Events;
+using Submarine.Core.MediaFiles;
 using Submarine.Infrastructure.Import;
 using Submarine.Infrastructure.Persistence;
 
@@ -54,7 +55,7 @@ public sealed class EpisodeFileDeletionService(
 		if (root is not null)
 		{
 			var mediaManagement = await db.MediaManagementConfig.AsNoTracking().SingleAsync(cancellationToken);
-			var fullPath = Path.GetFullPath(Path.Combine(root.Path, file.MediaVersion.Path, file.RelativePath));
+			var fullPath = MediaVersionPathGuard.ResolveUnderRoot(root.Path, file.MediaVersion.Path, file.RelativePath);
 			recycleBinService.Recycle(fullPath, root.Path, mediaManagement.RecycleBinPath, timeProvider);
 			await eventBus.PublishAsync(
 				new EpisodeFileDeletedEvent(file.SeriesId, file.MediaVersionId, [.. file.Episodes.Select(x => x.Id)], fullPath, FileDeleteReason.MANUAL),

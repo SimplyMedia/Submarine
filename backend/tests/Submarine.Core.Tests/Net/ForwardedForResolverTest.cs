@@ -33,6 +33,31 @@ public sealed class ForwardedForResolverTest
 		resolved.IsLocalAddress().ShouldBeFalse();
 	}
 
+	[Theory]
+	[InlineData("203.0.113.9:4567")]
+	[InlineData("[2001:db8::9]:4567")]
+	public void Resolve_ShouldParseForwardedEndpoints_FromTrustedProxy(string forwardedFor)
+	{
+		var trustedProxy = IPAddress.Parse("10.0.0.5");
+		var trusted = ForwardedForResolver.ParseNetworks("10.0.0.0/8");
+
+		var resolved = ForwardedForResolver.Resolve(trustedProxy, [forwardedFor], trusted);
+
+		resolved.IsLocalAddress().ShouldBeFalse();
+		resolved.ToString().ShouldBe(forwardedFor.StartsWith('[') ? "2001:db8::9" : "203.0.113.9");
+	}
+
+	[Fact]
+	public void Resolve_ShouldNotTreatTrustedProxyAsLocal_WhenForwardedEntryIsUnparseable()
+	{
+		var trustedProxy = IPAddress.Parse("10.0.0.5");
+		var trusted = ForwardedForResolver.ParseNetworks("10.0.0.0/8");
+
+		var resolved = ForwardedForResolver.Resolve(trustedProxy, ["not-an-endpoint"], trusted);
+
+		resolved.IsLocalAddress().ShouldBeFalse();
+	}
+
 	[Fact]
 	public void Resolve_ShouldStopAtFirstUntrustedHop_InAMultiHopChain()
 	{

@@ -100,6 +100,10 @@ public sealed class ApiKeyAuthenticationHandlerTests
 	public async Task HandleAuthenticateAsync_ShouldReturnNoResult_WhenNoKeyProvided()
 		=> (await AuthenticateAsync(null)).None.ShouldBeTrue();
 
+	[Fact]
+	public async Task HandleAuthenticateAsync_ShouldReturnNoResult_WhenApiKeyHeaderIsEmpty()
+		=> (await AuthenticateAsync(string.Empty)).None.ShouldBeTrue();
+
 	private sealed class OptionsMonitorStub<T>(T value) : IOptionsMonitor<T>
 	{
 		public T CurrentValue => value;

@@ -161,6 +161,9 @@ public sealed class GeneralConfigValidator : AbstractValidator<GeneralConfig>
 			.Must(value => Uri.TryCreate(value, UriKind.Absolute, out _))
 			.When(x => !string.IsNullOrEmpty(x.ApplicationUrl))
 			.WithMessage("ApplicationUrl must be empty or an absolute URL");
+		RuleFor(x => x.ProxyBypassFilter)
+			.Must(OutboundProxyResolver.IsValidBypassFilter)
+			.WithMessage("ProxyBypassFilter must contain valid WebProxy bypass patterns");
 		RuleFor(x => x.ProxyType)
 			.NotEqual(Submarine.Core.Enums.IndexerProxyType.FLARESOLVERR)
 			.WithMessage("ProxyType must be Http, Socks4 or Socks5");

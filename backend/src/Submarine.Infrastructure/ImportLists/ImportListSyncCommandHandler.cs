@@ -65,6 +65,7 @@ public sealed class ImportListSyncCommandHandler(
 		var seenMovieTmdb = new HashSet<int>();
 		var syncedAnySeriesList = false;
 		var syncedAnyMovieList = false;
+		var skippedAutomaticAddList = false;
 		var now = timeProvider.GetUtcNow().UtcDateTime;
 
 		for (var index = 0; index < lists.Count; index++)
@@ -77,6 +78,7 @@ public sealed class ImportListSyncCommandHandler(
 				if (!await statusService.IsAvailableAsync(list.Id, cancellationToken))
 				{
 					skippedByInterval++;
+					skippedAutomaticAddList |= list.EnableAutomaticAdd;
 					continue;
 				}
 
@@ -84,6 +86,7 @@ public sealed class ImportListSyncCommandHandler(
 				if (lastSync is { } last && now < last + ImportListSchemas.MinRefreshInterval(list.Type))
 				{
 					skippedByInterval++;
+					skippedAutomaticAddList |= list.EnableAutomaticAdd;
 					continue;
 				}
 			}
@@ -121,17 +124,14 @@ public sealed class ImportListSyncCommandHandler(
 								continue;
 							}
 
-							if (list.EnableAutomaticAdd)
+							if (tvdbId is { } seenTvdbId)
 							{
-								if (tvdbId is { } seenTvdbId)
-								{
-									seenTvdb.Add(seenTvdbId);
-								}
+								seenTvdb.Add(seenTvdbId);
+							}
 
-								if (tmdbId is { } seenSeriesTmdbId)
-								{
-									seenSeriesTmdb.Add(seenSeriesTmdbId);
-								}
+							if (tmdbId is { } seenSeriesTmdbId)
+							{
+								seenSeriesTmdb.Add(seenSeriesTmdbId);
 							}
 
 							if (tvdbId is { } excludeTvdb && excludedTvdb.Contains(excludeTvdb)
@@ -179,10 +179,7 @@ public sealed class ImportListSyncCommandHandler(
 								continue;
 							}
 
-							if (list.EnableAutomaticAdd)
-							{
-								seenMovieTmdb.Add(tmdbId.Value);
-							}
+							seenMovieTmdb.Add(tmdbId.Value);
 
 							if (excludedTmdb.Contains(tmdbId.Value))
 							{
@@ -231,7 +228,7 @@ public sealed class ImportListSyncCommandHandler(
 
 		await db.SaveChangesAsync(cancellationToken);
 
-		var cleanLibraryMessage = isFullSync && failures.Count == 0
+		var cleanLibraryMessage = isFullSync && failures.Count == 0 && !skippedAutomaticAddList
 			? await CleanLibraryAsync(syncedAnySeriesList, syncedAnyMovieList, seenTvdb, seenSeriesTmdb, seenMovieTmdb, cancellationToken)
 			: null;
 

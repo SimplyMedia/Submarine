@@ -57,7 +57,7 @@ Most settings live in the web UI. These are set on the containers:
 | `TMDB_API_KEY`, `TVDB_API_KEY`, `TVDB_PIN` | Fetch series and movie metadata |
 | `Database__Provider=Postgres`, `ConnectionStrings__Postgres` | Use Postgres instead of the default SQLite (see the `postgres` profile in the example) |
 
-Set a URL base in Settings > General to serve Submarine under a sub path. Behind a reverse proxy, add the proxy's address under Settings > General > Trusted proxies so Submarine sees real client addresses. Data, logs, and backups live in `/config`.
+Set a URL base in Settings > General to serve Submarine under a sub path. Behind a reverse proxy, add the proxy's address under Settings > General > Trusted proxies so Submarine sees real client addresses. External authentication requires the app port to be reachable only through the proxy. Data, logs, and backups live in `/config`.
 
 ### Image tags
 

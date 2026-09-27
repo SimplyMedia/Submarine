@@ -390,6 +390,144 @@ public sealed class LibraryEndpointsTests
 	}
 
 	[Fact]
+	public async Task Movie_MediaVersion_ShouldRefuseDeletingLastVersionWhenOtherMoviesExist()
+	{
+		await using var factory = new LibraryApiFactory();
+		LibraryTestSupport.MovieFixtures(factory.Metadata, DateTime.UtcNow);
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root, "MOVIES");
+			var added = await client.PostAsJsonAsync("/api/v1/movies", new
+			{
+				tmdbId = LibraryTestSupport.TmdbId,
+				rootFolderId = rootId,
+				versions = new[] { new { name = "main", qualityProfileId = 1, languageProfileId = 1 } }
+			});
+			added.EnsureSuccessStatusCode();
+			var unrelated = await client.PostAsJsonAsync("/api/v1/movies", new
+			{
+				tmdbId = LibraryTestSupport.SecondTmdbId,
+				rootFolderId = rootId,
+				versions = new[] { new { name = "main", qualityProfileId = 1, languageProfileId = 1 } }
+			});
+			unrelated.EnsureSuccessStatusCode();
+			var movieId = await factory.WithDbAsync(db => db.Movies.Where(x => x.TmdbId == LibraryTestSupport.TmdbId).Select(x => x.Id).SingleAsync());
+			var version = await factory.WithDbAsync(db =>
+				db.MediaVersions.Where(x => x.MovieId == movieId).Select(x => new { x.Id, x.Path }).FirstAsync());
+
+			var folder = Path.Combine(root, version.Path);
+			Directory.CreateDirectory(folder);
+			var refused = await client.DeleteAsync($"/api/v1/media-versions/{version.Id}?deleteFiles=true");
+
+			refused.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+			Directory.Exists(folder).ShouldBeTrue();
+			(await factory.WithDbAsync(db => db.MediaVersions.AnyAsync(x => x.Id == version.Id))).ShouldBeTrue();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task Media_Version_Update_ShouldRejectPathAndRootMoveTogether()
+	{
+		await using var factory = new LibraryApiFactory();
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		var newRoot = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var newRootId = await LibraryTestSupport.CreateRootFolderAsync(client, newRoot);
+			var seriesId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId);
+			var series = await client.GetFromJsonAsync<SeriesDetailDto>($"/api/v1/series/{seriesId}");
+			var version = series!.Series.Versions.Single();
+
+			var response = await client.PutAsJsonAsync($"/api/v1/media-versions/{version.Id}", new
+			{
+				path = "renamed",
+				rootFolderId = newRootId,
+				moveFiles = true
+			});
+
+			response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+			var persisted = await factory.WithDbAsync(db => db.MediaVersions.Where(x => x.Id == version.Id)
+				.Select(x => new { x.RootFolderId, x.Path }).SingleAsync());
+			persisted.RootFolderId.ShouldBe(rootId);
+			persisted.Path.ShouldBe(version.Path);
+			(await factory.WithDbAsync(db => db.Commands.AnyAsync(x => x.Name == "MoveMediaVersion"))).ShouldBeFalse();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+			Directory.Delete(newRoot, true);
+		}
+	}
+
+	[Fact]
+	public async Task Movie_MediaVersion_DeleteAndFacadeRead_ShouldReturnConflictForInvalidCompatibilityBinding()
+	{
+		await using var factory = new LibraryApiFactory();
+		LibraryTestSupport.MovieFixtures(factory.Metadata, DateTime.UtcNow);
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root, "MOVIES");
+			async Task<int> AddMovieAsync(int tmdbId)
+			{
+				var response = await client.PostAsJsonAsync("/api/v1/movies", new
+				{
+					tmdbId,
+					rootFolderId = rootId,
+					versions = new[] { new { name = "main", qualityProfileId = 1, languageProfileId = 1 } }
+				});
+				response.EnsureSuccessStatusCode();
+				return await factory.WithDbAsync(db => db.Movies.Where(x => x.TmdbId == tmdbId).Select(x => x.Id).SingleAsync());
+			}
+
+			var movieId = await AddMovieAsync(LibraryTestSupport.TmdbId);
+			var otherMovieId = await AddMovieAsync(LibraryTestSupport.SecondTmdbId);
+			var extra = await client.PostAsJsonAsync($"/api/v1/movies/{movieId}/versions", new
+			{
+				name = "alternate",
+				qualityProfileId = 1,
+				languageProfileId = 1,
+				rootFolderId = rootId
+			});
+			extra.EnsureSuccessStatusCode();
+			var versionIds = await factory.WithDbAsync(async db =>
+			{
+				var own = await db.MediaVersions.Where(x => x.MovieId == movieId).Select(x => x.Id).ToListAsync();
+				var foreign = await db.MediaVersions.Where(x => x.MovieId == otherMovieId).Select(x => x.Id).SingleAsync();
+				db.CompatLibraryBindings.Add(new CompatLibraryBinding
+				{
+					Facade = "radarr",
+					MovieId = movieId,
+					MediaVersionId = foreign
+				});
+				await db.SaveChangesAsync();
+				return own;
+			});
+			var facadeRead = await client.GetAsync($"/compat/radarr/api/v3/movie/{movieId}");
+			facadeRead.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+
+
+			var response = await client.DeleteAsync($"/api/v1/media-versions/{versionIds[0]}");
+
+			response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+			(await factory.WithDbAsync(db => db.MediaVersions.AnyAsync(x => x.Id == versionIds[0]))).ShouldBeTrue();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
 	public async Task Delete_Series_WithFiles_ShouldRemoveFolderAndAddExclusion()
 	{
 		await using var factory = new LibraryApiFactory();
@@ -944,6 +1082,112 @@ public sealed class LibraryEndpointsTests
 		}
 	}
 
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldNotRun_WhenAutomaticAddListIsSkipped()
+	{
+		await using var factory = new LibraryApiFactory
+		{
+			ImportListHttpHandler = new ImportListPathResponseHandler(new Dictionary<string, string>
+			{
+				["/active.json"] = """[{"tvdbId": 810011, "title": "Active List Show"}]""",
+				["/skipped.json"] = """[{"tvdbId": 810012, "title": "Skipped List Show"}]"""
+			})
+		};
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var activeId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, 810011, "Active List Show");
+			var skippedId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, 810012, "Skipped List Show");
+
+			await SetCleanLibraryLevelAsync(client, "REMOVE_AND_DELETE");
+			await CreateCustomListAsync(client, "Active list", "SERIES", rootId, true, "https://example.com/active.json");
+			var skippedListId = await CreateCustomListAsync(client, "Skipped list", "SERIES", rootId, true, "https://example.com/skipped.json");
+			await factory.WithDbAsync(async db =>
+			{
+				db.ImportListStatuses.Add(new ImportListStatus
+				{
+					ImportListId = skippedListId,
+					DisabledUntil = DateTime.UtcNow.AddDays(1)
+				});
+				await db.SaveChangesAsync();
+				return true;
+			});
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			(await client.GetAsync($"/api/v1/series/{activeId}")).StatusCode.ShouldBe(HttpStatusCode.OK);
+			(await client.GetAsync($"/api/v1/series/{skippedId}")).StatusCode.ShouldBe(HttpStatusCode.OK,
+				"a skipped automatic-add list must prevent clean library from treating its titles as absent");
+			Directory.Exists(Path.Combine(root, "Skipped List Show")).ShouldBeTrue();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	[Fact]
+	public async Task ImportListSync_CleanLibrary_ShouldKeepItemsFromEnabledNonAutomaticAddLists()
+	{
+		await using var factory = new LibraryApiFactory
+		{
+			ImportListHttpHandler = new ImportListPathResponseHandler(new Dictionary<string, string>
+			{
+				["/automatic.json"] = "[]",
+				["/report-only.json"] = """[{"tvdbId": 810013, "title": "Report Only Show"}]"""
+			})
+		};
+		var client = await factory.CreateAuthorizedClientAsync();
+		var root = LibraryTestSupport.CreateTempRoot();
+		try
+		{
+			await EnableEmptyFolderCreationAsync(factory);
+			var rootId = await LibraryTestSupport.CreateRootFolderAsync(client, root);
+			var seriesId = await LibraryTestSupport.AddSeriesAsync(factory, client, rootId, 810013, "Report Only Show");
+
+			await SetCleanLibraryLevelAsync(client, "REMOVE_AND_DELETE");
+			await CreateCustomListAsync(client, "Automatic list", "SERIES", rootId, true, "https://example.com/automatic.json");
+			await CreateCustomListAsync(client, "Report-only list", "SERIES", rootId, false, "https://example.com/report-only.json");
+
+			await LibraryTestSupport.RunHandlerAsync(factory, new ImportListSyncCommand());
+
+			(await client.GetAsync($"/api/v1/series/{seriesId}")).StatusCode.ShouldBe(HttpStatusCode.OK,
+				"items on any enabled list must count as covered, even when automatic add is off");
+			Directory.Exists(Path.Combine(root, "Report Only Show")).ShouldBeTrue();
+		}
+		finally
+		{
+			Directory.Delete(root, true);
+		}
+	}
+
+	private static async Task<int> CreateCustomListAsync(
+		HttpClient client,
+		string name,
+		string mediaKind,
+		int rootFolderId,
+		bool enableAutomaticAdd,
+		string url)
+	{
+		var response = await client.PostAsJsonAsync("/api/v1/import-lists", new
+		{
+			name,
+			type = "CUSTOM",
+			enable = true,
+			enableAutomaticAdd,
+			mediaKind,
+			qualityProfileId = 1,
+			languageProfileId = 1,
+			rootFolderId,
+			settings = new { url }
+		});
+		response.StatusCode.ShouldBe(HttpStatusCode.Created);
+		return (await response.Content.ReadFromJsonAsync<ImportListDto>())!.Id;
+	}
+
 	private static async Task SetCleanLibraryLevelAsync(HttpClient client, string level)
 	{
 		var response = await client.PutAsJsonAsync("/api/v1/config/import-list", new { cleanLibraryLevel = level });
@@ -1055,3 +1299,19 @@ public sealed record FieldDto(string Name);
 /// <summary>Minimal PagedResult shape for tests.</summary>
 /// <param name="Items">Page items.</param>
 public sealed record PagedDto<T>(List<T> Items);
+
+/// <summary>Returns JSON based on the requested custom import-list URL path.</summary>
+public sealed class ImportListPathResponseHandler(IReadOnlyDictionary<string, string> responses) : HttpMessageHandler
+{
+	/// <inheritdoc />
+	protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+	{
+		var path = request.RequestUri!.AbsolutePath;
+		return Task.FromResult(responses.TryGetValue(path, out var json)
+			? new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+			}
+			: new HttpResponseMessage(HttpStatusCode.NotFound));
+	}
+}

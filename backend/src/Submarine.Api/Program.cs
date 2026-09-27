@@ -86,6 +86,7 @@ builder.Services.AddSubmarinePersistence(builder.Configuration, contentRoot);
 builder.Services.AddSubmarineEvents(typeof(Program).Assembly, typeof(SubmarineDbContext).Assembly);
 builder.Services.AddSubmarineCommands(typeof(Program).Assembly, typeof(SubmarineDbContext).Assembly);
 builder.Services.AddSubmarineAuth();
+builder.Services.AddSingleton<TrustedProxyWarningReporter>();
 builder.Services.AddSingleton(new DataDirectory(dataDirectory));
 builder.Services.AddSingleton<IndexHtmlCache>();
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDirectory, "dataprotection-keys")));
@@ -107,7 +108,9 @@ builder.Services.AddRateLimiter(options =>
 {
 	options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 	options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
-		(context.Connection.RemoteIpAddress ?? IPAddress.Loopback).ToString(),
+		context.Items.TryGetValue(LoginRateLimitPartitionMiddleware.PartitionKeyItemKey, out var partition)
+			? partition!.ToString()!
+			: (context.Connection.RemoteIpAddress ?? IPAddress.Loopback).ToString(),
 		_ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(5) }));
 	options.OnRejected = async (context, cancellationToken) =>
 	{
@@ -204,6 +207,7 @@ app.Use(async (context, next) =>
 // against the un-stripped path (ASP.NET Core would otherwise insert routing implicitly before
 // any earlier middleware, including this one).
 app.UseRouting();
+app.Use(LoginRateLimitPartitionMiddleware.InvokeAsync);
 
 app.UseSerilogRequestLogging(options =>
 	options.GetLevel = (context, elapsed, ex) => ex is not null || context.Response.StatusCode >= 500
