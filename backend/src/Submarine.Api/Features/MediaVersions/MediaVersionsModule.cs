@@ -132,6 +132,10 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 		CancellationToken cancellationToken)
 	{
 		await validator.ValidateOrThrowAsync(request, cancellationToken);
+		if (request.Path is not null && request.RootFolderId is not null && request.MoveFiles == true)
+		{
+			throw new ValidationException("Path cannot be changed together with a root-folder move");
+		}
 		var version = await db.MediaVersions.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
 			?? throw new KeyNotFoundException($"Version {id} not found");
 
@@ -185,19 +189,25 @@ public sealed class MediaVersionsModule : IServiceModule, IEndpointModule
 			.Include(x => x.MovieFiles)
 			.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
 			?? throw new KeyNotFoundException($"Version {id} not found");
-		var siblingCount = await db.MediaVersions.CountAsync(
-			x => x.Id != id && (x.SeriesId == version.SeriesId || x.MovieId == version.MovieId),
-			cancellationToken);
+		var siblingCount = version.SeriesId is { } ownerSeriesId
+			? await db.MediaVersions.CountAsync(x => x.Id != id && x.SeriesId == ownerSeriesId, cancellationToken)
+			: await db.MediaVersions.CountAsync(x => x.Id != id && x.MovieId == version.MovieId, cancellationToken);
 		if (siblingCount == 0)
 		{
 			throw new ConflictException("The last version of a series or movie cannot be deleted");
 		}
 		await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-		if (version.SeriesId is { } seriesId)
-			await selection.RebindSeriesBeforeVersionRemovalAsync(seriesId, id, cancellationToken);
-		else if (version.MovieId is { } movieId)
-			await selection.RebindMovieBeforeVersionRemovalAsync(movieId, id, cancellationToken);
-
+		try
+		{
+			if (version.SeriesId is { } seriesId)
+				await selection.RebindSeriesBeforeVersionRemovalAsync(seriesId, id, cancellationToken);
+			else if (version.MovieId is { } movieId)
+				await selection.RebindMovieBeforeVersionRemovalAsync(movieId, id, cancellationToken);
+		}
+		catch (InvalidOperationException exception)
+		{
+			throw new ConflictException(exception.Message);
+		}
 		if (deleteFiles)
 		{
 			var rootPath = await db.RootFolders
@@ -274,13 +284,13 @@ public sealed class UpdateMediaVersionRequestValidator : AbstractValidator<Updat
 	/// <inheritdoc />
 	public UpdateMediaVersionRequestValidator()
 	{
-		RuleFor(x => x.QualityProfileId).GreaterThan(0).When(x => x.QualityProfileId.HasValue);
-		RuleFor(x => x.LanguageProfileId).GreaterThan(0).When(x => x.LanguageProfileId.HasValue);
-		RuleFor(x => x.RootFolderId).GreaterThan(0).When(x => x.RootFolderId.HasValue);
 		RuleFor(x => x.Path)
 			.Must(MediaVersionPathGuard.IsSingleRelativeSegment)
 			.WithMessage("Path must be a single relative folder segment (no separators, not '.' or '..')")
 			.When(x => x.Path is not null);
+		RuleFor(x => x)
+			.Must(x => x.Path is null || x.RootFolderId is null || x.MoveFiles != true)
+			.WithMessage("Path cannot be changed in the same request as moving files to another root folder");
 	}
 }
 

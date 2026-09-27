@@ -137,6 +137,14 @@ public sealed class MoveMediaVersionCommandHandler(SubmarineDbContext db, IEvent
 
 		if (version.RootFolderId != targetRoot.Id)
 		{
+			var existingPaths = await db.MediaVersions
+				.Where(x => x.RootFolderId == targetRoot.Id && x.Id != version.Id)
+				.Select(x => x.Path)
+				.ToListAsync(cancellationToken);
+			if (existingPaths.Any(existing => string.Equals(existing, version.Path, StringComparison.OrdinalIgnoreCase)))
+			{
+				throw new ConflictException($"Version path '{version.Path}' is already used in the target root folder");
+			}
 			var oldRoot = await db.RootFolders.FirstOrDefaultAsync(x => x.Id == version.RootFolderId, cancellationToken);
 			if (oldRoot is not null)
 			{
@@ -171,7 +179,7 @@ public sealed class MoveMediaVersionCommandHandler(SubmarineDbContext db, IEvent
 ///     Moves a version folder to a new root, falling back to copy-then-delete when the root folders live on
 ///     different filesystems (Directory.Move cannot cross a filesystem boundary).
 /// </summary>
-file static class VersionFolderMove
+internal static class VersionFolderMove
 {
 	public static void MoveWithFallback(string source, string destination)
 	{
@@ -179,10 +187,27 @@ file static class VersionFolderMove
 		{
 			Directory.Move(source, destination);
 		}
-		catch (IOException)
+		catch (IOException exception) when (IsCrossDeviceMove(exception))
 		{
 			CopyDirectory(source, destination);
+			VerifyCopiedFiles(source, destination);
 			Directory.Delete(source, recursive: true);
+		}
+	}
+	internal static bool IsCrossDeviceMove(IOException exception) =>
+		(exception.HResult & unchecked((int)0xFFFF0000)) == unchecked((int)0x80070000)
+		&& (exception.HResult & 0xFFFF) == (OperatingSystem.IsWindows() ? 17 : 18);
+
+	internal static void VerifyCopiedFiles(string source, string destination)
+	{
+		foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+		{
+			var relative = Path.GetRelativePath(source, file);
+			var target = Path.Combine(destination, relative);
+			if (!File.Exists(target) || new FileInfo(file).Length != new FileInfo(target).Length)
+			{
+				throw new IOException($"Copied file '{relative}' does not match its source");
+			}
 		}
 	}
 

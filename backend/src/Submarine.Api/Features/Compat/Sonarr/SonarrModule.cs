@@ -143,7 +143,7 @@ public sealed class SonarrModule : IEndpointModule, IServiceModule
 		return Results.Json(ProjectSeries(refreshed, selected.Id, selectedRootPath), CompatJson.Options);
 	}
 
-	private static async Task<IResult> DeleteSeriesAsync(int id, bool deleteFiles, bool addImportListExclusion, SubmarineDbContext db, LibraryMutator mutator, CancellationToken ct)
+	private static async Task<IResult> DeleteSeriesAsync(int id, SubmarineDbContext db, LibraryMutator mutator, CancellationToken ct, bool deleteFiles = false, bool addImportListExclusion = false)
 	{
 		var exists = await db.Series.AnyAsync(x => x.Id == id, ct);
 		if (!exists) return CompatErrors.Message($"Series {id} not found", StatusCodes.Status404NotFound);

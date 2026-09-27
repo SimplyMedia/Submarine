@@ -21,12 +21,19 @@ public sealed class LibraryApiFactory : SubmarineApiFactory
 
 	/// <summary>Optional stub for the shared import list HttpClient. Set before the first client.</summary>
 	public HttpMessageHandler? ImportListHttpHandler { get; set; }
+	public Submarine.Core.Events.IEventBus? EventBusOverride { get; set; }
+
 
 	/// <inheritdoc />
 	protected override void ConfigureTestServices(IServiceCollection services)
 	{
 		services.RemoveAll<IMetadataClient>();
 		services.AddSingleton<IMetadataClient>(Metadata);
+		if (EventBusOverride is { } eventBus)
+		{
+			services.RemoveAll<Submarine.Core.Events.IEventBus>();
+			services.AddSingleton(eventBus);
+		}
 		if (ImportListHttpHandler is { } handler)
 		{
 			services.AddHttpClient("SubmarineImportLists")

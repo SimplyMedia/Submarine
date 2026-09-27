@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Submarine.Core.Common;
 using Submarine.Core.Entities;
 using Submarine.Infrastructure.Persistence;
 
@@ -154,12 +155,12 @@ public sealed class CompatVersionSelection(SubmarineDbContext db)
 	private async Task ValidateBindingAsync(CompatLibraryBinding binding, CancellationToken cancellationToken)
 	{
 		if (binding.MediaVersionId is not { } versionId)
-			throw new InvalidOperationException($"Compatibility binding {binding.Id} has no selected media version.");
+			throw new ConflictException($"Compatibility binding {binding.Id} has no selected media version.");
 		var version = await db.MediaVersions.AsNoTracking().SingleOrDefaultAsync(x => x.Id == versionId, cancellationToken);
 		if (version is null
 			|| (binding.Facade == "sonarr" && version.SeriesId != binding.SeriesId)
 			|| (binding.Facade == "radarr" && version.MovieId != binding.MovieId))
-			throw new InvalidOperationException($"Compatibility binding {binding.Id} refers to a media version that does not belong to its title.");
+			throw new ConflictException($"Compatibility binding {binding.Id} refers to a media version that does not belong to its title.");
 	}
 }
 

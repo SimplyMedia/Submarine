@@ -25,6 +25,22 @@ public sealed class ApiKeyValidationHealthCheck(SubmarineDbContext db) : IHealth
 	}
 }
 
+/// <summary>Warns when local-address authentication is configured without trusted proxies.</summary>
+public sealed class TrustedProxyAuthenticationHealthCheck(SubmarineDbContext db) : IHealthCheck
+{
+	/// <inheritdoc />
+	public async Task<IReadOnlyList<HealthIssueSnapshot>> CheckAsync(CancellationToken cancellationToken = default)
+	{
+		var config = await db.GeneralConfig.AsNoTracking().SingleAsync(cancellationToken);
+		return config.AuthenticationRequired == AuthenticationRequiredType.DISABLED_FOR_LOCAL_ADDRESSES
+			&& string.IsNullOrWhiteSpace(config.TrustedProxies)
+			? [new(HealthIssueType.WARNING, "Authentication",
+				"Trusted proxies is empty while local-address authentication is enabled; a local reverse proxy may expose the application without authentication",
+				null)]
+			: [];
+	}
+}
+
 /// <summary>
 ///     Checks the local system clock against a remote HTTP server's clock, using the standard
 ///     Date response header so any reachable server works.

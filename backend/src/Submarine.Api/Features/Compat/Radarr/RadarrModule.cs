@@ -197,8 +197,9 @@ public sealed class RadarrModule : IEndpointModule
 		var addExclusion = addImportExclusion ?? addImportListExclusion ?? false;
 		if (binding?.MediaVersionId is { } selected)
 		{
-			if (movie.Versions.Count > 1) await versions.ExcludeMovieAsync(id, ct);
+			var hadSiblingVersions = movie.Versions.Count > 1;
 			await selectedDeletion.DeleteAsync(id, selected, deleteFiles, addExclusion, ct);
+			if (hadSiblingVersions) await versions.ExcludeMovieAsync(id, ct);
 		}
 		else
 		{

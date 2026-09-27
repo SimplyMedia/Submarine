@@ -22,8 +22,7 @@ public sealed record AuthSnapshot(
 	IReadOnlyList<IPNetwork> TrustedNetworks);
 
 /// <summary>
-///     Provides the current auth configuration with a short cache so request hot paths
-///     (including the synchronous policy scheme selector) do not hit the database.
+///     Provides the current auth configuration with a short cache for request hot paths.
 /// </summary>
 public interface IAuthConfigProvider
 {

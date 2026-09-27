@@ -1,11 +1,20 @@
 using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
+using Submarine.Core.Enums;
 using Submarine.Core.Indexers;
+using Submarine.Infrastructure.Http;
 using Submarine.Infrastructure.Indexers;
 using Shouldly;
 using Xunit;
@@ -295,5 +304,77 @@ public class Socks5ProxyTests
 		}
 
 		return buffer;
+	}
+}
+
+public class IndexerHttpClientCertificateValidationTests
+{
+	[Fact]
+	public async Task SendAsync_ShouldUseUpdatedCertificateValidation_WhenSettingChangesAfterConstruction()
+	{
+		using var rsa = RSA.Create(2048);
+		var request = new CertificateRequest("CN=not-localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+		using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddDays(1));
+		using var listener = new TcpListener(IPAddress.Loopback, 0);
+		listener.Start();
+		var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+		var serverTask = Task.Run(async () =>
+		{
+			using var connection = await listener.AcceptTcpClientAsync();
+			await using var stream = new SslStream(connection.GetStream(), leaveInnerStreamOpen: false);
+			await stream.AuthenticateAsServerAsync(certificate);
+			using var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
+			while (!string.IsNullOrEmpty(await reader.ReadLineAsync()))
+			{
+			}
+
+			var response = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+			await stream.WriteAsync(response);
+		});
+
+		var settings = new MutableOutboundProxyProvider(CertificateValidationType.ENABLED);
+		using var client = new DefaultIndexerHttpClient(
+			indexerId: null,
+			requestDelaySeconds: 0,
+			proxy: null,
+			userAgent: null,
+			timeoutSeconds: 15,
+			outboundProxyProvider: settings,
+			logger: new NullLogger<DefaultIndexerHttpClient>(),
+			httpClientFactory: new StubHttpClientFactory());
+		settings.SetCertificateValidation(CertificateValidationType.DISABLED);
+
+		using var response = await client.GetAsync(new Uri($"https://127.0.0.1:{port}/"));
+		response.StatusCode.ShouldBe(HttpStatusCode.OK);
+		await serverTask;
+	}
+
+	private sealed class MutableOutboundProxyProvider(CertificateValidationType certificateValidation) : IOutboundProxyProvider
+	{
+		private OutboundProxySnapshot _snapshot = new(
+			Enabled: false,
+			Type: Submarine.Core.Enums.IndexerProxyType.HTTP,
+			Host: "",
+			Port: 0,
+			Username: null,
+			Password: null,
+			BypassFilter: "",
+			BypassLocalAddresses: false,
+			CertificateValidation: certificateValidation);
+
+		public Task<OutboundProxySnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
+			=> Task.FromResult(_snapshot);
+
+		public void Invalidate()
+		{
+		}
+
+		public void SetCertificateValidation(CertificateValidationType value)
+			=> _snapshot = _snapshot with { CertificateValidation = value };
+	}
+
+	private sealed class StubHttpClientFactory : IHttpClientFactory
+	{
+		public HttpClient CreateClient(string name) => new();
 	}
 }

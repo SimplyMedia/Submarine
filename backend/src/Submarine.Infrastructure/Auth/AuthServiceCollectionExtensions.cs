@@ -19,9 +19,11 @@ public static class AuthServiceCollectionExtensions
 	{
 		services.AddMemoryCache();
 		services.TryAddSingleton(new LoggingLevelSwitch());
+		services.TryAddSingleton(TimeProvider.System);
 		services.TryAddSingleton<IAuthConfigProvider, AuthConfigProvider>();
 		services.TryAddSingleton<ICookiePrincipalValidator, CookiePrincipalValidator>();
 		services.TryAddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+		services.TryAddSingleton<IAuthenticationAttemptLimiter, AuthenticationAttemptLimiter>();
 		services.TryAddScoped<IUserCredentialVerifier, UserCredentialVerifier>();
 		return services;
 	}

@@ -92,6 +92,56 @@ public sealed class CompatSonarrGapTests : IClassFixture<CompatSonarrExtendedApi
 		(await _factory.WithDbAsync(db => db.EpisodeFiles.AnyAsync(x => x.Id == mainFileId))).ShouldBeFalse();
 		(await _factory.WithDbAsync(db => db.EpisodeFiles.AnyAsync(x => x.Id == siblingFileId))).ShouldBeTrue();
 	}
+	[Fact]
+	public async Task EpisodeFileDelete_RejectsPathOutsideMediaRoot()
+	{
+		var (seriesId, mainVersionId, _, episodeId) = await SeedTwoVersionSeriesAsync(Guid.NewGuid().ToString("N"));
+		var client = await _factory.CreateAuthorizedClientAsync();
+		(await client.GetAsync($"/compat/sonarr/api/v3/series/{seriesId}")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+		var outside = Path.Combine(Path.GetTempPath(), "outside-" + Guid.NewGuid().ToString("N") + ".mkv");
+		await File.WriteAllTextAsync(outside, "keep");
+		try
+		{
+			var fileId = await _factory.WithDbAsync(async db =>
+			{
+				var file = new EpisodeFile
+				{
+					SeriesId = seriesId, MediaVersionId = mainVersionId, RelativePath = "../../" + Path.GetFileName(outside),
+					Size = 4, DateAdded = DateTime.UtcNow,
+					Quality = new QualityModel(new QualityResolutionModel(QualitySource.WEB_DL, QualityResolution.R1080_P), new Revision())
+				};
+				file.Episodes.Add(await db.Episodes.SingleAsync(x => x.Id == episodeId));
+				db.EpisodeFiles.Add(file);
+				await db.SaveChangesAsync();
+				return file.Id;
+			});
+
+			using var response = await client.DeleteAsync($"/compat/sonarr/api/v3/episodefile/{fileId}");
+
+			response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+			File.Exists(outside).ShouldBeTrue();
+			(await _factory.WithDbAsync(db => db.EpisodeFiles.AnyAsync(x => x.Id == fileId))).ShouldBeTrue();
+		}
+		finally
+		{
+			File.Delete(outside);
+		}
+	}
+
+	[Fact]
+	public async Task DeleteSeriesWithoutOptionalFlagsUsesUpstreamDefaults()
+	{
+		var (seriesId, _, siblingVersionId, _) = await SeedTwoVersionSeriesAsync(Guid.NewGuid().ToString("N"));
+		await _factory.WithDbAsync(db => db.MediaVersions.Where(x => x.Id == siblingVersionId).ExecuteDeleteAsync());
+		var client = await _factory.CreateAuthorizedClientAsync();
+
+		using var response = await client.DeleteAsync($"/compat/sonarr/api/v3/series/{seriesId}");
+
+		response.StatusCode.ShouldBe(HttpStatusCode.OK);
+		(await _factory.WithDbAsync(db => db.Series.AnyAsync(x => x.Id == seriesId))).ShouldBeFalse();
+	}
+
 
 	[Fact]
 	public async Task EpisodeMonitoring_ShouldApplyOnlyToBoundVersion_LeavingSiblingVersionUnaffected()

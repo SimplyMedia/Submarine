@@ -45,9 +45,7 @@ public sealed class IndexerHttpClientFactory(
 			proxy,
 			userAgent,
 			timeoutSeconds,
-			// Cached for 30 seconds, so the blocking wait completes synchronously; Create is
-			// called from synchronous indexer construction paths.
-			outboundProxyProvider.GetSnapshotAsync().GetAwaiter().GetResult().CertificateValidation,
+			outboundProxyProvider,
 			logger,
 			httpClientFactory);
 }
@@ -72,7 +70,7 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 		IndexerProxySettings? proxy,
 		string? userAgent,
 		int timeoutSeconds,
-		Submarine.Core.Enums.CertificateValidationType certificateValidation,
+		IOutboundProxyProvider outboundProxyProvider,
 		ILogger logger,
 		IHttpClientFactory httpClientFactory,
 		TimeProvider? timeProvider = null)
@@ -87,11 +85,11 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 				proxy.RequestTimeoutSeconds,
 				_cookies,
 				logger);
-			_client = CreateHandlerChain(proxy: null, userAgent, timeoutSeconds, certificateValidation);
+			_client = CreateHandlerChain(proxy: null, userAgent, timeoutSeconds, outboundProxyProvider);
 			return;
 		}
 
-		_client = CreateHandlerChain(proxy, userAgent, timeoutSeconds, certificateValidation);
+		_client = CreateHandlerChain(proxy, userAgent, timeoutSeconds, outboundProxyProvider);
 	}
 
 	public CookieContainer Cookies => _cookies;
@@ -174,10 +172,9 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 		IndexerProxySettings? proxy,
 		string? userAgent,
 		int timeoutSeconds,
-		Submarine.Core.Enums.CertificateValidationType certificateValidation)
+		IOutboundProxyProvider outboundProxyProvider)
 	{
 		_ = userAgent; // user agent is applied per request so proxied flows keep it too
-
 		var handler = new SocketsHttpHandler
 		{
 			CookieContainer = _cookies,
@@ -188,7 +185,12 @@ internal sealed class DefaultIndexerHttpClient : IIndexerHttpClient
 			SslOptions = new System.Net.Security.SslClientAuthenticationOptions
 			{
 				RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
-					Submarine.Infrastructure.Http.OutboundProxyResolver.ValidateCertificate(certificateValidation, sender, certificate, chain, errors)
+					Submarine.Infrastructure.Http.OutboundProxyResolver.ValidateCertificate(
+						outboundProxyProvider.GetSnapshotAsync().GetAwaiter().GetResult().CertificateValidation,
+						sender,
+						certificate,
+						chain,
+						errors)
 			}
 		};
 

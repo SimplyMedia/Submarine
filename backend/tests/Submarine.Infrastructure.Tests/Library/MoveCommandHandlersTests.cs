@@ -74,4 +74,37 @@ public sealed class MoveCommandHandlersTests : IDisposable
 		Directory.Exists(Path.Combine(targetRoot.Path, "v1")).ShouldBeTrue();
 		reloadedVersion2!.RootFolderId.ShouldBe(oldRoot2.Id, "the failed version must keep its original root");
 	}
+	[Fact]
+	public async Task MoveMediaVersionAsync_ShouldRejectPathAlreadyUsedInTargetRoot()
+	{
+		var quality = new QualityProfile { Name = "Q" };
+		var language = new LanguageProfile { Name = "L" };
+		var oldRoot = new RootFolder { Path = Path.Combine(_tempDir, "old"), MediaKind = MediaKind.SERIES };
+		var targetRoot = new RootFolder { Path = Path.Combine(_tempDir, "target"), MediaKind = MediaKind.SERIES };
+		Directory.CreateDirectory(oldRoot.Path);
+		Directory.CreateDirectory(targetRoot.Path);
+		_db.QualityProfiles.Add(quality);
+		_db.LanguageProfiles.Add(language);
+		_db.RootFolders.AddRange(oldRoot, targetRoot);
+		_db.SaveChanges();
+
+		var series = new Series { TvdbId = 4, Title = "Show", CleanTitle = "show" };
+		_db.Series.Add(series);
+		_db.SaveChanges();
+
+		var moving = new MediaVersion { SeriesId = series.Id, Name = "main", QualityProfileId = quality.Id, LanguageProfileId = language.Id, RootFolderId = oldRoot.Id, Path = "shared" };
+		var occupying = new MediaVersion { SeriesId = series.Id, Name = "alternate", QualityProfileId = quality.Id, LanguageProfileId = language.Id, RootFolderId = targetRoot.Id, Path = "shared" };
+		_db.MediaVersions.AddRange(moving, occupying);
+		_db.SaveChanges();
+		Directory.CreateDirectory(Path.Combine(oldRoot.Path, moving.Path));
+
+		var handler = new MoveMediaVersionCommandHandler(_db, _eventBus);
+
+		await Should.ThrowAsync<Core.Common.ConflictException>(() =>
+			handler.ExecuteAsync(new MoveMediaVersionCommand(moving.Id, targetRoot.Id), _context, TestContext.Current.CancellationToken));
+
+		var reloaded = await _db.MediaVersions.FindAsync([moving.Id], TestContext.Current.CancellationToken);
+		reloaded!.RootFolderId.ShouldBe(oldRoot.Id);
+		Directory.Exists(Path.Combine(oldRoot.Path, moving.Path)).ShouldBeTrue();
+	}
 }

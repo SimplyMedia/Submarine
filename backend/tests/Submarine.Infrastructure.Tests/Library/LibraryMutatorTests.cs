@@ -93,4 +93,33 @@ public sealed class LibraryMutatorTests : IDisposable
 		File.Exists(Path.Combine(victim, "keep-me.txt")).ShouldBeTrue();
 		(await _db.Series.FindAsync([series.Id], TestContext.Current.CancellationToken)).ShouldBeNull();
 	}
+	[Fact]
+	public async Task UpdateSeriesAsync_ShouldRejectVersionPathUsedByAnotherVersionInSameRoot()
+	{
+		var quality = new QualityProfile { Name = "Q" };
+		var language = new LanguageProfile { Name = "L" };
+		var root = new RootFolder { Path = Path.Combine(_tempDir, "library"), MediaKind = MediaKind.SERIES };
+		_db.QualityProfiles.Add(quality);
+		_db.LanguageProfiles.Add(language);
+		_db.RootFolders.Add(root);
+		_db.SaveChanges();
+
+		var series = new Series { TvdbId = 3, Title = "Show", CleanTitle = "show" };
+		_db.Series.Add(series);
+		_db.SaveChanges();
+
+		var first = new MediaVersion { SeriesId = series.Id, Name = "main", QualityProfileId = quality.Id, LanguageProfileId = language.Id, RootFolderId = root.Id, Path = "main" };
+		var second = new MediaVersion { SeriesId = series.Id, Name = "alternate", QualityProfileId = quality.Id, LanguageProfileId = language.Id, RootFolderId = root.Id, Path = "alternate" };
+		_db.MediaVersions.AddRange(first, second);
+		_db.SaveChanges();
+
+		var options = new UpdateSeriesOptions(null, null, null, null, null, null, null, false,
+			[new UpdateVersionOptions(second.Id, null, null, null, first.Path)]);
+
+		await Should.ThrowAsync<FluentValidation.ValidationException>(() =>
+			_mutator.UpdateSeriesAsync(series.Id, options, TestContext.Current.CancellationToken));
+
+		var reloaded = await _db.MediaVersions.FindAsync([second.Id], TestContext.Current.CancellationToken);
+		reloaded!.Path.ShouldBe("alternate");
+	}
 }
