@@ -17,8 +17,6 @@ services:
       Metadata__ApiKey: ${INTERNAL_API_KEY}
       Mappings__BaseUrl: http://submarine-mappings:8080
       Mappings__ApiKey: ${INTERNAL_API_KEY}
-      # Behind a reverse proxy, and only if port 8989 is not reachable directly:
-      # ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
     volumes:
       - ./config:/config
       # Downloads and the library on one volume, so imports can hardlink instead of copy.

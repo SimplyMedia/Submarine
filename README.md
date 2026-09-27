@@ -11,13 +11,14 @@ Find, download, import, and rename TV series, anime, and movies from Usenet and 
 
 | Area | Main features |
 |---|---|
-| Library | Series (standard, daily, anime) and movies, several versions per item (for example 1080p and 4K), collections, calendar with iCal feed, wanted lists, import lists |
+| Library | Series (standard, daily, anime) and movies, several versions per item (for example 1080p and 4K), collections, calendar with iCal feed, wanted lists, import lists (Trakt, Plex, TMDB, AniList, MyAnimeList, Simkl, IMDb, RSS, other instances), auto tagging |
 | Releases | Quality and language profiles, custom formats with TRaSH import, delay and release profiles, a title parser that tells BluRay discs, remuxes, and BDRips apart |
 | Indexers | Torznab, Newznab, and Cardigann definitions synced from Prowlarr, proxies and FlareSolverr, stats, and a Newznab API for other apps |
-| Downloads | qBittorrent, Transmission, Deluge, rTorrent, uTorrent, Aria2, Flood, Download Station, SABnzbd, NZBGet, blackhole folders |
-| Import | Hardlink or move, renaming, extras and subtitles, Kodi NFO files, recycle bin, manual import, adopting an existing library |
-| Notifications | Discord, Telegram, Slack, Pushover, Pushbullet, Gotify, ntfy, Apprise, email, webhooks, scripts, Kodi, Plex, Emby, Jellyfin |
-| System | Health checks, scheduled tasks, backups with restore, logs, users, API key |
+| Downloads | qBittorrent, Transmission, Deluge, rTorrent, uTorrent, Aria2, Flood, Download Station, Vuze, Hadouken, Freebox, rqbit, SABnzbd, NZBGet, NZBVortex, Pneumatic, blackhole folders |
+| Import | Hardlink or move, renaming, extras and subtitles, metadata files for Kodi, Plex, Emby, Roksbox, and WDTV, file dates, recycle bin, manual import, adopting an existing library |
+| Notifications | Discord, Telegram, Slack, Pushover, Pushbullet, Pushcut, Pushsafer, Prowl, Join, Simplepush, Gotify, ntfy, Signal, Apprise, Notifiarr, email, Mailgun, SendGrid, webhooks, scripts, Trakt, Twitter, Kodi, Plex, Emby, Jellyfin, Synology |
+| System | Health checks, scheduled tasks, backups with restore, logs, update history, forms or basic auth, outbound proxy, API key |
+| Integrations | Sonarr, Radarr, and Prowlarr compatible APIs, so Overseerr, Jellyseerr, Bazarr, Recyclarr, and similar tools connect to Submarine |
 
 Submarine runs as three containers. `submarine-api` is the app and web UI. `submarine-metadata` fetches and caches TMDB and TVDB, like Skyhook. `submarine-mappings` holds scene numbering and AniList mappings, like TheXEM. Each can run on its own host.
 
@@ -55,9 +56,8 @@ Most settings live in the web UI. These are set on the containers:
 | `INTERNAL_API_KEY` | Let the app talk to the metadata and mappings services, and keep others out |
 | `TMDB_API_KEY`, `TVDB_API_KEY`, `TVDB_PIN` | Fetch series and movie metadata |
 | `Database__Provider=Postgres`, `ConnectionStrings__Postgres` | Use Postgres instead of the default SQLite (see the `postgres` profile in the example) |
-| `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` | Use client addresses from your reverse proxy. Only set it when port 8989 is reachable through the proxy alone |
 
-Set a URL base in Settings > General to serve Submarine under a sub path. Data, logs, and backups live in `/config`.
+Set a URL base in Settings > General to serve Submarine under a sub path. Behind a reverse proxy, add the proxy's address under Settings > General > Trusted proxies so Submarine sees real client addresses. Data, logs, and backups live in `/config`.
 
 ### Image tags
 
