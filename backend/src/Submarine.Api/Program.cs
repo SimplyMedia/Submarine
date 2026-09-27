@@ -173,6 +173,13 @@ if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
 	WarnIfLoopback("Mappings:BaseUrl", builder.Configuration["Mappings:BaseUrl"]);
 }
 
+// ASP.NET's own switch trusts X-Forwarded-For from anyone and runs before the middleware below,
+// which would let any client claim a local address.
+if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_FORWARDEDHEADERS_ENABLED"), "true", StringComparison.OrdinalIgnoreCase))
+{
+	Serilog.Log.Warning("ASPNETCORE_FORWARDEDHEADERS_ENABLED trusts forwarded headers from any client. Remove it and list your reverse proxy under Settings > General > Trusted proxies instead");
+}
+
 // Resolves the real client address from X-Forwarded-For, but only through trusted proxy hops;
 // must run before anything that reads Connection.RemoteIpAddress (the login rate limiter below,
 // the local-address auth bypass in AuthenticationSetup).
